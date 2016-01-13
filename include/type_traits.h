@@ -1,3 +1,10 @@
+/**
+ * YATO library
+ *
+ * The MIT License (MIT)
+ * Copyright (c) 2016 Alexey Gruzdev
+ */
+
 #ifndef _YATO_TYPE_TRAITS_H_
 #define _YATO_TYPE_TRAITS_H_
 
