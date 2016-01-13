@@ -9,7 +9,7 @@ LDFLAGS  = -LC:/gtest/lib
 LDFLAGS += -lgtest
 LDFLAGS += -lgtest_main
 
-SRC += test_type_traits.cpp
+SRC = $(wildcard ./*.cpp)
     
 all: 
 	$(CXX) $(CXX_FLAGS) $(SRC) $(LDFLAGS) 
