@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include <yato/type_traits.h>
+#include <yato/range.h>
 
 #include <vector>
 #include <list>
@@ -33,4 +34,10 @@ TEST(Yato_TypeTraits, is_iterator)
 
 	EXPECT_FALSE(yato::is_iterator<std::vector<int>>::value);
 	EXPECT_FALSE(yato::is_iterator<float>::value);
+}
+
+TEST(Yato_TypeTraits, numeric_iterator)
+{
+	EXPECT_TRUE(yato::is_iterator<yato::numeric_iterator<int>>::value);
+	EXPECT_TRUE(yato::is_iterator<yato::numeric_iterator<size_t>>::value);
 }
