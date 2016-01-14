@@ -10,12 +10,23 @@
 
 #include <type_traits>
 #include <memory>
+#include <iterator>
 
-//----------------------------------------------------------
-// Smart pointer traits
-//
+
 namespace yato
 {
+    //----------------------------------------------------------
+    // Helper class for SFINAE; Unconditional version of std::enable_if
+    //
+    template <typename T, typename U = void>
+    struct enable 
+    {
+        using type = U;
+    };
+
+    //----------------------------------------------------------
+    // Smart pointer traits
+    //
     namespace details
     {
         template<typename T, template<typename...> class SmartPtr, typename Enable = void>
@@ -55,6 +66,21 @@ namespace yato
     {
         static constexpr bool value = is_shared_ptr<T>::value || is_unique_ptr<T>::value;
     };
+    
+    //----------------------------------------------------------
+    // Iterators traits
+    //
+    template<typename T, typename Enable = void>
+    struct is_iterator
+    {
+        static constexpr bool value = false;
+    };
+    
+    template<typename T>
+    struct is_iterator<T, typename enable<typename std::iterator_traits<T>::iterator_category>::type >
+    {
+        static constexpr bool value = true;
+    };  
 }
 
 #endif

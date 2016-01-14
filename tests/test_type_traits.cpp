@@ -2,7 +2,10 @@
 
 #include <yato/type_traits.h>
 
-TEST(Yato_TypeTraits, Test1) 
+#include <vector>
+#include <list>
+
+TEST(Yato_TypeTraits, is_smart_ptr)
 {
 	using sptr = std::shared_ptr<int>;
     using uptr = std::unique_ptr<int>;
@@ -17,3 +20,17 @@ TEST(Yato_TypeTraits, Test1)
     EXPECT_FALSE(yato::is_unique_ptr<void>::value);
 }
 
+TEST(Yato_TypeTraits, is_iterator)
+{
+	EXPECT_TRUE(yato::is_iterator<std::vector<int>::iterator>::value);
+	EXPECT_TRUE(yato::is_iterator<std::vector<int>::const_iterator>::value);
+
+	EXPECT_TRUE(yato::is_iterator<std::vector<int>::reverse_iterator>::value);
+	EXPECT_TRUE(yato::is_iterator<std::vector<int>::const_reverse_iterator>::value);
+
+	EXPECT_TRUE(yato::is_iterator<std::list<float>::iterator>::value);
+	EXPECT_TRUE(yato::is_iterator<std::list<float>::const_iterator>::value);
+
+	EXPECT_FALSE(yato::is_iterator<std::vector<int>>::value);
+	EXPECT_FALSE(yato::is_iterator<float>::value);
+}
