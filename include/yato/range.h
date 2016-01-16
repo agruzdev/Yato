@@ -8,10 +8,7 @@
 #ifndef _YATO_RANGE_H_
 #define _YATO_RANGE_H_
 
-#include <vector>
-
-#include "assert.h"
-#include "type_traits.h"
+#include "numeric_iterator.h"
 
 namespace yato
 {
@@ -72,139 +69,15 @@ namespace yato
 		}
 	};
 
+	/**
+	*	Helper functions to make range from a couple of iterators with auto type deduction 
+	*/
 	template<typename IteratorType>
 	constexpr typename std::enable_if< is_iterator< typename std::decay<IteratorType>::type >::value, range< typename std::decay<IteratorType>::type > >::type
 		make_range(IteratorType && begin, IteratorType && end)
 	{
 		return range<typename std::decay<IteratorType>::type>(std::forward<IteratorType>(begin), std::forward<IteratorType>(end));
 	}
-
-
-	//-------------------------------------------------------
-	
-	template <typename _T>
-	class numeric_iterator
-	{
-		static_assert(std::is_integral<_T>::value, "numeric_iterator can hold only integral types");
-	public:
-		using this_type = numeric_iterator<_T>;
-
-		using value_type = _T;
-		using difference_type = std::ptrdiff_t;
-		using pointer = typename std::add_pointer<_T>::type;
-		using pointer_to_const = typename std::add_pointer<const _T>::type;
-		using reference = typename std::add_lvalue_reference<_T>::type;
-		using reference_to_const = typename std::add_lvalue_reference<const _T>::type;
-		using iterator_category = std::random_access_iterator_tag;
-
-	private:
-		value_type m_value;
-
-	public:
-		constexpr numeric_iterator(value_type value) noexcept
-			: m_value(value)
-		{ }
-
-		constexpr numeric_iterator(const numeric_iterator & other) noexcept
-			: m_value(other.m_value)
-		{ }
-
-		numeric_iterator(numeric_iterator&&) noexcept = default;
-
-		numeric_iterator& operator=(const numeric_iterator&) noexcept = default;
-		numeric_iterator& operator=(numeric_iterator&&) noexcept = default;
-
-		~numeric_iterator() noexcept
-		{ }
-
-		constexpr reference_to_const operator*() const noexcept {
-			return m_value;
-		}
-
-		constexpr pointer_to_const operator->() const noexcept {
-			return &m_value;
-		}
-
-		this_type & operator++() {
-			YATO_ASSERT(m_value < std::numeric_limits<value_type>::max(), "yato::numeric_iterator is out of range");
-			++m_value;
-			return *this;
-		}
-
-		this_type & operator++(int) {
-			YATO_ASSERT(m_value < std::numeric_limits<value_type>::max(), "yato::numeric_iterator is out of range");
-			auto temp = *this;
-			++m_value;
-			return temp;
-		}
-
-		this_type & operator--() {
-			YATO_ASSERT(m_value > std::numeric_limits<value_type>::min(), "yato::numeric_iterator is out of range");
-			--m_value;
-			return *this;
-		}
-
-		this_type & operator--(int) {
-			YATO_ASSERT(m_value > std::numeric_limits<value_type>::min(), "yato::numeric_iterator is out of range");
-			auto temp = *this;
-			--m_value;
-			return temp;
-		}
-
-		this_type & operator+=(difference_type offset) {
-			YATO_ASSERT(m_value <= std::numeric_limits<value_type>::max() - yato::narrow_cast<value_type>(offset), "yato::numeric_iterator is out of range");
-			m_value += yato::narrow_cast<value_type>(offset);
-			return *this;
-		}
-
-		this_type operator+(difference_type offset) const {	
-			this_type tmp = *this;
-			return (tmp += offset);
-		}
-
-		this_type & operator-=(difference_type offset) {
-			YATO_ASSERT(m_value >= std::numeric_limits<value_type>::min() + yato::narrow_cast<value_type>(offset), "yato::numeric_iterator is out of range");
-			m_value -= yato::narrow_cast<value_type>(offset);
-			return *this;
-		}
-
-		constexpr this_type operator-(difference_type offset) const {
-			this_type tmp = *this;
-			return (tmp -= offset);
-		}
-
-		constexpr difference_type operator-(const this_type & right) const {
-			return m_value - right.m_value;
-		}
-
-		constexpr reference_to_const operator[](difference_type offset) const {
-			return (*(*this + offset));
-		}
-
-		constexpr bool operator!=(const this_type & other) const noexcept {
-			return m_value != other.m_value;
-		}
-
-		constexpr bool operator==(const this_type & other) const noexcept {
-			return m_value == other.m_value;
-		}
-
-		constexpr bool operator<(const this_type & right) const noexcept {
-			return m_value < right.m_value;
-		}
-
-		constexpr bool operator>(const this_type & right) const noexcept {
-			return m_value > right.m_value;
-		}
-
-		constexpr bool operator<=(const this_type & right) const noexcept {
-			return m_value <= right.m_value;
-		}
-
-		constexpr bool operator>=(const this_type & right) const noexcept {
-			return m_value >= right.m_value;
-		}
-	};
 
 	/**
 	 *	Helper functions to make numeric ranges (e.g. for ranged for-loops)
