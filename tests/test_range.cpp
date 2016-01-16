@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include <yato/range.h>
+#include <yato/types.h>
 #include <vector>
 
 #include <memory>
@@ -57,6 +58,7 @@ TEST(Yato_Range, numeric_range_1)
 		EXPECT_TRUE(x == i++);
 	}
 }
+
 TEST(Yato_Range, numeric_range_2)
 {
 	size_t i = 0;
@@ -65,3 +67,11 @@ TEST(Yato_Range, numeric_range_2)
 	}
 }
 
+TEST(Yato_Range, numeric_range_3)
+{
+	using namespace yato::literals;
+	yato::uint8_t i = 0;
+	for (auto x : yato::make_range(100_u8)) {
+		EXPECT_TRUE(x == i++);
+	}
+}
