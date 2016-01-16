@@ -9,15 +9,23 @@
 #define _YATO_PREREQUISITES_H_
 
 #if defined(DEBUG) || defined(_DEBUG) || !defined(NDEBUG)
-#define YATO_DEBUG
+#define YATO_DEBUG (1)
+#define YATO_RELEASE (0)
 #else
-#define YATO_RELEASE
+#define YATO_DEBUG (0)
+#define YATO_RELEASE (1)
 #endif 
 
+#if defined(_M_IX86)
+#define YATO_X86
+#elif defined(_M_X64)
+#define YATO_X64
+#else
+#error "Unknown architecture!"
+#endif
 
 #define _YATO_QUOTE_IMPL(X) #X
 #define YATO_QUOTE(X) _YATO_QUOTE_IMPL(X)
-
 
 #define YATO_GET_FILE_LINE (__FILE__ ": " YATO_QUOTE(__LINE__))
 
