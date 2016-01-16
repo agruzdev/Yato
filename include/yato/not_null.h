@@ -30,6 +30,7 @@ namespace yato
         constexpr not_null(T ptr):
             m_pointer(ptr) 
         {
+			
             if(ptr == nullptr){
                 throw std::runtime_error("not_null: null pointer exception!");
             }
@@ -37,33 +38,33 @@ namespace yato
         
         not_null(nullptr_t ptr) = delete;
         
-        constexpr operator T () noexcept {
-            return m_pointer;
-        }
-        
-        constexpr auto get() noexcept {
+        constexpr operator T () const noexcept {
             return m_pointer;
         }
         
         constexpr const auto get() const noexcept {
             return m_pointer;
         }
-        
-        constexpr auto operator->() noexcept {
-            return m_pointer;
-        }
+
+		auto get() noexcept {
+			return m_pointer;
+		}
         
         constexpr const auto operator->() const noexcept {
             return m_pointer;
         }
+
+		auto operator->() noexcept {
+			return m_pointer;
+		}
         
-        constexpr auto& operator*() /*noexcept?*/ {
+        constexpr const auto & operator*() const noexcept {
             return *m_pointer;
         }
-        
-        constexpr const auto& operator*() const /*noexcept?*/ {
-            return *m_pointer;
-        }
+
+		auto & operator*() noexcept {
+			return *m_pointer;
+		}
     };
     /**
      * Implementation for smart pointers
@@ -73,43 +74,43 @@ namespace yato
     {    
         const T & m_smart_pointer;
     public:
-        constexpr not_null(const T& ptr):
+        constexpr not_null(const T & ptr):
             m_smart_pointer(ptr) 
         {
-            if(ptr.get() == nullptr){
+            if(m_smart_pointer.get() == nullptr){
                 throw std::runtime_error("not_null: null pointer exception!");
             }
         }
-        
+
         not_null(nullptr_t ptr) = delete;
         
-        constexpr operator T () noexcept {
+        operator T& () noexcept {
             return m_smart_pointer;
-        }
-        
-        constexpr auto get() noexcept {
-            return m_smart_pointer.get();
         }
         
         constexpr const auto get() const noexcept {
             return m_smart_pointer.get();
         }
-        
-        constexpr auto operator->() noexcept {
-            return m_smart_pointer.operator->();
-        }
+
+		auto get() noexcept {
+			return m_smart_pointer.get();
+		}
         
         constexpr const auto operator->() const noexcept {
             return m_smart_pointer.operator->();
         }
+
+		auto operator->() noexcept {
+			return m_smart_pointer.operator->();
+		}
         
-        constexpr auto& operator*() /*noexcept?*/ {
+        constexpr const auto& operator*() const noexcept {
             return *m_smart_pointer;
         }
-        
-        constexpr const auto& operator*() const /*noexcept?*/ {
-            return *m_smart_pointer;
-        }
+
+		auto & operator*() noexcept {
+			return *m_smart_pointer;
+		}
     };
 
 }

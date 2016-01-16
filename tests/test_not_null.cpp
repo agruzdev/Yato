@@ -13,7 +13,8 @@ public:
 };
 
 void foo(yato::not_null<int*> p){
-    EXPECT_TRUE(1 == *p);
+	*p += 1;
+    EXPECT_TRUE(2 == *p);
 }
 
 void bar(yato::not_null<const A*> p){
@@ -49,3 +50,9 @@ TEST(Yato_NotNull, Test1)
     zoo(u);
 }
 
+
+
+TEST(Yato_NotNull, Test2)
+{
+	yato::not_null< std::unique_ptr<int> > p1 = std::make_unique<int>(1);
+}
