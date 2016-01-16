@@ -50,3 +50,18 @@ TEST(Yato_Range, numeric_iterator_2)
 	std::copy(begin, end, vec.begin());
 }
 
+TEST(Yato_Range, numeric_range_1)
+{
+	int i = 0;
+	for (int x : yato::make_range(0, 100)) {
+		EXPECT_TRUE(x == i++);
+	}
+}
+TEST(Yato_Range, numeric_range_2)
+{
+	size_t i = 0;
+	for (int x : yato::make_range(100U)) {
+		EXPECT_TRUE(x == i++);
+	}
+}
+

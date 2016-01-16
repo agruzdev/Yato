@@ -23,63 +23,59 @@ namespace yato
 	{
 		static_assert(is_iterator<IteratorType>::value, "yato::range can be used only for iterators");
 
-		const IteratorType _begin;
-		const IteratorType _end;
+		const IteratorType m_begin;
+		const IteratorType m_end;
 	public:
 		constexpr range(const IteratorType & begin, const IteratorType & end) noexcept
-			: _begin(begin), _end(end)
+			: m_begin(begin), m_end(end)
 		{ }
 
 		constexpr range(IteratorType && begin, IteratorType && end) noexcept
-			: _begin(begin), _end(end)
+			: m_begin(begin), m_end(end)
 		{ }
 
-		constexpr range(const range<IteratorType>&) noexcept = default;
-		constexpr range(range<IteratorType>&&) noexcept = default;
+		constexpr range(const range<IteratorType>& other) noexcept
+			: m_begin(other._begin), m_end(other._end)
+		{ }
 
-		constexpr range<IteratorType>& operator=(const range<IteratorType>&) noexcept = default;
-		constexpr range<IteratorType>& operator=(range<IteratorType>&&) noexcept = default;
+		range(range<IteratorType>&&) noexcept = default;
+
+		range<IteratorType>& operator=(const range<IteratorType>&) noexcept = default;
+		range<IteratorType>& operator=(range<IteratorType>&&) noexcept = default;
 
 		~range() noexcept
 		{ }
 
 		constexpr const IteratorType & begin() const noexcept {
-			return _begin;
+			return m_begin;
 		}
 
 		constexpr const IteratorType & end() const noexcept {
-			return _end;
+			return m_end;
 		}
 
-		constexpr auto size() {
-			return std::distance(_begin, _end);
+		constexpr auto size() const {
+			return std::distance(m_begin, m_end);
 		}
 
-		constexpr bool empty() noexcept {
-			return !(_begin != _end);
+		constexpr bool empty() const noexcept {
+			return !(m_begin != m_end);
 		}
 
 		constexpr const IteratorType & head() const noexcept {
-			return _begin;
+			return m_begin;
 		}
 
 		constexpr range<IteratorType> tail() const {
-			return range<IteratorType>(std::next(_begin), _end);
+			return range<IteratorType>(std::next(m_begin), m_end);
 		}
 	};
-
-	template<typename IteratorType>
-	constexpr typename std::enable_if< is_iterator< typename std::decay<IteratorType>::type >::value, range< typename std::decay<IteratorType>::type > >::type 
-		make_range(const IteratorType & begin, const IteratorType & end)
-	{
-		return range<typename std::decay<IteratorType>::type>(begin, end);
-	}
 
 	template<typename IteratorType>
 	constexpr typename std::enable_if< is_iterator< typename std::decay<IteratorType>::type >::value, range< typename std::decay<IteratorType>::type > >::type
 		make_range(IteratorType && begin, IteratorType && end)
 	{
-		return range<typename std::decay<IteratorType>::type>(begin, end);
+		return range<typename std::decay<IteratorType>::type>(std::forward<IteratorType>(begin), std::forward<IteratorType>(end));
 	}
 
 
@@ -108,11 +104,14 @@ namespace yato
 			: m_value(value)
 		{ }
 
-		constexpr numeric_iterator(const numeric_iterator&) noexcept = default;
-		constexpr numeric_iterator(numeric_iterator&&) noexcept = default;
+		constexpr numeric_iterator(const numeric_iterator & other) noexcept
+			: m_value(other.m_value)
+		{ }
 
-		constexpr numeric_iterator& operator=(const numeric_iterator&) noexcept = default;
-		constexpr numeric_iterator& operator=(numeric_iterator&&) noexcept = default;
+		numeric_iterator(numeric_iterator&&) noexcept = default;
+
+		numeric_iterator& operator=(const numeric_iterator&) noexcept = default;
+		numeric_iterator& operator=(numeric_iterator&&) noexcept = default;
 
 		~numeric_iterator() noexcept
 		{ }
@@ -125,39 +124,39 @@ namespace yato
 			return &m_value;
 		}
 
-		constexpr this_type & operator++() {
+		this_type & operator++() {
 			++m_value;
 			return *this;
 		}
 
-		constexpr this_type & operator++(int) {
+		this_type & operator++(int) {
 			auto temp = *this;
 			++m_value;
 			return temp;
 		}
 
-		constexpr this_type & operator--() {
+		this_type & operator--() {
 			--m_value;
 			return *this;
 		}
 
-		constexpr this_type & operator--(int) {
+		this_type & operator--(int) {
 			auto temp = *this;
 			--m_value;
 			return temp;
 		}
 
-		constexpr this_type & operator+=(difference_type offset) {
+		this_type & operator+=(difference_type offset) {
 			m_value += offset;
 			return *this;
 		}
 
-		constexpr this_type operator+(difference_type offset) const {	
+		this_type operator+(difference_type offset) const {	
 			this_type tmp = *this;
 			return (tmp += offset);
 		}
 
-		constexpr this_type & operator-=(difference_type offset) {
+		this_type & operator-=(difference_type offset) {
 			m_value -= offset;
 			return *this;
 		}
@@ -200,7 +199,22 @@ namespace yato
 		}
 	};
 
-	
+	/**
+	 *	Helper functions to make numeric ranges (e.g. for ranged for-loops)
+	 */
+	template <typename _T>
+	typename std::enable_if < std::is_integral<typename std::decay<_T>::type>::value, range<numeric_iterator<typename std::decay<_T>::type>> >::type
+		make_range(_T && left, _T && right)
+	{
+		return make_range(numeric_iterator<typename std::decay<_T>::type>(std::forward<_T>(left)), numeric_iterator<typename std::decay<_T>::type>(std::forward<_T>(right)));
+	}
+
+	template <typename _T>
+	typename std::enable_if < std::is_unsigned<typename std::decay<_T>::type>::value, range<numeric_iterator<typename std::decay<_T>::type>> >::type
+		make_range(_T && right)
+	{
+		return make_range(static_cast<typename std::decay<_T>::type>(0), std::forward<_T>(right));
+	}
 
 }
 
