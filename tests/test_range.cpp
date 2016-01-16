@@ -43,7 +43,7 @@ TEST(Yato_Range, numeric_range_1)
 TEST(Yato_Range, numeric_range_2)
 {
 	size_t i = 0;
-	for (int x : yato::make_range(100U)) {
+	for (size_t x : yato::make_range(100U)) {
 		EXPECT_TRUE(x == i++);
 	}
 }

@@ -87,7 +87,7 @@ namespace yato
 	_T_Dst>::type
 		narrow_cast(_T_Src && val) noexcept(YATO_DEBUG ? false : true) {
 #if YATO_DEBUG
-		return static_cast<_T_Dst>(val) == val ? static_cast<_T_Dst>(val)
+		return static_cast<typename std::decay<_T_Src>::type>(static_cast<_T_Dst>(val)) == val ? static_cast<_T_Dst>(val)
 			: (YATO_THROW_ASSERT_EXCEPT("narrow_cast failed!"), static_cast<_T_Dst>(0));
 #else
 		return static_cast<_T_Dst>(val);

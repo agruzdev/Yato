@@ -55,4 +55,5 @@ TEST(Yato_NotNull, Test1)
 TEST(Yato_NotNull, Test2)
 {
 	yato::not_null< std::unique_ptr<int> > p1 = std::make_unique<int>(1);
+	(void)p1;
 }

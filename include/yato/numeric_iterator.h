@@ -9,6 +9,7 @@
 #define _YATO_NUMERIC_ITERATOR_H_
 
 #include "assert.h"
+#include "types.h"
 #include "type_traits.h"
 
 namespace yato
