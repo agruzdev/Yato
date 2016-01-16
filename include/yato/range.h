@@ -10,6 +10,7 @@
 
 #include <vector>
 
+#include "assert.h"
 #include "type_traits.h"
 
 namespace yato
@@ -89,7 +90,7 @@ namespace yato
 		using this_type = numeric_iterator<_T>;
 
 		using value_type = _T;
-		using difference_type = _T;
+		using difference_type = std::ptrdiff_t;
 		using pointer = typename std::add_pointer<_T>::type;
 		using pointer_to_const = typename std::add_pointer<const _T>::type;
 		using reference = typename std::add_lvalue_reference<_T>::type;
@@ -125,29 +126,34 @@ namespace yato
 		}
 
 		this_type & operator++() {
+			YATO_ASSERT(m_value < std::numeric_limits<value_type>::max(), "yato::numeric_iterator is out of range");
 			++m_value;
 			return *this;
 		}
 
 		this_type & operator++(int) {
+			YATO_ASSERT(m_value < std::numeric_limits<value_type>::max(), "yato::numeric_iterator is out of range");
 			auto temp = *this;
 			++m_value;
 			return temp;
 		}
 
 		this_type & operator--() {
+			YATO_ASSERT(m_value > std::numeric_limits<value_type>::min(), "yato::numeric_iterator is out of range");
 			--m_value;
 			return *this;
 		}
 
 		this_type & operator--(int) {
+			YATO_ASSERT(m_value > std::numeric_limits<value_type>::min(), "yato::numeric_iterator is out of range");
 			auto temp = *this;
 			--m_value;
 			return temp;
 		}
 
 		this_type & operator+=(difference_type offset) {
-			m_value += offset;
+			YATO_ASSERT(m_value <= std::numeric_limits<value_type>::max() - yato::narrow_cast<value_type>(offset), "yato::numeric_iterator is out of range");
+			m_value += yato::narrow_cast<value_type>(offset);
 			return *this;
 		}
 
@@ -157,7 +163,8 @@ namespace yato
 		}
 
 		this_type & operator-=(difference_type offset) {
-			m_value -= offset;
+			YATO_ASSERT(m_value >= std::numeric_limits<value_type>::min() + yato::narrow_cast<value_type>(offset), "yato::numeric_iterator is out of range");
+			m_value -= yato::narrow_cast<value_type>(offset);
 			return *this;
 		}
 
