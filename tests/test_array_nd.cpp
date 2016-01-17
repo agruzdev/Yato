@@ -55,3 +55,21 @@ TEST(Yato_Array_Nd, array_nd_2)
     EXPECT_TRUE(0 == memcmp(&native_2x3[0][0], &array_2x3[0][0], sizeof(native_2x3)));
     EXPECT_TRUE(0 == memcmp(&native_3x2[0][0], &array_3x2[0][0], sizeof(native_3x2)));
 };
+
+
+TEST(Yato_Array_Nd, array_nd_on_heap)
+{
+    yato::vector_nd<float, 2> vec_2;
+    EXPECT_NO_THROW(vec_2[0] = 1);
+    EXPECT_NO_THROW(vec_2[1] = 2);
+#if YATO_DEBUG
+    EXPECT_THROW(vec_2[2] = 3, yato::assertion_error);
+#endif
+
+    yato::vector_nd<int, 2, 3> vec_2x3;
+    EXPECT_NO_THROW(vec_2x3[0][2] = 1);
+    EXPECT_NO_THROW(vec_2x3[1][0] = 2);
+#if YATO_DEBUG
+    EXPECT_THROW(vec_2x3[1][3] = 3, yato::assertion_error);
+#endif
+};
