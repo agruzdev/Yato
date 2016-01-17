@@ -15,20 +15,20 @@
 namespace yato
 {
 
-	class assertion_error : public std::runtime_error
-	{
-	public:
-		assertion_error(const std::string & message) noexcept(noexcept(std::runtime_error(message)))
-			: std::runtime_error(message)
-		{ }
+    class assertion_error : public std::runtime_error
+    {
+    public:
+        assertion_error(const std::string & message) noexcept(noexcept(std::runtime_error(message)))
+            : std::runtime_error(message)
+        { }
 
-		assertion_error(const char* message) noexcept(noexcept(std::runtime_error(message)))
-			: std::runtime_error(message)
-		{ }
+        assertion_error(const char* message) noexcept(noexcept(std::runtime_error(message)))
+            : std::runtime_error(message)
+        { }
 
-		~assertion_error() noexcept
-		{ }
-	};
+        ~assertion_error() noexcept
+        { }
+    };
 
 }
 

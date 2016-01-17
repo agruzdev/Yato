@@ -13,7 +13,7 @@ public:
 };
 
 void foo(yato::not_null<int*> p){
-	*p += 1;
+    *p += 1;
     EXPECT_TRUE(2 == *p);
 }
 
@@ -31,7 +31,7 @@ void zoo(yato::not_null< std::unique_ptr<float> > p){
 
 TEST(Yato_NotNull, Test1) 
 {
-	int a = 1;
+    int a = 1;
     yato::not_null<int*> p1(&a);
     //not_null<int*> p2(nullptr); // compile time error
     
@@ -54,6 +54,6 @@ TEST(Yato_NotNull, Test1)
 
 TEST(Yato_NotNull, Test2)
 {
-	yato::not_null< std::unique_ptr<int> > p1 = std::make_unique<int>(1);
-	(void)p1;
+    yato::not_null< std::unique_ptr<int> > p1 = std::make_unique<int>(1);
+    (void)p1;
 }

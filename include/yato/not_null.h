@@ -30,7 +30,7 @@ namespace yato
         constexpr not_null(T ptr):
             m_pointer(ptr) 
         {
-			
+            
             if(ptr == nullptr){
                 throw std::runtime_error("not_null: null pointer exception!");
             }
@@ -46,25 +46,25 @@ namespace yato
             return m_pointer;
         }
 
-		auto get() noexcept {
-			return m_pointer;
-		}
+        auto get() noexcept {
+            return m_pointer;
+        }
         
         constexpr const auto operator->() const noexcept {
             return m_pointer;
         }
 
-		auto operator->() noexcept {
-			return m_pointer;
-		}
+        auto operator->() noexcept {
+            return m_pointer;
+        }
         
         constexpr const auto & operator*() const noexcept {
             return *m_pointer;
         }
 
-		auto & operator*() noexcept {
-			return *m_pointer;
-		}
+        auto & operator*() noexcept {
+            return *m_pointer;
+        }
     };
     /**
      * Implementation for smart pointers
@@ -92,25 +92,25 @@ namespace yato
             return m_smart_pointer.get();
         }
 
-		auto get() noexcept {
-			return m_smart_pointer.get();
-		}
+        auto get() noexcept {
+            return m_smart_pointer.get();
+        }
         
         constexpr const auto operator->() const noexcept {
             return m_smart_pointer.operator->();
         }
 
-		auto operator->() noexcept {
-			return m_smart_pointer.operator->();
-		}
+        auto operator->() noexcept {
+            return m_smart_pointer.operator->();
+        }
         
         constexpr const auto& operator*() const noexcept {
             return *m_smart_pointer;
         }
 
-		auto & operator*() noexcept {
-			return *m_smart_pointer;
-		}
+        auto & operator*() noexcept {
+            return *m_smart_pointer;
+        }
     };
 
 }
