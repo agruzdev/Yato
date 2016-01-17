@@ -10,11 +10,17 @@
 
 #if defined(DEBUG) || defined(_DEBUG) || !defined(NDEBUG)
 #define YATO_DEBUG (1)
+#define YATO_DEBUG_BOOL true
 #define YATO_RELEASE (0)
+#define YATO_RELEASE_BOOL false
 #else
 #define YATO_DEBUG (0)
+#define YATO_DEBUG_BOOL false
 #define YATO_RELEASE (1)
+#define YATO_RELEASE_BOOL true
 #endif 
+static_assert(YATO_DEBUG != YATO_RELEASE, "Wrong configuration");
+static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 
 #if defined(_M_IX86)
 #define YATO_X86
