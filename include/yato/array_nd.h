@@ -113,8 +113,8 @@ namespace yato
 			using allocator_type = _Allocator;
 
 			static_assert(std::is_same<layout_type, array_layout_plain>::value, "Only plain layout is supported for now!");
-		private:
 
+		private:
 			std::array<data_type, shape::total_size> m_plain_array;
 
 		public:
