@@ -46,6 +46,10 @@ namespace yato
         class sub_array 
         {
         public:
+            /**
+             *	Iterator for elements of the sub-array
+             *  May be const or not
+             */
             using iterator = _Iterator;
 
         private:
@@ -59,7 +63,7 @@ namespace yato
             { }
 
             explicit constexpr sub_array(_Iterator && iter) noexcept
-                : m_iter(iter)
+                : m_iter(std::move(iter))
             { }
 
             constexpr sub_array(const sub_array & other) noexcept 
@@ -74,6 +78,20 @@ namespace yato
 
             ~sub_array()
             { }
+
+            /**
+             *	Get begin iterator
+             */
+            iterator begin() noexcept {
+                return m_iter;
+            }
+
+            /**
+             * Get end iterator
+             */
+            iterator end() noexcept {
+                return std::next(m_iter, _my_shape::total_size);
+            }
 
             /**
             *    case of Nd shape
@@ -151,8 +169,13 @@ namespace yato
 
             using _my_container_trait = container_trait<data_type, shape::total_size, storage_type>;
             using container_type = typename _my_container_trait::type;
-
+            /**
+             *	Iterator allowing to pass through all elements of the multidimensional array 
+             */
             using iterator = typename container_type::iterator;
+            /**
+            *	Const iterator allowing to pass through all elements of the multidimensional array
+            */
             using const_iterator = typename container_type::const_iterator;
             //-------------------------------------------------------
 
@@ -166,12 +189,67 @@ namespace yato
                 _my_container_trait::do_init(m_plain_array);
             }
 
-            //ToDo:: implement later
-            array_nd_impl(const array_nd_impl&) = delete;
-            array_nd_impl& operator=(const array_nd_impl&) = delete;
+            array_nd_impl(const array_nd_impl & other) noexcept(std::is_nothrow_copy_constructible<container_type>::value)
+                : m_plain_array(other.m_plain_array)
+            { }
+
+            array_nd_impl& operator=(const array_nd_impl & other) noexcept(std::is_nothrow_copy_assignable<container_type>::value)
+            {
+                if (this != &other) {
+                    m_plain_array = other.m_plain_array;
+                }
+                return *this;
+            }
+
+            array_nd_impl(array_nd_impl && other) noexcept(std::is_nothrow_move_constructible<container_type>::value)
+                : m_plain_array(std::move(other))
+            { }
+
+            array_nd_impl& operator=(array_nd_impl && other) noexcept(std::is_nothrow_move_assignable<container_type>::value)
+            {
+                if (this != &other) {
+                    m_plain_array = std::move(other);
+                }
+                return *this;
+            }
 
             ~array_nd_impl()
             { }
+
+            /**
+             *	Swap arrays data
+             */
+            void swap(const array_nd_impl & other) noexcept {
+                using std::swap;
+                swap(m_plain_array, other.m_plain_array);
+            }
+
+            /**
+             *  Get constant iterator to the begin of the array
+             *  Will pass through all elements of the multidimensional array
+             */
+            constexpr const_iterator cbegin() const noexcept {
+                return std::cbegin(m_plain_array);
+            }
+            /**
+            *  Get iterator to the begin of the array
+            *  Will pass through all elements of the multidimensional array
+            */
+            iterator begin() noexcept {
+                return std::begin(m_plain_array);
+            }
+            /**
+             *	Get const iterator to the end of the array
+             */
+            constexpr const_iterator cend() const noexcept {
+                return std::cend(m_plain_array);
+            }
+            /**
+            *	Get iterator to the end of the array
+            */
+            iterator end() noexcept {
+                return std::end(m_plain_array);
+            }
 
 
             /**
@@ -185,8 +263,8 @@ namespace yato
             {
 #if YATO_DEBUG
                 return sub_array<const_iterator, _HyperShape>{
-                    (idx < shape::dimensions[0]) ? std::next(std::cbegin(m_plain_array), idx * _HyperShape::total_size) :
-                        (YATO_THROW_ASSERT_EXCEPT("yato::array_nd: out of range!"), std::begin(m_plain_array))
+                    (idx < shape::dimensions[0]) ? std::next(cbegin(), idx * _HyperShape::total_size) :
+                        (YATO_THROW_ASSERT_EXCEPT("yato::array_nd: out of range!"), cbegin())
                 };
 #else
                 return sub_array<const_iterator, _HyperShape>{ std::next(std::cbegin(m_plain_array), idx * _HyperShape::total_size) };
@@ -201,7 +279,7 @@ namespace yato
 #if YATO_DEBUG
                 YATO_ASSERT(idx < shape::dimensions[0], "yato::array_nd: out of range!");
 #endif
-                return sub_array<iterator, _HyperShape>{ std::next(std::begin(m_plain_array), idx * _HyperShape::total_size) };
+                return sub_array<iterator, _HyperShape>{ std::next(begin(), idx * _HyperShape::total_size) };
             }
 
             /**
@@ -214,10 +292,10 @@ namespace yato
             operator[](size_t idx) const noexcept(YATO_RELEASE_BOOL)
             {
 #if YATO_DEBUG
-                return idx < shape::dimensions[0] ? *std::next(std::cbegin(m_plain_array), idx) :
+                return idx < shape::dimensions[0] ? *std::next(cbegin(), idx) :
                     (YATO_THROW_ASSERT_EXCEPT("yato::array_nd: out of range!"), *std::cbegin(m_plain_array));
 #else
-                return *std::next(std::cbegin(m_plain_array), idx);
+                return *std::next(cbegin(), idx);
 #endif
             }
 
@@ -229,16 +307,22 @@ namespace yato
 #if YATO_DEBUG
                 YATO_ASSERT(idx < shape::dimensions[0], "yato::array_nd: out of range!");
 #endif
-                return *std::next(std::begin(m_plain_array), idx);
+                return *std::next(begin(), idx);
             }
 
+
+            
         };
     }
 
-    //Separate first dimension to force having at least one dimension 
+    /**
+     *	Create zero initialized array on stack
+     */
     template<typename _DataType, size_t _First_Dimension, size_t... _More_Dimensions> 
     using array_nd = details::array_nd_impl < _DataType, details::plain_array_shape<_First_Dimension, _More_Dimensions...>, array_storage_on_stack>;
-
+    /**
+    *	Create zero initialized array on heap
+    */
     template<typename _DataType, size_t _First_Dimension, size_t... _More_Dimensions>
     using vector_nd = details::array_nd_impl < _DataType, details::plain_array_shape<_First_Dimension, _More_Dimensions...>, array_storage_on_heap>;
 

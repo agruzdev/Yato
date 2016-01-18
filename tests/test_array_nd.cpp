@@ -1,8 +1,10 @@
 #include "gtest/gtest.h"
 
+#include <yato/types.h>
 #include <yato/array_nd.h>
 
 #include <cstring>
+#include <numeric>
 
 TEST(Yato_Array_Nd, array_nd)
 {
@@ -74,8 +76,6 @@ TEST(Yato_Array_Nd, array_nd_on_heap)
 #endif
 };
 
-
-
 TEST(Yato_Array_Nd, array_nd_bool)
 {
     yato::array_nd<bool, 16> arr;
@@ -86,3 +86,63 @@ TEST(Yato_Array_Nd, array_nd_bool)
 
     EXPECT_TRUE(true);
 };
+
+TEST(Yato_Array_Nd, array_nd_iterator)
+{
+    yato::array_nd<int, 4, 4> arr;
+    std::iota(arr.begin(), arr.end(), 0);
+
+    int i = 0;
+    for (int x : arr) {
+        EXPECT_TRUE(x == i++);
+    }
+};
+
+TEST(Yato_Array_Nd, array_nd_iterator_2)
+{
+    int gt[2][4] = { {1, 1, 1, 1}, {2, 2, 2, 2} };
+    yato::array_nd<int, 2, 4> arr;
+    
+    auto && p1 = arr[0];
+    for (int & x : p1) {
+        x = 1;
+    }
+    auto && p2 = arr[1];
+    for (int & x : p2) {
+        x = 2;
+    }
+
+    EXPECT_TRUE(0 == memcmp(&gt[0][0], &arr[0][0], sizeof(gt)));
+};
+
+
+TEST(Yato_Array_Nd, array_nd_copy)
+{
+    constexpr size_t N = 4;
+    yato::array_nd<uint8_t, N, N, N> gt;
+    yato::array_nd<uint8_t, N, N, N> arr;
+   
+    for (auto gtIt = gt.begin(), arrIt = arr.begin(); gtIt != gt.end(); ++gtIt, ++arrIt) {
+        uint8_t val = yato::narrow_cast<uint8_t>(std::rand() % 256);
+        *gtIt = val;
+        *arrIt = val;
+    }
+
+    auto copy{ arr };
+    for (auto copyIt = copy.begin(), arrIt = arr.begin(); copyIt != copy.end(); ++copyIt, ++arrIt) {
+        EXPECT_TRUE(*copyIt == *arrIt);
+    }
+
+    for (int i = 0; i < 10; ++i) {
+        copy[std::rand() % N][std::rand() % N][std::rand() % N] = yato::narrow_cast<uint8_t>(std::rand() % 256);
+    }
+    for (auto gtIt = gt.begin(), arrIt = arr.begin(); gtIt != gt.end(); ++gtIt, ++arrIt) {
+        EXPECT_TRUE(*gtIt == *arrIt);
+    }
+
+    arr = copy;
+    for (auto copyIt = copy.begin(), arrIt = arr.begin(); copyIt != copy.end(); ++copyIt, ++arrIt) {
+        EXPECT_TRUE(*copyIt == *arrIt);
+    }
+};
+
