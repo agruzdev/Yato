@@ -42,28 +42,34 @@ namespace yato
             constexpr static const size_t dimensions[1] = { _Dim_Head };
         };
 
-        template<typename _DataType, typename _Shape>
+        template<typename _Iterator, typename _Shape>
         class sub_array 
         {
         public:
-            using data_type = _DataType;
+            using iterator = _Iterator;
 
         private:
             using _my_shape = _Shape;
             using _my_hyper_shape = typename _my_shape::hyper_shape;
-            data_type* m_base_ptr;
+            iterator m_iter;
 
         public:
-            explicit constexpr sub_array(data_type* base_ptr) noexcept
-                : m_base_ptr(base_ptr)
+            explicit constexpr sub_array(const _Iterator & iter) noexcept
+                : m_iter(iter)
+            { }
+
+            explicit constexpr sub_array(_Iterator && iter) noexcept
+                : m_iter(iter)
             { }
 
             constexpr sub_array(const sub_array & other) noexcept 
-                : m_base_ptr(other.m_base_ptr)
+                : m_iter(other.m_iter)
             { }
 
             sub_array& operator=(const sub_array & other) noexcept {
-                m_base_ptr = other.m_base_ptr;
+                if (&other != this) {
+                    m_iter = other.m_iter;
+                }
             }
 
             ~sub_array()
@@ -75,16 +81,16 @@ namespace yato
             template <typename _HyperShape = _my_hyper_shape>
             constexpr 
                 typename std::enable_if<!std::is_same<_HyperShape, null_shape>::value,
-                sub_array<data_type, _HyperShape> >::type
+                sub_array<iterator, _HyperShape> >::type
                 operator[](size_t idx) const noexcept(YATO_RELEASE_BOOL)
             {
 #if YATO_DEBUG
-                return sub_array<data_type, _HyperShape>{
-                    idx < _my_shape::dimensions[0] ? m_base_ptr + idx * _HyperShape::total_size :
-                        (YATO_THROW_ASSERT_EXCEPT("yato::array_nd: out of range!"), nullptr) 
+                return sub_array<iterator, _HyperShape>{
+                    idx < _my_shape::dimensions[0] ? std::next(m_iter, idx * _HyperShape::total_size) :
+                        (YATO_THROW_ASSERT_EXCEPT("yato::array_nd: out of range!"), m_iter)
                 };
 #else
-                return sub_array<data_type, _HyperShape>{ m_base_ptr + idx * _HyperShape::total_size };
+                return sub_array<iterator, _HyperShape>{ std::next(m_iter, idx * _HyperShape::total_size) };
 #endif
             }
 
@@ -94,14 +100,14 @@ namespace yato
             template <typename _HyperShape = _my_hyper_shape>
             constexpr
                 typename std::enable_if<std::is_same<_HyperShape, null_shape>::value,
-                _DataType&>::type
+                decltype(*std::declval<iterator>())>::type
                 operator[](size_t idx) const noexcept(YATO_RELEASE_BOOL)
             {
 #if YATO_DEBUG
-                return (idx < _my_shape::dimensions[0]) ? *(m_base_ptr + idx) :
-                    (YATO_THROW_ASSERT_EXCEPT("yato::array_nd: out of range!"), *m_base_ptr);
+                return (idx < _my_shape::dimensions[0]) ? *std::next(m_iter, idx) :
+                    (YATO_THROW_ASSERT_EXCEPT("yato::array_nd: out of range!"), *m_iter);
 #else
-                return *(m_base_ptr + idx);
+                return *std::next(m_iter, idx);
 #endif
             }
 
@@ -145,6 +151,9 @@ namespace yato
 
             using _my_container_trait = container_trait<data_type, shape::total_size, storage_type>;
             using container_type = typename _my_container_trait::type;
+
+            using iterator = typename container_type::iterator;
+            using const_iterator = typename container_type::const_iterator;
             //-------------------------------------------------------
 
         private:
@@ -152,7 +161,7 @@ namespace yato
 
         public:
             constexpr array_nd_impl() noexcept(noexcept(_my_container_trait::do_init(m_plain_array)))
-                : m_plain_array{ _my_container_trait::initializer }
+                : m_plain_array{_my_container_trait::initializer}
             {
                 _my_container_trait::do_init(m_plain_array);
             }
@@ -171,28 +180,28 @@ namespace yato
             template <typename _HyperShape = typename shape::hyper_shape>
             constexpr
                 typename std::enable_if<!std::is_same<_HyperShape, null_shape>::value,
-                sub_array<const data_type, _HyperShape> >::type
+                sub_array<const_iterator, _HyperShape> >::type
             operator[](size_t idx) const noexcept(YATO_RELEASE_BOOL)
             {
 #if YATO_DEBUG
-                return sub_array<const data_type, _HyperShape>{
-                    (idx < shape::dimensions[0]) ? &m_plain_array[0] + idx * _HyperShape::total_size :
-                        (YATO_THROW_ASSERT_EXCEPT("yato::array_nd: out of range!"), nullptr) 
+                return sub_array<const_iterator, _HyperShape>{
+                    (idx < shape::dimensions[0]) ? std::next(std::cbegin(m_plain_array), idx * _HyperShape::total_size) :
+                        (YATO_THROW_ASSERT_EXCEPT("yato::array_nd: out of range!"), std::begin(m_plain_array))
                 };
 #else
-                return sub_array<const data_type, _HyperShape>{ &m_plain_array[0] + idx * _HyperShape::total_size };
+                return sub_array<const_iterator, _HyperShape>{ std::next(std::cbegin(m_plain_array), idx * _HyperShape::total_size) };
 #endif
             }
 
             template <typename _HyperShape = typename shape::hyper_shape>
                 typename std::enable_if<!std::is_same<_HyperShape, null_shape>::value,
-                sub_array<data_type, _HyperShape> >::type
+                sub_array<iterator, _HyperShape> >::type
             operator[](size_t idx) noexcept(YATO_RELEASE_BOOL)
             {
 #if YATO_DEBUG
                 YATO_ASSERT(idx < shape::dimensions[0], "yato::array_nd: out of range!");
 #endif
-                return sub_array<data_type, _HyperShape>{ &m_plain_array[0] + idx * _HyperShape::total_size };
+                return sub_array<iterator, _HyperShape>{ std::next(std::begin(m_plain_array), idx * _HyperShape::total_size) };
             }
 
             /**
@@ -201,26 +210,26 @@ namespace yato
             template <typename _HyperShape = typename shape::hyper_shape>
             constexpr
                 typename std::enable_if<std::is_same<_HyperShape, null_shape>::value,
-                const data_type&>::type
+                decltype(*std::declval<const_iterator>())>::type
             operator[](size_t idx) const noexcept(YATO_RELEASE_BOOL)
             {
 #if YATO_DEBUG
-                return idx < shape::dimensions[0] ? m_plain_array[idx] :
-                    (YATO_THROW_ASSERT_EXCEPT("yato::array_nd: out of range!"), m_plain_array[0]);
+                return idx < shape::dimensions[0] ? *std::next(std::cbegin(m_plain_array), idx) :
+                    (YATO_THROW_ASSERT_EXCEPT("yato::array_nd: out of range!"), *std::cbegin(m_plain_array));
 #else
-                return m_plain_array[idx];
+                return *std::next(std::cbegin(m_plain_array), idx);
 #endif
             }
 
             template <typename _HyperShape = typename shape::hyper_shape>
                 typename std::enable_if<std::is_same<_HyperShape, null_shape>::value,
-                data_type&>::type
+                decltype(*std::declval<iterator>())>::type
             operator[](size_t idx) noexcept(YATO_RELEASE_BOOL)
             {
 #if YATO_DEBUG
                 YATO_ASSERT(idx < shape::dimensions[0], "yato::array_nd: out of range!");
 #endif
-                return m_plain_array[idx];
+                return *std::next(std::begin(m_plain_array), idx);
             }
 
         };

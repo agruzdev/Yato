@@ -73,3 +73,16 @@ TEST(Yato_Array_Nd, array_nd_on_heap)
     EXPECT_THROW(vec_2x3[1][3] = 3, yato::assertion_error);
 #endif
 };
+
+
+
+TEST(Yato_Array_Nd, array_nd_bool)
+{
+    yato::array_nd<bool, 16> arr;
+    arr[3] = true;
+
+    yato::vector_nd<bool, 16> vec;
+    vec[4] = true;
+
+    EXPECT_TRUE(true);
+};
