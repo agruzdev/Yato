@@ -146,3 +146,42 @@ TEST(Yato_Array_Nd, array_nd_copy)
     }
 };
 
+
+
+TEST(Yato_Array_Nd, array_nd_dimensions)
+{
+    constexpr size_t L = 16, M = 5, N = 10;
+    yato::array_nd<uint8_t,  L, M, N> arr;
+    yato::vector_nd<uint8_t, N, M, L> vec;
+    
+    EXPECT_TRUE(arr.size<0>() == L);
+    EXPECT_TRUE(arr.size<1>() == M);
+    EXPECT_TRUE(arr.size<2>() == N);
+    EXPECT_TRUE(vec.size<0>() == N);
+    EXPECT_TRUE(vec.size<1>() == M);
+    EXPECT_TRUE(vec.size<2>() == L);
+};
+
+
+
+TEST(Yato_Array_Nd, array_nd_at)
+{
+    yato::array_nd<int, 3> arr;
+    EXPECT_NO_THROW(arr.at(0) = 0);
+    EXPECT_NO_THROW(arr.at(1) = 1);
+    EXPECT_NO_THROW(arr.at(2) = 2);
+    EXPECT_THROW(arr.at(3), std::runtime_error);
+
+    int idx = 1;
+    const int& idx_lv = idx;
+    int&& idx_rv = std::move(idx);
+    yato::array_nd<int, 3, 2, 2> arr_2;
+    EXPECT_NO_THROW(arr_2.at(0, idx, 0) = 0);
+    EXPECT_NO_THROW(arr_2.at(2, idx_lv, 1) = 1);
+    EXPECT_NO_THROW(arr_2.at(0, idx_rv, 0) = 2);
+    EXPECT_THROW(arr_2.at(3, 3, 3), std::runtime_error);
+    EXPECT_THROW(arr_2.at(0, 3, 3), std::runtime_error);
+    EXPECT_THROW(arr_2.at(0, 0, 3), std::runtime_error);
+};
+
+
