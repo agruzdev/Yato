@@ -155,6 +155,7 @@ namespace yato
                 return (*this)[firstIdx];
             }
 
+
         };
 
         //-------------------------------------------------------
@@ -245,9 +246,8 @@ namespace yato
             /**
              *	Swap arrays data
              */
-            void swap(const array_nd_impl & other) noexcept {
-                using std::swap;
-                swap(m_plain_array, other.m_plain_array);
+            void swap(array_nd_impl & other) noexcept {
+                m_plain_array.swap(other.m_plain_array);
             }
 
             /**
@@ -363,14 +363,72 @@ namespace yato
              * Get size along one dimension	
              */
             template<size_t _Dimension>
-            constexpr size_t size() const {
+            constexpr size_t size() const noexcept {
                 static_assert(_Dimension < shape::dimensions_number, "yato::array_nd: dimension index is out of range!");
                 return shape::dimensions[_Dimension];
             }
 
+            /**
+             *	Get total size of the array
+             */
+            constexpr size_t total_size() const noexcept {
+                return shape::total_size;
+            }
 
+            /**
+             *	Get raw pointer to data
+             *  Points to valid continuous storage with all elements
+             *  The order of elements is same like for native array T[][]..[]
+             */
+            constexpr const data_type* data() const noexcept {
+                //ToDo: fix it later
+                static_assert(!std::is_same<data_type, bool>::value, "data() can't be used of bool");
+                return &m_plain_array[0];
+            }
+
+            /**
+             *	Get raw pointer to data
+             *  Points to valid continuous storage with all elements
+             *  The order of elements is same like for native array T[][]..[]
+             */
+            data_type* data() noexcept {
+                //ToDo: fix it later
+                static_assert(!std::is_same<data_type, bool>::value, "data() can't be used of bool");
+                return &m_plain_array[0];
+            }
+
+
+            /**
+             *	Fill array with constant value
+             */
+            template<typename _T>
+                typename std::enable_if<std::is_convertible<_T, data_type>::value, void>::type 
+            fill(const _T& value) noexcept(std::is_nothrow_copy_assignable<_T>::value) {
+                std::fill(begin(), end(), value);
+            }
         };
+
+        template <typename _T, typename _Enable = void>
+        struct is_array_nd 
+        {
+            static constexpr bool value = false;
+        };
+
+        template <typename _T>
+        struct is_array_nd<_T, typename std::enable_if<
+            std::is_same<_T, array_nd_impl<typename _T::data_type, typename _T::shape, array_storage_on_stack> >::value>::type >
+        {
+            static constexpr bool value = true;
+        };
+
+        template<typename _Value, typename _Shape, typename _Storage>
+        void swap(array_nd_impl<_Value, _Shape, _Storage> & one, array_nd_impl<_Value, _Shape, _Storage> & another) {
+            one.swap(another);
+        }
     }
+
+    using details::is_array_nd;
+    using details::swap;
 
     /**
      *	Create zero initialized array on stack

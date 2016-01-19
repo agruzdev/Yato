@@ -185,3 +185,33 @@ TEST(Yato_Array_Nd, array_nd_at)
 };
 
 
+TEST(Yato_Array_Nd, array_nd_fill)
+{
+    using namespace yato::literals;
+
+    yato::array_nd<yato::uint16_t, 4, 4, 4> arr;
+    arr.fill(1_u8);
+    for (int x : arr) {
+        EXPECT_TRUE(x == 1);
+    }
+};
+
+
+TEST(Yato_Array_Nd, array_nd_swap)
+{
+    yato::array_nd<int, 4, 4, 4> arr_1;
+    yato::array_nd<int, 4, 4, 4> arr_2;
+    arr_1.fill(1);
+    arr_2.fill(2);
+    
+    using std::swap;
+    swap(arr_1, arr_2);
+
+    for (int x : arr_1) {
+        EXPECT_TRUE(x == 2);
+    }
+    for (int x : arr_2) {
+        EXPECT_TRUE(x == 1);
+    }
+
+};
