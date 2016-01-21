@@ -73,7 +73,7 @@ namespace yato
         }
 
         YATO_CONSTEXPR_FUNC 
-        typename IteratorType::difference_type size() 
+        typename IteratorType::difference_type size() const
         {
             return std::distance(m_begin, m_end);
         }
