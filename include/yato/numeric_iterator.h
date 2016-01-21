@@ -38,25 +38,25 @@ namespace yato
         value_type m_value;
 
     public:
-        constexpr numeric_iterator(value_type value) noexcept
+        YATO_CONSTEXPR_FUNC numeric_iterator(value_type value) YATO_NOEXCEPT_KEYWORD
             : m_value(value)
         { }
 
-        constexpr numeric_iterator(const numeric_iterator & other) noexcept
+        YATO_CONSTEXPR_FUNC numeric_iterator(const numeric_iterator & other) YATO_NOEXCEPT_KEYWORD
             : m_value(other.m_value)
         { }
 
-        numeric_iterator(numeric_iterator && other) noexcept
+        numeric_iterator(numeric_iterator && other) YATO_NOEXCEPT_KEYWORD
             : m_value(std::move(other.m_value))
         { } 
 
-        numeric_iterator& operator=(const numeric_iterator & other) noexcept
+        numeric_iterator& operator=(const numeric_iterator & other) YATO_NOEXCEPT_KEYWORD
         {
             m_value = other.m_value;
             return *this;
         }
 
-        numeric_iterator& operator=(numeric_iterator && other) noexcept
+        numeric_iterator& operator=(numeric_iterator && other) YATO_NOEXCEPT_KEYWORD
         {
             m_value = std::move(other.m_value);
             return *this;
@@ -65,11 +65,13 @@ namespace yato
         ~numeric_iterator() 
         { }
 
-        constexpr reference_to_const operator*() const noexcept {
+        YATO_CONSTEXPR_FUNC reference_to_const operator*() const YATO_NOEXCEPT_KEYWORD
+        {
             return m_value;
         }
 
-        constexpr pointer_to_const operator->() const noexcept {
+        YATO_CONSTEXPR_FUNC pointer_to_const operator->() const YATO_NOEXCEPT_KEYWORD
+        {
             return &m_value;
         }
 
@@ -116,40 +118,49 @@ namespace yato
             return *this;
         }
 
-        constexpr this_type operator-(difference_type offset) const {
+        YATO_CONSTEXPR_FUNC this_type operator-(difference_type offset) const
+        {
             this_type tmp = *this;
             return (tmp -= offset);
         }
 
-        constexpr difference_type operator-(const this_type & right) const {
+        YATO_CONSTEXPR_FUNC difference_type operator-(const this_type & right) const
+        {
             return m_value - right.m_value;
         }
 
-        constexpr reference_to_const operator[](difference_type offset) const {
+        YATO_CONSTEXPR_FUNC reference_to_const operator[](difference_type offset) const
+        {
             return (*(*this + offset));
         }
 
-        constexpr bool operator!=(const this_type & other) const noexcept {
+        YATO_CONSTEXPR_FUNC bool operator!=(const this_type & other) const YATO_NOEXCEPT_KEYWORD
+        {
             return m_value != other.m_value;
         }
 
-        constexpr bool operator==(const this_type & other) const noexcept {
+        YATO_CONSTEXPR_FUNC bool operator==(const this_type & other) const YATO_NOEXCEPT_KEYWORD
+        {
             return m_value == other.m_value;
         }
 
-        constexpr bool operator<(const this_type & right) const noexcept {
+        YATO_CONSTEXPR_FUNC bool operator<(const this_type & right) const YATO_NOEXCEPT_KEYWORD
+        {
             return m_value < right.m_value;
         }
 
-        constexpr bool operator>(const this_type & right) const noexcept {
+        YATO_CONSTEXPR_FUNC bool operator>(const this_type & right) const YATO_NOEXCEPT_KEYWORD
+        {
             return m_value > right.m_value;
         }
 
-        constexpr bool operator<=(const this_type & right) const noexcept {
+        YATO_CONSTEXPR_FUNC bool operator<=(const this_type & right) const YATO_NOEXCEPT_KEYWORD
+        {
             return m_value <= right.m_value;
         }
 
-        constexpr bool operator>=(const this_type & right) const noexcept {
+        YATO_CONSTEXPR_FUNC bool operator>=(const this_type & right) const YATO_NOEXCEPT_KEYWORD
+        {
             return m_value >= right.m_value;
         }
     };

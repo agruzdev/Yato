@@ -3,8 +3,8 @@
 #include <yato/not_null.h>
 
 //Works for constexpr variables
-constexpr int y = 1;
-constexpr auto x1 = yato::not_null<const int*>(&y);
+YATO_CONSTEXPR_VAR int y = 1;
+YATO_CONSTEXPR_VAR auto x1 = yato::not_null<const int*>(&y);
 
 class A
 {   

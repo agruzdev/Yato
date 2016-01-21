@@ -30,6 +30,7 @@ TEST(Yato_Types, narrow_cast)
 #endif
 }
 
+#if defined(_MSC_VER) && (_MSC_VER >= 1900)
 TEST(Yato_Types, TestLiterals)
 {
     using namespace yato::literals;
@@ -58,3 +59,4 @@ namespace TestLiterals
     static_assert(std::is_same<yato::float32_t, decltype(0.0_f32)>::value, "Failed TestLiterals");
     static_assert(std::is_same<yato::float64_t, decltype(0.0_f64)>::value, "Failed TestLiterals");
 }
+#endif

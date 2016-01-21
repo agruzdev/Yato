@@ -26,11 +26,12 @@ namespace yato
     class not_null<T, typename std::enable_if< std::is_pointer<T>::value >::type >
     {    
         T m_pointer;
+
     public:
-        constexpr not_null(T ptr):
-            m_pointer(ptr) 
+        YATO_CONSTEXPR_FUNC 
+        not_null(T ptr)
+            : m_pointer(ptr) 
         {
-            
             if(ptr == nullptr){
                 throw std::runtime_error("not_null: null pointer exception!");
             }
@@ -38,31 +39,34 @@ namespace yato
         
         not_null(nullptr_t ptr) = delete;
         
-        constexpr operator T () const noexcept {
+        YATO_CONSTEXPR_FUNC 
+        operator T () const YATO_NOEXCEPT_KEYWORD
+        {
             return m_pointer;
         }
         
-        constexpr const auto get() const noexcept {
-            return m_pointer;
-        }
-
-        auto get() noexcept {
-            return m_pointer;
-        }
-        
-        constexpr const auto operator->() const noexcept {
-            return m_pointer;
-        }
-
-        auto operator->() noexcept {
+        YATO_CONSTEXPR_FUNC 
+        T get() const YATO_NOEXCEPT_KEYWORD
+        {
             return m_pointer;
         }
         
-        constexpr const auto & operator*() const noexcept {
+        YATO_CONSTEXPR_FUNC 
+        T operator->() const YATO_NOEXCEPT_KEYWORD
+        {
+            return m_pointer;
+        }
+        
+        YATO_CONSTEXPR_FUNC 
+        auto operator*() const YATO_NOEXCEPT_KEYWORD 
+            -> const decltype(*(std::declval<T>())) &
+        {
             return *m_pointer;
         }
 
-        auto & operator*() noexcept {
+        auto operator*() YATO_NOEXCEPT_KEYWORD
+            -> decltype(*(std::declval<T>())) &
+        {
             return *m_pointer;
         }
     };
@@ -72,10 +76,12 @@ namespace yato
     template<typename T>
     class not_null<T, typename std::enable_if< is_smart_ptr<T>::value >::type >
     {    
+        using element_type = typename T::element_type;
         const T & m_smart_pointer;
     public:
-        constexpr not_null(const T & ptr):
-            m_smart_pointer(ptr) 
+        YATO_CONSTEXPR_FUNC
+        not_null(const T & ptr) 
+            : m_smart_pointer(ptr) 
         {
             if(m_smart_pointer.get() == nullptr){
                 throw std::runtime_error("not_null: null pointer exception!");
@@ -84,31 +90,47 @@ namespace yato
 
         not_null(nullptr_t ptr) = delete;
         
-        operator T& () noexcept {
+        not_null(const not_null&) = delete;
+        not_null& operator=(const not_null&) = delete;
+
+        ~not_null()
+        { }
+
+        operator T& () YATO_NOEXCEPT_KEYWORD
+        {
             return m_smart_pointer;
         }
         
-        constexpr const auto get() const noexcept {
+        YATO_CONSTEXPR_FUNC
+        const element_type* get() const YATO_NOEXCEPT_KEYWORD
+        {
             return m_smart_pointer.get();
         }
 
-        auto get() noexcept {
+        element_type* get() YATO_NOEXCEPT_KEYWORD
+        {
             return m_smart_pointer.get();
         }
         
-        constexpr const auto operator->() const noexcept {
+        YATO_CONSTEXPR_FUNC
+        const element_type* operator->() const YATO_NOEXCEPT_KEYWORD
+        {
             return m_smart_pointer.operator->();
         }
 
-        auto operator->() noexcept {
+        element_type* operator->() YATO_NOEXCEPT_KEYWORD
+        {
             return m_smart_pointer.operator->();
         }
         
-        constexpr const auto& operator*() const noexcept {
+        YATO_CONSTEXPR_FUNC
+        const element_type & operator*() const YATO_NOEXCEPT_KEYWORD
+        {
             return *m_smart_pointer;
         }
 
-        auto & operator*() noexcept {
+        element_type & operator*() YATO_NOEXCEPT_KEYWORD
+        {
             return *m_smart_pointer;
         }
     };

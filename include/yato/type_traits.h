@@ -12,6 +12,7 @@
 #include <memory>
 #include <iterator>
 
+#include "prerequisites.h"
 
 namespace yato
 {
@@ -24,6 +25,13 @@ namespace yato
         using type = U;
     };
 
+
+    template <typename...>
+    struct test_param
+    {
+        using type = void;
+    };
+
     //----------------------------------------------------------
     // Smart pointer traits
     //
@@ -31,15 +39,13 @@ namespace yato
     {
         template<typename T, template<typename...> class SmartPtr, typename Enable = void>
         struct is_smart_ptr_impl 
-        {
-            static constexpr bool value = false;
-        };
+            : std::false_type
+        { };
 
         template<typename T, template<typename...> class SmartPtr>
         struct is_smart_ptr_impl<T, SmartPtr, typename std::enable_if< std::is_same<typename std::remove_cv<T>::type, SmartPtr< typename T::element_type> >::value >::type > 
-        {
-            static constexpr bool value = true;
-        };
+            : std::true_type
+        { };
     }
     
     /**
@@ -64,23 +70,28 @@ namespace yato
     template<typename T>
     struct is_smart_ptr 
     {
-        static constexpr bool value = is_shared_ptr<T>::value || is_unique_ptr<T>::value;
+        static YATO_CONSTEXPR_VAR bool value = is_shared_ptr<T>::value || is_unique_ptr<T>::value;
     };
     
     //----------------------------------------------------------
     // Iterators traits
     //
-    template<typename T, typename Enable = void>
+
+    template<class, class = void>
     struct is_iterator
-    {
-        static constexpr bool value = false;
-    };
-    
-    template<typename T>
-    struct is_iterator<T, typename enable<typename std::iterator_traits<T>::iterator_category>::type >
-    {
-        static constexpr bool value = true;
-    };  
+        : std::false_type
+    {};
+
+    template<class _Ty>
+    struct is_iterator<_Ty, typename test_param<
+        typename _Ty::iterator_category,
+        typename _Ty::value_type,
+        typename _Ty::difference_type,
+        typename _Ty::pointer,
+        typename _Ty::reference
+    >::type> 
+        : std::true_type
+    { };
 }
 
 #endif

@@ -48,6 +48,7 @@ TEST(Yato_Range, numeric_range_2)
     }
 }
 
+#if defined(_MSC_VER) && (_MSC_VER >= 1900)
 TEST(Yato_Range, numeric_range_3)
 {
     using namespace yato::literals;
@@ -56,3 +57,4 @@ TEST(Yato_Range, numeric_range_3)
         EXPECT_TRUE(x == i++);
     }
 }
+#endif
