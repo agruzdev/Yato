@@ -46,12 +46,23 @@ namespace yato
             : m_value(other.m_value)
         { }
 
-        numeric_iterator(numeric_iterator&&) noexcept = default;
+        numeric_iterator(numeric_iterator && other) noexcept
+            : m_value(std::move(other.m_value))
+        { } 
 
-        numeric_iterator& operator=(const numeric_iterator&) noexcept = default;
-        numeric_iterator& operator=(numeric_iterator&&) noexcept = default;
+        numeric_iterator& operator=(const numeric_iterator & other) noexcept
+        {
+            m_value = other.m_value;
+            return *this;
+        }
 
-        ~numeric_iterator() noexcept
+        numeric_iterator& operator=(numeric_iterator && other) noexcept
+        {
+            m_value = std::move(other.m_value);
+            return *this;
+        }
+
+        ~numeric_iterator() 
         { }
 
         constexpr reference_to_const operator*() const noexcept {
@@ -68,7 +79,7 @@ namespace yato
             return *this;
         }
 
-        this_type & operator++(int) {
+        this_type operator++(int) {
             YATO_ASSERT(m_value < std::numeric_limits<value_type>::max(), "yato::numeric_iterator is out of range");
             auto temp = *this;
             ++m_value;
@@ -81,7 +92,7 @@ namespace yato
             return *this;
         }
 
-        this_type & operator--(int) {
+        this_type operator--(int) {
             YATO_ASSERT(m_value > std::numeric_limits<value_type>::min(), "yato::numeric_iterator is out of range");
             auto temp = *this;
             --m_value;
