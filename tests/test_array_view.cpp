@@ -19,6 +19,7 @@ TEST(Yato_Array_View, array_view)
 
     int* p = nullptr;
     EXPECT_THROW(yato::array_view<int>(p, 100), yato::assertion_error);
+
 }
 
 TEST(Yato_Array_View, array_view_const)

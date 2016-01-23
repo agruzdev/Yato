@@ -15,6 +15,15 @@
 namespace yato
 {
 
+#pragma warning(push)
+/*  Disable unreachable code warning appearing due to additional code in ternary operator with throw
+ *	MSVC complains about type cast otherwise
+ */
+#pragma warning(disable:4702) 
+
+    /**
+     *	Non-owning light-weight container for contiguous data 
+     */
     template<typename _DataType>
     class array_view
     {
@@ -29,6 +38,22 @@ namespace yato
         YATO_CONSTEXPR_FUNC
         array_view(not_null<data_type*> ptr, size_t size) YATO_NOEXCEPT_KEYWORD
             : m_base_ptr(ptr.get()), m_size(size) 
+        { }
+
+        YATO_CONSTEXPR_FUNC
+        array_view(const array_view & other) YATO_NOEXCEPT_KEYWORD
+            : m_base_ptr(other.m_base_ptr), m_size(other.m_size)
+        { }
+
+        YATO_CONSTEXPR_FUNC
+        array_view(array_view && other) YATO_NOEXCEPT_KEYWORD
+            : m_base_ptr(other.m_base_ptr), m_size(other.m_size)
+        { }
+
+        array_view& operator=(const array_view & other) = delete;
+        array_view& operator=(array_view && other) = delete;
+
+        ~array_view()
         { }
         
         YATO_CONSTEXPR_FUNC
@@ -104,6 +129,7 @@ namespace yato
             return m_base_ptr + m_size;
         }
     };
+#pragma warning(pop)
 
     template<typename _T, size_t _Size>
     YATO_CONSTEXPR_FUNC
