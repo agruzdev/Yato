@@ -8,6 +8,7 @@
 #ifndef _YATO_NOT_NULL_
 #define _YATO_NOT_NULL_
 
+#include "assert.h"
 #include "type_traits.h"
 
 namespace yato
@@ -33,7 +34,7 @@ namespace yato
             : m_pointer(ptr) 
         {
             if(ptr == nullptr){
-                throw std::runtime_error("not_null: null pointer exception!");
+                throw yato::assertion_error("not_null: null pointer exception!");
             }
         }
         
@@ -84,7 +85,7 @@ namespace yato
             : m_smart_pointer(ptr) 
         {
             if(m_smart_pointer.get() == nullptr){
-                throw std::runtime_error("not_null: null pointer exception!");
+                throw yato::assertion_error("not_null: null pointer exception!");
             }
         }
 
