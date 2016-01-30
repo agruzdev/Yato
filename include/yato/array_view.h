@@ -11,9 +11,11 @@
 #include <array>
 #include <vector>
 #include <initializer_list>
+
 #include "assert.h"
 #include "not_null.h"
 #include "types.h"
+#include "range.h"
 
 namespace yato
 {
@@ -46,6 +48,27 @@ namespace yato
             YATO_CONSTEXPR_FUNC
             array_sub_view_nd(const data_iterator & data, const size_iterator & sizes, const size_iterator & offsets) YATO_NOEXCEPT_KEYWORD
                 : m_base_ptr(data), m_sizes_iter(sizes), m_offsets_iter(offsets)
+            { }
+
+            array_sub_view_nd(const array_sub_view_nd&) = default;
+
+            array_sub_view_nd(array_sub_view_nd && other) YATO_NOEXCEPT_KEYWORD
+                : m_base_ptr(std::move(other.m_base_ptr)), m_sizes_iter(std::move(other.m_sizes_iter)), m_offsets_iter(std::move(other.m_offsets_iter))
+            { }
+
+            array_sub_view_nd & operator= (const array_sub_view_nd&) = default;
+
+            array_sub_view_nd & operator= (array_sub_view_nd && other) YATO_NOEXCEPT_KEYWORD
+            {
+                if (this != &other) {
+                    m_base_ptr = std::move(other.m_base_ptr);
+                    m_sizes_iter = std::move(other.m_sizes_iter);
+                    m_offsets_iter = std::move(other.m_offsets_iter);
+                }
+                return *this;
+            }
+
+            ~array_sub_view_nd()
             { }
 
             template<size_t _Dims = dimensions_num>
@@ -138,6 +161,39 @@ namespace yato
             {
                 return *m_offsets_iter;
             }
+
+            YATO_CONSTEXPR_FUNC
+            const data_type* cbegin() const YATO_NOEXCEPT_KEYWORD
+            {
+                return m_base_ptr;
+            }
+
+            data_type* begin() YATO_NOEXCEPT_KEYWORD
+            {
+                return m_base_ptr;
+            }
+
+            YATO_CONSTEXPR_FUNC
+            const data_type* cend() const YATO_NOEXCEPT_KEYWORD
+            {
+                return m_base_ptr + size();
+            }
+
+            data_type* end() YATO_NOEXCEPT_KEYWORD
+            {
+                return m_base_ptr + size();
+            }
+
+            YATO_CONSTEXPR_FUNC
+            range<const data_type*> crange() const YATO_NOEXCEPT_KEYWORD
+            {
+                return make_range(cbegin(), cend());
+            }
+
+            range<data_type*> range() YATO_NOEXCEPT_KEYWORD
+            {
+                return make_range(begin(), end());
+            }
         };
 
     }
@@ -175,11 +231,37 @@ namespace yato
             }
         }
 
-        array_view_nd(const this_type &) = default;
-        array_view_nd(this_type &&) = default;
+        array_view_nd(const this_type &) YATO_NOEXCEPT_KEYWORD
+            : m_sizes(other.m_sizes),
+              m_sub_array_sizes(other.m_sub_array_sizes),
+              m_base_ptr(other.m_base_ptr)
+        { }
 
-        array_view_nd& operator=(const this_type &) = default;
-        array_view_nd& operator=(this_type &&) = default;
+        array_view_nd& operator=(const this_type &) YATO_NOEXCEPT_KEYWORD
+        {
+            if (this != &other) {
+                m_sizes = other.m_sizes;
+                m_sub_array_sizes = other.m_sub_array_sizes;
+                m_base_ptr = other.m_base_ptr;
+            }
+            return *this;
+        }
+
+        array_view_nd(this_type && other) YATO_NOEXCEPT_KEYWORD
+            : m_sizes(std::move(other.m_sizes)),
+              m_sub_array_sizes(std::move(other.m_sub_array_sizes)),
+              m_base_ptr(std::move(other.m_base_ptr))
+        { }
+
+        array_view_nd& operator=(this_type && other) YATO_NOEXCEPT_KEYWORD
+        {
+            if (this != &other) {
+                m_sizes = std::move(other.m_sizes);
+                m_sub_array_sizes = std::move(other.m_sub_array_sizes);
+                m_base_ptr = std::move(other.m_base_ptr);
+            }
+            return *this;
+        }
 
         ~array_view_nd()
         { }
@@ -219,13 +301,48 @@ namespace yato
         }
 
         YATO_CONSTEXPR_FUNC
-        size_t size() const
+        size_t size() const YATO_NOEXCEPT_KEYWORD
         {
             return m_sub_array_sizes[0];
         }
+
+        YATO_CONSTEXPR_FUNC
+        const data_type* cbegin() const YATO_NOEXCEPT_KEYWORD
+        {
+            return m_base_ptr;
+        }
+
+        data_type* begin() YATO_NOEXCEPT_KEYWORD
+        {
+            return m_base_ptr;
+        }
+
+        YATO_CONSTEXPR_FUNC
+        const data_type* cend() const YATO_NOEXCEPT_KEYWORD
+        {
+            return m_base_ptr + size();
+        }
+
+        data_type* end() YATO_NOEXCEPT_KEYWORD
+        {
+            return m_base_ptr + size();
+        }
+
+        YATO_CONSTEXPR_FUNC
+        range<const data_type*> crange() const YATO_NOEXCEPT_KEYWORD
+        {
+            return make_range(cbegin(), cend());
+        }
+
+        range<data_type*> range() YATO_NOEXCEPT_KEYWORD
+        {
+            return make_range(begin(), end());
+        }
     };
 
-
+    /**
+     *	More effective specialization of 1D array view
+     */
     template<typename _DataType>
     class array_view_nd<_DataType, 1>
     {
@@ -252,8 +369,23 @@ namespace yato
             : m_base_ptr(other.m_base_ptr), m_size(other.m_size)
         { }
 
-        array_view_nd& operator=(const array_view_nd & other) = delete;
-        array_view_nd& operator=(array_view_nd && other) = delete;
+        array_view_nd& operator=(const array_view_nd & other) YATO_NOEXCEPT_KEYWORD
+        {
+            if (this != &other) {
+                m_base_ptr = std::move(other.m_base_ptr);
+                m_size = std::move(other.m_size);
+            }
+            return *this;
+        }
+        
+        array_view_nd& operator=(array_view_nd && other) YATO_NOEXCEPT_KEYWORD
+        {
+            if (this != &other) {
+                m_base_ptr = other.m_base_ptr;
+                m_size = other.m_size;
+            }
+            return *this;
+        }
 
         ~array_view_nd()
         { }
@@ -329,6 +461,17 @@ namespace yato
         data_type * end() YATO_NOEXCEPT_KEYWORD
         {
             return m_base_ptr + m_size;
+        }
+
+        YATO_CONSTEXPR_FUNC
+        range<const data_type*> crange() const
+        {
+            return make_range(cbegin(), cend());
+        }
+
+        range<data_type*> range()
+        {
+            return make_range(begin(), end());
         }
     };
 #pragma warning(pop)

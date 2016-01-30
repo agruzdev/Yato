@@ -82,16 +82,24 @@ namespace yato
         : std::false_type
     {};
 
-    template<class _Ty>
-    struct is_iterator<_Ty, typename test_param<
-        typename _Ty::iterator_category,
-        typename _Ty::value_type,
-        typename _Ty::difference_type,
-        typename _Ty::pointer,
-        typename _Ty::reference
+    template<class _T>
+    struct is_iterator<_T, typename test_param<
+        typename _T::iterator_category,
+        typename _T::value_type,
+        typename _T::difference_type,
+        typename _T::pointer,
+        typename _T::reference
     >::type> 
         : std::true_type
     { };
+
+    template<class _T>
+    struct is_iterator <_T, typename std::enable_if<
+        std::is_pointer<typename std::remove_const<_T>::type>::value>::type
+    > 
+        : std::true_type
+    { };
+
 }
 
 #endif

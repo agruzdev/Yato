@@ -20,6 +20,10 @@ TEST(Yato_ArrayView, array_view)
     int* p = nullptr;
     EXPECT_THROW(yato::array_view<int>(p, 100), yato::assertion_error);
 
+    int j = 1;
+    for (auto x : view.crange()){ 
+        EXPECT_TRUE(x == j++);
+    }
 }
 
 TEST(Yato_ArrayView, array_view_const)
@@ -182,5 +186,43 @@ TEST(Yato_ArrayView, array_view_nd_3)
                 EXPECT_TRUE(arr_3d[i][j][k] == view.at(i, j, k));
             }
         }
+    }
+}
+
+TEST(Yato_ArrayView, array_view_nd_4)
+{
+    int arr[2][2];
+
+    auto view = yato::make_view(arr);
+
+    std::fill(view.begin(), view.end(), 1);
+    EXPECT_TRUE(arr[0][0] == 1);
+    EXPECT_TRUE(arr[0][1] == 1);
+    EXPECT_TRUE(arr[1][0] == 1);
+    EXPECT_TRUE(arr[1][1] == 1);
+
+
+    int arr_3d_1[3][2][2] = {
+        { { 1, 1 },{ 1, 1 } },
+        { { 0, 0 },{ 0, 0 } },
+        { { 3, 3 },{ 3, 3 } }
+    };
+    const int arr_3d_2[3][2][2] = {
+        { { 1, 1 },{ 1, 1 } },
+        { { 2, 2 },{ 2, 2 } },
+        { { 3, 3 },{ 3, 3 } }
+    };
+    auto view_3d_1 = yato::make_view(arr_3d_1);
+    auto view_3d_2 = yato::make_view(arr_3d_2);
+
+    for (auto & x : view_3d_1[1].range()) {
+        x = 2;
+    }
+    
+    auto it1  = view_3d_1.begin();
+    auto it2  = view_3d_2.cbegin();
+    auto end2 = view_3d_2.cend();
+    while(it2 != end2) {
+        EXPECT_TRUE(*it1++ == *it2++);
     }
 }
