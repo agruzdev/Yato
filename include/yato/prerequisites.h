@@ -30,7 +30,15 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 #error "Unknown architecture!"
 #endif
 
-#if defined(_MSC_VER) && (_MSC_VER >= 1900)
+#if defined(_MSC_VER) && (_MSC_VER == 1800)
+#define YATO_MSVC_2013 
+#endif
+
+#if defined(_MSC_VER) && (_MSC_VER == 1900)
+#define YATO_MSVC_2015 
+#endif
+
+#ifdef YATO_MSVC_2015
 #define YATO_CONSTEXPR_VAR constexpr
 #define YATO_CONSTEXPR_FUNC constexpr
 #define YATO_NOEXCEPT_KEYWORD noexcept
