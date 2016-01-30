@@ -388,11 +388,9 @@ namespace yato
              *  The order of elements is same like for native array T[][]..[]
              */
             YATO_CONSTEXPR_FUNC 
-            const data_type* data() const //YATO_NOEXCEPT_KEYWORD
+            const data_type* data() const YATO_NOEXCEPT_KEYWORD
             {
-                //ToDo: fix it later
-                static_assert(!std::is_same<data_type, bool>::value, "data() can't be used of bool");
-                return &m_plain_array[0];
+                return m_plain_array.data();
             }
 
             /**
@@ -400,11 +398,9 @@ namespace yato
              *  Points to valid continuous storage with all elements
              *  The order of elements is same like for native array T[][]..[]
              */
-            data_type* data() //YATO_NOEXCEPT_KEYWORD 
+            data_type* data() YATO_NOEXCEPT_KEYWORD 
             {
-                //ToDo: fix it later
-                static_assert(!std::is_same<data_type, bool>::value, "data() can't be used of bool");
-                return &m_plain_array[0];
+                return m_plain_array.data();
             }
 
 
