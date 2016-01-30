@@ -13,44 +13,47 @@
 namespace yato
 {
     /**
-     *    An immutable object aggregating two iterators
+     *  Immutable object aggregating two iterators
      *  Helps to express a range of one container
      */
-    template<typename IteratorType>
+    template<typename _IteratorType>
     class range
     {
-        static_assert(is_iterator<IteratorType>::value, "yato::range can be used only for iterators");
+        using iterator_type = _IteratorType;
+        static_assert(is_iterator<iterator_type>::value, "yato::range can be used only for iterators");
 
-        const IteratorType m_begin;
-        const IteratorType m_end;
+        using difference_type = typename std::iterator_traits<iterator_type>::difference_type;
+
+        const iterator_type m_begin;
+        const iterator_type m_end;
     public:
         YATO_CONSTEXPR_FUNC 
-        range(const IteratorType & begin, const IteratorType & end) YATO_NOEXCEPT_KEYWORD
+        range(const iterator_type & begin, const iterator_type & end) YATO_NOEXCEPT_KEYWORD
             : m_begin(begin), m_end(end)
         { }
 
         YATO_CONSTEXPR_FUNC 
-        range(IteratorType && begin, IteratorType && end) YATO_NOEXCEPT_KEYWORD
+        range(iterator_type && begin, iterator_type && end) YATO_NOEXCEPT_KEYWORD
             : m_begin(std::move(begin)), m_end(std::move(end))
         { }
 
         YATO_CONSTEXPR_FUNC 
-        range(const range<IteratorType>& other) YATO_NOEXCEPT_KEYWORD
+        range(const range<iterator_type>& other) YATO_NOEXCEPT_KEYWORD
             : m_begin(other._begin), m_end(other._end)
         { }
 
-        range(range<IteratorType> && other) YATO_NOEXCEPT_KEYWORD
+        range(range<iterator_type> && other) YATO_NOEXCEPT_KEYWORD
             : m_begin(std::move(other.m_begin)), m_end(std::move(other.m_end))
         { }
 
-        range<IteratorType>& operator=(const range<IteratorType> & other) YATO_NOEXCEPT_KEYWORD
+        range<iterator_type>& operator=(const range<iterator_type> & other) YATO_NOEXCEPT_KEYWORD
         {
             m_begin = other.m_begin;
             m_end = other.m_end;
             return *this;
         }
 
-        range<IteratorType>& operator=(range<IteratorType> && other) YATO_NOEXCEPT_KEYWORD
+        range<iterator_type>& operator=(range<iterator_type> && other) YATO_NOEXCEPT_KEYWORD
         {
             m_begin = std::move(other.m_begin);
             m_end = std::move(other.m_end);
@@ -61,19 +64,19 @@ namespace yato
         { }
 
         YATO_CONSTEXPR_FUNC 
-        const IteratorType & begin() const YATO_NOEXCEPT_KEYWORD 
+        const iterator_type & begin() const YATO_NOEXCEPT_KEYWORD
         {
             return m_begin;
         }
 
         YATO_CONSTEXPR_FUNC 
-        const IteratorType & end() const YATO_NOEXCEPT_KEYWORD
+        const iterator_type & end() const YATO_NOEXCEPT_KEYWORD
         {
             return m_end;
         }
 
         YATO_CONSTEXPR_FUNC 
-        typename IteratorType::difference_type size() const
+        difference_type distance() const
         {
             return std::distance(m_begin, m_end);
         }
@@ -85,27 +88,27 @@ namespace yato
         }
 
         YATO_CONSTEXPR_FUNC 
-        const IteratorType & head() const YATO_NOEXCEPT_KEYWORD
+        const iterator_type & head() const YATO_NOEXCEPT_KEYWORD
         {
             return m_begin;
         }
 
         YATO_CONSTEXPR_FUNC 
-        range<IteratorType> tail() const
+        range<iterator_type> tail() const
         {
-            return range<IteratorType>(std::next(m_begin), m_end);
+            return range<iterator_type>(std::next(m_begin), m_end);
         }
     };
 
     /**
     *    Helper functions to make range from a couple of iterators with auto type deduction 
     */
-    template<typename IteratorType>
+    template<typename _IteratorType>
     YATO_CONSTEXPR_FUNC 
-    typename std::enable_if< is_iterator< typename std::decay<IteratorType>::type >::value, range< typename std::decay<IteratorType>::type > >::type
-        make_range(IteratorType && begin, IteratorType && end)
+    typename std::enable_if< is_iterator< typename std::decay<_IteratorType>::type >::value, range< typename std::decay<_IteratorType>::type > >::type
+        make_range(_IteratorType && begin, _IteratorType && end)
     {
-        return range<typename std::decay<IteratorType>::type>(std::forward<IteratorType>(begin), std::forward<IteratorType>(end));
+        return range<typename std::decay<_IteratorType>::type>(std::forward<_IteratorType>(begin), std::forward<_IteratorType>(end));
     }
 
     /**

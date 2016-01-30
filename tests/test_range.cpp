@@ -14,7 +14,7 @@ TEST(Yato_Range, range)
     auto vecRange = yato::range<std::vector<int>::iterator>(vec.begin(), vec.end());
     EXPECT_TRUE(vec.begin() == vecRange.begin());
     EXPECT_TRUE(vec.end() == vecRange.end());
-    EXPECT_TRUE(vecRange.size() == 10);
+    EXPECT_TRUE(vecRange.distance() == 10);
     EXPECT_FALSE(vecRange.empty());
     EXPECT_TRUE(0 == *(vecRange.head()));
     EXPECT_TRUE(1 == *(vecRange.tail().head()));
