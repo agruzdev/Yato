@@ -21,7 +21,7 @@ TEST(Yato_Array_Nd, array_nd)
 #if YATO_DEBUG
     EXPECT_THROW(array_2d[3], yato::assertion_error);
 #endif
-    auto&& p = array_2d[1];
+    const auto & p = array_2d[1];
     EXPECT_NO_THROW(p[0] = 1);
 #if YATO_DEBUG
     EXPECT_THROW(p[4] = 0, yato::assertion_error);
@@ -59,30 +59,10 @@ TEST(Yato_Array_Nd, array_nd_2)
 };
 
 
-TEST(Yato_Array_Nd, array_nd_on_heap)
-{
-    yato::vector_nd<float, 2> vec_2;
-    EXPECT_NO_THROW(vec_2[0] = 1);
-    EXPECT_NO_THROW(vec_2[1] = 2);
-#if YATO_DEBUG
-    EXPECT_THROW(vec_2[2] = 3, yato::assertion_error);
-#endif
-
-    yato::vector_nd<int, 2, 3> vec_2x3;
-    EXPECT_NO_THROW(vec_2x3[0][2] = 1);
-    EXPECT_NO_THROW(vec_2x3[1][0] = 2);
-#if YATO_DEBUG
-    EXPECT_THROW(vec_2x3[1][3] = 3, yato::assertion_error);
-#endif
-};
-
 TEST(Yato_Array_Nd, array_nd_bool)
 {
     yato::array_nd<bool, 16> arr;
     arr[3] = true;
-
-    yato::vector_nd<bool, 16> vec;
-    vec[4] = true;
 
     EXPECT_TRUE(true);
 };
@@ -118,7 +98,7 @@ TEST(Yato_Array_Nd, array_nd_iterator_2)
 
 TEST(Yato_Array_Nd, array_nd_copy)
 {
-    constexpr size_t N = 4;
+    YATO_CONSTEXPR_VAR size_t N = 4;
     yato::array_nd<uint8_t, N, N, N> gt;
     yato::array_nd<uint8_t, N, N, N> arr;
    
@@ -128,7 +108,7 @@ TEST(Yato_Array_Nd, array_nd_copy)
         *arrIt = val;
     }
 
-    auto copy{ arr };
+    auto copy = arr;
     for (auto copyIt = copy.begin(), arrIt = arr.begin(); copyIt != copy.end(); ++copyIt, ++arrIt) {
         EXPECT_TRUE(*copyIt == *arrIt);
     }
@@ -150,9 +130,9 @@ TEST(Yato_Array_Nd, array_nd_copy)
 
 TEST(Yato_Array_Nd, array_nd_dimensions)
 {
-    constexpr size_t L = 16, M = 5, N = 10;
-    yato::array_nd<uint8_t,  L, M, N> arr;
-    yato::vector_nd<uint8_t, N, M, L> vec;
+    YATO_CONSTEXPR_VAR size_t L = 16, M = 5, N = 10;
+    yato::array_nd<uint8_t, L, M, N> arr;
+    yato::array_nd<uint8_t, N, M, L> vec;
     
     EXPECT_TRUE(arr.size<0>() == L);
     EXPECT_TRUE(arr.size<1>() == M);
@@ -187,10 +167,8 @@ TEST(Yato_Array_Nd, array_nd_at)
 
 TEST(Yato_Array_Nd, array_nd_fill)
 {
-    using namespace yato::literals;
-
     yato::array_nd<yato::uint16_t, 4, 4, 4> arr;
-    arr.fill(1_u8);
+    arr.fill(static_cast<uint8_t>(1));
     for (int x : arr) {
         EXPECT_TRUE(x == 1);
     }
