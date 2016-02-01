@@ -100,6 +100,34 @@ namespace yato
         : std::true_type
     { };
 
+
+    //-------------------------------------------------------
+    //
+
+    template<typename _T1, typename _T2, typename... _T>
+    struct is_same
+    {
+        static YATO_CONSTEXPR_VAR bool value = std::is_same<_T1, _T2>::value && yato::is_same<_T2, _T...>::value;
+    };
+
+    template<typename _T1, typename _T2>
+    struct is_same<_T1, _T2>
+    {
+        static YATO_CONSTEXPR_VAR bool value = std::is_same<_T1, _T2>::value;
+    };
+
+
+    template<template <typename> class _Trait, typename _T1, typename... _T>
+    struct has_trait
+    {
+        static YATO_CONSTEXPR_VAR bool value = _Trait<_T1>::value && has_trait<_Trait, _T...>::value;
+    };
+
+    template<template <typename> class _Trait, typename _T>
+    struct has_trait<_Trait, _T>
+    {
+        static YATO_CONSTEXPR_VAR bool value = _Trait<_T>::value;
+    };
 }
 
 #endif

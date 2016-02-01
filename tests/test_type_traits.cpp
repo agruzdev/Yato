@@ -41,3 +41,25 @@ TEST(Yato_TypeTraits, numeric_iterator)
     EXPECT_TRUE(yato::is_iterator<yato::numeric_iterator<int>>::value);
     EXPECT_TRUE(yato::is_iterator<yato::numeric_iterator<size_t>>::value);
 }
+
+TEST(Yato_TypeTraits, is_same)
+{
+    class Foo {};
+    class Bar : public Foo {};
+
+    EXPECT_TRUE((yato::is_same<int, int>::value));
+    EXPECT_TRUE((yato::is_same<short, short>::value));
+    EXPECT_TRUE((yato::is_same<Foo, Foo, Foo, Foo, Foo, Foo, Foo>::value));
+    EXPECT_FALSE((yato::is_same<int, float>::value));
+    EXPECT_FALSE((yato::is_same<Foo, Bar>::value));
+    EXPECT_FALSE((yato::is_same<Foo, const Foo>::value));
+}
+
+TEST(Yato_TypeTraits, has_trait)
+{
+    class Foo {};
+
+    EXPECT_TRUE((yato::has_trait< std::is_integral, int >::value));
+    EXPECT_TRUE((yato::has_trait< std::is_integral, int, long, short, bool >::value));
+    EXPECT_FALSE((yato::has_trait< std::is_integral, int, long, Foo, bool >::value));
+}
