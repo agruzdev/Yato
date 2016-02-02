@@ -89,8 +89,8 @@ namespace yato
                _init_subsizes();
             }
 
-            template<size_t _Depth>
-            auto _init_values(const initilizer_type<_Depth> & init_list, iterator & iter) YATO_NOEXCEPT_KEYWORD
+            template<size_t _Depth, typename _Iter>
+            auto _init_values(const initilizer_type<_Depth> & init_list, _Iter & iter) YATO_NOEXCEPT_KEYWORD
                 -> typename std::enable_if<(_Depth > 1), void>::type
             {
                 for (const auto & init_sub_list : init_list) {
@@ -98,8 +98,8 @@ namespace yato
                 }
             }
 
-            template<size_t _Depth>
-            auto _init_values(const initilizer_type<_Depth> & init_list, iterator & iter) YATO_NOEXCEPT_KEYWORD
+            template<size_t _Depth, typename _Iter>
+            auto _init_values(const initilizer_type<_Depth> & init_list, _Iter & iter) YATO_NOEXCEPT_KEYWORD
                 -> typename std::enable_if<(_Depth == 1), void>::type
             {
                 for (const auto & value : init_list) {
@@ -158,8 +158,8 @@ namespace yato
             {
                 _init_sizes<dimensions_num>(init_list);
                 if (m_sub_sizes[0] > 0) {
-                    m_plain_vector.resize(m_sub_sizes[0]);
-                    auto iter = m_plain_vector.begin();
+                    m_plain_vector.reserve(m_sub_sizes[0]);
+                    auto iter = std::back_inserter(m_plain_vector);
                     _init_values<dimensions_num>(init_list, iter);
                 }
             }
