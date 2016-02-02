@@ -21,11 +21,11 @@ void bar(yato::not_null<const A*> p){
     EXPECT_TRUE(1 == p->x);
 }
 
-void baz(yato::not_null< std::shared_ptr<float> > p){
+void baz(const yato::not_null< std::shared_ptr<float> > & p){
     EXPECT_TRUE(2.0f == *p);
 }
 
-void zoo(yato::not_null< std::unique_ptr<float> > p){
+void zoo(const yato::not_null< std::unique_ptr<float> > & p){
     EXPECT_TRUE(6.0f == *p);
 }
 
@@ -48,12 +48,4 @@ TEST(Yato_NotNull, Test1)
     zoo(std::make_unique<float>(6.0f));
     auto u = std::make_unique<float>(6.0f);
     zoo(u);
-}
-
-
-
-TEST(Yato_NotNull, Test2)
-{
-    yato::not_null< std::unique_ptr<int> > p1 = std::make_unique<int>(1);
-    (void)p1;
 }

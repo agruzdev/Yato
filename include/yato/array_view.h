@@ -19,13 +19,13 @@
 
 namespace yato
 {
-
-#pragma warning(push)
+#ifdef YATO_MSVC
 /*  Disable unreachable code warning appearing due to additional code in ternary operator with throw
  *	MSVC complains about type cast otherwise
  */
+#pragma warning(push)
 #pragma warning(disable:4702) 
-
+#endif
     namespace details
     {
         
@@ -231,13 +231,13 @@ namespace yato
             }
         }
 
-        array_view_nd(const this_type &) YATO_NOEXCEPT_KEYWORD
+        array_view_nd(const this_type & other) YATO_NOEXCEPT_KEYWORD
             : m_sizes(other.m_sizes),
               m_sub_array_sizes(other.m_sub_array_sizes),
               m_base_ptr(other.m_base_ptr)
         { }
 
-        array_view_nd& operator=(const this_type &) YATO_NOEXCEPT_KEYWORD
+        array_view_nd& operator=(const this_type & other) YATO_NOEXCEPT_KEYWORD
         {
             if (this != &other) {
                 m_sizes = other.m_sizes;
@@ -474,8 +474,9 @@ namespace yato
             return make_range(begin(), end());
         }
     };
+#ifdef YATO_MSVC
 #pragma warning(pop)
-
+#endif
     template<typename _DataType>
     using array_view = array_view_nd<_DataType, 1>;
 
