@@ -12,6 +12,8 @@
 #include <vector>
 #include "assert.h"
 #include "type_traits.h"
+#include "array_view.h"
+#include "range.h"
 
 namespace yato
 {
@@ -38,6 +40,9 @@ namespace yato
         class vector_nd_impl
         {
         public:
+            /*
+             * Public traits of the multidimensional vector	
+             */
             using my_type = vector_nd_impl<_DataType, _DimensionsNum, _Allocator>;
             using data_type = _DataType;
             using allocator_type = _Allocator;
@@ -47,6 +52,7 @@ namespace yato
 
             static YATO_CONSTEXPR_VAR size_t dimensions_num = _DimensionsNum;
             static_assert(dimensions_num > 1, "Implementation for dimensions number larger than 1");
+            //-------------------------------------------------------
 
         private:
             using sizes_array = std::array<size_t, dimensions_num>;
@@ -55,9 +61,13 @@ namespace yato
             template<size_t _Dims>
             using initilizer_type = typename initilizer_list_nd<data_type, _Dims>::type;
 
+            using proxy = details::sub_array_proxy<data_type, typename sizes_array::const_iterator, dimensions_num - 1>;
+            using const_proxy = details::sub_array_proxy<const data_type, typename sizes_array::const_iterator, dimensions_num - 1>;
+
             sizes_array m_dimensions;
             sizes_array m_sub_sizes;
             container_type m_plain_vector;
+            //-------------------------------------------------------
 
             void _init_subsizes() YATO_NOEXCEPT_KEYWORD
             {
@@ -67,9 +77,11 @@ namespace yato
                 }
             }
 
-            void _init_sizes(const std::initializer_list<size_t> & sizes) YATO_NOEXCEPT_KEYWORD
+            template<typename _RangeType>
+            void _init_sizes(_RangeType range) YATO_NOEXCEPT_IN_RELEASE
             {
-                std::copy(sizes.begin(), sizes.end(), m_dimensions.begin());
+                YATO_REQUIRES(range.distance() == dimensions_num);
+                std::copy(range.begin(), range.end(), m_dimensions.begin());
                 _init_subsizes();
             }
 
@@ -106,6 +118,7 @@ namespace yato
                     *iter++ = value;
                 }
             }
+            //-------------------------------------------------------
 
         public:
             /**
@@ -133,7 +146,7 @@ namespace yato
                 if (sizes.size() != dimensions_num) {
                     throw yato::assertion_error("Constructor takes the amount of arguments equal to dimensions number");
                 }
-                _init_sizes(sizes);
+                _init_sizes(yato::make_range(sizes.begin(), sizes.end()));
                 m_plain_vector.resize(m_sub_sizes[0]);
             }
 
@@ -146,7 +159,7 @@ namespace yato
                 if (sizes.size() != dimensions_num) {
                     throw yato::assertion_error("Constructor takes the amount of arguments equal to dimensions number");
                 }
-                _init_sizes(sizes);
+                _init_sizes(yato::make_range(sizes.begin(), sizes.end()));
                 m_plain_vector.resize(m_sub_sizes[0], value);
             }
 
@@ -162,6 +175,34 @@ namespace yato
                     auto iter = std::back_inserter(m_plain_vector);
                     _init_values<dimensions_num>(init_list, iter);
                 }
+            }
+
+            /**
+             *	Create with sizes from a generic range without initialization
+             */
+            template<typename _IteratorType>
+            vector_nd_impl(const yato::range<_IteratorType> & range, const allocator_type & alloc = allocator_type())
+                : m_plain_vector(alloc)
+            {
+                if (range.distance() != dimensions_num) {
+                    throw yato::assertion_error("Constructor takes the amount of arguments equal to dimensions number");
+                }
+                _init_sizes(range);
+                m_plain_vector.resize(m_sub_sizes[0]);
+            }
+
+            /**
+            *	Create with sizes from a generic range without initialization
+            */
+            template<typename _IteratorType>
+            vector_nd_impl(const yato::range<_IteratorType> & range, const data_type & value, const allocator_type & alloc = allocator_type())
+                : m_plain_vector(alloc)
+            {
+                if (range.distance() != dimensions_num) {
+                    throw yato::assertion_error("Constructor takes the amount of arguments equal to dimensions number");
+                }
+                _init_sizes(range);
+                m_plain_vector.resize(m_sub_sizes[0], value);
             }
 
             /**
@@ -227,6 +268,52 @@ namespace yato
                 swap(m_sub_sizes, other.m_sub_sizes);
                 swap(m_plain_vector, other.m_plain_vector);
             }
+#ifdef YATO_MSVC
+            /*  Disable unreachable code warning appearing due to additional code in ternary operator with throw
+            *	MSVC complains about type cast otherwise
+            */
+#pragma warning(push)
+#pragma warning(disable:4702) 
+#endif
+            /**
+             *	Element access without bounds check in release
+             */
+            YATO_CONSTEXPR_FUNC
+            const_proxy operator[](size_t idx) const YATO_NOEXCEPT_IN_RELEASE
+            {
+#if YATO_DEBUG
+                return (idx < m_dimensions[0]) 
+                    ? const_proxy{ &m_plain_vector[0] + idx * m_sub_sizes[1], std::next(std::begin(m_dimensions)), std::next(std::begin(m_sub_sizes)) }
+                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), const_proxy{ &m_plain_vector[0], std::begin(m_dimensions), std::begin(m_sub_sizes) });
+#else
+                return const_proxy{ &m_plain_vector[0] + idx * m_sub_sizes[1], std::next(std::begin(m_dimensions)), std::next(std::begin(m_sub_sizes)) };
+#endif
+            }
+            /**
+             *	Element access without bounds check in release
+             */
+            proxy operator[](size_t idx) YATO_NOEXCEPT_IN_RELEASE
+            {
+#if YATO_DEBUG
+                return (idx < m_dimensions[0])
+                    ? proxy{ &m_plain_vector[0] + idx * m_sub_sizes[1], std::next(std::begin(m_dimensions)), std::next(std::begin(m_sub_sizes)) }
+                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), proxy{ &m_plain_vector[0], std::begin(m_dimensions), std::begin(m_sub_sizes) });
+#else
+                return proxy{ &m_plain_vector[0] + idx * m_sub_sizes[1], std::next(std::begin(m_dimensions)), std::next(std::begin(m_sub_sizes)) };
+#endif
+            }
+#ifdef YATO_MSVC
+#pragma warning(pop)
+#endif
+            
+            //template<typename... _Tail> 
+            //YATO_CONSTEXPR_FUNC
+            //auto at(size_t idx, _Tail... && tail)
+            //    -> typename std::enable_if<(sizeof...(_Tail) == dimensions_num - 1), const 
+            //{
+            //
+            //}
+
         };
 
         template<typename _DataType, size_t _DimensionsNum, typename _Allocator>

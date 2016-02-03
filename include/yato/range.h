@@ -38,8 +38,8 @@ namespace yato
         { }
 
         YATO_CONSTEXPR_FUNC 
-        range(const range<iterator_type>& other) YATO_NOEXCEPT_KEYWORD
-            : m_begin(other._begin), m_end(other._end)
+        range(const range<iterator_type> & other) YATO_NOEXCEPT_KEYWORD
+            : m_begin(other.begin()), m_end(other.end())
         { }
 
         range(range<iterator_type> && other) YATO_NOEXCEPT_KEYWORD

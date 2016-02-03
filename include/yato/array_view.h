@@ -29,36 +29,36 @@ namespace yato
     namespace details
     {
         
-        template<typename _SizeIterator, typename _DataType, size_t _DimsNum>
-        struct array_sub_view_nd
+        template<typename _DataType, typename _SizeIterator, size_t _DimsNum>
+        struct sub_array_proxy
         {
             using size_iterator = _SizeIterator;
             using data_type = _DataType;
-            using data_iterator = data_type*;
+            using data_ponter = data_type*;
 
             static YATO_CONSTEXPR_VAR size_t dimensions_num = _DimsNum;
 
-            using sub_view = array_sub_view_nd<size_iterator, data_type, dimensions_num - 1>;
+            using sub_view = sub_array_proxy<data_type, size_iterator, dimensions_num - 1>;
 
-            data_iterator m_base_ptr;
+            data_ponter   m_base_ptr;
             size_iterator m_sizes_iter;
             size_iterator m_offsets_iter;
 
         public:
             YATO_CONSTEXPR_FUNC
-            array_sub_view_nd(const data_iterator & data, const size_iterator & sizes, const size_iterator & offsets) YATO_NOEXCEPT_KEYWORD
+            sub_array_proxy(const data_ponter & data, const size_iterator & sizes, const size_iterator & offsets) YATO_NOEXCEPT_KEYWORD
                 : m_base_ptr(data), m_sizes_iter(sizes), m_offsets_iter(offsets)
             { }
 
-            array_sub_view_nd(const array_sub_view_nd&) = default;
+            sub_array_proxy(const sub_array_proxy&) = default;
 
-            array_sub_view_nd(array_sub_view_nd && other) YATO_NOEXCEPT_KEYWORD
+            sub_array_proxy(sub_array_proxy && other) YATO_NOEXCEPT_KEYWORD
                 : m_base_ptr(std::move(other.m_base_ptr)), m_sizes_iter(std::move(other.m_sizes_iter)), m_offsets_iter(std::move(other.m_offsets_iter))
             { }
 
-            array_sub_view_nd & operator= (const array_sub_view_nd&) = default;
+            sub_array_proxy & operator= (const sub_array_proxy&) = default;
 
-            array_sub_view_nd & operator= (array_sub_view_nd && other) YATO_NOEXCEPT_KEYWORD
+            sub_array_proxy & operator= (sub_array_proxy && other) YATO_NOEXCEPT_KEYWORD
             {
                 if (this != &other) {
                     m_base_ptr = std::move(other.m_base_ptr);
@@ -68,7 +68,7 @@ namespace yato
                 return *this;
             }
 
-            ~array_sub_view_nd()
+            ~sub_array_proxy()
             { }
 
             template<size_t _Dims = dimensions_num>
@@ -212,7 +212,7 @@ namespace yato
 
     private:
         using sizes_array = std::array<size_t, dimensions_num>;
-        using sub_view = details::array_sub_view_nd<typename sizes_array::const_iterator, data_type, dimensions_num - 1>;
+        using sub_view = details::sub_array_proxy<data_type, typename sizes_array::const_iterator, dimensions_num - 1>;
 
         const sizes_array m_sizes;
         /*const*/ sizes_array m_sub_array_sizes; // my size, sub array size, sub sub array size, etc

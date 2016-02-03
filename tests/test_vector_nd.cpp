@@ -1,6 +1,8 @@
 #include "gtest/gtest.h"
 
 #include <memory>
+#include <algorithm>
+#include <numeric>
 #include <initializer_list>
 #include <yato/vector_nd.h>
 
@@ -24,6 +26,12 @@ TEST(Yato_VectorND, ctor)
         yato::vector_nd<int, 2> vec6 = { };
 
         yato::vector_nd<A, 2> vec7 = { { A(1) } };
+
+        std::vector<int> sizes;
+        sizes.push_back(1);
+        sizes.push_back(5);
+        sizes.push_back(2);
+        const yato::vector_nd<int, 3> vec8(yato::make_range(sizes.cbegin(), sizes.cend()), 1);
     }
     catch (...)
     {
@@ -33,3 +41,31 @@ TEST(Yato_VectorND, ctor)
 }
 
 
+
+TEST(Yato_VectorND, access)
+{
+    yato::vector_nd<int, 2> vec1 = { {1, 2}, {3, 4} };
+    EXPECT_TRUE(vec1[0][0] == 1);
+    EXPECT_TRUE(vec1[0][1] == 2);
+    EXPECT_TRUE(vec1[1][0] == 3);
+    EXPECT_TRUE(vec1[1][1] == 4);
+}
+
+TEST(Yato_VectorND, access_1)
+{
+    std::array<uint8_t, 3> dims;
+    std::generate(dims.begin(), dims.end(), []() { return static_cast<uint8_t>(std::rand() % 101); });
+
+    float val = (std::rand() % 1000) / 10.0f;
+    yato::vector_nd<float, 3> vec_nd(yato::make_range(dims.begin(), dims.end()), val);
+
+    for (size_t i = 0; i < dims[0]; ++i) {
+        for (size_t j = 0; j < dims[1]; ++j) {
+            for (size_t k = 0; k < dims[2]; ++k) {
+                float x;
+                EXPECT_NO_THROW(x = vec_nd[i][j][k]);
+                EXPECT_EQ(val, x);
+            }
+        }
+    }
+}
