@@ -97,7 +97,7 @@ namespace yato
 
     namespace literals
     {
-#if defined(_MSC_VER) && (_MSC_VER >= 1900)
+#if defined(YATO_MSVC_2015) || (__cplusplus >= 201400L)
         YATO_CONSTEXPR_FUNC int8_t operator"" _s8(unsigned long long number) YATO_NOEXCEPT_IN_RELEASE
         {
             return narrow_cast<int8_t>(number);

@@ -30,7 +30,7 @@ TEST(Yato_Types, narrow_cast)
 #endif
 }
 
-#if defined(_MSC_VER) && (_MSC_VER >= 1900)
+#if defined(YATO_MSVC_2015) || (__cplusplus >= 201400L)
 TEST(Yato_Types, TestLiterals)
 {
     using namespace yato::literals;
