@@ -158,11 +158,7 @@ namespace yato
             vector_nd_impl(const std::initializer_list<size_t> & sizes, const data_type & value, const allocator_type & alloc = allocator_type())
                 : m_plain_vector(alloc)
             {
-                if (sizes.size() != dimensions_num) {
-                    throw yato::assertion_error("Constructor takes the amount of arguments equal to dimensions number");
-                }
-                _init_sizes(yato::make_range(sizes.begin(), sizes.end()));
-                m_plain_vector.resize(m_sub_sizes[0], value);
+                assign(sizes, value);
             }
 
             /**
@@ -261,6 +257,26 @@ namespace yato
             { }
 
             /**
+             *  Replaces the contents of the container
+             */
+            void assign(const std::initializer_list<size_t> & sizes, const data_type & value)
+            {
+                if (sizes.size() != dimensions_num) {
+                    throw yato::assertion_error("Assign takes the amount of arguments equal to dimensions number");
+                }
+                _init_sizes(yato::make_range(sizes.begin(), sizes.end()));
+                m_plain_vector.resize(m_sub_sizes[0], value);
+            }
+
+            /**
+             *  Returns the allocator associated with the container
+             */
+            allocator_type get_allocator() const YATO_NOEXCEPT_KEYWORD
+            {
+                return m_plain_vector.get_allocator();
+            }
+
+            /**
              *	Save swap
              */
             void swap(my_type & other) YATO_NOEXCEPT_KEYWORD
@@ -334,6 +350,65 @@ namespace yato
                 return (*this)[idx].at(std::forward<_Tail>(tail)...);
             }
 
+            /**
+             *  Iterator for accessing elements trough all dimensions
+             */
+            YATO_CONSTEXPR_FUNC
+            const_iterator cbegin() const YATO_NOEXCEPT_KEYWORD
+            {
+                return m_plain_vector.cbegin();
+            }
+
+            /**
+             *  Iterator for accessing elements trough all dimensions
+             */
+            iterator begin() YATO_NOEXCEPT_KEYWORD
+            {
+                return m_plain_vector.begin();
+            }
+
+            /**
+             *  Iterator for accessing elements trough all dimensions
+             */
+            YATO_CONSTEXPR_FUNC
+            const_iterator cend() const YATO_NOEXCEPT_KEYWORD
+            {
+                return m_plain_vector.cend();
+            }
+
+            /**
+             *  Iterator for accessing elements trough all dimensions
+             */
+            iterator end() YATO_NOEXCEPT_KEYWORD
+            {
+                return m_plain_vector.end();
+            }
+
+            /**
+             *  Range for accessing elements trough all dimensions
+             */
+            YATO_CONSTEXPR_FUNC
+            yato::range<const_iterator> crange() const YATO_NOEXCEPT_KEYWORD
+            {
+                return yato::make_range(cbegin(), cend());
+            }
+
+            /**
+             *  Range for accessing elements trough all dimensions
+             */
+            yato::range<iterator> range() YATO_NOEXCEPT_KEYWORD
+            {
+                return yato::make_range(begin(), end());
+            }
+
+            /**
+             *  Checks whether the vector is empty 
+             */
+            YATO_CONSTEXPR_FUNC
+            bool empty() const YATO_NOEXCEPT_KEYWORD
+            {
+                return (m_sub_sizes[0] == 0);
+            }
         };
 
         template<typename _DataType, size_t _DimensionsNum, typename _Allocator>

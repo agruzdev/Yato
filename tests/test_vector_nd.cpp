@@ -17,7 +17,9 @@ TEST(Yato_VectorND, ctor)
 
     try {
         yato::vector_nd<int, 3> vec0{};
+        EXPECT_TRUE(vec0.empty());
         yato::vector_nd<int, 2> vec1({ 2, 3 });
+        EXPECT_FALSE(vec1.empty());
         yato::vector_nd<int, 1> vec2({ 5 }, 1);
         yato::vector_nd<float, 3> vec3({ 2, 3, 3 }, 11.0f);
 
@@ -32,6 +34,9 @@ TEST(Yato_VectorND, ctor)
         sizes.push_back(5);
         sizes.push_back(2);
         const yato::vector_nd<int, 3> vec8(yato::make_range(sizes.cbegin(), sizes.cend()), 1);
+
+        yato::vector_nd<float, 3> vec9({ 2, 0, 3 }, 1.0f);
+        EXPECT_TRUE(vec9.empty());
     }
     catch (...)
     {
@@ -101,5 +106,23 @@ TEST(Yato_VectorND, operator_at_1)
                 EXPECT_EQ(val, x);
             }
         }
+    }
+}
+
+TEST(Yato_VectorND, assign)
+{
+    yato::vector_nd<int, 3> vec = {};
+    
+    EXPECT_TRUE(vec.empty());
+    for (const int & x : yato::make_range(vec)) {
+        (void)x;
+        EXPECT_TRUE(false);
+    }
+
+    vec.assign({ 2, 2, 2 }, 1);
+    
+    EXPECT_FALSE(vec.empty());
+    for (const int & x : yato::make_range(vec)) {
+        EXPECT_EQ(1, x);
     }
 }
