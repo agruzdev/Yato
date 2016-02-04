@@ -69,3 +69,37 @@ TEST(Yato_VectorND, access_1)
         }
     }
 }
+
+TEST(Yato_VectorND, operator_at)
+{
+    yato::vector_nd<int, 2> vec1 = { { 1, 2 },{ 3, 4 } };
+    EXPECT_TRUE(vec1.at(0, 0) == 1);
+    EXPECT_TRUE(vec1.at(0, 1) == 2);
+    EXPECT_TRUE(vec1.at(1, 0) == 3);
+    EXPECT_TRUE(vec1.at(1, 1) == 4);
+    
+    EXPECT_THROW(vec1.at(0, 3), yato::assertion_error);
+    EXPECT_THROW(vec1.at(3, 1), yato::assertion_error);
+    EXPECT_THROW(vec1.at(1, 2), yato::assertion_error);
+    EXPECT_THROW(vec1.at(2, 1), yato::assertion_error);
+}
+
+TEST(Yato_VectorND, operator_at_1)
+{
+    std::array<uint8_t, 3> dims;
+    std::generate(dims.begin(), dims.end(), []() { return static_cast<uint8_t>(std::rand() % 51); });
+
+    float val = (std::rand() % 1000) / 10.0f;
+    yato::vector_nd<float, 3> vec_nd(yato::make_range(dims.begin(), dims.end()), val);
+
+    for (size_t i = 0; i < dims[0]; ++i) {
+        for (size_t j = 0; j < dims[1]; ++j) {
+            for (size_t k = 0; k < dims[2]; ++k) {
+                float x;
+                EXPECT_NO_THROW(x = vec_nd.at(i, j, k));
+                EXPECT_THROW(vec_nd.at(dims[0] + i, dims[1] + j, dims[2] + k), yato::assertion_error);
+                EXPECT_EQ(val, x);
+            }
+        }
+    }
+}

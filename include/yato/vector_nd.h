@@ -49,6 +49,8 @@ namespace yato
             using container_type = std::vector<data_type, allocator_type>;
             using iterator = typename container_type::iterator;
             using const_iterator = typename container_type::const_iterator;
+            using reference = decltype(*std::declval<iterator>());
+            using const_reference = decltype(*std::declval<const_iterator>());
 
             static YATO_CONSTEXPR_VAR size_t dimensions_num = _DimensionsNum;
             static_assert(dimensions_num > 1, "Implementation for dimensions number larger than 1");
@@ -276,7 +278,7 @@ namespace yato
 #pragma warning(disable:4702) 
 #endif
             /**
-             *	Element access without bounds check in release
+             *  Element access without bounds check in release
              */
             YATO_CONSTEXPR_FUNC
             const_proxy operator[](size_t idx) const YATO_NOEXCEPT_IN_RELEASE
@@ -290,7 +292,7 @@ namespace yato
 #endif
             }
             /**
-             *	Element access without bounds check in release
+             *  Element access without bounds check in release
              */
             proxy operator[](size_t idx) YATO_NOEXCEPT_IN_RELEASE
             {
@@ -305,14 +307,32 @@ namespace yato
 #ifdef YATO_MSVC
 #pragma warning(pop)
 #endif
-            
-            //template<typename... _Tail> 
-            //YATO_CONSTEXPR_FUNC
-            //auto at(size_t idx, _Tail... && tail)
-            //    -> typename std::enable_if<(sizeof...(_Tail) == dimensions_num - 1), const 
-            //{
-            //
-            //}
+            /**
+             *  Element access with bounds check
+             */
+            template<typename... _Tail> 
+            YATO_CONSTEXPR_FUNC
+            auto at(size_t idx, _Tail &&... tail) const
+                -> typename std::enable_if<(sizeof...(_Tail) == dimensions_num - 1), const_reference>::type
+            {
+                if (idx >= m_dimensions[0]) {
+                    throw yato::assertion_error("yato::array_nd: out of range!");
+                }
+                return (*this)[idx].at(std::forward<_Tail>(tail)...);
+            }
+
+            /**
+             *  Element access with bounds check
+             */
+            template<typename... _Tail>
+            auto at(size_t idx, _Tail &&... tail)
+                -> typename std::enable_if<(sizeof...(_Tail) == dimensions_num - 1), reference>::type
+            {
+                if (idx >= m_dimensions[0]) {
+                    throw yato::assertion_error("yato::array_nd: out of range!");
+                }
+                return (*this)[idx].at(std::forward<_Tail>(tail)...);
+            }
 
         };
 
