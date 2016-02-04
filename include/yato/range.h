@@ -122,6 +122,9 @@ namespace yato
         return make_range(numeric_iterator<typename std::decay<_T>::type>(std::forward<_T>(left)), numeric_iterator<typename std::decay<_T>::type>(std::forward<_T>(right)));
     }
 
+    /**
+     *    Helper functions to make numeric ranges (e.g. for ranged for-loops)
+     */
     template <typename _T>
     YATO_CONSTEXPR_FUNC
     typename std::enable_if < std::is_unsigned<typename std::decay<_T>::type>::value, range<numeric_iterator<typename std::decay<_T>::type>> >::type
@@ -130,6 +133,27 @@ namespace yato
         return make_range(static_cast<typename std::decay<_T>::type>(0), std::forward<_T>(right));
     }
 
+    /**
+     *  Generic version. Trying to call method range
+     */
+    template <typename _T>
+    YATO_CONSTEXPR_FUNC
+    auto make_range(_T && object)
+        -> typename std::enable_if<std::is_class<typename std::decay<_T>::type>::value, decltype(object.range())>::type
+    {
+        return object.range();
+    }
+
+    /**
+     *  Generic version. Trying to call method range
+     */
+    template <typename _T>
+    YATO_CONSTEXPR_FUNC
+    auto make_range(const _T & object)
+        -> typename std::enable_if<std::is_class<typename std::decay<_T>::type>::value, decltype(object.crange())>::type
+    {
+        return object.crange();
+    }
 }
 
 #endif

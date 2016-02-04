@@ -48,7 +48,7 @@ TEST(Yato_Range, numeric_range_2)
     }
 }
 
-#if defined(_MSC_VER) && (_MSC_VER >= 1900)
+#if defined(YATO_MSVC_2015) || (__cplusplus >= 201400L)
 TEST(Yato_Range, numeric_range_3)
 {
     using namespace yato::literals;
@@ -58,3 +58,42 @@ TEST(Yato_Range, numeric_range_3)
     }
 }
 #endif
+
+TEST(Yato_Range, make_range_2)
+{
+    class A
+    {
+        std::vector<int> * m_data;
+    public:
+        A(std::vector<int> * data)
+            : m_data(data)
+        { }
+
+        yato::range<typename std::vector<int>::iterator> range()
+        {
+            return yato::make_range(m_data->begin(), m_data->end());
+        }
+
+        yato::range<typename std::vector<int>::const_iterator> crange() const 
+        {
+            return yato::make_range(m_data->cbegin(), m_data->cend());
+        }
+    };
+
+    std::vector<int> vec;
+    vec.assign(std::rand() % 100, std::rand() % 100);
+
+    A a = A(&vec);
+    auto r = yato::make_range<A&>(a);
+
+    auto it = vec.begin();
+    for (int & x : yato::make_range(a)) {
+        EXPECT_TRUE(x == *it++);
+    }
+
+    const A& c_a = a;
+    it = vec.begin();
+    for (const int & x : yato::make_range(c_a)) {
+        EXPECT_TRUE(x == *it++);
+    }
+}
