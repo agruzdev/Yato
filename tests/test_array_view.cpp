@@ -41,7 +41,7 @@ TEST(Yato_ArrayView, array_view_const)
 
 TEST(Yato_ArrayView, make_view)
 {
-    int arr_1[10] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };;
+    int arr_1[10] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     auto view_1 = yato::make_view(arr_1);
     EXPECT_TRUE(view_1.size() == 10);
     for (int i = 0; i < 10; ++i) {

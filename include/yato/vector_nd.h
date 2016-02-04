@@ -61,8 +61,8 @@ namespace yato
             template<size_t _Dims>
             using initilizer_type = typename initilizer_list_nd<data_type, _Dims>::type;
 
-            using proxy = details::sub_array_proxy<data_type, typename sizes_array::const_iterator, dimensions_num - 1>;
-            using const_proxy = details::sub_array_proxy<const data_type, typename sizes_array::const_iterator, dimensions_num - 1>;
+            using proxy = details::sub_array_proxy<iterator, typename sizes_array::const_iterator, dimensions_num - 1>;
+            using const_proxy = details::sub_array_proxy<const_iterator, typename sizes_array::const_iterator, dimensions_num - 1>;
 
             sizes_array m_dimensions;
             sizes_array m_sub_sizes;
@@ -283,10 +283,10 @@ namespace yato
             {
 #if YATO_DEBUG
                 return (idx < m_dimensions[0]) 
-                    ? const_proxy{ &m_plain_vector[0] + idx * m_sub_sizes[1], std::next(std::begin(m_dimensions)), std::next(std::begin(m_sub_sizes)) }
-                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), const_proxy{ &m_plain_vector[0], std::begin(m_dimensions), std::begin(m_sub_sizes) });
+                    ? const_proxy{ std::next(m_plain_vector.cbegin(), idx * m_sub_sizes[1]), std::next(std::begin(m_dimensions)), std::next(std::begin(m_sub_sizes)) }
+                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), const_proxy{ m_plain_vector.cbegin(), std::begin(m_dimensions), std::begin(m_sub_sizes) });
 #else
-                return const_proxy{ &m_plain_vector[0] + idx * m_sub_sizes[1], std::next(std::begin(m_dimensions)), std::next(std::begin(m_sub_sizes)) };
+                return const_proxy{ std::next(m_plain_vector.cbegin(), idx * m_sub_sizes[1]), std::next(std::begin(m_dimensions)), std::next(std::begin(m_sub_sizes)) };
 #endif
             }
             /**
@@ -296,10 +296,10 @@ namespace yato
             {
 #if YATO_DEBUG
                 return (idx < m_dimensions[0])
-                    ? proxy{ &m_plain_vector[0] + idx * m_sub_sizes[1], std::next(std::begin(m_dimensions)), std::next(std::begin(m_sub_sizes)) }
-                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), proxy{ &m_plain_vector[0], std::begin(m_dimensions), std::begin(m_sub_sizes) });
+                    ? proxy{ std::next(m_plain_vector.begin(), idx * m_sub_sizes[1]), std::next(std::begin(m_dimensions)), std::next(std::begin(m_sub_sizes)) }
+                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), proxy{ m_plain_vector.begin(), std::begin(m_dimensions), std::begin(m_sub_sizes) });
 #else
-                return proxy{ &m_plain_vector[0] + idx * m_sub_sizes[1], std::next(std::begin(m_dimensions)), std::next(std::begin(m_sub_sizes)) };
+                return proxy{ std::next(m_plain_vector.begin(), idx * m_sub_sizes[1]), std::next(std::begin(m_dimensions)), std::next(std::begin(m_sub_sizes)) };
 #endif
             }
 #ifdef YATO_MSVC
