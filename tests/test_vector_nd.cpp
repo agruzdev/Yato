@@ -203,3 +203,5 @@ TEST(Yato_VectorND, push_pop)
     vec3d.pop_back();
     EXPECT_TRUE(vec3d.empty());
 }
+
+

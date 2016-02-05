@@ -122,21 +122,27 @@ namespace yato
                 }
             }
 
-            template<typename _SizeIterator>
-            yato::range<iterator> _prepare_push_back(const yato::range<_SizeIterator> & sub_dims, size_t insert_size)
+            void _update_top_dimension(size_t new_size) YATO_NOEXCEPT_KEYWORD
             {
-                if (!empty()) {
+                m_dimensions[0] = new_size;
+                m_sub_sizes[0] = m_sub_sizes[1] * new_size;
+            }
+
+            template<typename _SizeIterator>
+            yato::range<iterator> _prepare_push_back(const yato::range<_SizeIterator> & sub_dims)
+            {
+                const size_t old_size = m_plain_vector.size();
+                if (old_size > 0) {
                     if (!std::equal(std::next(m_dimensions.cbegin()), m_dimensions.cend(), sub_dims.begin(), sub_dims.end())) {
                         YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[push_back]: Cannot push subvector with a different shape");
                     }
                 }
                 else {
                     std::copy(sub_dims.begin(), sub_dims.end(), std::next(m_dimensions.begin()));
+                    _init_subsizes();
                 }
-                const size_t old_size = m_plain_vector.size();
-                m_plain_vector.resize(old_size + insert_size);
-                ++m_dimensions[0];
-                _init_subsizes();
+                _update_top_dimension(m_dimensions[0] + 1);
+                m_plain_vector.resize(m_sub_sizes[0]);
                 return yato::make_range(std::next(m_plain_vector.begin(), old_size), m_plain_vector.end());
             }
 
@@ -506,6 +512,41 @@ namespace yato
             }
 
             /**
+             *  Returns the number of elements that the container has currently allocated space for
+             */
+            YATO_CONSTEXPR_FUNC
+            size_t capacity() const YATO_NOEXCEPT_KEYWORD
+            {
+                return m_plain_vector.capacity();
+            }
+
+            /**
+             *  Increase the capacity of the container to a value that's greater or equal to new_capacity
+             */
+            void reserve(size_t new_capacity)
+            {
+                m_plain_vector.reserve(new_capacity);
+            }
+
+            /**
+             *  Requests the removal of unused capacity
+             */
+            void shrink_to_fit()
+            {
+                m_plain_vector.shrink_to_fit();
+            }
+
+            /**
+             *  Resize vector length along the top dimension
+             *  @param length desired length in number of sub-vectors
+             */
+            void resize(size_t length)
+            {
+                _update_top_dimension(length);
+                m_plain_vector.resize(m_sub_sizes[0]);
+            }
+
+            /**
              *  Get the first sub-vector proxy
              */
             YATO_CONSTEXPR_FUNC
@@ -557,7 +598,7 @@ namespace yato
             template<typename _OtherDataType, typename _OtherAllocator>
             void push_back(const vector_nd_impl<_OtherDataType, dimensions_num - 1, _OtherAllocator> & sub_vector)
             {
-                auto insert_range = _prepare_push_back(sub_vector.dimensions_range(), sub_vector.size());
+                auto insert_range = _prepare_push_back(sub_vector.dimensions_range());
                 std::copy(sub_vector.cbegin(), sub_vector.cend(), insert_range.begin());
             }
 
@@ -567,7 +608,7 @@ namespace yato
             template<typename _OtherDataType, typename _OtherAllocator>
             void push_back(vector_nd_impl<_OtherDataType, dimensions_num - 1, _OtherAllocator> && sub_vector)
             {
-                auto insert_range = _prepare_push_back(sub_vector.dimensions_range(), sub_vector.size());
+                auto insert_range = _prepare_push_back(sub_vector.dimensions_range());
                 std::move(sub_vector.cbegin(), sub_vector.cend(), std::next(m_plain_vector.begin(), insert_range.begin()));
             }
 
@@ -579,10 +620,10 @@ namespace yato
                 if (empty()) {
                     YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[pop_back]: vector is already empty!");
                 }
-                --m_dimensions[0];
-                _init_subsizes();
+                _update_top_dimension(m_dimensions[0] - 1);
                 m_plain_vector.resize(m_sub_sizes[0]);
             }
+
         };
 
         template<typename _DataType, size_t _DimensionsNum, typename _Allocator>
