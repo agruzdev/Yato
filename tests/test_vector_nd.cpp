@@ -153,3 +153,53 @@ TEST(Yato_VectorND, assign)
         EXPECT_EQ(1, x);
     }
 }
+
+
+TEST(Yato_VectorND, copy_proxy)
+{
+    yato::vector_nd<int, 3> vec5 = { { { 1, 1 },{ 1, 2 },{ 1, 3 } },{ { 2, 4 },{ 2, 5 },{ 2, 6 } } };
+
+    yato::vector_nd<long, 2> copy1 = {};
+    copy1 = vec5[1];
+    EXPECT_EQ(2, copy1[0][0]);
+    EXPECT_EQ(4, copy1[0][1]);
+    EXPECT_EQ(2, copy1[1][0]);
+    EXPECT_EQ(5, copy1[1][1]);
+    EXPECT_EQ(2, copy1[2][0]);
+    EXPECT_EQ(6, copy1[2][1]);
+
+}
+
+TEST(Yato_VectorND, push_pop)
+{
+    yato::vector_nd<int, 2>  vec2d = { {1, 2}, {3, 4} };
+    yato::vector_nd<long, 3> vec3d = {};
+
+    vec3d.push_back(vec2d);
+    EXPECT_EQ(1, vec3d.dim_size(0));
+    EXPECT_EQ(2, vec3d.dim_size(1));
+    EXPECT_EQ(2, vec3d.dim_size(2));
+
+    vec3d.push_back(vec2d);
+    EXPECT_EQ(2, vec3d.dim_size(0));
+    EXPECT_EQ(2, vec3d.dim_size(1));
+    EXPECT_EQ(2, vec3d.dim_size(2));
+
+    vec3d.push_back(vec2d);
+    EXPECT_EQ(3, vec3d.dim_size(0));
+    EXPECT_EQ(2, vec3d.dim_size(1));
+    EXPECT_EQ(2, vec3d.dim_size(2));
+
+    vec3d.pop_back();
+    EXPECT_EQ(2, vec3d.dim_size(0));
+    EXPECT_EQ(2, vec3d.dim_size(1));
+    EXPECT_EQ(2, vec3d.dim_size(2));
+    
+    vec3d.pop_back();
+    EXPECT_EQ(1, vec3d.dim_size(0));
+    EXPECT_EQ(2, vec3d.dim_size(1));
+    EXPECT_EQ(2, vec3d.dim_size(2));
+
+    vec3d.pop_back();
+    EXPECT_TRUE(vec3d.empty());
+}

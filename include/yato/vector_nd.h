@@ -59,6 +59,7 @@ namespace yato
         private:
             using sizes_array = std::array<size_t, dimensions_num>;
             using size_iterator = typename sizes_array::iterator;
+            using size_const_iterator = typename sizes_array::const_iterator;
 
             template<size_t _Dims>
             using initilizer_type = typename initilizer_list_nd<data_type, _Dims>::type;
@@ -120,6 +121,25 @@ namespace yato
                     *iter++ = value;
                 }
             }
+
+            template<typename _SizeIterator>
+            yato::range<iterator> _prepare_push_back(const yato::range<_SizeIterator> & sub_dims, size_t insert_size)
+            {
+                if (!empty()) {
+                    if (!std::equal(std::next(m_dimensions.cbegin()), m_dimensions.cend(), sub_dims.begin(), sub_dims.end())) {
+                        YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[push_back]: Cannot push subvector with a different shape");
+                    }
+                }
+                else {
+                    std::copy(sub_dims.begin(), sub_dims.end(), std::next(m_dimensions.begin()));
+                }
+                const size_t old_size = m_plain_vector.size();
+                m_plain_vector.resize(old_size + insert_size);
+                ++m_dimensions[0];
+                _init_subsizes();
+                return yato::make_range(std::next(m_plain_vector.begin(), old_size), m_plain_vector.end());
+            }
+
             //-------------------------------------------------------
 
         public:
@@ -238,7 +258,7 @@ namespace yato
             }
 
             /**
-             *	Move assign
+             *  Move assign
              */
             my_type & operator= (my_type && other) YATO_NOEXCEPT_KEYWORD
             {
@@ -251,7 +271,31 @@ namespace yato
             }
 
             /**
-             *	Destructor
+             *  Copy from proxy
+             */
+            template<typename _DataIterator, typename _SizeIterator>
+            explicit
+            vector_nd_impl(const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_num> & other)
+            {
+                _init_sizes(other.dimensions_range());
+                m_plain_vector.resize(m_sub_sizes[0]);
+                std::copy(other.cbegin(), other.cend(), begin());
+            }
+
+            /**
+             *  Assign from proxy
+             */
+            template<typename _DataIterator, typename _SizeIterator>
+            my_type & operator= (const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_num> & other)
+            {
+                _init_sizes(other.dimensions_range());
+                m_plain_vector.resize(m_sub_sizes[0]);
+                std::copy(other.cbegin(), other.cend(), begin());
+                return *this;
+            }
+
+            /**
+             *  Destructor
              */
             ~vector_nd_impl()
             { }
@@ -419,6 +463,15 @@ namespace yato
                 return dimensions_num;
             }
 
+            /**
+             *  Get number of dimensions
+             */
+            auto dimensions_range() const
+                -> yato::range<size_const_iterator>
+            {
+                return yato::range<size_const_iterator>(m_dimensions.cbegin(), m_dimensions.cend());
+            }
+
 #ifdef YATO_MSVC
             /*  Disable unreachable code warning appearing due to additional code in ternary operator with throw
             *	MSVC complains about type cast otherwise
@@ -452,6 +505,84 @@ namespace yato
                 return m_sub_sizes[0];
             }
 
+            /**
+             *  Get the first sub-vector proxy
+             */
+            YATO_CONSTEXPR_FUNC
+            const_proxy front() const
+            {
+                if (m_dimensions[0] == 0) {
+                    YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[front]: vector is empty");
+                }
+                return (*this)[0];
+            }
+
+            /**
+             *  Get the first sub-vector proxy
+             */
+            proxy front()
+            {
+                if (m_dimensions[0] == 0) {
+                    YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[front]: vector is empty");
+                }
+                return (*this)[0];
+            }
+
+            /**
+             *  Get the last sub-vector proxy
+             */
+            YATO_CONSTEXPR_FUNC
+            const_proxy back() const
+            {
+                if (m_dimensions[0] == 0) {
+                    YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[back]: vector is empty");
+                }
+                return (*this)[m_dimensions[0] - 1];
+            }
+
+            /**
+             *  Get the last sub-vector proxy
+             */
+            proxy back()
+            {
+                if (m_dimensions[0] == 0) {
+                    YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[back]: vector is empty");
+                }
+                return (*this)[m_dimensions[0] - 1];
+            }
+
+            /**
+             *  Add sub-vector element to the back
+             */
+            template<typename _OtherDataType, typename _OtherAllocator>
+            void push_back(const vector_nd_impl<_OtherDataType, dimensions_num - 1, _OtherAllocator> & sub_vector)
+            {
+                auto insert_range = _prepare_push_back(sub_vector.dimensions_range(), sub_vector.size());
+                std::copy(sub_vector.cbegin(), sub_vector.cend(), insert_range.begin());
+            }
+
+            /**
+             *  Add sub-vector element to the back
+             */
+            template<typename _OtherDataType, typename _OtherAllocator>
+            void push_back(vector_nd_impl<_OtherDataType, dimensions_num - 1, _OtherAllocator> && sub_vector)
+            {
+                auto insert_range = _prepare_push_back(sub_vector.dimensions_range(), sub_vector.size());
+                std::move(sub_vector.cbegin(), sub_vector.cend(), std::next(m_plain_vector.begin(), insert_range.begin()));
+            }
+
+            /**
+             *  Removes the last element of the container.
+             */
+            void pop_back()
+            {
+                if (empty()) {
+                    YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[pop_back]: vector is already empty!");
+                }
+                --m_dimensions[0];
+                _init_subsizes();
+                m_plain_vector.resize(m_sub_sizes[0]);
+            }
         };
 
         template<typename _DataType, size_t _DimensionsNum, typename _Allocator>

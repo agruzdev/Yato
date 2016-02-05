@@ -165,6 +165,15 @@ namespace yato
             {
                 return dimensions_num;
             }
+
+            /**
+             *  Get number of dimensions
+             */  
+            auto dimensions_range() const
+                -> yato::range<typename std::add_const<size_iterator>::type>
+            {
+                return yato::range<typename std::add_const<size_iterator>::type>(m_sizes_iter, std::next(m_sizes_iter, dimensions_num));
+            }
 #ifdef YATO_MSVC
             /*  Disable unreachable code warning appearing due to additional code in ternary operator with throw
             *	MSVC complains about type cast otherwise
