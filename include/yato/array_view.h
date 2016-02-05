@@ -157,8 +157,43 @@ namespace yato
                 return *(m_data_iter + idx);
             }
 
+            /**
+             *  Get number of dimensions
+             */
             YATO_CONSTEXPR_FUNC
-            size_t size() const
+            size_t dimensions() const YATO_NOEXCEPT_KEYWORD
+            {
+                return dimensions_num;
+            }
+#ifdef YATO_MSVC
+            /*  Disable unreachable code warning appearing due to additional code in ternary operator with throw
+            *	MSVC complains about type cast otherwise
+            */
+#pragma warning(push)
+#pragma warning(disable:4702) 
+#endif
+            /**
+             *  Get size along one dimension
+             */
+            YATO_CONSTEXPR_FUNC
+            size_t dim_size(size_t idx) const YATO_NOEXCEPT_IN_RELEASE
+            {
+#if YATO_DEBUG
+                return (idx < dimensions_num)
+                    ? *(std::next(m_sizes_iter, idx))
+                    : (YATO_THROW_ASSERT_EXCEPT("yato::sub_array_proxy[dim_size]: Dimension index is out of range"), 0);
+#else
+                return *(std::next(m_sizes_iter, idx));
+#endif
+            }
+#ifdef YATO_MSVC
+#pragma warning(pop)
+#endif
+            /**
+             *  Get total size of multidimensional proxy
+             */
+            YATO_CONSTEXPR_FUNC
+            size_t size() const YATO_NOEXCEPT_KEYWORD
             {
                 return *m_offsets_iter;
             }

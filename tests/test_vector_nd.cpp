@@ -7,7 +7,7 @@
 #include <yato/vector_nd.h>
 
 
-TEST(Yato_VectorND, ctor)
+TEST(Yato_VectorND, common)
 {
     class A {
         int m_val;
@@ -18,8 +18,19 @@ TEST(Yato_VectorND, ctor)
     try {
         yato::vector_nd<int, 3> vec0{};
         EXPECT_TRUE(vec0.empty());
+        EXPECT_EQ(3, vec0.dimensions());
+        EXPECT_EQ(0, vec0.dim_size(0));
+        EXPECT_EQ(0, vec0.dim_size(1));
+        EXPECT_EQ(0, vec0.dim_size(2));
+        EXPECT_EQ(0, vec0.size());
+
         yato::vector_nd<int, 2> vec1({ 2, 3 });
         EXPECT_FALSE(vec1.empty());
+        EXPECT_EQ(2, vec1.dimensions());
+        EXPECT_EQ(2, vec1.dim_size(0));
+        EXPECT_EQ(3, vec1.dim_size(1));
+        EXPECT_EQ(6, vec1.size());
+
         yato::vector_nd<int, 1> vec2({ 5 }, 1);
         yato::vector_nd<float, 3> vec3({ 2, 3, 3 }, 11.0f);
 
@@ -74,6 +85,22 @@ TEST(Yato_VectorND, access_1)
         }
     }
 }
+
+TEST(Yato_VectorND, access_2)
+{
+    yato::vector_nd<int, 3> vec5 = { { { 1, 1 },{ 1, 2 },{ 1, 3 } },{ { 2, 4 },{ 2, 5 },{ 2, 6 } } };
+    EXPECT_EQ(2, vec5[0].dimensions());
+    EXPECT_EQ(3, vec5[0].dim_size(0));
+    EXPECT_EQ(2, vec5[0].dim_size(1));
+    EXPECT_EQ(6, vec5[0].size());
+
+    auto vec0 = yato::vector_nd<int, 3>({ 2, 0, 2 }, 1);
+    EXPECT_EQ(3, vec0.dimensions());
+    EXPECT_EQ(2, vec0[0].dimensions());
+    EXPECT_EQ(0, vec0.size());
+    EXPECT_EQ(0, vec0[0].size());
+}
+
 
 TEST(Yato_VectorND, operator_at)
 {
