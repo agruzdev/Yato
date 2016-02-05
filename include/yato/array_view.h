@@ -170,9 +170,9 @@ namespace yato
              *  Get number of dimensions
              */  
             auto dimensions_range() const
-                -> yato::range<typename std::add_const<size_iterator>::type>
+                -> yato::range<size_iterator>
             {
-                return yato::range<typename std::add_const<size_iterator>::type>(m_sizes_iter, std::next(m_sizes_iter, dimensions_num));
+                return yato::range<size_iterator>(m_sizes_iter, std::next(m_sizes_iter, dimensions_num));
             }
 #ifdef YATO_MSVC
             /*  Disable unreachable code warning appearing due to additional code in ternary operator with throw
