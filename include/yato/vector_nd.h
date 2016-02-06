@@ -739,6 +739,21 @@ namespace yato
             }
 
             /**
+             *  Create from std::vector
+             */
+            template<typename _VecDataType, typename _VecAllocator>
+            vector_nd_impl(const std::vector<_VecDataType, _VecAllocator> & vector)
+                : m_plain_vector(vector)
+            { }
+
+            /**
+            *  Create from std::vector
+            */
+            vector_nd_impl(std::vector<data_type, allocator_type> && vector)
+                : m_plain_vector(std::move(vector))
+            { }
+
+            /**
              *  Copy constructor
              */
             vector_nd_impl(const my_type & other)
@@ -775,6 +790,25 @@ namespace yato
             }
 
             /**
+             *  Assign from std::vector
+             */
+            template<typename _VecDataType, typename _VecAllocator>
+            my_type & operator= (const std::vector<_VecDataType, _VecAllocator> & vector)
+            {
+                m_plain_vector = vector;
+                return *this;
+            }
+
+            /**
+             *  Assign from std::vector
+             */
+            my_type & operator= (std::vector<data_type, allocator_type> && vector)
+            {
+                m_plain_vector = std::move(vector);
+                return *this;
+            }
+
+            /**
              *  Copy from proxy
              */
             template<typename _DataIterator, typename _SizeIterator>
@@ -801,6 +835,22 @@ namespace yato
              */
             ~vector_nd_impl()
             {}
+
+            /**
+             *  Convert to std::vector
+             */
+            operator std::vector<data_type, allocator_type> & () &
+            {
+                return m_plain_vector;
+            }
+
+            /**
+             *  Convert to std::vector
+             */
+            operator std::vector<data_type, allocator_type> && () &&
+            {
+                return std::move(m_plain_vector);
+            }
 
             /**
              *  Replaces the contents of the container
@@ -975,6 +1025,7 @@ namespace yato
                     ? m_plain_vector.size()
                     : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[dim_size]: dimension index is out of range"), 0);
 #else
+                (void)idx;
                 return m_plain_vector.size();
 #endif
             }

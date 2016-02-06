@@ -219,3 +219,38 @@ TEST(Yato_VectorND, push_pop)
 }
 
 
+TEST(Yato_VectorND, vec_1D)
+{
+    std::vector<int> std_vec1 = { 1, 2, 3 };
+    std::vector<int> std_vec2 = { 4, 5, 6 };
+
+    yato::vector_nd<int, 1> vec1 = std_vec1;
+    EXPECT_EQ(3, vec1.size());
+    EXPECT_EQ(1, vec1[0]);
+    EXPECT_EQ(2, vec1[1]);
+    EXPECT_EQ(3, vec1[2]);
+
+    yato::vector_nd<int, 1> vec2 = std::move(std_vec2);
+    EXPECT_EQ(3, vec2.size());
+    EXPECT_EQ(4, vec2[0]);
+    EXPECT_EQ(5, vec2[1]);
+    EXPECT_EQ(6, vec2[2]);
+
+    vec1 = std::move(vec2);
+    EXPECT_EQ(3, vec1.size());
+    EXPECT_EQ(4, vec1[0]);
+    EXPECT_EQ(5, vec1[1]);
+    EXPECT_EQ(6, vec1[2]);
+
+    std_vec1 = vec1;
+    EXPECT_EQ(3, std_vec1.size());
+    EXPECT_EQ(4, std_vec1[0]);
+    EXPECT_EQ(5, std_vec1[1]);
+    EXPECT_EQ(6, std_vec1[2]);
+
+    std_vec2 = std::move(vec1);
+    EXPECT_EQ(3, std_vec2.size());
+    EXPECT_EQ(4, std_vec2[0]);
+    EXPECT_EQ(5, std_vec2[1]);
+    EXPECT_EQ(6, std_vec2[2]);
+}
