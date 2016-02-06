@@ -36,6 +36,9 @@ namespace yato
         };
 
 
+        //-------------------------------------------------------
+        // Generic implementation
+
         template <typename _DataType, size_t _DimensionsNum, typename _Allocator>
         class vector_nd_impl
         {
@@ -547,6 +550,14 @@ namespace yato
             }
 
             /**
+             *  Clear vector 
+             */
+            void clear()
+            {
+                resize(0);
+            }
+
+            /**
              *  Get the first sub-vector proxy
              */
             YATO_CONSTEXPR_FUNC
@@ -609,7 +620,7 @@ namespace yato
             void push_back(vector_nd_impl<_OtherDataType, dimensions_num - 1, _OtherAllocator> && sub_vector)
             {
                 auto insert_range = _prepare_push_back(sub_vector.dimensions_range());
-                std::move(sub_vector.cbegin(), sub_vector.cend(), std::next(m_plain_vector.begin(), insert_range.begin()));
+                std::move(sub_vector.cbegin(), sub_vector.cend(), insert_range.begin());
             }
 
             /**
@@ -626,21 +637,479 @@ namespace yato
 
         };
 
-        template<typename _DataType, size_t _DimensionsNum, typename _Allocator>
-        struct alias_impl
+
+
+
+
+
+
+        //-------------------------------------------------------
+        // Implementation of 1D case
+        // Delegates most methods to std::vector
+
+        template <typename _DataType, typename _Allocator>
+        class vector_nd_impl<_DataType, 1, _Allocator>
         {
-            using type = vector_nd_impl<_DataType, _DimensionsNum, _Allocator>;
+        public:
+            /*
+            * Public traits of the multidimensional vector
+            */
+            using my_type = vector_nd_impl<_DataType, 1, _Allocator>;
+            using data_type = _DataType;
+            using allocator_type = _Allocator;
+            using container_type = std::vector<data_type, allocator_type>;
+            using iterator = typename container_type::iterator;
+            using const_iterator = typename container_type::const_iterator;
+            using reference = decltype(*std::declval<iterator>());
+            using const_reference = decltype(*std::declval<const_iterator>());
+
+            static YATO_CONSTEXPR_VAR size_t dimensions_num = 1;
+            //-------------------------------------------------------
+
+        private:
+            container_type m_plain_vector;
+            //-------------------------------------------------------
+
+        public:
+            /**
+             *  Create empty vector
+             */
+            YATO_CONSTEXPR_FUNC
+            vector_nd_impl() YATO_NOEXCEPT_KEYWORD
+                : m_plain_vector()
+            {}
+
+            /**
+             *  Create empty vector
+             */
+            explicit
+            vector_nd_impl(const allocator_type & alloc) YATO_NOEXCEPT_KEYWORD
+                : m_plain_vector(alloc)
+            {}
+
+            /**
+             *  Create without initialization
+             */
+            vector_nd_impl(size_t size, const allocator_type & alloc = allocator_type())
+                : m_plain_vector(alloc)
+            {
+                m_plain_vector.resize(size);
+            }
+
+            /**
+             *  Create with initialization
+             */
+            vector_nd_impl(size_t size, const data_type & value, const allocator_type & alloc = allocator_type())
+                : m_plain_vector(alloc)
+            {
+                assign(size, value);
+            }
+
+            /**
+             *  Create from initializer list
+             */
+            vector_nd_impl(const std::initializer_list<data_type> & init_list)
+                : m_plain_vector(init_list)
+            { }
+
+            /**
+             *  Create with sizes from a generic range without initialization
+             */
+            template<typename _IteratorType>
+            vector_nd_impl(const yato::range<_IteratorType> & range, const allocator_type & alloc = allocator_type())
+                : m_plain_vector(alloc)
+            {
+                if (range.distance() != dimensions_num) {
+                    throw yato::assertion_error("Constructor takes the amount of arguments equal to dimensions number");
+                }
+                m_plain_vector.resize(*range.begin());
+            }
+
+            /**
+             *  Create with sizes from a generic range without initialization
+             */
+            template<typename _IteratorType>
+            vector_nd_impl(const yato::range<_IteratorType> & range, const data_type & value, const allocator_type & alloc = allocator_type())
+                : m_plain_vector(alloc)
+            {
+                if (range.distance() != dimensions_num) {
+                    throw yato::assertion_error("Constructor takes the amount of arguments equal to dimensions number");
+                }
+                m_plain_vector.resize(*range.begin(), value);
+            }
+
+            /**
+             *  Copy constructor
+             */
+            vector_nd_impl(const my_type & other)
+                : m_plain_vector(other.m_plain_vector)
+            {}
+
+            /**
+             * Move-copy constructor
+             */
+            vector_nd_impl(my_type && other)
+                : m_plain_vector(std::move(other.m_plain_vector))
+            {}
+
+            /**
+             *  Copy assign
+             */
+            my_type & operator= (const my_type & other)
+            {
+                if (this != &other) {
+                    m_plain_vector = other.m_plain_vector;
+                }
+                return *this;
+            }
+
+            /**
+             *  Move assign
+             */
+            my_type & operator= (my_type && other) YATO_NOEXCEPT_KEYWORD
+            {
+                if (this != &other) {
+                    m_plain_vector = std::move(other.m_plain_vector);
+                }
+                return *this;
+            }
+
+            /**
+             *  Copy from proxy
+             */
+            template<typename _DataIterator, typename _SizeIterator>
+            explicit
+            vector_nd_impl(const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_num> & other)
+            {
+                m_plain_vector.resize(other.size());
+                std::copy(other.cbegin(), other.cend(), begin());
+            }
+
+            /**
+             *  Assign from proxy
+             */
+            template<typename _DataIterator, typename _SizeIterator>
+            my_type & operator= (const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_num> & other)
+            {
+                m_plain_vector.resize(other.size());
+                std::copy(other.cbegin(), other.cend(), begin());
+                return *this;
+            }
+
+            /**
+             *  Destructor
+             */
+            ~vector_nd_impl()
+            {}
+
+            /**
+             *  Replaces the contents of the container
+             */
+            void assign(size_t size, const data_type & value)
+            {
+                m_plain_vector.resize(size, value);
+            }
+
+            /**
+             *  Returns the allocator associated with the container
+             */
+            allocator_type get_allocator() const YATO_NOEXCEPT_KEYWORD
+            {
+                return m_plain_vector.get_allocator();
+            }
+
+            /**
+             *  Save swap
+             */
+            void swap(my_type & other) YATO_NOEXCEPT_KEYWORD
+            {
+                m_plain_vector.swap(other.m_plain_vector);
+            }
+#ifdef YATO_MSVC
+            /*  Disable unreachable code warning appearing due to additional code in ternary operator with throw
+             *  MSVC complains about type cast otherwise
+             */
+#pragma warning(push)
+#pragma warning(disable:4702) 
+#endif
+            /**
+             *  Element access without bounds check in release
+             */
+            YATO_CONSTEXPR_FUNC
+            const_reference operator[](size_t idx) const YATO_NOEXCEPT_IN_RELEASE
+            {
+#if YATO_DEBUG
+                return (idx < m_plain_vector.size())
+                    ? m_plain_vector[idx]
+                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), m_plain_vector[0]);
+#else
+                return m_plain_vector[idx];
+#endif
+            }
+            /**
+             *  Element access without bounds check in release
+             */
+            reference operator[](size_t idx) YATO_NOEXCEPT_IN_RELEASE
+            {
+#if YATO_DEBUG
+                return (idx < m_plain_vector.size())
+                    ? m_plain_vector[idx]
+                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), m_plain_vector[0]);
+#else
+                return m_plain_vector[idx];
+#endif
+            }
+#ifdef YATO_MSVC
+#pragma warning(pop)
+#endif
+            /**
+             *  Element access with bounds check
+             */
+            YATO_CONSTEXPR_FUNC
+            const_reference at(size_t idx) const
+            {
+                return m_plain_vector.at(idx);
+            }
+
+            /**
+             *  Element access with bounds check
+             */
+            reference at(size_t idx)
+            {
+                return m_plain_vector.at(idx);
+            }
+
+            /**
+             *  Iterator for accessing elements trough all dimensions
+             */
+            YATO_CONSTEXPR_FUNC
+            const_iterator cbegin() const YATO_NOEXCEPT_KEYWORD
+            {
+                return m_plain_vector.cbegin();
+            }
+
+            /**
+             *  Iterator for accessing elements trough all dimensions
+             */
+            iterator begin() YATO_NOEXCEPT_KEYWORD
+            {
+                return m_plain_vector.begin();
+            }
+
+            /**
+             *  Iterator for accessing elements trough all dimensions
+             */
+            YATO_CONSTEXPR_FUNC
+            const_iterator cend() const YATO_NOEXCEPT_KEYWORD
+            {
+                return m_plain_vector.cend();
+            }
+
+            /**
+             *  Iterator for accessing elements trough all dimensions
+             */
+            iterator end() YATO_NOEXCEPT_KEYWORD
+            {
+                return m_plain_vector.end();
+            }
+
+            /**
+             *  Range for accessing elements trough all dimensions
+             */
+            YATO_CONSTEXPR_FUNC
+            yato::range<const_iterator> crange() const YATO_NOEXCEPT_KEYWORD
+            {
+                return yato::make_range(cbegin(), cend());
+            }
+
+            /**
+             *  Range for accessing elements trough all dimensions
+             */
+            yato::range<iterator> range() YATO_NOEXCEPT_KEYWORD
+            {
+                return yato::make_range(begin(), end());
+            }
+
+            /**
+             *  Checks whether the vector is empty
+             */
+            YATO_CONSTEXPR_FUNC
+            bool empty() const YATO_NOEXCEPT_KEYWORD
+            {
+                return m_plain_vector.empty();
+            }
+
+            /**
+             *  Get number of dimensions
+             */
+            YATO_CONSTEXPR_FUNC
+            size_t dimensions() const YATO_NOEXCEPT_KEYWORD
+            {
+                return dimensions_num;
+            }
+
+            /**
+             *  Get number of dimensions
+             */
+            auto dimensions_range() const
+                -> yato::range<yato::numeric_iterator<size_t>>
+            {
+                return yato::make_range(m_plain_vector.size(), m_plain_vector.size() + 1);
+            }
+
+#ifdef YATO_MSVC
+            /*  Disable unreachable code warning appearing due to additional code in ternary operator with throw
+             *  MSVC complains about type cast otherwise
+             */
+#pragma warning(push)
+#pragma warning(disable:4702) 
+#endif
+            /**
+             *  Get size of specified dimension
+             */
+            YATO_CONSTEXPR_FUNC
+            size_t dim_size(size_t idx) const YATO_NOEXCEPT_IN_RELEASE
+            {
+#if YATO_DEBUG
+                return (idx < dimensions_num)
+                    ? m_plain_vector.size()
+                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[dim_size]: dimension index is out of range"), 0);
+#else
+                return m_plain_vector.size();
+#endif
+            }
+#ifdef YATO_MSVC
+#pragma warning(pop)
+#endif
+            /**
+             *  Get the total size of the vector (number of all elements)
+             */
+            YATO_CONSTEXPR_FUNC
+            size_t size() const YATO_NOEXCEPT_KEYWORD
+            {
+                return m_plain_vector.size();
+            }
+
+            /**
+             *  Returns the number of elements that the container has currently allocated space for
+             */
+            YATO_CONSTEXPR_FUNC
+            size_t capacity() const YATO_NOEXCEPT_KEYWORD
+            {
+                return m_plain_vector.capacity();
+            }
+
+            /**
+             *  Increase the capacity of the container to a value that's greater or equal to new_capacity
+             */
+            void reserve(size_t new_capacity)
+            {
+                m_plain_vector.reserve(new_capacity);
+            }
+
+            /**
+             *  Clear vector
+             */
+            void clear()
+            {
+                m_plain_vector.clear();
+            }
+
+            /**
+             *  Requests the removal of unused capacity
+             */
+            void shrink_to_fit()
+            {
+                m_plain_vector.shrink_to_fit();
+            }
+
+            /**
+             *  Resize vector length along the top dimension
+             */
+            void resize(size_t length)
+            {
+                m_plain_vector.resize(length);
+            }
+
+            /**
+             *  Get the first sub-vector proxy
+             */
+            YATO_CONSTEXPR_FUNC
+            const_reference front() const
+            {
+                if (empty()) {
+                    YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[front]: vector is empty");
+                }
+                return m_plain_vector.front();
+            }
+
+            /**
+            *  Get the first sub-vector proxy
+            */
+            reference front()
+            {
+                if (empty()) {
+                    YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[front]: vector is empty");
+                }
+                return m_plain_vector.front();
+            }
+
+            /**
+            *  Get the last sub-vector proxy
+            */
+            YATO_CONSTEXPR_FUNC
+            const_reference back() const
+            {
+                if (empty()) {
+                    YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[back]: vector is empty");
+                }
+                return m_plain_vector.back();
+            }
+
+            /**
+            *  Get the last sub-vector proxy
+            */
+            reference back()
+            {
+                if (empty()) {
+                    YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[back]: vector is empty");
+                }
+                return m_plain_vector.back();
+            }
+
+            /**
+             *  Add sub-vector element to the back
+             */
+            void push_back(const data_type & value)
+            {
+                m_plain_vector.push_back(value);
+            }
+
+            /**
+             *  Add sub-vector element to the back
+             */
+            void push_back(data_type && value)
+            {
+                m_plain_vector.push_back(std::move(value));
+            }
+
+            /**
+            *  Removes the last element of the container.
+            */
+            void pop_back()
+            {
+                if (empty()) {
+                    YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[pop_back]: vector is already empty!");
+                }
+                m_plain_vector.pop_back();
+            }
+
         };
 
-        template<typename _DataType, typename _Allocator>
-        struct alias_impl<_DataType, 1, _Allocator>
-        {
-            using type = std::vector<_DataType, _Allocator>;
-        };
     }
 
     template<typename _DataType, size_t _DimensionsNum, typename _Allocator = std::allocator<_DataType> >
-    using vector_nd = typename details::alias_impl<_DataType, _DimensionsNum, _Allocator>::type;
+    using vector_nd = details::vector_nd_impl<_DataType, _DimensionsNum, _Allocator>;
 }
 
 #endif

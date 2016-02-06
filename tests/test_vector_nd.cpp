@@ -32,6 +32,8 @@ TEST(Yato_VectorND, common)
         EXPECT_EQ(6, vec1.size());
 
         yato::vector_nd<int, 1> vec2({ 5 }, 1);
+        EXPECT_EQ(5, vec2.dim_size(0));
+
         yato::vector_nd<float, 3> vec3({ 2, 3, 3 }, 11.0f);
 
         yato::vector_nd<int, 2> vec4 = { {1, 1, 1}, {2, 2, 2} };
@@ -168,11 +170,23 @@ TEST(Yato_VectorND, copy_proxy)
     EXPECT_EQ(2, copy1[2][0]);
     EXPECT_EQ(6, copy1[2][1]);
 
+    yato::vector_nd<long long, 1> copy2{ copy1[1] };
+    EXPECT_EQ(2, copy2[0]);
+    EXPECT_EQ(5, copy2[1]);
 }
 
 TEST(Yato_VectorND, push_pop)
 {
+    yato::vector_nd<short, 1> vec1d_1 = { 1, 2 };
+    yato::vector_nd<uint8_t, 1> vec1d_2 = { 3, 4 };
+
     yato::vector_nd<int, 2>  vec2d = { {1, 2}, {3, 4} };
+    vec2d.clear();
+    EXPECT_TRUE(vec2d.empty());
+
+    vec2d.push_back(std::move(vec1d_1));
+    vec2d.push_back(std::move(vec1d_2));
+
     yato::vector_nd<long, 3> vec3d = {};
 
     vec3d.push_back(vec2d);
