@@ -128,6 +128,27 @@ namespace yato
     {
         static YATO_CONSTEXPR_VAR bool value = _Trait<_T>::value;
     };
+
+    /**
+     * Return length of arguments pack
+     * Equal to sizeof...() but sizeof...() inside of std::enable_if behaves incorrect in MSVC 2013
+     */
+#ifdef YATO_MSVC_2013
+    template<typename _T, typename... _Tail>
+    struct length
+        : std::integral_constant<size_t, length<_Tail...>::value + 1>
+    { };
+
+    template<typename _T>
+    struct length<_T>
+        : std::integral_constant<size_t, 1>
+    { };
+#else
+    template<typename ..._T>
+    struct length
+        : std::integral_constant<size_t, sizeof...(_T)>
+    { };
+#endif
 }
 
 #endif

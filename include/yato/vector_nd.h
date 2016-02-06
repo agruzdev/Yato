@@ -136,7 +136,7 @@ namespace yato
             {
                 const size_t old_size = m_plain_vector.size();
                 if (old_size > 0) {
-                    if (!std::equal(std::next(m_dimensions.cbegin()), m_dimensions.cend(), sub_dims.begin(), sub_dims.end())) {
+                    if (!std::equal(std::next(m_dimensions.cbegin()), m_dimensions.cend(), sub_dims.begin())) {
                         YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[push_back]: Cannot push subvector with a different shape");
                     }
                 }
@@ -382,7 +382,7 @@ namespace yato
             template<typename... _Tail> 
             YATO_CONSTEXPR_FUNC
             auto at(size_t idx, _Tail &&... tail) const
-                -> typename std::enable_if<(sizeof...(_Tail) == dimensions_num - 1), const_reference>::type
+                -> typename std::enable_if<(yato::length<_Tail...>::value == dimensions_num - 1), const_reference>::type
             {
                 if (idx >= m_dimensions[0]) {
                     throw yato::assertion_error("yato::array_nd: out of range!");
@@ -395,7 +395,7 @@ namespace yato
              */
             template<typename... _Tail>
             auto at(size_t idx, _Tail &&... tail)
-                -> typename std::enable_if<(sizeof...(_Tail) == dimensions_num - 1), reference>::type
+                -> typename std::enable_if<(yato::length<_Tail...>::value == dimensions_num - 1), reference>::type
             {
                 if (idx >= m_dimensions[0]) {
                     throw yato::assertion_error("yato::array_nd: out of range!");
@@ -836,6 +836,15 @@ namespace yato
             ~vector_nd_impl()
             {}
 
+#ifdef YATO_MSVC_2013
+            /**
+             *  Convert to std::vector
+             */
+            operator std::vector<data_type, allocator_type> & ()
+            {
+                return m_plain_vector;
+            }
+#else
             /**
              *  Convert to std::vector
              */
@@ -851,7 +860,7 @@ namespace yato
             {
                 return std::move(m_plain_vector);
             }
-
+#endif
             /**
              *  Replaces the contents of the container
              */
