@@ -288,7 +288,7 @@ namespace yato
             {
                 _init_sizes(other.dimensions_range());
                 m_plain_vector.resize(m_sub_sizes[0]);
-                std::copy(other.cbegin(), other.cend(), begin());
+                std::copy(other.plain_cbegin(), other.plain_cend(), plain_begin());
             }
 
             /**
@@ -299,7 +299,7 @@ namespace yato
             {
                 _init_sizes(other.dimensions_range());
                 m_plain_vector.resize(m_sub_sizes[0]);
-                std::copy(other.cbegin(), other.cend(), begin());
+                std::copy(other.plain_cbegin(), other.plain_cend(), plain_begin());
                 return *this;
             }
 
@@ -407,7 +407,7 @@ namespace yato
              *  Iterator for accessing elements trough all dimensions
              */
             YATO_CONSTEXPR_FUNC
-            const_iterator cbegin() const YATO_NOEXCEPT_KEYWORD
+            const_iterator plain_cbegin() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.cbegin();
             }
@@ -415,7 +415,7 @@ namespace yato
             /**
              *  Iterator for accessing elements trough all dimensions
              */
-            iterator begin() YATO_NOEXCEPT_KEYWORD
+            iterator plain_begin() YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.begin();
             }
@@ -424,7 +424,7 @@ namespace yato
              *  Iterator for accessing elements trough all dimensions
              */
             YATO_CONSTEXPR_FUNC
-            const_iterator cend() const YATO_NOEXCEPT_KEYWORD
+            const_iterator plain_cend() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.cend();
             }
@@ -432,7 +432,7 @@ namespace yato
             /**
              *  Iterator for accessing elements trough all dimensions
              */
-            iterator end() YATO_NOEXCEPT_KEYWORD
+            iterator plain_end() YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.end();
             }
@@ -441,17 +441,17 @@ namespace yato
              *  Range for accessing elements trough all dimensions
              */
             YATO_CONSTEXPR_FUNC
-            yato::range<const_iterator> crange() const YATO_NOEXCEPT_KEYWORD
+            yato::range<const_iterator> plain_crange() const YATO_NOEXCEPT_KEYWORD
             {
-                return yato::make_range(cbegin(), cend());
+                return yato::make_range(plain_cbegin(), plain_cend());
             }
 
             /**
              *  Range for accessing elements trough all dimensions
              */
-            yato::range<iterator> range() YATO_NOEXCEPT_KEYWORD
+            yato::range<iterator> plain_range() YATO_NOEXCEPT_KEYWORD
             {
-                return yato::make_range(begin(), end());
+                return yato::make_range(plain_begin(), plain_end());
             }
 
             /**
@@ -492,12 +492,12 @@ namespace yato
              *  Get size of specified dimension
              */
             YATO_CONSTEXPR_FUNC
-            size_t dim_size(size_t idx) const YATO_NOEXCEPT_IN_RELEASE
+            size_t size(size_t idx) const YATO_NOEXCEPT_IN_RELEASE
             {
 #if YATO_DEBUG
                 return (idx < dimensions_num)
                     ? m_dimensions[idx]
-                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[dim_size]: dimension index is out of range"), 0);
+                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[size]: dimension index is out of range"), 0);
 #else
                 return m_dimensions[idx];
 #endif
@@ -509,7 +509,7 @@ namespace yato
              *  Get the total size of the vector (number of all elements)
              */
             YATO_CONSTEXPR_FUNC
-            size_t size() const YATO_NOEXCEPT_KEYWORD
+            size_t total_size() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_sub_sizes[0];
             }
@@ -610,7 +610,7 @@ namespace yato
             void push_back(const vector_nd_impl<_OtherDataType, dimensions_num - 1, _OtherAllocator> & sub_vector)
             {
                 auto insert_range = _prepare_push_back(sub_vector.dimensions_range());
-                std::copy(sub_vector.cbegin(), sub_vector.cend(), insert_range.begin());
+                std::copy(sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
             }
 
             /**
@@ -620,7 +620,7 @@ namespace yato
             void push_back(vector_nd_impl<_OtherDataType, dimensions_num - 1, _OtherAllocator> && sub_vector)
             {
                 auto insert_range = _prepare_push_back(sub_vector.dimensions_range());
-                std::move(sub_vector.cbegin(), sub_vector.cend(), insert_range.begin());
+                std::move(sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
             }
 
             /**
@@ -815,8 +815,8 @@ namespace yato
             explicit
             vector_nd_impl(const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_num> & other)
             {
-                m_plain_vector.resize(other.size());
-                std::copy(other.cbegin(), other.cend(), begin());
+                m_plain_vector.resize(other.total_size());
+                std::copy(other.plain_cbegin(), other.plain_cend(), plain_begin());
             }
 
             /**
@@ -825,8 +825,8 @@ namespace yato
             template<typename _DataIterator, typename _SizeIterator>
             my_type & operator= (const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_num> & other)
             {
-                m_plain_vector.resize(other.size());
-                std::copy(other.cbegin(), other.cend(), begin());
+                m_plain_vector.resize(other.total_size());
+                std::copy(other.plain_cbegin(), other.plain_cend(), plain_begin());
                 return *this;
             }
 
@@ -942,7 +942,7 @@ namespace yato
              *  Iterator for accessing elements trough all dimensions
              */
             YATO_CONSTEXPR_FUNC
-            const_iterator cbegin() const YATO_NOEXCEPT_KEYWORD
+            const_iterator plain_cbegin() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.cbegin();
             }
@@ -950,7 +950,7 @@ namespace yato
             /**
              *  Iterator for accessing elements trough all dimensions
              */
-            iterator begin() YATO_NOEXCEPT_KEYWORD
+            iterator plain_begin() YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.begin();
             }
@@ -959,7 +959,7 @@ namespace yato
              *  Iterator for accessing elements trough all dimensions
              */
             YATO_CONSTEXPR_FUNC
-            const_iterator cend() const YATO_NOEXCEPT_KEYWORD
+            const_iterator plain_cend() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.cend();
             }
@@ -967,7 +967,7 @@ namespace yato
             /**
              *  Iterator for accessing elements trough all dimensions
              */
-            iterator end() YATO_NOEXCEPT_KEYWORD
+            iterator plain_end() YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.end();
             }
@@ -976,17 +976,17 @@ namespace yato
              *  Range for accessing elements trough all dimensions
              */
             YATO_CONSTEXPR_FUNC
-            yato::range<const_iterator> crange() const YATO_NOEXCEPT_KEYWORD
+            yato::range<const_iterator> plain_crange() const YATO_NOEXCEPT_KEYWORD
             {
-                return yato::make_range(cbegin(), cend());
+                return yato::make_range(plain_cbegin(), plain_cend());
             }
 
             /**
              *  Range for accessing elements trough all dimensions
              */
-            yato::range<iterator> range() YATO_NOEXCEPT_KEYWORD
+            yato::range<iterator> plain_range() YATO_NOEXCEPT_KEYWORD
             {
-                return yato::make_range(begin(), end());
+                return yato::make_range(plain_begin(), plain_end());
             }
 
             /**
@@ -1027,12 +1027,12 @@ namespace yato
              *  Get size of specified dimension
              */
             YATO_CONSTEXPR_FUNC
-            size_t dim_size(size_t idx) const YATO_NOEXCEPT_IN_RELEASE
+            size_t size(size_t idx) const YATO_NOEXCEPT_IN_RELEASE
             {
 #if YATO_DEBUG
                 return (idx < dimensions_num)
                     ? m_plain_vector.size()
-                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[dim_size]: dimension index is out of range"), 0);
+                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[size]: dimension index is out of range"), 0);
 #else
                 (void)idx;
                 return m_plain_vector.size();
@@ -1045,7 +1045,7 @@ namespace yato
              *  Get the total size of the vector (number of all elements)
              */
             YATO_CONSTEXPR_FUNC
-            size_t size() const YATO_NOEXCEPT_KEYWORD
+            size_t total_size() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.size();
             }

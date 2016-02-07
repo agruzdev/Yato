@@ -19,20 +19,20 @@ TEST(Yato_VectorND, common)
         yato::vector_nd<int, 3> vec0{};
         EXPECT_TRUE(vec0.empty());
         EXPECT_EQ(3, vec0.dimensions());
-        EXPECT_EQ(0, vec0.dim_size(0));
-        EXPECT_EQ(0, vec0.dim_size(1));
-        EXPECT_EQ(0, vec0.dim_size(2));
-        EXPECT_EQ(0, vec0.size());
+        EXPECT_EQ(0, vec0.size(0));
+        EXPECT_EQ(0, vec0.size(1));
+        EXPECT_EQ(0, vec0.size(2));
+        EXPECT_EQ(0, vec0.total_size());
 
         yato::vector_nd<int, 2> vec1({ 2, 3 });
         EXPECT_FALSE(vec1.empty());
         EXPECT_EQ(2, vec1.dimensions());
-        EXPECT_EQ(2, vec1.dim_size(0));
-        EXPECT_EQ(3, vec1.dim_size(1));
-        EXPECT_EQ(6, vec1.size());
+        EXPECT_EQ(2, vec1.size(0));
+        EXPECT_EQ(3, vec1.size(1));
+        EXPECT_EQ(6, vec1.total_size());
 
         yato::vector_nd<int, 1> vec2({ 5 }, 1);
-        EXPECT_EQ(5, vec2.dim_size(0));
+        EXPECT_EQ(5, vec2.size(0));
 
         yato::vector_nd<float, 3> vec3({ 2, 3, 3 }, 11.0f);
 
@@ -92,15 +92,15 @@ TEST(Yato_VectorND, access_2)
 {
     yato::vector_nd<int, 3> vec5 = { { { 1, 1 },{ 1, 2 },{ 1, 3 } },{ { 2, 4 },{ 2, 5 },{ 2, 6 } } };
     EXPECT_EQ(2, vec5[0].dimensions());
-    EXPECT_EQ(3, vec5[0].dim_size(0));
-    EXPECT_EQ(2, vec5[0].dim_size(1));
-    EXPECT_EQ(6, vec5[0].size());
+    EXPECT_EQ(3, vec5[0].size(0));
+    EXPECT_EQ(2, vec5[0].size(1));
+    EXPECT_EQ(6, vec5[0].total_size());
 
     auto vec0 = yato::vector_nd<int, 3>({ 2, 0, 2 }, 1);
     EXPECT_EQ(3, vec0.dimensions());
     EXPECT_EQ(2, vec0[0].dimensions());
-    EXPECT_EQ(0, vec0.size());
-    EXPECT_EQ(0, vec0[0].size());
+    EXPECT_EQ(0, vec0.total_size());
+    EXPECT_EQ(0, vec0[0].total_size());
 }
 
 
@@ -143,7 +143,7 @@ TEST(Yato_VectorND, assign)
     yato::vector_nd<int, 3> vec = {};
     
     EXPECT_TRUE(vec.empty());
-    for (const int & x : yato::make_range(vec)) {
+    for (const int & x : vec.plain_crange()) {
         (void)x;
         EXPECT_TRUE(false);
     }
@@ -151,7 +151,7 @@ TEST(Yato_VectorND, assign)
     vec.assign({ 2, 2, 2 }, 1);
     
     EXPECT_FALSE(vec.empty());
-    for (const int & x : yato::make_range(vec)) {
+    for (const int & x : vec.plain_crange()) {
         EXPECT_EQ(1, x);
     }
 }
@@ -190,29 +190,29 @@ TEST(Yato_VectorND, push_pop)
     yato::vector_nd<long, 3> vec3d = {};
 
     vec3d.push_back(vec2d);
-    EXPECT_EQ(1, vec3d.dim_size(0));
-    EXPECT_EQ(2, vec3d.dim_size(1));
-    EXPECT_EQ(2, vec3d.dim_size(2));
+    EXPECT_EQ(1, vec3d.size(0));
+    EXPECT_EQ(2, vec3d.size(1));
+    EXPECT_EQ(2, vec3d.size(2));
 
     vec3d.push_back(vec2d);
-    EXPECT_EQ(2, vec3d.dim_size(0));
-    EXPECT_EQ(2, vec3d.dim_size(1));
-    EXPECT_EQ(2, vec3d.dim_size(2));
+    EXPECT_EQ(2, vec3d.size(0));
+    EXPECT_EQ(2, vec3d.size(1));
+    EXPECT_EQ(2, vec3d.size(2));
 
     vec3d.push_back(vec2d);
-    EXPECT_EQ(3, vec3d.dim_size(0));
-    EXPECT_EQ(2, vec3d.dim_size(1));
-    EXPECT_EQ(2, vec3d.dim_size(2));
+    EXPECT_EQ(3, vec3d.size(0));
+    EXPECT_EQ(2, vec3d.size(1));
+    EXPECT_EQ(2, vec3d.size(2));
 
     vec3d.pop_back();
-    EXPECT_EQ(2, vec3d.dim_size(0));
-    EXPECT_EQ(2, vec3d.dim_size(1));
-    EXPECT_EQ(2, vec3d.dim_size(2));
+    EXPECT_EQ(2, vec3d.size(0));
+    EXPECT_EQ(2, vec3d.size(1));
+    EXPECT_EQ(2, vec3d.size(2));
     
     vec3d.pop_back();
-    EXPECT_EQ(1, vec3d.dim_size(0));
-    EXPECT_EQ(2, vec3d.dim_size(1));
-    EXPECT_EQ(2, vec3d.dim_size(2));
+    EXPECT_EQ(1, vec3d.size(0));
+    EXPECT_EQ(2, vec3d.size(1));
+    EXPECT_EQ(2, vec3d.size(2));
 
     vec3d.pop_back();
     EXPECT_TRUE(vec3d.empty());
@@ -225,19 +225,19 @@ TEST(Yato_VectorND, vec_1D)
     std::vector<int> std_vec2 = { 4, 5, 6 };
 
     yato::vector_nd<int, 1> vec1 = std_vec1;
-    EXPECT_EQ(3, vec1.size());
+    EXPECT_EQ(3, vec1.size(0));
     EXPECT_EQ(1, vec1[0]);
     EXPECT_EQ(2, vec1[1]);
     EXPECT_EQ(3, vec1[2]);
 
     yato::vector_nd<int, 1> vec2 = std::move(std_vec2);
-    EXPECT_EQ(3, vec2.size());
+    EXPECT_EQ(3, vec2.size(0));
     EXPECT_EQ(4, vec2[0]);
     EXPECT_EQ(5, vec2[1]);
     EXPECT_EQ(6, vec2[2]);
 
     vec1 = std::move(vec2);
-    EXPECT_EQ(3, vec1.size());
+    EXPECT_EQ(3, vec1.size(0));
     EXPECT_EQ(4, vec1[0]);
     EXPECT_EQ(5, vec1[1]);
     EXPECT_EQ(6, vec1[2]);

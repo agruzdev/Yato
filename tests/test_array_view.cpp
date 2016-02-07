@@ -10,7 +10,7 @@ TEST(Yato_ArrayView, array_view)
     int arr[10] = { 0 };
 
     yato::array_view<int> view(arr, 10);
-    EXPECT_TRUE(view.size() == 10);
+    EXPECT_TRUE(view.size(0) == 10);
     for (int i = 0; i < 10; ++i) {
         view[i] = i + 1;
         EXPECT_TRUE(arr[i] == i + 1);
@@ -21,7 +21,7 @@ TEST(Yato_ArrayView, array_view)
     EXPECT_THROW(yato::array_view<int>(p, 100), yato::assertion_error);
 
     int j = 1;
-    for (auto x : view.crange()){ 
+    for (auto x : view.plain_crange()){
         EXPECT_TRUE(x == j++);
     }
 }
@@ -90,9 +90,9 @@ TEST(Yato_ArrayView, array_view_nd)
     int arr_2d[2][3] = { {1, 1, 1}, {2, 2, 2} };
     auto view = yato::make_view(arr_2d);
     
-    EXPECT_TRUE(view.size() == 6);
-    EXPECT_TRUE(view[0].size() == 3);
-    EXPECT_TRUE(view[1].size() == 3);
+    EXPECT_TRUE(view.total_size() == 6);
+    EXPECT_TRUE(view[0].total_size() == 3);
+    EXPECT_TRUE(view[1].total_size() == 3);
 
     EXPECT_TRUE(view[0][0] == 1);
     EXPECT_TRUE(view[0][1] == 1);
@@ -114,9 +114,9 @@ TEST(Yato_ArrayView, array_view_nd_1)
     int arr_2d[2][3] = { { 1, 1, 1 },{ 2, 2, 2 } };
     auto view = yato::make_view(arr_2d);
 
-    EXPECT_TRUE(view.size() == 6);
-    EXPECT_TRUE(view[0].size() == 3);
-    EXPECT_TRUE(view[1].size() == 3);
+    EXPECT_TRUE(view.total_size() == 6);
+    EXPECT_TRUE(view[0].total_size() == 3);
+    EXPECT_TRUE(view[1].total_size() == 3);
 
     EXPECT_TRUE(view.at(0, 0) == 1);
     EXPECT_TRUE(view.at(0, 1) == 1);
@@ -195,7 +195,7 @@ TEST(Yato_ArrayView, array_view_nd_4)
 
     auto view = yato::make_view(arr);
 
-    std::fill(view.begin(), view.end(), 1);
+    std::fill(view.plain_begin(), view.plain_end(), 1);
     EXPECT_TRUE(arr[0][0] == 1);
     EXPECT_TRUE(arr[0][1] == 1);
     EXPECT_TRUE(arr[1][0] == 1);
@@ -215,13 +215,13 @@ TEST(Yato_ArrayView, array_view_nd_4)
     auto view_3d_1 = yato::make_view(arr_3d_1);
     auto view_3d_2 = yato::make_view(arr_3d_2);
 
-    for (auto & x : view_3d_1[1].range()) {
+    for (auto & x : view_3d_1[1].plain_range()) {
         x = 2;
     }
     
-    auto it1  = view_3d_1.begin();
-    auto it2  = view_3d_2.cbegin();
-    auto end2 = view_3d_2.cend();
+    auto it1  = view_3d_1.plain_begin();
+    auto it2  = view_3d_2.plain_cbegin();
+    auto end2 = view_3d_2.plain_cend();
     while(it2 != end2) {
         EXPECT_TRUE(*it1++ == *it2++);
     }
