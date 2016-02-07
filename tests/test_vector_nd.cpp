@@ -156,6 +156,26 @@ TEST(Yato_VectorND, assign)
     }
 }
 
+TEST(Yato_VectorND, proxy_iter)
+{
+    yato::vector_nd<int, 2> vec5 = { { 1, 1 },{ 1, 2 },{ 1, 3 } };
+
+    auto row = vec5.cbegin();
+    auto end = vec5.cend();
+    for (int i = 1; row != end; ++row, ++i) {
+        const int & x = row[0];
+        EXPECT_EQ(1, x);
+        EXPECT_EQ(row[1], i);
+    }
+
+    yato::vector_nd<int, 2> vec6 = { { 1, 1, 1 },{ 0, 0, 0 },{ 1, 1, 1 } };
+    auto row_2 = std::next(vec6.begin());
+    std::fill(std::begin(row_2), std::end(row_2), 1);
+    for (auto x : vec6.plain_range()) {
+        EXPECT_EQ(1, x);
+    }
+}
+
 
 TEST(Yato_VectorND, copy_proxy)
 {
@@ -254,3 +274,5 @@ TEST(Yato_VectorND, vec_1D)
     EXPECT_EQ(5, std_vec2[1]);
     EXPECT_EQ(6, std_vec2[2]);
 }
+
+

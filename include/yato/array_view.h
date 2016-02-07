@@ -45,14 +45,26 @@ namespace yato
     public:
         using data_iterator = data_type*;
         using const_data_iterator = const data_type*;
-        using iterator = details::proxy_iterator<data_iterator, const_sizes_iterator, dimensions_num - 1>;
-        using const_iterator = details::proxy_iterator<const_data_iterator, const_sizes_iterator, dimensions_num - 1>;
+        using iterator = sub_view;
+        using const_iterator = const_sub_view;
 
         //-------------------------------------------------------
     private:
         const sizes_array m_sizes;
         /*const*/ sizes_array m_sub_array_sizes; // my size, sub array size, sub sub array size, etc
         data_iterator m_base_ptr;
+
+        sub_view _create_sub_view(size_t offset) YATO_NOEXCEPT_KEYWORD
+        {
+            return sub_view(std::next(m_base_ptr, offset * m_sub_array_sizes[1]), std::next(m_sizes.cbegin()), std::next(m_sub_array_sizes.cbegin()));
+        }
+
+        YATO_CONSTEXPR_FUNC
+        const_sub_view _create_const_sub_view(size_t offset) const YATO_NOEXCEPT_KEYWORD
+        {
+            return const_sub_view(std::next(m_base_ptr, offset * m_sub_array_sizes[1]), std::next(m_sizes.cbegin()), std::next(m_sub_array_sizes.cbegin()));
+        }
+        //-------------------------------------------------------
 
     public:
         template<typename... _Sizes>
@@ -108,13 +120,10 @@ namespace yato
         {
 #if YATO_DEBUG
             return (idx < m_sizes[0])
-                ? sub_view{ m_base_ptr + idx * m_sub_array_sizes[1], std::next(std::begin(m_sizes)), std::next(std::begin(m_sub_array_sizes)) }
-                : (YATO_THROW_ASSERT_EXCEPT("yato::array_view_nd: out of range!"), sub_view{ m_base_ptr , std::begin(m_sizes) , std::begin(m_sub_array_sizes) });
+                ? _create_const_sub_view(idx)
+                : (YATO_THROW_ASSERT_EXCEPT("yato::array_view_nd: out of range!"), _create_const_sub_view(0));
 #else
-            return sub_view{ 
-                m_base_ptr + idx * m_sub_array_sizes[1], 
-                std::next(std::begin(m_sizes)), 
-                std::next(std::begin(m_sub_array_sizes)) };
+            return _create_const_sub_view(idx);
 #endif
         }
 
@@ -122,13 +131,10 @@ namespace yato
         {
 #if YATO_DEBUG
             return (idx < m_sizes[0])
-                ? sub_view{ m_base_ptr + idx * m_sub_array_sizes[1], std::next(std::begin(m_sizes)), std::next(std::begin(m_sub_array_sizes)) }
-            : (YATO_THROW_ASSERT_EXCEPT("yato::array_view_nd: out of range!"), sub_view{ m_base_ptr , std::begin(m_sizes) , std::begin(m_sub_array_sizes) });
+                ? _create_sub_view(idx)
+                : (YATO_THROW_ASSERT_EXCEPT("yato::array_view_nd: out of range!"), _create_sub_view(idx));
 #else
-            return sub_view{
-                m_base_ptr + idx * m_sub_array_sizes[1],
-                std::next(std::begin(m_sizes)),
-                std::next(std::begin(m_sub_array_sizes)) };
+            return _create_sub_view(idx);
 #endif
         }
 
@@ -171,23 +177,23 @@ namespace yato
         YATO_CONSTEXPR_FUNC
         const_iterator cbegin() const YATO_NOEXCEPT_KEYWORD
         {
-            return const_iterator(m_base_ptr, m_sizes.cbegin(), m_sub_array_sizes.cbegin());
+            return _create_const_sub_view(0);
         }
 
         iterator begin() YATO_NOEXCEPT_KEYWORD
         {
-            return iterator(m_base_ptr, m_sizes.cbegin(), m_sub_array_sizes.cbegin());
+            return _create_sub_view(0);
         }
 
         YATO_CONSTEXPR_FUNC
         const_iterator cend() const YATO_NOEXCEPT_KEYWORD
         {
-            return const_iterator(std::next(m_base_ptr, size(0)), m_sizes.cbegin(), m_sub_array_sizes.cbegin());
+            return _create_const_sub_view(size(0));
         }
 
         iterator end() YATO_NOEXCEPT_KEYWORD
         {
-            return iterator(std::next(m_base_ptr, size(0)), m_sizes.cbegin(), m_sub_array_sizes.cbegin());
+            return _create_sub_view(size(0));
         }
 
         YATO_CONSTEXPR_FUNC

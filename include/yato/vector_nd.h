@@ -50,10 +50,10 @@ namespace yato
             using data_type = _DataType;
             using allocator_type = _Allocator;
             using container_type = std::vector<data_type, allocator_type>;
-            using iterator = typename container_type::iterator;
-            using const_iterator = typename container_type::const_iterator;
-            using reference = decltype(*std::declval<iterator>());
-            using const_reference = decltype(*std::declval<const_iterator>());
+            using data_iterator = typename container_type::iterator;
+            using const_data_iterator = typename container_type::const_iterator;
+            using reference = decltype(*std::declval<data_iterator>());
+            using const_reference = decltype(*std::declval<const_data_iterator>());
 
             static YATO_CONSTEXPR_VAR size_t dimensions_num = _DimensionsNum;
             static_assert(dimensions_num > 1, "Implementation for dimensions number larger than 1");
@@ -67,13 +67,30 @@ namespace yato
             template<size_t _Dims>
             using initilizer_type = typename initilizer_list_nd<data_type, _Dims>::type;
 
-            using proxy = details::sub_array_proxy<iterator, typename sizes_array::const_iterator, dimensions_num - 1>;
-            using const_proxy = details::sub_array_proxy<const_iterator, typename sizes_array::const_iterator, dimensions_num - 1>;
+            using proxy = details::sub_array_proxy<data_iterator, typename sizes_array::const_iterator, dimensions_num - 1>;
+            using const_proxy = details::sub_array_proxy<const_data_iterator, typename sizes_array::const_iterator, dimensions_num - 1>;
 
+        public:
+            using iterator = proxy;
+            using const_iterator = const_proxy;
+            //-------------------------------------------------------
+
+        private:
             sizes_array m_dimensions;
             sizes_array m_sub_sizes;
             container_type m_plain_vector;
             //-------------------------------------------------------
+
+            proxy _create_proxy(size_t offset) YATO_NOEXCEPT_KEYWORD
+            {
+                return proxy(std::next(m_plain_vector.begin(), offset * m_sub_sizes[1]), std::next(m_dimensions.cbegin()), std::next(m_sub_sizes.cbegin()));
+            }
+
+            YATO_CONSTEXPR_FUNC
+            const_proxy _create_const_proxy(size_t offset) const YATO_NOEXCEPT_KEYWORD
+            {
+                return const_proxy(std::next(m_plain_vector.cbegin(), offset * m_sub_sizes[1]), std::next(m_dimensions.cbegin()), std::next(m_sub_sizes.cbegin()));
+            }
 
             void _init_subsizes() YATO_NOEXCEPT_KEYWORD
             {
@@ -132,7 +149,7 @@ namespace yato
             }
 
             template<typename _SizeIterator>
-            yato::range<iterator> _prepare_push_back(const yato::range<_SizeIterator> & sub_dims)
+            yato::range<data_iterator> _prepare_push_back(const yato::range<_SizeIterator> & sub_dims)
             {
                 const size_t old_size = m_plain_vector.size();
                 if (old_size > 0) {
@@ -354,10 +371,10 @@ namespace yato
             {
 #if YATO_DEBUG
                 return (idx < m_dimensions[0]) 
-                    ? const_proxy{ std::next(m_plain_vector.cbegin(), idx * m_sub_sizes[1]), std::next(std::begin(m_dimensions)), std::next(std::begin(m_sub_sizes)) }
-                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), const_proxy{ m_plain_vector.cbegin(), std::begin(m_dimensions), std::begin(m_sub_sizes) });
+                    ? _create_const_proxy(idx)
+                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), _create_const_proxy(0));
 #else
-                return const_proxy{ std::next(m_plain_vector.cbegin(), idx * m_sub_sizes[1]), std::next(std::begin(m_dimensions)), std::next(std::begin(m_sub_sizes)) };
+                return _create_const_proxy(idx);
 #endif
             }
             /**
@@ -367,10 +384,10 @@ namespace yato
             {
 #if YATO_DEBUG
                 return (idx < m_dimensions[0])
-                    ? proxy{ std::next(m_plain_vector.begin(), idx * m_sub_sizes[1]), std::next(std::begin(m_dimensions)), std::next(std::begin(m_sub_sizes)) }
-                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), proxy{ m_plain_vector.begin(), std::begin(m_dimensions), std::begin(m_sub_sizes) });
+                    ? _create_proxy(idx)
+                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), _create_proxy(0));
 #else
-                return proxy{ std::next(m_plain_vector.begin(), idx * m_sub_sizes[1]), std::next(std::begin(m_dimensions)), std::next(std::begin(m_sub_sizes)) };
+                return _create_proxy(idx);
 #endif
             }
 #ifdef YATO_MSVC
@@ -404,10 +421,44 @@ namespace yato
             }
 
             /**
+             *  Iterator for accessing sub-array elements along the top dimension
+             */
+            YATO_CONSTEXPR_FUNC 
+            const_iterator cbegin() const YATO_NOEXCEPT_KEYWORD
+            {
+                return _create_const_proxy(0);
+            }
+
+            /**
+             *  Iterator for accessing sub-array elements along the top dimension
+             */
+            iterator begin() YATO_NOEXCEPT_KEYWORD
+            {
+                return _create_proxy(0);
+            }
+
+            /**
+             *  Iterator for accessing sub-array elements along the top dimension
+             */
+            YATO_CONSTEXPR_FUNC
+            const_iterator cend() const YATO_NOEXCEPT_KEYWORD
+            {
+                return _create_const_proxy(size(0));
+            }
+
+            /**
+             *  Iterator for accessing sub-array elements along the top dimension
+             */
+            iterator end() YATO_NOEXCEPT_KEYWORD
+            {
+                return _create_proxy(size(0));
+            }
+
+            /**
              *  Iterator for accessing elements trough all dimensions
              */
             YATO_CONSTEXPR_FUNC
-            const_iterator plain_cbegin() const YATO_NOEXCEPT_KEYWORD
+            const_data_iterator plain_cbegin() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.cbegin();
             }
@@ -415,7 +466,7 @@ namespace yato
             /**
              *  Iterator for accessing elements trough all dimensions
              */
-            iterator plain_begin() YATO_NOEXCEPT_KEYWORD
+            data_iterator plain_begin() YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.begin();
             }
@@ -424,7 +475,7 @@ namespace yato
              *  Iterator for accessing elements trough all dimensions
              */
             YATO_CONSTEXPR_FUNC
-            const_iterator plain_cend() const YATO_NOEXCEPT_KEYWORD
+            const_data_iterator plain_cend() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.cend();
             }
@@ -432,16 +483,33 @@ namespace yato
             /**
              *  Iterator for accessing elements trough all dimensions
              */
-            iterator plain_end() YATO_NOEXCEPT_KEYWORD
+            data_iterator plain_end() YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.end();
+            }
+
+            /**
+             *  Range for accessing sub-array elements trough the top dimension
+             */
+            YATO_CONSTEXPR_FUNC
+            yato::range<const_data_iterator> crange() const YATO_NOEXCEPT_KEYWORD
+            {
+                return yato::make_range(cbegin(), cend());
+            }
+
+            /**
+             *  Range for accessing sub-array elements trough the top dimension
+             */
+            yato::range<data_iterator> range() YATO_NOEXCEPT_KEYWORD
+            {
+                return yato::make_range(begin(), end());
             }
 
             /**
              *  Range for accessing elements trough all dimensions
              */
             YATO_CONSTEXPR_FUNC
-            yato::range<const_iterator> plain_crange() const YATO_NOEXCEPT_KEYWORD
+            yato::range<const_data_iterator> plain_crange() const YATO_NOEXCEPT_KEYWORD
             {
                 return yato::make_range(plain_cbegin(), plain_cend());
             }
@@ -449,7 +517,7 @@ namespace yato
             /**
              *  Range for accessing elements trough all dimensions
              */
-            yato::range<iterator> plain_range() YATO_NOEXCEPT_KEYWORD
+            yato::range<data_iterator> plain_range() YATO_NOEXCEPT_KEYWORD
             {
                 return yato::make_range(plain_begin(), plain_end());
             }
@@ -658,12 +726,15 @@ namespace yato
             using data_type = _DataType;
             using allocator_type = _Allocator;
             using container_type = std::vector<data_type, allocator_type>;
-            using iterator = typename container_type::iterator;
-            using const_iterator = typename container_type::const_iterator;
-            using reference = decltype(*std::declval<iterator>());
-            using const_reference = decltype(*std::declval<const_iterator>());
+            using data_iterator = typename container_type::iterator;
+            using const_data_iterator = typename container_type::const_iterator;
+            using reference = decltype(*std::declval<data_iterator>());
+            using const_reference = decltype(*std::declval<const_data_iterator>());
 
             static YATO_CONSTEXPR_VAR size_t dimensions_num = 1;
+
+            using iterator = data_iterator;
+            using const_iterator = const_data_iterator;
             //-------------------------------------------------------
 
         private:
@@ -939,10 +1010,44 @@ namespace yato
             }
 
             /**
+             *  Iterator for accessing sub-array elements along the top dimension
+             */
+            YATO_CONSTEXPR_FUNC
+            const_iterator cbegin() const YATO_NOEXCEPT_KEYWORD
+            {
+                return plain_cbegin();
+            }
+
+            /**
+             *  Iterator for accessing sub-array elements along the top dimension
+             */
+            iterator begin() YATO_NOEXCEPT_KEYWORD
+            {
+                return plain_begin();
+            }
+
+            /**
+             *  Iterator for accessing sub-array elements along the top dimension
+             */
+            YATO_CONSTEXPR_FUNC
+            const_iterator cend() const YATO_NOEXCEPT_KEYWORD
+            {
+                return plain_cend();
+            }
+
+            /**
+             *  Iterator for accessing sub-array elements along the top dimension
+             */
+            iterator end() YATO_NOEXCEPT_KEYWORD
+            {
+                return plain_end();
+            }
+
+            /**
              *  Iterator for accessing elements trough all dimensions
              */
             YATO_CONSTEXPR_FUNC
-            const_iterator plain_cbegin() const YATO_NOEXCEPT_KEYWORD
+            const_data_iterator plain_cbegin() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.cbegin();
             }
@@ -950,7 +1055,7 @@ namespace yato
             /**
              *  Iterator for accessing elements trough all dimensions
              */
-            iterator plain_begin() YATO_NOEXCEPT_KEYWORD
+            data_iterator plain_begin() YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.begin();
             }
@@ -959,7 +1064,7 @@ namespace yato
              *  Iterator for accessing elements trough all dimensions
              */
             YATO_CONSTEXPR_FUNC
-            const_iterator plain_cend() const YATO_NOEXCEPT_KEYWORD
+            const_data_iterator plain_cend() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.cend();
             }
@@ -967,16 +1072,33 @@ namespace yato
             /**
              *  Iterator for accessing elements trough all dimensions
              */
-            iterator plain_end() YATO_NOEXCEPT_KEYWORD
+            data_iterator plain_end() YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.end();
+            }
+
+            /**
+             *  Range for accessing sub-array elements trough the top dimension
+             */
+            YATO_CONSTEXPR_FUNC
+            yato::range<const_data_iterator> crange() const YATO_NOEXCEPT_KEYWORD
+            {
+                return yato::make_range(cbegin(), cend());
+            }
+
+            /**
+             *  Range for accessing sub-array elements trough the top dimension
+             */
+            yato::range<data_iterator> range() YATO_NOEXCEPT_KEYWORD
+            {
+                return yato::make_range(begin(), end());
             }
 
             /**
              *  Range for accessing elements trough all dimensions
              */
             YATO_CONSTEXPR_FUNC
-            yato::range<const_iterator> plain_crange() const YATO_NOEXCEPT_KEYWORD
+            yato::range<const_data_iterator> plain_crange() const YATO_NOEXCEPT_KEYWORD
             {
                 return yato::make_range(plain_cbegin(), plain_cend());
             }
@@ -984,7 +1106,7 @@ namespace yato
             /**
              *  Range for accessing elements trough all dimensions
              */
-            yato::range<iterator> plain_range() YATO_NOEXCEPT_KEYWORD
+            yato::range<data_iterator> plain_range() YATO_NOEXCEPT_KEYWORD
             {
                 return yato::make_range(plain_begin(), plain_end());
             }
