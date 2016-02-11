@@ -22,10 +22,10 @@
 static_assert(YATO_DEBUG != YATO_RELEASE, "Wrong configuration");
 static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 
-#if defined(_M_IX86)
-#define YATO_X86
-#elif defined(_M_X64)
+#if defined(__x86_64__) || defined(_M_X64)
 #define YATO_X64
+#elif defined(__i386) || defined(_M_IX86)
+#define YATO_X86
 #else
 #error "Unknown architecture!"
 #endif
