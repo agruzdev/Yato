@@ -275,4 +275,53 @@ TEST(Yato_VectorND, vec_1D)
     EXPECT_EQ(6, std_vec2[2]);
 }
 
+TEST(Yato_VectorND, insert)
+{
+    yato::vector_nd<int, 2> vec = { { 1, 1 },{ 3, 3 } };
 
+    yato::vector_nd<short, 1> line = { 2, 2 };
+    vec.insert(std::next(vec.begin()), line);
+
+    vec.insert(vec.begin(), yato::vector_nd<int, 1>{ 0, 0 } );
+    vec.insert(vec.end(), yato::vector_nd<int, 1>{ 4, 4 });
+
+    int i = 0;
+    for (const auto & row : vec) {
+        EXPECT_EQ(i, row[0]);
+        EXPECT_EQ(i, row[1]);
+        ++i;
+    }
+}
+
+TEST(Yato_VectorND, insert_count)
+{
+    yato::vector_nd<int, 2> vec = { { 1, 1 },{ 3, 3 } };
+
+    yato::vector_nd<short, 1> line = { 2, 2 };
+    vec.insert(std::next(vec.begin()), 10, line);
+
+    int i = 0;
+    for (const auto & row : vec) {
+        if (i > 0 && i < 11) {
+            EXPECT_EQ(2, row[0]);
+            EXPECT_EQ(2, row[1]);
+        }
+        ++i;
+    }
+}
+
+
+TEST(Yato_VectorND, insert_range)
+{
+    yato::vector_nd<int, 2> vec1 = { { 1, 1 },{ 4, 4 } };
+    yato::vector_nd<int, 2> vec2 = { { 2, 2 },{ 3, 3 } };
+
+    vec1.insert(std::next(vec1.begin()), vec2.begin(), vec2.end());
+
+    int i = 1;
+    for (const auto & row : vec1) {
+        EXPECT_EQ(i, row[0]);
+        EXPECT_EQ(i, row[1]);
+        ++i;
+    }
+}

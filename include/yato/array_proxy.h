@@ -82,7 +82,14 @@ namespace yato
                 : m_data_iter(data), m_sizes_iter(sizes), m_offsets_iter(offsets)
             {}
 
-            sub_array_proxy(const sub_array_proxy&) = default;
+            sub_array_proxy(const sub_array_proxy<data_iterator, size_iterator, dimensions_num> & other)
+                : m_data_iter(other.m_data_iter), m_sizes_iter(other.m_sizes_iter), m_offsets_iter(other.m_offsets_iter)
+            { }
+
+            template <typename _OtherDataIterator>
+            sub_array_proxy(const sub_array_proxy<_OtherDataIterator, size_iterator, dimensions_num> & other)
+                : m_data_iter(other.m_data_iter), m_sizes_iter(other.m_sizes_iter), m_offsets_iter(other.m_offsets_iter)
+            {}
 
             sub_array_proxy(sub_array_proxy && other) YATO_NOEXCEPT_KEYWORD
                 : m_data_iter(std::move(other.m_data_iter)), m_sizes_iter(std::move(other.m_sizes_iter)), m_offsets_iter(std::move(other.m_offsets_iter))
@@ -551,6 +558,11 @@ namespace yato
             {
                 return m_data_iter >= other.m_data_iter;
             }
+
+            //-------------------------------------------------------
+            
+            template<typename _OtherDataIterator, typename _OtherSizeIterator, size_t _OtherDimensions>
+            friend class sub_array_proxy;
         };
 
     }
