@@ -325,3 +325,20 @@ TEST(Yato_VectorND, insert_range)
         ++i;
     }
 }
+
+
+TEST(Yato_VectorND, erase)
+{
+    yato::vector_nd<int, 2> vec1 = { { 1, 1 },{ 4, 4 }, { 5, 5 }, { 2, 2 }, { 3, 3 } };
+
+    auto it = vec1.erase(vec1.begin() + 1, vec1.begin() + 3);
+    EXPECT_EQ(3, vec1.size(0));
+    EXPECT_EQ(2, (*it)[0]);
+    EXPECT_EQ(2, (*it)[1]);
+
+    it = vec1.erase(it - 1);
+    EXPECT_EQ(2, vec1.size(0));
+    EXPECT_EQ(2, (*it)[0]);
+    EXPECT_EQ(2, (*it)[1]);
+}
+

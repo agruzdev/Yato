@@ -209,6 +209,19 @@ namespace yato
                 return yato::make_range(std::next(m_plain_vector.begin(), insert_begin_offset), std::next(m_plain_vector.begin(), insert_end_offset));
             }
 
+            iterator _erase_impl(const const_iterator & first, const const_iterator & last)
+            {
+                auto count = std::distance(first, last);
+                if (count < 0) {
+                    YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[insert]: invalid iterators range!");
+                }
+                size_t erase_size = count * first.total_size();
+                size_t erase_offset = std::distance(plain_cbegin(), first.plain_cbegin());
+                std::move(std::next(plain_cbegin(), erase_offset + erase_size), plain_cend(), std::next(plain_begin(), erase_offset));
+                resize(m_dimensions[0] - count);
+                return _create_proxy(std::next(plain_begin(), erase_offset));
+            }
+
             //-------------------------------------------------------
 
         public:
@@ -348,7 +361,7 @@ namespace yato
              */
             template<typename _DataIterator, typename _SizeIterator>
             explicit
-                vector_nd_impl(const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_num> & other)
+            vector_nd_impl(const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_num> & other)
             {
                 _init_sizes(other.dimensions_range());
                 m_plain_vector.resize(m_sub_sizes[0]);
@@ -506,7 +519,7 @@ namespace yato
              *  Iterator for accessing elements trough all dimensions
              */
             YATO_CONSTEXPR_FUNC
-                const_data_iterator plain_cbegin() const YATO_NOEXCEPT_KEYWORD
+            const_data_iterator plain_cbegin() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.cbegin();
             }
@@ -540,7 +553,7 @@ namespace yato
              *  Range for accessing sub-array elements trough the top dimension
              */
             YATO_CONSTEXPR_FUNC
-                yato::range<const_data_iterator> crange() const YATO_NOEXCEPT_KEYWORD
+            yato::range<const_data_iterator> crange() const YATO_NOEXCEPT_KEYWORD
             {
                 return yato::make_range(cbegin(), cend());
             }
@@ -557,7 +570,7 @@ namespace yato
              *  Range for accessing elements trough all dimensions
              */
             YATO_CONSTEXPR_FUNC
-                yato::range<const_data_iterator> plain_crange() const YATO_NOEXCEPT_KEYWORD
+            yato::range<const_data_iterator> plain_crange() const YATO_NOEXCEPT_KEYWORD
             {
                 return yato::make_range(plain_cbegin(), plain_cend());
             }
@@ -574,7 +587,7 @@ namespace yato
              *  Checks whether the vector is empty
              */
             YATO_CONSTEXPR_FUNC
-                bool empty() const YATO_NOEXCEPT_KEYWORD
+            bool empty() const YATO_NOEXCEPT_KEYWORD
             {
                 return (m_sub_sizes[0] == 0);
             }
@@ -701,7 +714,7 @@ namespace yato
              *  Get the last sub-vector proxy
              */
             YATO_CONSTEXPR_FUNC
-                const_proxy back() const
+            const_proxy back() const
             {
                 if (m_dimensions[0] == 0) {
                     YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[back]: vector is empty");
@@ -814,6 +827,22 @@ namespace yato
             iterator insert(const const_iterator & position, const yato::range< proxy_tmpl<_OtherDataIterator, _SizeIterator> > & range)
             {
                 return insert(position, range.begin(), range.end());
+            }
+
+            /**
+             *  Removes the sub-vector element at 'position'
+             */
+            iterator erase(const const_iterator & position)
+            {
+                return _erase_impl(position, std::next(position));
+            }
+
+            /**
+             *  Removes the sub-vector elements in the range [first, last)
+             */
+            iterator erase(const const_iterator & first, const const_iterator & last)
+            {
+                return _erase_impl(first, last);
             }
         };
 
@@ -1401,7 +1430,7 @@ namespace yato
             /**
              *  Inserts elements at the specified location before 'position'
              */
-            iterator insert(const_iterator position, const data_type & value)
+            iterator insert(const const_iterator & position, const data_type & value)
             {
                 m_plain_vector.insert(position, value);
             }
@@ -1409,7 +1438,7 @@ namespace yato
             /**
              *  Inserts elements at the specified location before 'position'
              */
-            iterator insert(const_iterator position, data_type && value)
+            iterator insert(const const_iterator & position, data_type && value)
             {
                 m_plain_vector.insert(position, std::move(value));
             }
@@ -1417,7 +1446,7 @@ namespace yato
             /**
              *  Inserts elements at the specified location before 'position'
              */
-            iterator insert(const_iterator position, size_t count, const data_type & value)
+            iterator insert(const const_iterator & position, size_t count, const data_type & value)
             {
                 m_plain_vector.insert(position, count, value);
             }
@@ -1426,19 +1455,45 @@ namespace yato
              *  Inserts elements from range [first, last) before 'position'
              */
             template<class _InputIt>
-            iterator insert(const_iterator position, _InputIt first, _InputIt last)
+            iterator insert(const const_iterator & position, _InputIt && first, _InputIt && last)
             {
-                m_plain_vector.insert(position, first, last);
+                m_plain_vector.insert(position, std::forward<_InputIt>(first), std::forward<_InputIt>(last));
             }
 
             /**
              *  Inserts elements from range before 'position'
              */
             template<class _InputIt>
-            iterator insert(const_iterator position, yato::range<_InputIt> range)
+            iterator insert(const const_iterator & position, const yato::range<_InputIt> & range)
             {
                 m_plain_vector.insert(position, range.begin(), range.end());
             }
+
+            /**
+             *  Removes the element at 'position'
+             */
+            iterator erase(const const_iterator & position)
+            {
+                m_plain_vector.erase(position);
+            }
+
+            /**
+             *  Removes the elements in the range [first; last)
+             */
+            iterator erase(const const_iterator & first, const const_iterator & last)
+            {
+                m_plain_vector.erase(first, last);
+            }
+
+            /**
+             *  Removes the elements in the range 
+             */
+            template<class _InputIt>
+            iterator erase(const yato::range<_InputIt> & range)
+            {
+                m_plain_vector.erase(range.begin(), range.last());
+            }
+
         };
 
     }
