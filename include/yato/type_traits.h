@@ -11,6 +11,8 @@
 #include <type_traits>
 #include <memory>
 #include <iterator>
+#include <vector>
+#include <array>
 
 #include "prerequisites.h"
 
@@ -117,6 +119,23 @@ namespace yato
     };
 
 
+    /**
+     *  Check if type T is one of listed types
+     */
+    template<typename _T, typename _Some, typename... _Others>
+    struct one_of
+        : std::integral_constant<bool, std::is_same<_T, _Some>::value || one_of<_T, _Others...>::value >
+    { };
+    
+    template<typename _T, typename _Some>
+    struct one_of<_T, _Some>
+        : std::integral_constant<bool, std::is_same<_T, _Some>::value >
+    { };
+
+
+    /**
+     *  Check if types have a trait
+     */
     template<template <typename> class _Trait, typename _T1, typename... _T>
     struct has_trait
     {
@@ -149,6 +168,8 @@ namespace yato
         : std::integral_constant<size_t, sizeof...(_T)>
     { };
 #endif
+
+
 }
 
 #endif

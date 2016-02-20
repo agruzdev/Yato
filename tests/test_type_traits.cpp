@@ -63,3 +63,17 @@ TEST(Yato_TypeTraits, has_trait)
     EXPECT_TRUE((true == yato::has_trait< std::is_integral, int, long, short, bool >::value));
     EXPECT_FALSE((true == yato::has_trait< std::is_integral, int, long, Foo, bool >::value));
 }
+
+TEST(Yato_TypeTraits, one_of)
+{
+    class Foo {};
+
+    EXPECT_TRUE((true == yato::one_of< int, int >::value));
+    EXPECT_TRUE((true == yato::one_of< short, int, long, short, bool >::value));
+    EXPECT_TRUE((true == yato::one_of< Foo, int, long, Foo, bool >::value));
+
+    EXPECT_FALSE((true == yato::one_of< int, const int >::value));
+    EXPECT_FALSE((true == yato::one_of< short, int, long, char, bool >::value));
+    EXPECT_FALSE((true == yato::one_of< Foo, int, long, Foo*, bool >::value));
+}
+
