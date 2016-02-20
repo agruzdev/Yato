@@ -38,7 +38,7 @@ namespace yato
             }
         }
         
-        not_null(nullptr_t ptr) = delete;
+        not_null(std::nullptr_t ptr) = delete;
         
         YATO_CONSTEXPR_FUNC 
         operator T () const YATO_NOEXCEPT_KEYWORD
@@ -89,7 +89,7 @@ namespace yato
             }
         }
 
-        not_null(nullptr_t ptr) = delete;
+        not_null(std::nullptr_t ptr) = delete;
         
         not_null(const not_null&) = delete;
         not_null& operator=(const not_null&) = delete;

@@ -38,7 +38,7 @@ TEST(Yato_Invoke, invoke)
     yato::invoke(std::make_shared<Bar>(), &Bar::foo, 1);
 
     yato::invoke(f, &Foo::zoo);
-    const Foo f2;
+    const Foo f2{};
     yato::invoke(f2, &Foo::zoo);
 
     EXPECT_TRUE(true);
