@@ -49,18 +49,23 @@ namespace
 {
     class Foo
     {
-        YATO_REFLECT_CLASS(Foo);
+        YATO_REFLECT_CLASS(Foo)
     private:
         int x;
-        YATO_REFLECT_VAR(x);
+        YATO_REFLECT_VAR(x)
     public:
-        float YATO_REFLECT_VAR_INLINE(y);
+        float YATO_REFLECT_VAR_INLINE(y)
     };
 }
+
 
 
 
 TEST(Yato_Reflection, members)
 {
     std::cout << typeid(Foo::_yato_reflected_y::my_class).name() << "::" << typeid(Foo::_yato_reflected_y::my_type).name() << std::endl;
+
+    for (const auto & info : yato::reflection::reflection_manager<Foo>::members()) {
+        std::cout << info->name() << std::endl;
+    }
 }
