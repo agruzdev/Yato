@@ -9,15 +9,18 @@
 #define _YATO_REFLECTION_H_
 
 #include <vector>
+#include <map>
 #include <memory>
 #include <string>
 #include "meta.h"
 #include "singleton.h"
+#include "range.h"
 
 namespace yato
 {
     namespace reflection
     {
+
         /**
          *  Type for counter value
          */
@@ -28,33 +31,77 @@ namespace yato
          */
         static YATO_CONSTEXPR_VAR counter_type MAX_COUNTER_VALUE = 255;
 
-        struct member_info_base
+        /**
+         *  Member reflection interface
+         */
+        template<typename _MyClass>
+        struct member_info
         {
-            virtual ~member_info_base() {}
+            using my_class = _MyClass;
 
+            virtual ~member_info() {}
+
+            /**
+             *  Get member name
+             */
             virtual std::string name() const = 0;
+
+            /**
+             *  Get pointer to member (only for data members)
+             */
+            virtual void* ptr(_MyClass*) const = 0;
+
+            /**
+             *  Safe access with type check
+             */
+            template <typename _T>
+            auto as_ptr(_MyClass* obj) const
+                -> typename std::enable_if<std::is_class<_T>::value, _T*>::type
+            {
+                auto _cast = dynamic_cast<_T*>(ptr(obj));
+                if (_cast == nullptr) {
+                    throw yato::assertion_error("yato::member_info[as_ptr]: bad cast!");
+                }
+                return _cast;
+            }
+
+            /**
+             *  Safe access with type check
+             */
+            template <typename _T>
+            auto as_ptr(_MyClass* obj) const YATO_NOEXCEPT_KEYWORD
+                -> typename std::enable_if<!std::is_class<_T>::value, _T*>::type
+            {
+                return static_cast<_T*>(ptr(obj));
+            }
         };
 
         template<typename _MyClass, typename _MyType>
-        struct member_info final
-            : public member_info_base
+        struct data_member_info final
+            : public member_info<_MyClass>
         {
             using my_class = _MyClass;
             using my_type  = _MyType;
 
         private:
             const std::string m_name;
+            _MyType _MyClass::* m_ptr;
 
         public:
-            member_info(const std::string & name)
-                : m_name(name)
+            data_member_info(const std::string & name, _MyType _MyClass::* mem_ptr)
+                : m_name(name), m_ptr(mem_ptr)
             { }
 
-            ~member_info() override {}
+            ~data_member_info() override {}
 
             std::string name() const YATO_NOEXCEPT_KEYWORD override
             {
                 return m_name;
+            }
+
+            void* ptr(_MyClass* obj) const override
+            {
+                return &(obj->*m_ptr);
             }
         };
 
@@ -63,18 +110,19 @@ namespace yato
             /**
              *  Reflection manager class accumulating all meta information about a class
              */
-            template <typename _T>
+            template <typename _Class>
             class reflection_manager_impl
             {
-                using members_array = std::vector< std::unique_ptr<member_info_base> >;
-                members_array m_members{};
+                using members_collection = std::map<std::string, std::unique_ptr<member_info<_Class> > >;
+                using members_iterator = typename members_collection::const_iterator;
 
-                bool m_inited = false;
+                members_collection m_members {};
+                mutable bool m_inited = false;
 
-                void _check_inited()
+                void _check_inited() const
                 {
                     if (!m_inited) {
-                        _T::_yato_runtime_register(meta::Number<MAX_COUNTER_VALUE>{});
+                        _Class::_yato_runtime_register(meta::Number<MAX_COUNTER_VALUE>{});
                         m_inited = true;
                     }
                 }
@@ -86,25 +134,54 @@ namespace yato
                 reflection_manager_impl& operator=(reflection_manager_impl&&) = delete;
 
             public:
+                /**
+                 *  Create empty manager
+                 */
                 YATO_CONSTEXPR_FUNC
                 reflection_manager_impl()
                 { }
-
+                
+                /**
+                 *  Destroy
+                 */
                 ~reflection_manager_impl()
                 { }
 
-                void visit(std::unique_ptr<member_info_base> && info)
-                {
-                    m_members.push_back(std::move(info));
-                }
-
-                const members_array & members()
+                /**
+                 *  Iterate all members of the class
+                 */
+                yato::range<members_iterator> members() const
                 {
                     _check_inited();
-                    return m_members;
+                    return make_range(m_members.cbegin(), m_members.cend());
+                }
+                /**
+                 *  Get class member info by name
+                 *  @return info pointer if it is found, nullptr else
+                 */
+                const member_info<_Class>* get_by_name(const std::string & name)
+                {
+                    _check_inited();
+                    auto it = m_members.find(name);
+                    return (it != m_members.cend()) 
+                        ? it->second.get() 
+                        : nullptr;
                 }
 
-                friend struct create_using_new<reflection_manager_impl<_T>>;
+                /**
+                 *  Registration function for reflection
+                 *  Don't call it manually!
+                 */
+                void _visit(std::unique_ptr<member_info<_Class>> && info)
+                {
+                    if (m_members.cend() != m_members.find(info->name())) {
+                        throw yato::assertion_error("yato::reflection_manager_impl[visit]: Failed to register members with same name!");
+                    }
+                    m_members[info->name()] = std::move(info);
+
+                }
+
+                friend struct create_using_new<reflection_manager_impl<_Class>>;
             };
         }
         template<typename _T>
@@ -166,12 +243,13 @@ namespace yato
     YATO_REFLECTION_GET_TYPED_COUNTER_VALUE(_yato_reflection_tag, _yato_reflected_idx_##Var)\
     YATO_REFLECTION_SET_TYPED_COUNTER_VALUE(_yato_reflection_tag, _yato_reflected_idx_##Var + 1)\
     \
-    using _yato_reflected_##Var = yato::reflection::member_info<_yato_reflection_my_type, decltype(_yato_reflection_my_type::Var)>;\
+    using _yato_reflected_##Var = yato::reflection::data_member_info<_yato_reflection_my_type, decltype(_yato_reflection_my_type::Var)>;\
     \
     static void _yato_runtime_register(yato::meta::Number<_yato_reflected_idx_##Var>)\
     {\
         _yato_runtime_register(yato::meta::Number<_yato_reflected_idx_##Var - 1>{});\
-        yato::reflection::reflection_manager<_yato_reflection_my_type>::instance()->visit(std::make_unique<_yato_reflected_##Var>(#Var));\
+        yato::reflection::reflection_manager<_yato_reflection_my_type>::instance()->_visit(\
+            std::make_unique<_yato_reflected_##Var>(#Var, &_yato_reflection_my_type::Var));\
     }
 
 

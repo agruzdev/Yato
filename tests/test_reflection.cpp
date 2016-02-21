@@ -64,11 +64,24 @@ TEST(Yato_Reflection, trait)
     static_assert(!yato::reflection::is_reflected<void>::value, "reflection trait fail");
 }
 
-TEST(Yato_Reflection, members)
+TEST(Yato_Reflection, data_members)
 {
     std::cout << typeid(Foo::_yato_reflected_y::my_class).name() << "::" << typeid(Foo::_yato_reflected_y::my_type).name() << std::endl;
 
     for (const auto & info : yato::reflection::reflection_manager<Foo>::instance()->members()) {
-        std::cout << info->name() << std::endl;
+        std::cout << info.first << std::endl;
     }
+
+    EXPECT_NE(nullptr, yato::reflection::reflection_manager<Foo>::instance()->get_by_name("x"));
+    EXPECT_NE(nullptr, yato::reflection::reflection_manager<Foo>::instance()->get_by_name("y"));
+    EXPECT_EQ(nullptr, yato::reflection::reflection_manager<Foo>::instance()->get_by_name("z"));
+
+    Foo f;
+    f.y = 0.0f;
+    *static_cast<float*>(yato::reflection::reflection_manager<Foo>::instance()->get_by_name("y")->ptr(&f)) = 1.0f;
+    // *static_cast<int*>(yato::reflection::reflection_manager<Foo>::instance()->get_by_name("x")->ptr(&f)) = 1; // <- should be error?
+    EXPECT_EQ(1.0f, f.y);
+
+    *(yato::reflection::reflection_manager<Foo>::instance()->get_by_name("y")->as_ptr<float>(&f)) = 2.0f;
+    EXPECT_EQ(2.0f, f.y);
 }
