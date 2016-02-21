@@ -18,6 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ### "Annotations" ###
 There are a couple of experiments inspired by [Cpp Core Guidelines](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md)
+
 * **yato::not_null** - pointer wrapper preventing from passing null pointer
 * **yato::instance_of** - pointer wrapper checking the dynamic type of passed pointer 
 
@@ -26,6 +27,7 @@ There are a couple of experiments inspired by [Cpp Core Guidelines](https://gith
 
 ### Containers ###
 Yato implemets a number of general purpose containers: 
+
 * **yato::array_nd** - multidimensional static array with interface and behaviour similar to *std::array*; The layout and size of the **yato::array_nd** are equal to native multidimensional array ( T[][]... )
 * **yato::vector_nd** - multidimensional dynamic array similar to *std::vector*; It supports dynamic adding/removing of elements and provides similar interface to std::vector
 * **yato::array_view** /** yato::array_view_nd** - non-owning containers which can be attached to any source of data and treat it similar to one-/multi-dimensional array
