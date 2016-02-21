@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <memory>
+#include <string>
 #include "meta.h"
 
 namespace yato
@@ -34,7 +35,7 @@ namespace yato
         };
 
         template<typename _MyClass, typename _MyType>
-        struct member_info /* final */
+        struct member_info final
             : public member_info_base
         {
             using my_class = _MyClass;
@@ -92,6 +93,21 @@ namespace yato
         template <typename _T>
         bool reflection_manager<_T>::m_inited = false;
 
+
+        /**
+         *  Type trait to check is a class has reflection info
+         */
+        template <typename _T, typename _Enable = void>
+        struct is_reflected
+            : std::false_type
+        { };
+
+        template <typename _T>
+        struct is_reflected<_T, 
+            typename std::enable_if<std::is_same<void, decltype(_yato_test_reflection_flag(std::declval<_T>()))>::value>::type
+        >
+            : std::true_type
+        { };
     }
 }
 
@@ -119,17 +135,18 @@ namespace yato
   */
 #define YATO_REFLECT_CLASS(Class) \
     using _yato_reflection_my_type = Class;\
-    struct _yato_reflection_my_tag {}; \
-    YATO_REFLECTION_SET_TYPED_COUNTER_VALUE(_yato_reflection_my_tag, 1)\
+    struct _yato_reflection_tag {}; \
+    YATO_REFLECTION_SET_TYPED_COUNTER_VALUE(_yato_reflection_tag, 1)\
     friend class yato::reflection::reflection_manager<_yato_reflection_my_type>;\
+    friend void _yato_test_reflection_flag(_yato_reflection_my_type); \
     static void _yato_runtime_register(yato::meta::Number<0>) {}\
 
   /**
    *  Reflection for class members
    */
 #define YATO_REFLECT_VAR(Var) \
-    YATO_REFLECTION_GET_TYPED_COUNTER_VALUE(_yato_reflection_my_tag, _yato_reflected_idx_##Var)\
-    YATO_REFLECTION_SET_TYPED_COUNTER_VALUE(_yato_reflection_my_tag, _yato_reflected_idx_##Var + 1)\
+    YATO_REFLECTION_GET_TYPED_COUNTER_VALUE(_yato_reflection_tag, _yato_reflected_idx_##Var)\
+    YATO_REFLECTION_SET_TYPED_COUNTER_VALUE(_yato_reflection_tag, _yato_reflected_idx_##Var + 1)\
     \
     using _yato_reflected_##Var = yato::reflection::member_info<_yato_reflection_my_type, decltype(_yato_reflection_my_type::Var)>;\
     \

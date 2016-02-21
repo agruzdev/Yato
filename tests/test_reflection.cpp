@@ -58,8 +58,11 @@ namespace
     };
 }
 
-
-
+TEST(Yato_Reflection, trait)
+{
+    static_assert( yato::reflection::is_reflected<Foo>::value,  "reflection trait fail");
+    static_assert(!yato::reflection::is_reflected<void>::value, "reflection trait fail");
+}
 
 TEST(Yato_Reflection, members)
 {
