@@ -111,18 +111,24 @@ namespace yato
              *  Reflection manager class accumulating all meta information about a class
              */
             template <typename _Class>
-            class reflection_manager_impl
+            class reflection_manager_impl final
             {
+            public:
+                using data_members_list = decltype(_Class::_yato_data_members_list_getter(meta::number<MAX_COUNTER_VALUE>{}));
+                //-------------------------------------------------------
+
+            private:
                 using members_collection = std::map<std::string, std::unique_ptr<member_info<_Class> > >;
                 using members_iterator = typename members_collection::const_iterator;
 
                 members_collection m_members {};
                 mutable bool m_inited = false;
+                //-------------------------------------------------------
 
                 void _check_inited() const
                 {
                     if (!m_inited) {
-                        _Class::_yato_runtime_register(meta::Number<MAX_COUNTER_VALUE>{});
+                        _Class::_yato_runtime_register(meta::number<MAX_COUNTER_VALUE>{});
                         m_inited = true;
                     }
                 }
@@ -132,6 +138,7 @@ namespace yato
 
                 reflection_manager_impl& operator=(const reflection_manager_impl&) = delete;
                 reflection_manager_impl& operator=(reflection_manager_impl&&) = delete;
+                //-------------------------------------------------------
 
             public:
                 /**
@@ -187,8 +194,11 @@ namespace yato
         template<typename _T>
         using reflection_manager = singleton_holder<details::reflection_manager_impl<_T>, create_using_new>;
       
-
-
+        /**
+         *  ToDo: fix the trait
+         *  For some reason ADL doesn't see _yato_test_reflection_flag in MSVC 2013
+         */
+#ifndef YATO_MSVC_2013
         /**
          *  Type trait to check is a class has reflection info
          */
@@ -203,6 +213,7 @@ namespace yato
         >
             : std::true_type
         { };
+#endif
     }
 }
 
@@ -214,40 +225,57 @@ namespace yato
  */
 
 #define YATO_REFLECTION_SET_COUNTER_VALUE(Value) \
-    static YATO_CONSTEXPR_FUNC yato::meta::Number<(Value)> _yato_cs_meta_counter(yato::meta::Number<(Value)>);
+    static YATO_CONSTEXPR_FUNC yato::meta::number<(Value)> _yato_cs_meta_counter(yato::meta::number<(Value)>);
 
 #define YATO_REFLECTION_GET_COUNTER_VALUE(VariableName) \
-    static YATO_CONSTEXPR_VAR yato::reflection::counter_type VariableName = decltype(_yato_cs_meta_counter(yato::meta::Number<yato::reflection::MAX_COUNTER_VALUE>{}))::value; 
+    static YATO_CONSTEXPR_VAR yato::reflection::counter_type VariableName = decltype(_yato_cs_meta_counter(yato::meta::number<yato::reflection::MAX_COUNTER_VALUE>{}))::value; 
 
 #define YATO_REFLECTION_SET_TYPED_COUNTER_VALUE(Type, Value) \
-    static YATO_CONSTEXPR_FUNC yato::meta::Number<(Value)> _yato_cs_meta_counter(Type, yato::meta::Number<(Value)>);
+    static YATO_CONSTEXPR_FUNC yato::meta::number<(Value)> _yato_cs_meta_counter(Type, yato::meta::number<(Value)>);
 
 #define YATO_REFLECTION_GET_TYPED_COUNTER_VALUE(Type, VariableName) \
-    static YATO_CONSTEXPR_VAR yato::reflection::counter_type VariableName = decltype(_yato_cs_meta_counter(std::declval<Type>(), yato::meta::Number<yato::reflection::MAX_COUNTER_VALUE>{}))::value; 
+    static YATO_CONSTEXPR_VAR yato::reflection::counter_type VariableName = decltype(_yato_cs_meta_counter(std::declval<Type>(), yato::meta::number<yato::reflection::MAX_COUNTER_VALUE>{}))::value; 
 
  /**
   *  Initialize reflection for a class
   */
 #define YATO_REFLECT_CLASS(Class) \
+    /* define current class */ \
     using _yato_reflection_my_type = Class;\
     struct _yato_reflection_tag {}; \
+    \
+    /* set base for registration function and counter */ \
     YATO_REFLECTION_SET_TYPED_COUNTER_VALUE(_yato_reflection_tag, 1)\
+    static void _yato_runtime_register(yato::meta::number<0>) {}\
+    \
+    /* base declarator for static list of member info */ \
+    template <typename _Yato_Typename_Dummy = void> \
+    static yato::meta::null_list _yato_data_members_list_getter(yato::meta::number<0>); \
+    \
+    /* declare manager as friend to have access to registration functions */ \
     friend class yato::reflection::details::reflection_manager_impl<_yato_reflection_my_type>;\
+    \
+    /* friend function for the reflected trait; reachable by ADL */ \
     friend void _yato_test_reflection_flag(_yato_reflection_my_type); \
-    static void _yato_runtime_register(yato::meta::Number<0>) {}\
 
   /**
    *  Reflection for class members
    */
 #define YATO_REFLECT_VAR(Var) \
+    /* increment counter */ \
     YATO_REFLECTION_GET_TYPED_COUNTER_VALUE(_yato_reflection_tag, _yato_reflected_idx_##Var)\
     YATO_REFLECTION_SET_TYPED_COUNTER_VALUE(_yato_reflection_tag, _yato_reflected_idx_##Var + 1)\
     \
+    /* static reflection info */ \
     using _yato_reflected_##Var = yato::reflection::data_member_info<_yato_reflection_my_type, decltype(_yato_reflection_my_type::Var)>;\
+    template <typename _Yato_Typename_Dummy = void> /* templte is necessary for using typename keyword (msvc 2013 comlains)*/ \
+    static auto _yato_data_members_list_getter(yato::meta::number<_yato_reflected_idx_##Var>) \
+        -> typename yato::meta::list_push_back<decltype(_yato_data_members_list_getter(yato::meta::number<_yato_reflected_idx_##Var - 1>{})), _yato_reflected_##Var>::type; \
     \
-    static void _yato_runtime_register(yato::meta::Number<_yato_reflected_idx_##Var>)\
+    /* dynamic reflection info */ \
+    static void _yato_runtime_register(yato::meta::number<_yato_reflected_idx_##Var>)\
     {\
-        _yato_runtime_register(yato::meta::Number<_yato_reflected_idx_##Var - 1>{});\
+        _yato_runtime_register(yato::meta::number<_yato_reflected_idx_##Var - 1>{});\
         yato::reflection::reflection_manager<_yato_reflection_my_type>::instance()->_visit(\
             std::make_unique<_yato_reflected_##Var>(#Var, &_yato_reflection_my_type::Var));\
     }

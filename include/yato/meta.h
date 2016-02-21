@@ -98,7 +98,7 @@ namespace yato
         /**
          *  Add list element to the end
          */
-        template< typename _List, typename _T, typename... _Elems>
+        template<typename _List, typename _T, typename... _Elems>
         struct list_push_back
         {
             using type = typename list_push_back<typename _List::tail, _T, _Elems..., typename _List::head>::type;

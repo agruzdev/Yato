@@ -58,11 +58,13 @@ namespace
     };
 }
 
+#ifndef YATO_MSVC_2013
 TEST(Yato_Reflection, trait)
 {
     static_assert( yato::reflection::is_reflected<Foo>::value,  "reflection trait fail");
     static_assert(!yato::reflection::is_reflected<void>::value, "reflection trait fail");
 }
+#endif
 
 TEST(Yato_Reflection, data_members)
 {
@@ -84,4 +86,12 @@ TEST(Yato_Reflection, data_members)
 
     *(yato::reflection::reflection_manager<Foo>::instance()->get_by_name("y")->as_ptr<float>(&f)) = 2.0f;
     EXPECT_EQ(2.0f, f.y);
+
+    using all_data_members = yato::reflection::details::reflection_manager_impl<Foo>::data_members_list;
+
+    static_assert(std::is_same<all_data_members, yato::meta::list<
+        yato::reflection::data_member_info<Foo, int>,
+        yato::reflection::data_member_info<Foo, float> >
+    >::value, "reflection fail!");
 }
+
