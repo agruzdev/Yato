@@ -12,6 +12,7 @@
 #include <memory>
 #include <string>
 #include "meta.h"
+#include "singleton.h"
 
 namespace yato
 {
@@ -57,41 +58,58 @@ namespace yato
             }
         };
 
-        /**
-         *  Reflection manager class accumulating all meta information about a class
-         */
-        template <typename _T>
-        class reflection_manager
+        namespace details
         {
-            using members_array = std::vector< std::unique_ptr<member_info_base> >;
-            static members_array m_members;
-
-            static bool m_inited;
-            static void _check_init()
+            /**
+             *  Reflection manager class accumulating all meta information about a class
+             */
+            template <typename _T>
+            class reflection_manager_impl
             {
-                if (!m_inited) {
-                    _T::_yato_runtime_register(meta::Number<MAX_COUNTER_VALUE>{});
+                using members_array = std::vector< std::unique_ptr<member_info_base> >;
+                members_array m_members{};
+
+                bool m_inited = false;
+
+                void _check_inited()
+                {
+                    if (!m_inited) {
+                        _T::_yato_runtime_register(meta::Number<MAX_COUNTER_VALUE>{});
+                        m_inited = true;
+                    }
                 }
-            }
 
-        public:
-            static void visit(std::unique_ptr<member_info_base> && info)
-            {
-                m_members.push_back(std::move(info));
-            }
+                reflection_manager_impl(const reflection_manager_impl&) = delete;
+                reflection_manager_impl(reflection_manager_impl&&) = delete;
 
-            static const members_array & members()
-            {
-                _check_init();
-                return m_members;
-            }
-        };
+                reflection_manager_impl& operator=(const reflection_manager_impl&) = delete;
+                reflection_manager_impl& operator=(reflection_manager_impl&&) = delete;
 
-        template <typename _T>
-        typename reflection_manager<_T>::members_array reflection_manager<_T>::m_members;
+            public:
+                YATO_CONSTEXPR_FUNC
+                reflection_manager_impl()
+                { }
 
-        template <typename _T>
-        bool reflection_manager<_T>::m_inited = false;
+                ~reflection_manager_impl()
+                { }
+
+                void visit(std::unique_ptr<member_info_base> && info)
+                {
+                    m_members.push_back(std::move(info));
+                }
+
+                const members_array & members()
+                {
+                    _check_inited();
+                    return m_members;
+                }
+
+                friend struct create_using_new<reflection_manager_impl<_T>>;
+            };
+        }
+        template<typename _T>
+        using reflection_manager = singleton_holder<details::reflection_manager_impl<_T>, create_using_new>;
+      
 
 
         /**
@@ -137,7 +155,7 @@ namespace yato
     using _yato_reflection_my_type = Class;\
     struct _yato_reflection_tag {}; \
     YATO_REFLECTION_SET_TYPED_COUNTER_VALUE(_yato_reflection_tag, 1)\
-    friend class yato::reflection::reflection_manager<_yato_reflection_my_type>;\
+    friend class yato::reflection::details::reflection_manager_impl<_yato_reflection_my_type>;\
     friend void _yato_test_reflection_flag(_yato_reflection_my_type); \
     static void _yato_runtime_register(yato::meta::Number<0>) {}\
 
@@ -153,7 +171,7 @@ namespace yato
     static void _yato_runtime_register(yato::meta::Number<_yato_reflected_idx_##Var>)\
     {\
         _yato_runtime_register(yato::meta::Number<_yato_reflected_idx_##Var - 1>{});\
-        yato::reflection::reflection_manager<_yato_reflection_my_type>::visit(std::make_unique<_yato_reflected_##Var>(#Var));\
+        yato::reflection::reflection_manager<_yato_reflection_my_type>::instance()->visit(std::make_unique<_yato_reflected_##Var>(#Var));\
     }
 
 

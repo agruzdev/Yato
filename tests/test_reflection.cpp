@@ -68,7 +68,7 @@ TEST(Yato_Reflection, members)
 {
     std::cout << typeid(Foo::_yato_reflected_y::my_class).name() << "::" << typeid(Foo::_yato_reflected_y::my_type).name() << std::endl;
 
-    for (const auto & info : yato::reflection::reflection_manager<Foo>::members()) {
+    for (const auto & info : yato::reflection::reflection_manager<Foo>::instance()->members()) {
         std::cout << info->name() << std::endl;
     }
 }
