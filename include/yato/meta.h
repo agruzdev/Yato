@@ -16,6 +16,18 @@ namespace yato
     namespace meta
     {
         //-------------------------------------------------------
+        // meta::id_type
+        //
+
+        /**
+         *  Generate unique type from integer id
+         */
+        template<uint32_t _Id>
+        struct id_type 
+            : std::integral_constant<uint32_t, _Id>
+        { };
+
+        //-------------------------------------------------------
         // meta::number
         //
 

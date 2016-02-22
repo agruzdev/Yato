@@ -76,16 +76,20 @@ namespace yato
             }
         };
 
-        template<typename _MyClass, typename _MyType>
+        template<typename _MyClass, typename _MyType, counter_type _Idx>
         struct data_member_info final
             : public member_info<_MyClass>
         {
             using my_class = _MyClass;
             using my_type  = _MyType;
 
+            static YATO_CONSTEXPR_VAR counter_type my_idx = _Idx;
+            //-------------------------------------------------------
+
         private:
             const std::string m_name;
             _MyType _MyClass::* m_ptr;
+            //-------------------------------------------------------
 
         public:
             data_member_info(const std::string & name, _MyType _MyClass::* mem_ptr)
@@ -114,6 +118,7 @@ namespace yato
             class reflection_manager_impl final
             {
             public:
+                using class_type = _Class;
                 using data_members_list = decltype(_Class::_yato_data_members_list_getter(meta::number<MAX_COUNTER_VALUE>{}));
                 //-------------------------------------------------------
 
@@ -194,26 +199,40 @@ namespace yato
         template<typename _T>
         using reflection_manager = singleton_holder<details::reflection_manager_impl<_T>, create_using_new>;
       
+
+        template<typename _T>
+        std::false_type _yato_test_reflection_flag(_T);
+
         /**
-         *  ToDo: fix the trait
-         *  For some reason ADL doesn't see _yato_test_reflection_flag in MSVC 2013
-         */
-#ifndef YATO_MSVC_2013
-        /**
-         *  Type trait to check is a class has reflection info
-         */
-        template <typename _T, typename _Enable = void>
+        *  Type trait to check is a class has reflection info
+        */
+        template <typename _T>
         struct is_reflected
+            : decltype(_yato_test_reflection_flag(std::declval<_T>()))
+        { };
+
+        template <>
+        struct is_reflected<void>
             : std::false_type
         { };
 
-        template <typename _T>
-        struct is_reflected<_T, 
-            typename std::enable_if<std::is_same<void, decltype(_yato_test_reflection_flag(std::declval<_T>()))>::value>::type
-        >
+        //ToDo: Accessing private member doesn't cause substitution fail in MSVC 2013 or MinGW 
+#ifdef YATO_MSVC_2015
+        /**
+         *  Check if the class member with specified reflection index is public
+         *  <=> is accessible from out of the class
+         */
+        template <typename _T, counter_type _MemberIdx, typename _Enable = void>
+        struct is_public
+            : std::false_type
+        { };
+
+        template <typename _T, counter_type _MemberIdx>
+        struct is_public<_T, _MemberIdx, decltype(_T::template _yato_access_tag<_MemberIdx>())>
             : std::true_type
         { };
 #endif
+
     }
 }
 
@@ -256,7 +275,7 @@ namespace yato
     friend class yato::reflection::details::reflection_manager_impl<_yato_reflection_my_type>;\
     \
     /* friend function for the reflected trait; reachable by ADL */ \
-    friend void _yato_test_reflection_flag(_yato_reflection_my_type); \
+    friend std::true_type _yato_test_reflection_flag(_yato_reflection_my_type); \
 
   /**
    *  Reflection for class members
@@ -267,7 +286,7 @@ namespace yato
     YATO_REFLECTION_SET_TYPED_COUNTER_VALUE(_yato_reflection_tag, _yato_reflected_idx_##Var + 1)\
     \
     /* static reflection info */ \
-    using _yato_reflected_##Var = yato::reflection::data_member_info<_yato_reflection_my_type, decltype(_yato_reflection_my_type::Var)>;\
+    using _yato_reflected_##Var = yato::reflection::data_member_info<_yato_reflection_my_type, decltype(_yato_reflection_my_type::Var), _yato_reflected_idx_##Var>;\
     template <typename _Yato_Typename_Dummy = void> /* templte is necessary for using typename keyword (msvc 2013 comlains)*/ \
     static auto _yato_data_members_list_getter(yato::meta::number<_yato_reflected_idx_##Var>) \
         -> typename yato::meta::list_push_back<decltype(_yato_data_members_list_getter(yato::meta::number<_yato_reflected_idx_##Var - 1>{})), _yato_reflected_##Var>::type; \
@@ -278,7 +297,10 @@ namespace yato
         _yato_runtime_register(yato::meta::number<_yato_reflected_idx_##Var - 1>{});\
         yato::reflection::reflection_manager<_yato_reflection_my_type>::instance()->_visit(\
             std::make_unique<_yato_reflected_##Var>(#Var, &_yato_reflection_my_type::Var));\
-    }
+    }\
+    /* tag for checking access */ \
+    template <yato::reflection::counter_type _Idx = _yato_reflected_idx_##Var>\
+    static auto _yato_access_tag() -> typename std::enable_if<(_Idx == _yato_reflected_idx_##Var), void>::type;
 
 
 #define YATO_REFLECT_VAR_INLINE(Var) \

@@ -58,13 +58,12 @@ namespace
     };
 }
 
-#ifndef YATO_MSVC_2013
 TEST(Yato_Reflection, trait)
 {
     static_assert( yato::reflection::is_reflected<Foo>::value,  "reflection trait fail");
+    static_assert(!yato::reflection::is_reflected<int>::value, "reflection trait fail");
     static_assert(!yato::reflection::is_reflected<void>::value, "reflection trait fail");
 }
-#endif
 
 TEST(Yato_Reflection, data_members)
 {
@@ -90,8 +89,49 @@ TEST(Yato_Reflection, data_members)
     using all_data_members = yato::reflection::details::reflection_manager_impl<Foo>::data_members_list;
 
     static_assert(std::is_same<all_data_members, yato::meta::list<
-        yato::reflection::data_member_info<Foo, int>,
-        yato::reflection::data_member_info<Foo, float> >
+        yato::reflection::data_member_info<Foo, int, 1>,
+        yato::reflection::data_member_info<Foo, float, 2> >
     >::value, "reflection fail!");
+
+#ifdef YATO_MSVC_2015
+    static_assert(false == yato::reflection::is_public<Foo, 1>::value, "is_public fail");
+    static_assert(true  == yato::reflection::is_public<Foo, 2>::value, "is_public fail");
+#endif
+}
+
+namespace
+{
+    template<class _Class, typename _ListOfMembers>
+    struct dump_members_impl
+    {
+        static void print()
+        {
+            std::cout << typeid(typename _ListOfMembers::head::my_type).name() << std::endl;
+            dump_members_impl<_Class, typename _ListOfMembers::tail>::print();
+        }
+    };
+
+    template<typename _Class>
+    struct dump_members_impl<_Class, yato::meta::null_list>
+    {
+        static void print()
+        { }
+    };
+
+    template<class _Class>
+    struct dump_class
+    {
+        static void print()
+        {
+            std::cout << typeid(_Class).name() << std::endl;
+            dump_members_impl<_Class, typename yato::reflection::details::reflection_manager_impl<_Class>::data_members_list>::print();
+        }
+    };
+}
+
+
+TEST(Yato_Reflection, data_members_2)
+{
+    dump_class<Foo>::print();
 }
 
