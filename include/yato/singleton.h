@@ -37,7 +37,15 @@ namespace yato
     template<typename _T, template <typename> class _Creator>
     class singleton_holder
     {
-        static std::unique_ptr<_T> ms_instance;
+        struct deleter
+        {
+            void operator()(_T* ptr)
+            {
+                _Creator<_T>::destroy(ptr);
+            }
+        };
+        using instance_ptr = std::unique_ptr<_T, deleter>;
+        static instance_ptr ms_instance;
 
     public:
         /**
@@ -70,7 +78,7 @@ namespace yato
     };
 
     template<typename _T, template <typename> class _Creator>
-    std::unique_ptr<_T> singleton_holder<_T, _Creator>::ms_instance;
+    typename singleton_holder<_T, _Creator>::instance_ptr singleton_holder<_T, _Creator>::ms_instance;
 
 }
 
