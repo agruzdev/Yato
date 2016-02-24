@@ -8,7 +8,6 @@
 #ifndef _YATO_META_H_
 #define _YATO_META_H_
 
-#include "type_traits.h"
 #include "types.h"
 
 namespace yato
@@ -78,6 +77,24 @@ namespace yato
         };
 
         /**
+         *  make list from variadic template
+         */
+        template<typename... _Elems>
+        struct make_list
+        {
+            using type = list<_Elems...>;
+        };
+        
+        /**
+         *  make empty list
+         */
+        template<>
+        struct make_list<>
+        {
+            using type = null_list;
+        };
+
+        /**
          *  Reverse list
          */
         template<typename _List, typename... _Elems>
@@ -142,6 +159,22 @@ namespace yato
         {
             using type = list<_Elems...>;
         };
+
+        /**
+         *  Access list element
+         */
+        template <typename _List, size_t _Idx>
+        struct list_at
+        {
+            using type = typename list_at<typename _List::tail, _Idx - 1>::type;
+        };
+
+        template <typename _List>
+        struct list_at<_List, 0> 
+        {
+            using type = typename _List::head;
+        };
+
     }
 }
 

@@ -9,12 +9,14 @@
 #define _YATO_TYPE_TRAITS_H_
 
 #include <type_traits>
+#include <functional>
 #include <memory>
 #include <iterator>
 #include <vector>
 #include <array>
 
 #include "prerequisites.h"
+#include "meta.h"
 
 namespace yato
 {
@@ -170,6 +172,75 @@ namespace yato
 #endif
 
 
+    //-------------------------------------------------------
+    // functional trait
+
+    namespace details
+    {
+        template<typename _R, typename... _Args>
+        auto get_function(_R(*)(_Args...)) -> std::function<_R(_Args...)>;
+    }
+
+    template <typename _T>
+    struct function_pointer_to_type
+    {
+        using type = decltype(details::get_function(std::declval<_T>()));
+    };
+
+    template<typename T>
+    struct function_trait {};
+
+    template<typename _R, typename... _Args>
+    struct function_trait< std::function<_R(_Args...)> >
+    {
+        static YATO_CONSTEXPR_VAR size_t arguments_num = sizeof...(_Args);
+
+        using result_type = _R;
+        using arguments_list = typename meta::make_list<_Args...>::type;
+
+        template <size_t _Idx>
+        struct arg
+        {
+            using type = typename meta::list_at<arguments_list, _Idx>::type;
+        };
+    };
+
+    template<typename _R, typename... _Args>
+    struct function_trait< _R(*)(_Args...) >
+    {
+        static YATO_CONSTEXPR_VAR size_t arguments_num = sizeof...(_Args);
+
+        using result_type = _R;
+        using arguments_list = typename meta::make_list<_Args...>::type;
+
+        template <size_t _Idx>
+        struct arg
+        {
+            using type = typename meta::list_at<arguments_list, _Idx>::type;
+        };
+    };
+
+    /**
+     *  For class members
+     */
+    template<typename T>
+    struct function_member_trait {};
+
+    template<class _Class, typename _R, typename... _Args>
+    struct function_member_trait< _R( _Class::* )(_Args...) >
+    {
+        static YATO_CONSTEXPR_VAR size_t arguments_num = sizeof...(_Args);
+
+        using my_class = _Class;
+        using result_type = _R;
+        using arguments_list = typename meta::make_list<_Args...>::type;
+
+        template <size_t _Idx>
+        struct arg
+        {
+            using type = typename meta::list_at<arguments_list, _Idx>::type;
+        };
+    };
 }
 
 #endif

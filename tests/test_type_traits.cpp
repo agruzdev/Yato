@@ -77,3 +77,31 @@ TEST(Yato_TypeTraits, one_of)
     EXPECT_FALSE((true == yato::one_of< Foo, int, long, Foo*, bool >::value));
 }
 
+namespace
+{
+    void foo(int, long);
+    struct S
+    {
+        const char* bar();
+    };
+}
+
+TEST(Yato_TypeTraits, functional)
+{
+    using foo_type = yato::function_pointer_to_type<decltype(&foo)>::type;
+    static_assert(std::is_same<std::remove_pointer<decltype(&foo)>::type, void(int, long)>::value, "functional trait fail");
+    static_assert(std::is_same<foo_type, std::function<void(int, long)>>::value, "functional trait fail");
+    static_assert(std::is_same<foo_type::result_type, void>::value, "functional trait fail");
+
+    using foo_trait = yato::function_trait<decltype(&foo)>;
+    static_assert(std::is_same<foo_trait::result_type, void>::value, "functional trait fail");
+    static_assert(foo_trait::arguments_num == 2, "functional trait fail");
+    static_assert(std::is_same<foo_trait::arguments_list, yato::meta::list<int, long>>::value, "functional trait fail");
+    static_assert(std::is_same<foo_trait::arg<0>::type, int>::value, "functional trait fail");
+    static_assert(std::is_same<foo_trait::arg<1>::type, long>::value, "functional trait fail");
+
+    using bar_trait = yato::function_member_trait<decltype(&S::bar)>;
+    static_assert(std::is_same<bar_trait::result_type, const char*>::value, "functional trait fail");
+    static_assert(bar_trait::arguments_num == 0, "functional trait fail");
+    static_assert(std::is_same<bar_trait::arguments_list, yato::meta::null_list>::value, "functional trait fail");
+}
