@@ -47,3 +47,17 @@ Yato implemets a number of general purpose containers:
 
 ### Reflection ###
 WIP
+
+Current implementation allows to reflect classes and data fields
+Reflection information allows to get a list of data fields and its types in compile time, iterate over all data fields and get pointers to fields in run-time
+
+### Tuple algorighms ###
+Yato library provides few compile time algorithms on tuples
+
+* **tuple_transform** - applies unary function to all tuple elements (or binary function to elements of two tuples) and returns tuple with result values
+* **tuple_for_each** - calls unary function for the each tuple element 
+* **tuple_all_of** - checks if unary predicate returns true for all elements of the tuple (or binary predicate for all elements of two tuples)
+* **tuple_any_of** - checks if unary predicate returns true for at least one element of the tuple (or binary predicate for at least one element of two tuples) 
+
+### Zip iterator ###
+**yato::zip_iterator** is an analogue of [boost::zip_iterator](http://www.boost.org/doc/libs/1_60_0/libs/iterator/doc/zip_iterator.html) but implemented in terms of modern C++ in order to get rid of any boost dependency
