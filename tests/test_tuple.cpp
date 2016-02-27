@@ -54,6 +54,16 @@ namespace
             return x + y;
         }
     };
+
+    template<typename _T1, typename _T2>
+    struct product
+    {
+        int operator()(const _T1 & x, const _T2 & y, float & sum) const
+        {
+            sum += x * y;
+            return 0;
+        }
+    };
 }
 
 TEST(Yato_Tuple, tuple_transform_2)
@@ -76,6 +86,13 @@ TEST(Yato_Tuple, tuple_transform_2)
         static_assert(42.0 == std::get<2>(t3), "tuple_transform fail");
     }
 #endif
+    {
+        auto t1 = std::make_tuple(1, 2, 3);
+        auto t2 = std::make_tuple(4, 5, 6);
+        float r = 0.0f;
+        yato::tuple_transform<product>(t1, t2, r);
+        EXPECT_EQ(32.0f, r);
+    }
 }
 
 namespace
@@ -98,6 +115,28 @@ TEST(Yato_Tuple, tuple_modify)
         EXPECT_EQ(1, std::get<0>(t1));
         EXPECT_EQ('b', std::get<1>(t1));
         EXPECT_EQ(2.0f, std::get<2>(t1));
+    }
+}
+
+namespace
+{
+    template <typename _T>
+    struct advance
+    {
+        void operator()(_T & x, int n) const
+        {
+            x += n;
+        }
+    };
+}
+
+TEST(Yato_Tuple, tuple_modify_2)
+{
+    {
+        auto t1 = std::make_tuple(32, 9.0f);
+        yato::tuple_for_each<advance>(t1, 10);
+        EXPECT_EQ(42, std::get<0>(t1));
+        EXPECT_EQ(19.0f, std::get<1>(t1));
     }
 }
 
