@@ -40,7 +40,7 @@ namespace yato
         /**
         * Difference type is the first iterator's difference type
         */
-        using difference_type = typename std::iterator_traits<typename meta::list<_Iterators...>::head>::difference_type;
+        using difference_type = std::ptrdiff_t;
         /**
         * Category is the most common category for all of iterators
         */
@@ -76,41 +76,92 @@ namespace yato
                 return *it;
             }
         };
+
+        template <typename _Iterator>
+        struct _advance
+        {
+            void operator()(_Iterator & it, difference_type n) const
+            {
+                it += n;
+            }
+        };
+
+        template <typename _Iterator1, typename _Iterator2>
+        struct _equal
+        {
+            YATO_CONSTEXPR_FUNC
+            bool operator()(const _Iterator1 & it1, const _Iterator2 & it2) const
+            {
+                return !(it1 != it2);
+            }
+        };
+
+        template <typename _Iterator1, typename _Iterator2>
+        struct _less
+        {
+            YATO_CONSTEXPR_FUNC
+            bool operator()(const _Iterator1 & it1, const _Iterator2 & it2) const
+            {
+                return it1 < it2;
+            }
+        };
+
+        template <typename _Iterator1, typename _Iterator2>
+        struct _greater
+        {
+            YATO_CONSTEXPR_FUNC
+            bool operator()(const _Iterator1 & it1, const _Iterator2 & it2) const
+            {
+                return it1 > it2;
+            }
+        };
         //-------------------------------------------------------
 
         iterators_tuple m_iterators;
         //-------------------------------------------------------
 
     public:
+        /**
+         *  Create from tuple
+         */
         YATO_CONSTEXPR_FUNC
         zip_iterator(const iterators_tuple & iters)
             : m_iterators(iters)
         { }
-
+        
+        /**
+         *  Create from tuple
+         */
         YATO_CONSTEXPR_FUNC
         zip_iterator(iterators_tuple && iters)
             : m_iterators(std::move(iters))
         { }
 
-        template <typename... _Args>
-        YATO_CONSTEXPR_FUNC
-        zip_iterator(_Args && ...args)
-            : m_iterators({std::forward<_Args>(args)...})
-        { }
-
+        /**
+         *  Copy 
+         */
         YATO_CONSTEXPR_FUNC
         zip_iterator(const my_type & other)
             : m_iterators(other.m_iterators)
         { }
 
+        /**
+         *  Move
+         */
         YATO_CONSTEXPR_FUNC
         zip_iterator(my_type && other)
             : m_iterators(std::move(other.m_iterators))
         { }
 
+        /**
+         *  Destroy
+         */
         ~zip_iterator()
         { }
 
+        /**
+         *  Copy all iterators
+         */
         my_type & operator = (const my_type & other)
         {
             if (this != &other) {
@@ -118,6 +169,9 @@ namespace yato
             }
         }
 
+        /**
+         *  Move all iterators
+         */
         my_type & operator = (my_type && other)
         {
             if (this != &other) {
@@ -125,23 +179,37 @@ namespace yato
             }
         }
 
+        /**
+         *  Dereference all iterators.
+         *  @return a tuple of references
+         */
         YATO_CONSTEXPR_FUNC
         const reference operator*() const
         {
             return tuple_transform<_dereference>(m_iterators);
         }
 
+        /**
+         *  Dereference all iterators. 
+         *  @return a tuple of references
+         */
         reference operator*()
         {
             return tuple_transform<_dereference>(m_iterators);
         }
 
+        /**
+         *  Increment all iterators
+         */
         my_type & operator++ ()
         {
             tuple_for_each<_increment>(m_iterators);
             return *this;
         }
 
+        /**
+         *  Increment all iterators
+         */
         my_type operator++ (int)
         {
             auto copy(*this);
@@ -149,6 +217,9 @@ namespace yato
             return copy;
         }
 
+        /**
+         *  Decrement all iterators
+         */
         template<typename _MyCategory = iterator_category>
         auto operator-- ()
             -> typename std::enable_if<std::is_base_of<std::bidirectional_iterator_tag, _MyCategory>::value, my_type &>::type
@@ -157,13 +228,147 @@ namespace yato
             return *this;
         }
 
+        /**
+         *  Decrement all iterators
+         */
+        template<typename _MyCategory = iterator_category>
         auto operator-- (int)
+            -> typename std::enable_if<std::is_base_of<std::bidirectional_iterator_tag, _MyCategory>::value, my_type>::type
         {
             auto copy(*this);
             --(*this);
             return copy;
         }
+
+        /**
+         *  Shift all iterators by offset
+         */
+        template<typename _MyCategory = iterator_category>
+        auto operator += (difference_type offset)
+            -> typename std::enable_if<std::is_base_of<std::random_access_iterator_tag, _MyCategory>::value, my_type &>::type
+        {
+            tuple_for_each<_advance>(m_iterators, offset);
+            return *this;
+        }
+
+        /**
+         *  Shift all iterators by offset
+         */
+        template<typename _MyCategory = iterator_category>
+        auto operator -= (difference_type offset)
+            -> typename std::enable_if<std::is_base_of<std::random_access_iterator_tag, _MyCategory>::value, my_type &>::type
+        {
+            return this->operator+=(-offset);
+        }
+
+        /**
+         *  Shift all iterators by offset
+         */
+        template<typename _MyCategory = iterator_category>
+        YATO_CONSTEXPR_FUNC
+        auto operator + (difference_type offset) const
+            -> typename std::enable_if<std::is_base_of<std::random_access_iterator_tag, _MyCategory>::value, my_type>::type
+        {
+            auto copy(*this);
+            return (copy += offset);
+        }
+
+        /**
+         *  Get distance between iterators
+         *  Is computed using the first iterator in the tuple!
+         */
+        template<typename _MyCategory = iterator_category>
+        auto operator - (const my_type & other)  const
+            -> typename std::enable_if<std::is_base_of<std::random_access_iterator_tag, _MyCategory>::value, difference_type>::type
+        {
+            return std::get<0>(m_iterators) - std::get<0>(other.m_iterators);
+        }
+
+        /**
+         *  Compare equality
+         *  Two zip iterators are equal if all iterators in the iterator tuple are equal 
+         */
+        YATO_CONSTEXPR_FUNC
+        bool operator == (const my_type & other)  const
+        {
+            return tuple_all_of<_equal>(m_iterators, other.m_iterators);
+        }
+
+        /**
+         *  Compare inequality
+         *  Two zip iterators are not equal if any iterators in the tuple are not equal
+         */
+        YATO_CONSTEXPR_FUNC
+        bool operator != (const my_type & other) const
+        {
+            return !(*this == other);
+        }
+
+        /**
+         *  Compare less
+         */
+        template<typename _MyCategory = iterator_category>
+        YATO_CONSTEXPR_FUNC
+        auto operator < (const my_type & other) const
+            -> typename std::enable_if<std::is_base_of<std::random_access_iterator_tag, _MyCategory>::value, bool>::type
+        {
+            return tuple_all_of<_less>(m_iterators, other.m_iterators);
+        }
+
+        /**
+         *  Compare greater
+         */
+        template<typename _MyCategory = iterator_category>
+        YATO_CONSTEXPR_FUNC
+        auto operator > (const my_type & other) const
+            -> typename std::enable_if<std::is_base_of<std::random_access_iterator_tag, _MyCategory>::value, bool>::type
+        {
+            return tuple_all_of<_greater>(m_iterators, other.m_iterators);
+        }
+
+        /**
+         *  Compare less or equal
+         */
+        template<typename _MyCategory = iterator_category>
+        YATO_CONSTEXPR_FUNC
+        auto operator <= (const my_type & other) const
+            -> typename std::enable_if<std::is_base_of<std::random_access_iterator_tag, _MyCategory>::value, bool>::type
+        {
+            return !(*this > other);
+        }
+
+        /**
+         *  Compare greater or equal
+         */
+        template<typename _MyCategory = iterator_category>
+        YATO_CONSTEXPR_FUNC
+        auto operator >= (const my_type & other) const
+            -> typename std::enable_if<std::is_base_of<std::random_access_iterator_tag, _MyCategory>::value, bool>::type
+        {
+            return !(*this < other);
+        }
     };
+
+    template<typename... _Iterators>
+    YATO_CONSTEXPR_FUNC
+    zip_iterator<_Iterators...> make_zip_iterator(const std::tuple<_Iterators...> & tuple)
+    {
+        return zip_iterator<_Iterators...>(tuple);
+    }
+
+    template<typename... _Iterators>
+    YATO_CONSTEXPR_FUNC
+    zip_iterator<_Iterators...> make_zip_iterator(std::tuple<_Iterators...> && tuple)
+    {
+        return zip_iterator<_Iterators...>(std::move(tuple));
+    }
+
+    template<typename... _Iterators>
+    YATO_CONSTEXPR_FUNC
+    zip_iterator<_Iterators...> make_zip_iterator(_Iterators && ...iters)
+    {
+        return zip_iterator<_Iterators...>(std::make_tuple(std::forward<_Iterators>(iters)...));
+    }
 }
 
 #endif

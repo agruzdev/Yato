@@ -61,16 +61,44 @@ TEST(Yato_ZipIterator, decrement)
     }
 }
 
-TEST(Yato_ZipIterator, common)
+TEST(Yato_ZipIterator, loop)
 {
-    //std::vector<int> a = { 1, 2, 4, 5, 6, 7, 8, 9 };
-    //std::vector<float> b = { 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 3.0f };
-    //
-    //std::for_each(
-    //    boost::make_zip_iterator(boost::make_tuple(a.begin(), b.cbegin())),
-    //    boost::make_zip_iterator(boost::make_tuple(a.end(), b.cend())),
-    //    [](const boost::tuple<const int&, const float&> & t) {
-    //    std::cout << t.get<0>() * t.get<1>() << std::endl;
-    //}
-    //);
+    std::vector<int> a = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    std::vector<float> b = { 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 3.0f, 4.0f };
+    float sum = 0.0f;
+
+    using iter_type = yato::zip_iterator<std::vector<int>::iterator, std::vector<float>::const_iterator>;
+    auto iter = iter_type(std::make_tuple(a.begin(), b.cbegin()));
+    auto end = iter_type(std::make_tuple(a.end(), b.cend()));
+    for (; iter != end; ++iter) {
+        sum += std::get<0>(*iter) * std::get<1>(*iter);
+    }
+    EXPECT_EQ(116.0f, sum);
+}
+
+TEST(Yato_ZipIterator, make_zip_iterator)
+{
+    std::vector<int> a = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    std::vector<float> b = { 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 3.0f, 4.0f };
+
+    auto iter = yato::make_zip_iterator(std::make_tuple(a.begin(), b.begin()));
+    static_assert(std::is_same<decltype(iter)::iterators_tuple, std::tuple<std::vector<int>::iterator, std::vector<float>::iterator>>::value, "make_zip_iterator fail");
+
+    auto iter2 = yato::make_zip_iterator(a.begin(), b.begin());
+    static_assert(std::is_same<decltype(iter2)::iterators_tuple, std::tuple<std::vector<int>::iterator, std::vector<float>::iterator>>::value, "make_zip_iterator fail");
+}
+
+TEST(Yato_ZipIterator, loop_2)
+{
+    std::vector<int> a = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    std::vector<float> b = { 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 3.0f, 4.0f };
+    float sum = 0.0f;
+    
+    std::for_each(
+        yato::make_zip_iterator(std::make_tuple(a.begin(), b.cbegin())),
+        yato::make_zip_iterator(std::make_tuple(a.end(), b.cend())),
+        [&sum](const std::tuple<int&, const float&> & t) {
+            sum += std::get<0>(t) * std::get<1>(t);
+    });
+    EXPECT_EQ(116.0f, sum);
 }
