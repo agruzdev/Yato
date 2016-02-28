@@ -55,7 +55,12 @@ TEST(Yato_ZipIterator, decrement)
     std::vector<float> b = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f };
 
     yato::zip_iterator<std::vector<int>::iterator, std::vector<float>::iterator> zipIt(std::make_tuple(a.end() - 1, b.end() - 1));
+#ifndef YATO_MSVC_2013
     for (int i = 5; i > 1; --i, --zipIt) {
+#else
+    // In MSVC 2013 templated operator-- leads to crash due to a bug 
+    for (int i = 5; i > 1; --i, zipIt.operator--()) {
+#endif
         EXPECT_EQ(i - 1, std::get<0>(*zipIt));
         EXPECT_EQ(static_cast<float>(i), std::get<1>(*zipIt));
     }
