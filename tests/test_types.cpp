@@ -30,6 +30,27 @@ TEST(Yato_Types, narrow_cast)
 #endif
 }
 
+#pragma warning(push)
+#pragma warning(disable: 4189) //local variable is initialized but not referenced
+#pragma warning(disable: 4700) //uninitialized local variable 'p1' used
+TEST(Yato_Types, pointer_cast)
+{
+    {
+        int* p1;
+        float* p2 = yato::pointer_cast<float*>(p1);
+    }
+    {
+        const float* p1;
+        const int* p2 = yato::pointer_cast<const int*>(p1);
+        float* p3 = const_cast<float*>(yato::pointer_cast<const float*>(p1));
+    }
+    {
+        const volatile float* p1;
+        const volatile char* p2 = yato::pointer_cast<const volatile char*>(p1);
+    }
+}
+#pragma warning(pop)
+
 #if defined(YATO_MSVC_2015) || (__cplusplus >= 201400L)
 TEST(Yato_Types, TestLiterals)
 {

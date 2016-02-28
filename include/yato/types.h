@@ -95,6 +95,34 @@ namespace yato
 #endif
     }
 
+    template<typename _TypeTo, typename _TypeFrom>
+    YATO_CONSTEXPR_FUNC 
+    _TypeTo pointer_cast(_TypeFrom* ptr) YATO_NOEXCEPT_KEYWORD
+    {
+        return static_cast<_TypeTo>(static_cast<void*>(ptr));
+    }
+
+    template<typename _TypeTo, typename _TypeFrom>
+    YATO_CONSTEXPR_FUNC
+    _TypeTo pointer_cast(const _TypeFrom* ptr) YATO_NOEXCEPT_KEYWORD
+    {
+        return static_cast<_TypeTo>(static_cast<const void*>(ptr));
+    }
+
+    template<typename _TypeTo, typename _TypeFrom>
+    YATO_CONSTEXPR_FUNC
+    _TypeTo pointer_cast(volatile _TypeFrom* ptr) YATO_NOEXCEPT_KEYWORD
+    {
+        return static_cast<_TypeTo>(static_cast<volatile void*>(ptr));
+    }
+
+    template<typename _TypeTo, typename _TypeFrom>
+    YATO_CONSTEXPR_FUNC
+    _TypeTo pointer_cast(const volatile _TypeFrom* ptr) YATO_NOEXCEPT_KEYWORD
+    {
+        return static_cast<_TypeTo>(static_cast<const volatile void*>(ptr));
+    }
+
     namespace literals
     {
 #if defined(YATO_MSVC_2015) || (__cplusplus >= 201400L)
