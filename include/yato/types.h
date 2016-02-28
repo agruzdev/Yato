@@ -80,18 +80,17 @@ namespace yato
     static_assert(sizeof(float64_t) == 8, "Wrong float32_t type!");
 
 
-    template<typename _T_Dst, typename _T_Src>
-    YATO_CONSTEXPR_FUNC typename std::enable_if<
-        std::is_arithmetic<typename std::decay<_T_Dst>::type>::value && 
-        std::is_arithmetic<typename std::decay<_T_Src>::type>::value, 
-    _T_Dst>::type
-    narrow_cast(_T_Src && val) YATO_NOEXCEPT_IN_RELEASE
+    template<typename _TypeTo, typename _TypeFrom>
+    YATO_CONSTEXPR_FUNC 
+    auto narrow_cast(const _TypeFrom & val) YATO_NOEXCEPT_IN_RELEASE
+        -> typename std::enable_if<std::is_arithmetic<_TypeTo>::value && std::is_arithmetic<_TypeFrom>::value, _TypeTo>::type
     {
 #if YATO_DEBUG
-        return static_cast<typename std::decay<_T_Src>::type>(static_cast<_T_Dst>(val)) == val ? static_cast<_T_Dst>(val)
-            : (YATO_THROW_ASSERT_EXCEPT("narrow_cast failed!"), static_cast<_T_Dst>(0));
+        return static_cast<_TypeFrom>(static_cast<_TypeTo>(val)) == val 
+            ? static_cast<_TypeTo>(val)
+            : (YATO_THROW_ASSERT_EXCEPT("narrow_cast failed!"), static_cast<_TypeTo>(0));
 #else
-        return static_cast<_T_Dst>(val);
+        return static_cast<_TypeTo>(val);
 #endif
     }
 
