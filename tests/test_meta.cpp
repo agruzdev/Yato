@@ -42,4 +42,7 @@ TEST(Yato_Meta, list)
     static_assert(std::is_same<l5, yato::meta::list<int, short, float, double>>::value, "yato::meta::list fail!");
     static_assert(std::is_same<l6, yato::meta::list<int, short>>::value, "yato::meta::list fail!");
     static_assert(std::is_same<l7, yato::meta::list<float, double>>::value, "yato::meta::list fail!");
+
+	using t7 = yato::meta::list_to_tuple<l7>::type;
+	static_assert(std::is_same<t7, std::tuple<float, double>>::value, "yato::meta::list fail!");
 }

@@ -8,6 +8,7 @@
 #ifndef _YATO_META_H_
 #define _YATO_META_H_
 
+#include <tuple>
 #include "types.h"
 
 namespace yato
@@ -174,6 +175,21 @@ namespace yato
         {
             using type = typename _List::head;
         };
+
+		/**
+		 *  Convert list to std::tuple
+		 */
+		template <typename _List, typename... _Types>
+		struct list_to_tuple
+		{
+			using type = typename list_to_tuple <typename _List::tail, _Types..., typename _List::head>::type;
+		};
+
+		template <typename... _Types>
+		struct list_to_tuple <null_list, _Types...>
+		{
+			using type = std::tuple<_Types...>;
+		};
 
     }
 }
