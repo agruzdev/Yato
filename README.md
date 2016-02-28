@@ -29,6 +29,19 @@ Currently the library cant be successfully used for the following compilers:
 
 ## Description ##
 
+### Type support ###
+Yato library provides a set of additional type traits
+
+* **yato::is_shared_ptr/yato::is_unique_ptr** - chech if type is a smart pointer
+* **yato::is_same** - extended version of std::is_same checking that any number of types are same
+* **yato::one_of** - checks that type is one of the number of types
+* **yato::function_trait** - gets return type and all argument types of a function or function member
+
+Also there are additional tools for working with types. The library provides literals for fixed size types (_u8, _u16, etc.) if user defined literals are supported by compiler. Additional casts are provided:
+
+* **yato::narrow_cast** - casts one arithmetic type to another. If correct value was lost due to narrowing then it throws exception in debug build
+* **yato::pointer_cast** - performs reinterpret casting for pointers. Saves CV-cvalifiers and doens't allow to cast intergral value to pointer
+
 ### "Annotations" ###
 There are a couple of experiments inspired by [Cpp Core Guidelines](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md)
 
