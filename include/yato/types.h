@@ -137,42 +137,42 @@ namespace yato
 
         YATO_CONSTEXPR_FUNC int16_t operator"" _s16(unsigned long long number) YATO_NOEXCEPT_IN_RELEASE
         {
-            return static_cast<int16_t>(number);
+            return narrow_cast<int16_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC uint16_t operator"" _u16(unsigned long long number) YATO_NOEXCEPT_IN_RELEASE
         {
-            return static_cast<uint16_t>(number);
+            return narrow_cast<uint16_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC int32_t operator"" _s32(unsigned long long number) YATO_NOEXCEPT_IN_RELEASE
         {
-            return static_cast<int32_t>(number);
+            return narrow_cast<int32_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC uint32_t operator"" _u32(unsigned long long number) YATO_NOEXCEPT_IN_RELEASE
         {
-            return static_cast<uint32_t>(number);
+            return narrow_cast<uint32_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC int64_t operator"" _s64(unsigned long long number) YATO_NOEXCEPT_IN_RELEASE
         {
-            return static_cast<int64_t>(number);
+            return narrow_cast<int64_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC uint64_t operator"" _u64(unsigned long long number) YATO_NOEXCEPT_IN_RELEASE
         {
-            return static_cast<uint64_t>(number);
+            return narrow_cast<uint64_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC float32_t operator"" _f32(long double number) YATO_NOEXCEPT_IN_RELEASE
         {
-            return static_cast<float32_t>(number);
+            return narrow_cast<float32_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC float64_t operator"" _f64(long double number) YATO_NOEXCEPT_IN_RELEASE
         {
-            return static_cast<float64_t>(number);
+            return narrow_cast<float64_t>(number);
         }
 #endif
     }
