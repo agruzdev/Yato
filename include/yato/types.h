@@ -225,8 +225,8 @@ namespace yato
             return static_cast<float80_t>(number);
 #endif
         }
-    }
 #endif
+    }
 }
 
 
