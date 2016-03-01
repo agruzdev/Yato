@@ -36,16 +36,19 @@ TEST(Yato_Types, narrow_cast)
 TEST(Yato_Types, pointer_cast)
 {
     {
-        int* p1;
+        int x = 0;
+        int* p1 = &x;
         float* p2 = yato::pointer_cast<float*>(p1);
     }
     {
-        const float* p1;
+        float x = 0.0f;
+        const float* p1 = &x;
         const int* p2 = yato::pointer_cast<const int*>(p1);
         float* p3 = const_cast<float*>(yato::pointer_cast<const float*>(p1));
     }
     {
-        const volatile float* p1;
+        volatile float x = 0.0f;
+        const volatile float* p1 = &x;
         const volatile char* p2 = yato::pointer_cast<const volatile char*>(p1);
     }
 }
@@ -60,6 +63,20 @@ TEST(Yato_Types, TestLiterals)
 #else
     EXPECT_TRUE(true);
 #endif
+
+    EXPECT_NO_THROW(255_u8);
+    EXPECT_NO_THROW(0.0_f32);
+    EXPECT_NO_THROW(1.0_f32);
+    EXPECT_NO_THROW(0.0000001_f32);
+    EXPECT_NO_THROW(1000000.0_f32);
+    EXPECT_NO_THROW(0.0_f64);
+    EXPECT_NO_THROW(1.0_f64);
+    EXPECT_NO_THROW(0.0000001_f64);
+    EXPECT_NO_THROW(1000000.0_f64);
+    EXPECT_NO_THROW(0.0_f80);
+    EXPECT_NO_THROW(1.0_f80);
+    EXPECT_NO_THROW(0.0000001_f80);
+    EXPECT_NO_THROW(1000000.0_f80);
 }
 
 //Compile time
@@ -79,5 +96,6 @@ namespace TestLiterals
 
     static_assert(std::is_same<yato::float32_t, decltype(0.0_f32)>::value, "Failed TestLiterals");
     static_assert(std::is_same<yato::float64_t, decltype(0.0_f64)>::value, "Failed TestLiterals");
+    static_assert(std::is_same<yato::float80_t, decltype(0.0_f80)>::value, "Failed TestLiterals");
 }
 #endif
