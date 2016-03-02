@@ -24,8 +24,9 @@ Currently the library cant be successfully used for the following compilers:
 * MinGW 5.3
 * Clang 3.7 (tested with mingw linker)
 * GCC 5.3
+* Goolge Android NDK, GCC 4.9
 
-(Android support will be added in future)
+(Android CrystaX NDK support will be added in future)
 
 ## Description ##
 
