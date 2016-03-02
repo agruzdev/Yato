@@ -297,7 +297,7 @@ namespace yato
                         (YATO_THROW_ASSERT_EXCEPT("yato::array_nd: out of range!"), cbegin())
                 };
 #else
-                return sub_array<const_iterator, _HyperShape>{ std::next(std::cbegin(m_plain_array), idx * _HyperShape::total_size) };
+                return sub_array<const_iterator, _HyperShape>{ std::next(cbegin(), idx * _HyperShape::total_size) };
 #endif
             }
 

@@ -26,10 +26,13 @@ namespace yato
     template<typename T>
     class not_null<T, typename std::enable_if< std::is_pointer<T>::value >::type >
     {    
+        using element_type = typename std::remove_reference<decltype(*(std::declval<T>()))>::type;
         T m_pointer;
 
     public:
+#if !(defined(YATO_ANDROID) && __cplusplus < 201400L)
         YATO_CONSTEXPR_FUNC 
+#endif
         not_null(T ptr)
             : m_pointer(ptr) 
         {
@@ -59,14 +62,12 @@ namespace yato
         }
         
         YATO_CONSTEXPR_FUNC 
-        auto operator*() const YATO_NOEXCEPT_KEYWORD 
-            -> const decltype(*(std::declval<T>())) &
+        const element_type & operator*() const YATO_NOEXCEPT_KEYWORD
         {
             return *m_pointer;
         }
 
-        auto operator*() YATO_NOEXCEPT_KEYWORD
-            -> decltype(*(std::declval<T>())) &
+        element_type & operator*() YATO_NOEXCEPT_KEYWORD
         {
             return *m_pointer;
         }
@@ -80,7 +81,9 @@ namespace yato
         using element_type = typename T::element_type;
         const T & m_smart_pointer;
     public:
+#if !(defined(YATO_ANDROID) && __cplusplus < 201400L)
         YATO_CONSTEXPR_FUNC
+#endif
         not_null(const T & ptr) 
             : m_smart_pointer(ptr) 
         {

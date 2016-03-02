@@ -25,7 +25,9 @@ namespace yato
     public:
 
         template<typename _CheckType>
+#if !(defined(YATO_ANDROID) && __cplusplus < 201400L)
         YATO_CONSTEXPR_FUNC
+#endif
         instance_of(_CheckType* ptr)
             : m_ptr(dynamic_cast<instance_type*>(ptr))
         {
@@ -35,7 +37,9 @@ namespace yato
         }
 
         template<typename _CheckType>
+#if !(defined(YATO_ANDROID) && __cplusplus < 201400L)
         YATO_CONSTEXPR_FUNC
+#endif
         instance_of(_CheckType& ptr)
             : m_ptr(dynamic_cast<instance_type*>(&ptr))
         {

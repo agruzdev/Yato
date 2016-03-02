@@ -2,9 +2,11 @@
 
 #include <yato/not_null.h>
 
+#if !(defined(YATO_ANDROID) && __cplusplus < 201400L)
 //Works for constexpr variables
 YATO_CONSTEXPR_VAR int y = 1;
 YATO_CONSTEXPR_VAR auto x1 = yato::not_null<const int*>(&y);
+#endif
 
 class A
 {   

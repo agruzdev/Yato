@@ -22,7 +22,7 @@
 static_assert(YATO_DEBUG != YATO_RELEASE, "Wrong configuration");
 static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 
-#if defined(__x86_64__) || defined(_M_X64)
+#if defined(__x86_64__) || defined(_M_X64) || defined(__ANDROID__)
 #define YATO_X64
 #elif defined(__i386) || defined(_M_IX86)
 #define YATO_X86
@@ -42,7 +42,11 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 #define YATO_MSVC_2015 
 #endif
 
-#if defined(YATO_MSVC_2015) || (__cplusplus > 201100L)
+#ifdef __ANDROID__
+#define  YATO_ANDROID
+#endif
+
+#if defined(YATO_MSVC_2015) || (__cplusplus > 201100L) || (defined(YATO_ANDROID) && __cplusplus > 201300L)
 #define YATO_CONSTEXPR_VAR constexpr
 #define YATO_CONSTEXPR_FUNC constexpr
 #define YATO_NOEXCEPT_KEYWORD noexcept

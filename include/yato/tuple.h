@@ -22,9 +22,9 @@ namespace yato
             template <template <typename> class _Func, typename... _Args>
             YATO_CONSTEXPR_FUNC
             static auto apply(_Tuple tuple, _Args && ...args)
-                -> decltype(tuple_transform_impl<_Tuple, _Length - 1, _Length - 1, _Idxs...>::template apply<_Func>(tuple, std::forward<_Args>(args)...))
+                -> decltype(tuple_transform_impl<_Tuple, _Length - 1, _Length - 1, _Idxs...>::template apply<_Func>(std::forward<_Tuple>(tuple), std::forward<_Args>(args)...))
             {
-                return tuple_transform_impl<_Tuple, _Length - 1, _Length - 1, _Idxs...>::template apply<_Func>(tuple, std::forward<_Args>(args)...);
+                return tuple_transform_impl<_Tuple, _Length - 1, _Length - 1, _Idxs...>::template apply<_Func>(std::forward<_Tuple>(tuple), std::forward<_Args>(args)...);
             }
         };
 
@@ -32,7 +32,7 @@ namespace yato
         struct tuple_transform_impl<_Tuple, 0, _Idxs...>
         {
             using tuple_pure_type = typename std::decay<_Tuple>::type;
-#ifndef YATO_MSVC_2013
+#ifndef YATO_MSVC_2013 
             template <template <typename> class _Func, typename... _Args>
             YATO_CONSTEXPR_FUNC
             static auto apply(_Tuple tuple, _Args && ...args)
@@ -84,9 +84,9 @@ namespace yato
             template <template <typename, typename> class _Func, typename... _Args>
             YATO_CONSTEXPR_FUNC
             static auto apply(_Tuple1 tuple1, _Tuple2 tuple2, _Args && ...args)
-                -> decltype(tuple_transform_2_impl<_Tuple1, _Tuple2, _Length - 1, _Length - 1, _Idxs...>::template apply<_Func>(tuple1, tuple2, std::forward<_Args>(args)...))
+                -> decltype(tuple_transform_2_impl<_Tuple1, _Tuple2, _Length - 1, _Length - 1, _Idxs...>::template apply<_Func>(std::forward<_Tuple1>(tuple1), std::forward<_Tuple2>(tuple2), std::forward<_Args>(args)...))
             {
-                return tuple_transform_2_impl<_Tuple1, _Tuple2, _Length - 1, _Length - 1, _Idxs...>::template apply<_Func>(tuple1, tuple2, std::forward<_Args>(args)...);
+                return tuple_transform_2_impl<_Tuple1, _Tuple2, _Length - 1, _Length - 1, _Idxs...>::template apply<_Func>(std::forward<_Tuple1>(tuple1), std::forward<_Tuple2>(tuple2), std::forward<_Args>(args)...);
             }
         };
 
@@ -149,8 +149,9 @@ namespace yato
             YATO_CONSTEXPR_FUNC
             static _Tuple & apply(_Tuple & tuple, _Args && ...args)
             {
-                _Func<typename std::tuple_element<_Idx, _Tuple>::type>{}(std::get<_Idx>(tuple), std::forward<_Args>(args)...);
-                return tuple_for_each_impl<_Tuple, _Length, _Idx + 1>::template apply<_Func>(tuple, std::forward<_Args>(args)...);
+                // Use comma operator because c++11 constexpr functions require return expression bodies
+                return _Func<typename std::tuple_element<_Idx, _Tuple>::type>{}(std::get<_Idx>(tuple), std::forward<_Args>(args)...),
+                       tuple_for_each_impl<_Tuple, _Length, _Idx + 1>::template apply<_Func>(tuple, std::forward<_Args>(args)...);
             }
         };
 
@@ -182,7 +183,7 @@ namespace yato
         {
             template <template <typename> class _Pred, typename... _Args>
             YATO_CONSTEXPR_FUNC
-            static bool apply(_Tuple tuple, _Args && ...args)
+            static bool apply(const _Tuple & tuple, _Args && ...args)
             {
                 return _Pred<typename std::tuple_element<_Idx, typename std::decay<_Tuple>::type>::type>{}(std::get<_Idx>(tuple), std::forward<_Args>(args)...) &&
                     tuple_all_of_impl<_Tuple, _Length, _Idx + 1>::template apply<_Pred>(tuple, std::forward<_Args>(args)...);
@@ -194,7 +195,7 @@ namespace yato
         {
             template <template <typename> class _Pred, typename... _Args>
             YATO_CONSTEXPR_FUNC
-            static bool apply(_Tuple /*tuple*/, _Args && .../*args*/)
+            static bool apply(const _Tuple & /*tuple*/, _Args && .../*args*/)
             {
                 return true;
             }
@@ -205,9 +206,9 @@ namespace yato
      */
     template<template <typename> class _Pred, typename _Tuple, typename... _PredArgs>
     YATO_CONSTEXPR_FUNC
-    bool tuple_all_of(_Tuple && tuple, _PredArgs && ...args)
+    bool tuple_all_of(const _Tuple & tuple, _PredArgs && ...args)
     {
-        return details::tuple_all_of_impl<_Tuple, std::tuple_size<typename std::decay<_Tuple>::type>::value, 0>::template apply<_Pred>(std::forward<_Tuple>(tuple), std::forward<_PredArgs>(args)...);
+        return details::tuple_all_of_impl<_Tuple, std::tuple_size<typename std::decay<_Tuple>::type>::value, 0>::template apply<_Pred>(tuple, std::forward<_PredArgs>(args)...);
     }
 
     namespace details
@@ -220,7 +221,7 @@ namespace yato
 
             template <template <typename, typename> class _Pred, typename... _Args>
             YATO_CONSTEXPR_FUNC
-            static bool apply(_Tuple1 tuple1, _Tuple2 tuple2, _Args && ...args)
+            static bool apply(const _Tuple1 & tuple1, const _Tuple2 & tuple2, _Args && ...args)
             {
                 return _Pred<typename std::tuple_element<_Idx, tuple1_pure_type>::type, typename std::tuple_element<_Idx, tuple2_pure_type>::type>{}(std::get<_Idx>(tuple1), std::get<_Idx>(tuple2), std::forward<_Args>(args)...) &&
                     tuple_all_of_2_impl<_Tuple1, _Tuple2, _Length, _Idx + 1>::template apply<_Pred>(tuple1, tuple2, std::forward<_Args>(args)...);
@@ -232,7 +233,7 @@ namespace yato
         {
             template <template <typename, typename> class _Pred, typename... _Args>
             YATO_CONSTEXPR_FUNC
-            static bool apply(_Tuple1 /*tuple1*/, _Tuple2 /*tuple2*/, _Args && .../*args*/)
+            static bool apply(const _Tuple1 & /*tuple1*/, const _Tuple2 & /*tuple2*/, _Args && .../*args*/)
             {
                 return true;
             }
@@ -243,10 +244,10 @@ namespace yato
     */
     template<template <typename, typename> class _Pred, typename _Tuple1, typename _Tuple2, typename... _PredArgs>
     YATO_CONSTEXPR_FUNC
-    auto tuple_all_of(_Tuple1 && tuple1, _Tuple2 && tuple2, _PredArgs && ...args)
+    auto tuple_all_of(const _Tuple1 & tuple1, const _Tuple2 & tuple2, _PredArgs && ...args)
         -> typename std::enable_if<(std::tuple_size<typename std::decay<_Tuple1>::type>::value == std::tuple_size<typename std::decay<_Tuple2>::type>::value), bool>::type
     {
-        return details::tuple_all_of_2_impl<_Tuple1, _Tuple2, std::tuple_size<typename std::decay<_Tuple1>::type>::value, 0>::template apply<_Pred>(std::forward<_Tuple1>(tuple1), std::forward<_Tuple2>(tuple2), std::forward<_PredArgs>(args)...);
+        return details::tuple_all_of_2_impl<_Tuple1, _Tuple2, std::tuple_size<typename std::decay<_Tuple1>::type>::value, 0>::template apply<_Pred>(tuple1, tuple2, std::forward<_PredArgs>(args)...);
     }
 
 
@@ -257,7 +258,7 @@ namespace yato
         {
             template <template <typename> class _Pred, typename... _Args>
             YATO_CONSTEXPR_FUNC
-            static bool apply(_Tuple tuple, _Args && ...args)
+            static bool apply(const _Tuple & tuple, _Args && ...args)
             {
                 return _Pred<typename std::tuple_element<_Idx, typename std::decay<_Tuple>::type>::type>{}(std::get<_Idx>(tuple), std::forward<_Args>(args)...) ||
                     tuple_any_of_impl<_Tuple, _Length, _Idx + 1>::template apply<_Pred>(tuple, std::forward<_Args>(args)...);
@@ -269,7 +270,7 @@ namespace yato
         {
             template <template <typename> class _Pred, typename... _Args>
             YATO_CONSTEXPR_FUNC
-            static bool apply(_Tuple /*tuple*/, _Args && .../*args*/)
+            static bool apply(const _Tuple & /*tuple*/, _Args && .../*args*/)
             {
                 return false;
             }
@@ -280,9 +281,9 @@ namespace yato
      */
     template<template <typename> class _Pred, typename _Tuple, typename... _PredArgs>
     YATO_CONSTEXPR_FUNC
-    bool tuple_any_of(_Tuple && tuple, _PredArgs && ...args)
+    bool tuple_any_of(const _Tuple & tuple, _PredArgs && ...args)
     {
-        return details::tuple_any_of_impl<_Tuple, std::tuple_size<typename std::decay<_Tuple>::type>::value, 0>::template apply<_Pred>(std::forward<_Tuple>(tuple), std::forward<_PredArgs>(args)...);
+        return details::tuple_any_of_impl<_Tuple, std::tuple_size<typename std::decay<_Tuple>::type>::value, 0>::template apply<_Pred>(tuple, std::forward<_PredArgs>(args)...);
     }
 
 
@@ -296,7 +297,7 @@ namespace yato
 
             template <template <typename, typename> class _Pred, typename... _Args>
             YATO_CONSTEXPR_FUNC
-            static bool apply(_Tuple1 tuple1, _Tuple2 tuple2, _Args && ...args)
+            static bool apply(const _Tuple1 & tuple1, const _Tuple2 & tuple2, _Args && ...args)
             {
                 return _Pred<typename std::tuple_element<_Idx, tuple1_pure_type>::type, typename std::tuple_element<_Idx, tuple2_pure_type>::type>{}(std::get<_Idx>(tuple1), std::get<_Idx>(tuple2), std::forward<_Args>(args)...) ||
                     tuple_any_of_2_impl<_Tuple1, _Tuple2, _Length, _Idx + 1>::template apply<_Pred>(tuple1, tuple2, std::forward<_Args>(args)...);
@@ -308,7 +309,7 @@ namespace yato
         {
             template <template <typename, typename> class _Pred, typename... _Args>
             YATO_CONSTEXPR_FUNC
-            static bool apply(_Tuple1 /*tuple1*/, _Tuple2 /*tuple2*/, _Args && .../*args*/)
+            static bool apply(const _Tuple1 & /*tuple1*/, const _Tuple2 & /*tuple2*/, _Args && .../*args*/)
             {
                 return false;
             }
@@ -319,10 +320,10 @@ namespace yato
      */
     template<template <typename, typename> class _Pred, typename _Tuple1, typename _Tuple2, typename... _PredArgs>
     YATO_CONSTEXPR_FUNC
-    auto tuple_any_of(_Tuple1 && tuple1, _Tuple2 && tuple2, _PredArgs && ...args)
+    auto tuple_any_of(const _Tuple1 & tuple1, const _Tuple2 & tuple2, _PredArgs && ...args)
         -> typename std::enable_if<(std::tuple_size<typename std::decay<_Tuple1>::type>::value == std::tuple_size<typename std::decay<_Tuple2>::type>::value), bool>::type
     {
-        return details::tuple_any_of_2_impl<_Tuple1, _Tuple2, std::tuple_size<typename std::decay<_Tuple1>::type>::value, 0>::template apply<_Pred>(std::forward<_Tuple1>(tuple1), std::forward<_Tuple2>(tuple2), std::forward<_PredArgs>(args)...);
+        return details::tuple_any_of_2_impl<_Tuple1, _Tuple2, std::tuple_size<typename std::decay<_Tuple1>::type>::value, 0>::template apply<_Pred>(tuple1, tuple2, std::forward<_PredArgs>(args)...);
     }
 }
 
