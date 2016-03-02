@@ -208,7 +208,7 @@ namespace yato
 #ifdef YATO_DEBUG
             return (static_cast<long double>(std::numeric_limits<float64_t>::lowest()) <= number && number <= static_cast<long double>(std::numeric_limits<float64_t>::max()))
                 ? static_cast<float64_t>(number)
-                : (YATO_THROW_ASSERT_EXCEPT("yato::literal _f32 is out of range!"), static_cast<float64_t>(0.0));
+                : (YATO_THROW_ASSERT_EXCEPT("yato::literal _f64 is out of range!"), static_cast<float64_t>(0.0));
 #else
             return static_cast<float64_t>(number);
 #endif
@@ -220,7 +220,7 @@ namespace yato
 #ifdef YATO_DEBUG
             return (static_cast<long double>(std::numeric_limits<float80_t>::lowest()) <= number && number <= static_cast<long double>(std::numeric_limits<float80_t>::max()))
                 ? static_cast<float80_t>(number)
-                : (YATO_THROW_ASSERT_EXCEPT("yato::literal _f32 is out of range!"), static_cast<float80_t>(0.0));
+                : (YATO_THROW_ASSERT_EXCEPT("yato::literal _f80 is out of range!"), static_cast<float80_t>(0.0));
 #else
             return static_cast<float80_t>(number);
 #endif
