@@ -79,6 +79,32 @@ TEST(Yato_TypeTraits, one_of)
 
 namespace
 {
+    class FooCallable
+    {
+    public:
+        int operator()(){
+            return 1;
+        }
+    };
+
+    class FooNotCallable
+    { };
+}
+
+#ifndef YATO_MSVC_2013
+TEST(Yato_TypeTraits, is_callable)
+{
+    using t = decltype(&FooCallable::operator());
+    static_assert(!yato::is_callable < int >::value, "is_callable fail");
+    static_assert(!yato::is_callable < void >::value, "is_callable fail");
+    static_assert(!yato::is_callable < FooNotCallable >::value, "is_callable fail");
+    static_assert(yato::is_callable < FooCallable >::value, "is_callable fail");
+    static_assert(yato::is_callable < std::function<void(void)> >::value, "is_callable fail");
+}
+#endif
+
+namespace
+{
     void foo(int, long);
     struct S
     {
@@ -104,4 +130,25 @@ TEST(Yato_TypeTraits, functional)
     static_assert(std::is_same<bar_trait::result_type, const char*>::value, "functional trait fail");
     static_assert(bar_trait::arguments_num == 0, "functional trait fail");
     static_assert(std::is_same<bar_trait::arguments_list, yato::meta::null_list>::value, "functional trait fail");
+
+    using bar_no_class = yato::remove_class<decltype(&S::bar)>::type;
+    static_assert(std::is_same<bar_no_class, const char*(void)>::value, "functional trait fail");
+
+    auto l = [](int, const float &)->double { return 0.0; };
+    using l_type = decltype(l);
+
+    using l_no_class = yato::remove_class<decltype(&l_type::operator())>::type;
+    static_assert(std::is_same<l_no_class, double(int, const float &)>::value, "functional trait fail");
+
+    using l_fun = yato::callable_to_function<decltype(l)>::type;
+    static_assert(std::is_same<l_fun, std::function<double(int, const float &)>>::value, "functional trait fail");
+
+    using l_traits = yato::callable_trait<decltype(l)>;
+    static_assert(std::is_same<l_traits::result_type, double>::value, "functional trait fail");
+    static_assert(l_traits::arguments_num == 2, "functional trait fail");
+    static_assert(std::is_same<l_traits::arguments_list, yato::meta::list<int, const float&>>::value, "functional trait fail");
+
+    using func = std::function<int(float, double)>;
+    using func_trait = yato::callable_trait<func>;
+    static_assert(std::is_same<func, func_trait::function_type>::value, "functional trait fail");
 }

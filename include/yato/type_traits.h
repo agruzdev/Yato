@@ -175,6 +175,76 @@ namespace yato
     //-------------------------------------------------------
     // functional trait
 
+#ifndef YATO_MSVC_2013
+    //ToDo: implement for checking call with arguments
+    template <typename _T, typename _Enable = void>
+    struct is_callable
+        : std::false_type
+    { };
+    
+    template <typename _T>
+    struct is_callable<_T, typename test_param<decltype(&_T::operator())>::type>
+        : std::true_type
+    { };
+#endif
+
+    /**
+     *  Converts function member type to function type
+     */
+    template <typename _T> 
+    struct remove_class { };
+
+    template <typename _Class, typename _Result, typename... _Args>
+    struct remove_class<_Result(_Class::*)(_Args...)> 
+    { 
+#ifdef YATO_MSVC_2013
+        using type = _Result(typename _Args...);
+#else
+        using type = _Result(_Args...);
+#endif
+    };
+
+    template <typename _Class, typename _Result, typename... _Args>
+    struct remove_class<_Result(_Class::*)(_Args...) const> 
+    { 
+#ifdef YATO_MSVC_2013
+        using type = _Result(typename _Args...);
+#else
+        using type = _Result(_Args...);
+#endif
+    };
+
+    template <typename _Class, typename _Result, typename... _Args>
+    struct remove_class<_Result(_Class::*)(_Args...) volatile> 
+    { 
+#ifdef YATO_MSVC_2013
+        using type = _Result(typename _Args...);
+#else
+        using type = _Result(_Args...);
+#endif
+    };
+
+    template <typename _Class, typename _Result, typename... _Args>
+    struct remove_class<_Result(_Class::*)(_Args...) const volatile> 
+    {
+#ifdef YATO_MSVC_2013
+        using type = _Result(typename _Args...);
+#else
+        using type = _Result(_Args...);
+#endif
+    };
+
+    template <typename _Result, typename... _Args>
+    struct remove_class<_Result(_Args...)>
+    {
+#ifdef YATO_MSVC_2013
+        using type = _Result(typename _Args...);
+#else
+        using type = _Result(_Args...);
+#endif
+    };
+
+
     namespace details
     {
         template<typename _R, typename... _Args>
@@ -203,6 +273,8 @@ namespace yato
         {
             using type = typename meta::list_at<arguments_list, _Idx>::type;
         };
+
+        using function_type = std::function<_R(_Args...)>;
     };
 
     template<typename _R, typename... _Args>
@@ -218,6 +290,8 @@ namespace yato
         {
             using type = typename meta::list_at<arguments_list, _Idx>::type;
         };
+
+        using function_type = std::function<_R(_Args...)>;
     };
 
     /**
@@ -240,7 +314,20 @@ namespace yato
         {
             using type = typename meta::list_at<arguments_list, _Idx>::type;
         };
+
+        using function_type = std::function<_R(_Args...)>;
     };
+
+    //ToDo: make SFINAE friendly
+    template <typename _T>
+    struct callable_to_function
+    {
+        using type = std::function< typename remove_class<decltype(&_T::operator())>::type >;
+    };
+
+    template <typename _T>
+    using callable_trait = function_trait<typename callable_to_function<_T>::type>;
+
 }
 
 #endif
