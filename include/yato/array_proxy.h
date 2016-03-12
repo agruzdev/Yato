@@ -95,7 +95,15 @@ namespace yato
                 : m_data_iter(std::move(other.m_data_iter)), m_sizes_iter(std::move(other.m_sizes_iter)), m_offsets_iter(std::move(other.m_offsets_iter))
             {}
 
-            sub_array_proxy & operator= (const sub_array_proxy&) = default;
+            sub_array_proxy & operator= (const sub_array_proxy & other)
+            {
+                if (this != &other){
+                    m_data_iter = other.m_data_iter;
+                    m_sizes_iter = other.m_sizes_iter;
+                    m_offsets_iter = other.m_offsets_iter;
+                }
+                return *this;
+            }
 
             sub_array_proxy & operator= (sub_array_proxy && other) YATO_NOEXCEPT_KEYWORD
             {
