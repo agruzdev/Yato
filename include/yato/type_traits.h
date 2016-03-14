@@ -31,7 +31,7 @@ namespace yato
 
 
     template <typename...>
-    struct test_param
+    struct test_type
     {
         using type = void;
     };
@@ -87,7 +87,7 @@ namespace yato
     {};
 
     template<class _T>
-    struct is_iterator<_T, typename test_param<
+    struct is_iterator<_T, typename test_type<
         typename _T::iterator_category,
         typename _T::value_type,
         typename _T::difference_type,
@@ -173,89 +173,96 @@ namespace yato
 
 
     //-------------------------------------------------------
-    // functional trait
+    // functional traits
 
-#ifndef YATO_MSVC_2013
-    //ToDo: implement for checking call with arguments
-    template <typename _T, typename _Enable = void>
-    struct is_callable
+    template <typename... _Types>
+    struct is_function_pointer
         : std::false_type
     { };
-    
-    template <typename _T>
-    struct is_callable<_T, typename test_param<decltype(&_T::operator())>::type>
+
+    template <typename _R, typename ..._Args>
+    struct is_function_pointer<_R(*)(_Args...)>
         : std::true_type
     { };
-#endif
+
+    template <typename _R, typename _C, typename ..._Args>
+    struct is_function_pointer<_R(_C::*)(_Args...)>
+        : std::true_type
+    { };
+
+    template <typename _R, typename _C, typename ..._Args>
+    struct is_function_pointer<_R(_C::*)(_Args...) const>
+        : std::true_type
+    { };
+
+    template <typename _R, typename _C, typename ..._Args>
+    struct is_function_pointer<_R(_C::*)(_Args...) volatile>
+        : std::true_type
+    { };
+
+    template <typename _R, typename _C, typename ..._Args>
+    struct is_function_pointer<_R(_C::*)(_Args...) const volatile>
+        : std::true_type
+    { };
+
+    template <typename _T, typename _Enable = void>
+    struct has_operator_round_brackets
+        : std::false_type
+    { };
+
+    template <typename _T>
+    struct has_operator_round_brackets <_T, typename test_type< decltype(&_T::operator()) >::type >
+        : std::true_type
+    { };
+
+    template <typename _T>
+    struct is_callable
+        : std::integral_constant<bool, has_operator_round_brackets<_T>::value || is_function_pointer<_T>::value>
+    { };
 
     /**
      *  Converts function member type to function type
      */
-    template <typename _T> 
-    struct remove_class { };
-
-    template <typename _Class, typename _Result, typename... _Args>
-    struct remove_class<_Result(_Class::*)(_Args...)> 
-    { 
-#ifdef YATO_MSVC_2013
-        using type = _Result(typename _Args...);
-#else
-        using type = _Result(_Args...);
-#endif
-    };
-
-    template <typename _Class, typename _Result, typename... _Args>
-    struct remove_class<_Result(_Class::*)(_Args...) const> 
-    { 
-#ifdef YATO_MSVC_2013
-        using type = _Result(typename _Args...);
-#else
-        using type = _Result(_Args...);
-#endif
-    };
-
-    template <typename _Class, typename _Result, typename... _Args>
-    struct remove_class<_Result(_Class::*)(_Args...) volatile> 
-    { 
-#ifdef YATO_MSVC_2013
-        using type = _Result(typename _Args...);
-#else
-        using type = _Result(_Args...);
-#endif
-    };
-
-    template <typename _Class, typename _Result, typename... _Args>
-    struct remove_class<_Result(_Class::*)(_Args...) const volatile> 
-    {
-#ifdef YATO_MSVC_2013
-        using type = _Result(typename _Args...);
-#else
-        using type = _Result(_Args...);
-#endif
-    };
-
-    template <typename _Result, typename... _Args>
-    struct remove_class<_Result(_Args...)>
-    {
-#ifdef YATO_MSVC_2013
-        using type = _Result(typename _Args...);
-#else
-        using type = _Result(_Args...);
-#endif
-    };
-
 
     namespace details
     {
-        template<typename _R, typename... _Args>
-        auto get_function(_R(*)(_Args...)) -> std::function<_R(_Args...)>;
+        template <typename _T>
+        struct remove_class_impl {};
+
+        template <typename _Class, typename _Result, typename... _Args>
+        struct remove_class_impl<_Result(_Class::*)(_Args...)>
+        {
+            using type = _Result(*)(_Args...);
+        };
+
+        template <typename _Class, typename _Result, typename... _Args>
+        struct remove_class_impl<_Result(_Class::*)(_Args...) const>
+        {
+            using type = _Result(*)(_Args...);
+        };
+
+        template <typename _Class, typename _Result, typename... _Args>
+        struct remove_class_impl<_Result(_Class::*)(_Args...) volatile>
+        {
+            using type = _Result(*)(_Args...);
+        };
+
+        template <typename _Class, typename _Result, typename... _Args>
+        struct remove_class_impl<_Result(_Class::*)(_Args...) const volatile>
+        {
+            using type = _Result(*)(_Args...);
+        };
+
+        template <typename _Result, typename... _Args>
+        struct remove_class_impl<_Result(*)(_Args...)>
+        {
+            using type = _Result(*)(_Args...);
+        };
     }
 
-    template <typename _T>
-    struct function_pointer_to_type
-    {
-        using type = decltype(details::get_function(std::declval<_T>()));
-    };
+    template <typename _T> 
+    using remove_class = details::remove_class_impl< typename std::remove_cv<_T>::type >;
+
 
     template<typename T>
     struct function_trait {};
@@ -318,15 +325,32 @@ namespace yato
         using function_type = std::function<_R(_Args...)>;
     };
 
-    //ToDo: make SFINAE friendly
-    template <typename _T>
-    struct callable_to_function
-    {
-        using type = std::function< typename remove_class<decltype(&_T::operator())>::type >;
-    };
+    /**
+     *  Deduce information about arguments and return type for a callable entity
+     */
+    template <typename _T, typename _Enable = void>
+    struct callable_trait
+    { };
 
     template <typename _T>
-    using callable_trait = function_trait<typename callable_to_function<_T>::type>;
+    struct callable_trait <_T, typename std::enable_if<is_function_pointer<_T>::value>::type>
+        : function_trait< typename remove_class<_T>::type >
+    { };
+
+    template <typename _T>
+    struct callable_trait <_T, typename std::enable_if<has_operator_round_brackets<_T>::value>::type>
+        : function_trait< typename remove_class<decltype(&_T::operator())>::type >
+    { };
+
+    /**
+     *  Make std::function from a callable entity
+     */
+    template <typename _Callable>
+    auto make_function(_Callable && callable)
+        -> typename callable_trait<typename std::remove_reference<_Callable>::type>::function_type
+    {
+        return typename callable_trait<typename std::remove_reference<_Callable>::type>::function_type(std::forward<_Callable>(callable));
+    }
 
 }
 
