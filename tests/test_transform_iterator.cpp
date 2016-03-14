@@ -96,7 +96,7 @@ TEST(Yato_TransformIterator, make_transform_iterator)
     auto iter1 = yato::make_transform_iterator(b.begin(), std::function<int(const int&)>(increment));
 #endif
     auto iter2 = yato::make_transform_iterator(b.begin(), fun);
-    auto iter3 = yato::make_transform_iterator(a.begin(), &increment_foo);
+    //auto iter3 = yato::make_transform_iterator(a.begin(), &increment_foo);
     auto iter4 = yato::make_transform_iterator<SomeOp>(std::make_move_iterator(a.begin()));
     
 #ifdef YATO_MSVC_2015
