@@ -331,33 +331,12 @@ namespace yato
         one.swap(another);
     }
 
-#ifdef YATO_MSVC_2015
     template<typename _UnaryFunction, typename _Iterator>
     YATO_CONSTEXPR_FUNC
     auto make_transform_iterator(_Iterator && iterator, _UnaryFunction && function)
         -> transform_iterator<typename callable_trait<typename std::remove_reference<_UnaryFunction>::type>::function_type, typename std::remove_reference<_Iterator>::type>
     {
         return transform_iterator<typename callable_trait<typename std::remove_reference<_UnaryFunction>::type>::function_type, typename std::remove_reference<_Iterator>::type>(std::forward<_Iterator>(iterator), std::forward<_UnaryFunction>(function));
-    }
-#else
-    /**
-     *  ToDo: Add lambda support for MSVC 2013. Currently it is difficult due to poor SFINAE support
-     */
-    template<typename _UnaryFunction, typename _Iterator>
-    YATO_CONSTEXPR_FUNC
-    auto make_transform_iterator(_Iterator && iterator, _UnaryFunction && function)
-        -> transform_iterator<typename function_trait<typename std::remove_reference<_UnaryFunction>::type>::function_type, typename std::remove_reference<_Iterator>::type>
-    {
-        return transform_iterator<typename function_trait<typename std::remove_reference<_UnaryFunction>::type>::function_type, typename std::remove_reference<_Iterator>::type>(std::forward<_Iterator>(iterator), std::forward<_UnaryFunction>(function));
-    }
-#endif
-
-    template<typename _Result, typename _Arg, typename _Iterator>
-    YATO_CONSTEXPR_FUNC
-    auto make_transform_iterator(_Iterator && iterator, _Result(*function)(_Arg))
-        -> transform_iterator<std::function<_Result(_Arg)>, typename std::remove_reference<_Iterator>::type>
-    {
-        return transform_iterator<std::function<_Result(_Arg)>, typename std::remove_reference<_Iterator>::type>(std::forward<_Iterator>(iterator), function);
     }
 
     template<typename _UnaryFunction, typename _Iterator>

@@ -90,31 +90,18 @@ TEST(Yato_TransformIterator, make_transform_iterator)
     auto increment = [](const int & x) {return x + 1; };
     auto fun = std::function<int(const int&)>(increment);
 
-#ifdef YATO_MSVC_2015
     auto iter1 = yato::make_transform_iterator(b.begin(), increment);
-#else
-    auto iter1 = yato::make_transform_iterator(b.begin(), std::function<int(const int&)>(increment));
-#endif
     auto iter2 = yato::make_transform_iterator(b.begin(), fun);
-    //auto iter3 = yato::make_transform_iterator(a.begin(), &increment_foo);
+    auto iter3 = yato::make_transform_iterator(a.begin(), &increment_foo);
     auto iter4 = yato::make_transform_iterator<SomeOp>(std::make_move_iterator(a.begin()));
     
-#ifdef YATO_MSVC_2015
     auto iter5 = yato::make_transform_iterator(b.begin(), increment);
-#else
-    auto iter5 = yato::make_transform_iterator(b.begin(), std::function<int(const int&)>(increment));
-#endif
     iter1 = iter5;
     
     auto void_foo = [](int) -> void {};
 
-#ifdef YATO_MSVC_2015
     auto iter6 = yato::make_transform_iterator(a.cbegin(), void_foo);
     auto iter7 = yato::make_transform_iterator(a.begin(), void_foo);
-#else
-    auto iter6 = yato::make_transform_iterator(a.cbegin(), std::function<void(int)>(void_foo));
-    auto iter7 = yato::make_transform_iterator(a.begin(), std::function<void(int)>(void_foo));
-#endif
     iter6 = iter7;
 }
 
@@ -123,15 +110,9 @@ TEST(Yato_TransformIterator, zip_transform)
     const std::vector<int> a = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     const std::vector<long> b = { 11, 12, 13, 14, 15, 16, 17, 18, 19 };
     
-#ifdef YATO_MSVC_2015
     auto multiply = [](const std::tuple<int, long> & x) {
         return std::get<0>(x) * std::get<1>(x);
     };
-#else
-    std::function<long(const std::tuple<int, long> &)> multiply = [](const std::tuple<int, long> & x) {
-        return std::get<0>(x) * std::get<1>(x);
-    };
-#endif
     
     auto trIt  = yato::make_transform_iterator(yato::make_zip_iterator(a.begin(), b.begin()), multiply);
     auto trEnd = yato::make_transform_iterator(yato::make_zip_iterator(a.end(), b.end()), multiply);
