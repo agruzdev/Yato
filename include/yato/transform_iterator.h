@@ -107,6 +107,15 @@ namespace yato
         { }
 
         /**
+         *  Move
+         */
+        template<typename _AnotherUnaryFunction, typename _AnotherIterator>
+        transform_iterator(transform_iterator<_AnotherUnaryFunction, _AnotherIterator> && other,
+            typename std::enable_if<(std::is_convertible<_AnotherUnaryFunction, unary_function_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value)>::type* = nullptr)
+            : m_iterator(std::move(other.m_iterator)), m_function(std::move(other.m_function))
+        { }
+
+        /**
          *  Destroy
          */
         ~transform_iterator()
@@ -142,6 +151,19 @@ namespace yato
             if (this != &other) {
                 swap(m_iterator, other.m_iterator);
                 swap(m_function, other.m_function);
+            }
+        }
+
+        /**
+         *  Move
+         */
+        template<typename _AnotherUnaryFunction, typename _AnotherIterator>
+        auto operator = (transform_iterator<_AnotherUnaryFunction, _AnotherIterator> && other)
+            -> typename std::enable_if<(std::is_convertible<_AnotherUnaryFunction, unary_function_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value), my_type &>::type
+        {
+            if (this != &other) {
+                m_iterator = std::move(other.m_iterator);
+                m_function = std::move(other.m_function);
             }
         }
 
@@ -326,7 +348,7 @@ namespace yato
      };
 
     template<typename _UnaryFunction, typename _Iterator>
-    void swap(transform_iterator<_UnaryFunction, _Iterator> & one, transform_iterator<_UnaryFunction, _Iterator> & another)
+    inline void swap(transform_iterator<_UnaryFunction, _Iterator> & one, transform_iterator<_UnaryFunction, _Iterator> & another)
     {
         one.swap(another);
     }
