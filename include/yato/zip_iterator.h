@@ -138,7 +138,7 @@ namespace yato
         { }
 
         /**
-         *  Copy 
+         *  Copy
          */
         YATO_CONSTEXPR_FUNC
         zip_iterator(const my_type & other)
@@ -146,10 +146,26 @@ namespace yato
         { }
 
         /**
+         *  Copy 
+         */
+        template <typename... _OtherIterators>
+        YATO_CONSTEXPR_FUNC
+        zip_iterator(const zip_iterator<_OtherIterators...> & other)
+            : m_iterators(other.m_iterators)
+        { }
+
+        /**
          *  Move
          */
-        YATO_CONSTEXPR_FUNC
         zip_iterator(my_type && other)
+            : m_iterators(std::move(other.m_iterators))
+        { }
+
+        /**
+         *  Move
+         */
+        template <typename... _OtherIterators>
+        zip_iterator(zip_iterator<_OtherIterators...> && other)
             : m_iterators(std::move(other.m_iterators))
         { }
 
@@ -160,13 +176,37 @@ namespace yato
         { }
 
         /**
+         *  Swap all iterators
+         */
+        void swap(my_type & other)
+        {
+            if (this != &other){
+                using std::swap;
+                swap(m_iterators, other.m_iterators);
+            }
+        }
+
+        /**
          *  Copy all iterators
          */
         my_type & operator = (const my_type & other)
         {
             if (this != &other) {
-                m_iterators = other.m_iterators;
+                my_type copy(other);
+                copy.swap(*this);
             }
+            return *this;
+        }
+
+        /**
+         *  Copy all iterators
+         */
+        template <typename... _OtherIterators>
+        my_type & operator = (const zip_iterator<_OtherIterators...> & other)
+        {
+            my_type copy(other);
+            copy.swap(*this);
+            return *this;
         }
 
         /**
@@ -177,6 +217,17 @@ namespace yato
             if (this != &other) {
                 m_iterators = std::move(other.m_iterators);
             }
+            return *this;
+        }
+
+        /**
+         *  Move all iterators
+         */
+        template <typename... _OtherIterators>
+        my_type & operator = (zip_iterator<_OtherIterators...> && other)
+        {
+            m_iterators = std::move(other.m_iterators);
+            return *this;
         }
 
         /**
@@ -347,7 +398,17 @@ namespace yato
         {
             return !(*this < other);
         }
+
+
+        template <typename... _SomeIterators>
+        friend class zip_iterator;
     };
+
+    template <typename... _Iterators>
+    inline void swap(zip_iterator<_Iterators...> & one, zip_iterator<_Iterators...> & another)
+    {
+        one.swap(another);
+    }
 
     template<typename... _Iterators>
     YATO_CONSTEXPR_FUNC

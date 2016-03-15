@@ -66,6 +66,27 @@ TEST(Yato_ZipIterator, decrement)
     }
 }
 
+TEST(Yato_ZipIterator, copy)
+{
+    std::vector<int> a = { 1, 2, 3 };
+    using iter_type = yato::zip_iterator<std::vector<int>::iterator, std::vector<int>::const_iterator>;
+
+    auto it1 = iter_type(std::make_tuple(a.begin(), a.cbegin()));
+    auto it2 = iter_type(std::make_tuple(a.end(), a.cend()));
+
+    it1 = it2;
+    auto it3(it1);
+
+    using const_iter_type = yato::zip_iterator<std::vector<int>::const_iterator, std::vector<int>::const_iterator>;
+    const_iter_type it4(it1);
+    
+    using std::swap;
+    swap(it1, it2);
+
+    it4 = std::move(it1);
+    it4 = it2;
+}
+
 TEST(Yato_ZipIterator, loop)
 {
     std::vector<int> a = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
