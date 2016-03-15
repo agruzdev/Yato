@@ -205,6 +205,33 @@ namespace yato
         : std::true_type
     { };
 
+#ifdef YATO_MSVC_2013
+    /**
+     *  For some reasons MSVC 2013 can't work with expression 'decltype(&_T::operator())' correctly
+     *  Here is some workaround with generally incorrect expression, but it works fine for MSVC 2013
+     */
+    namespace details
+    {
+        template <typename> 
+        struct sfinae_true 
+            : std::true_type
+        { };
+
+        template <typename T> 
+        static auto vc12_test_operator_round_brackets(int)
+            -> sfinae_true<decltype(std::declval<T>().operator())>;
+
+        template <typename> 
+        static auto vc12_test_operator_round_brackets(long)
+            -> std::false_type;
+    }
+
+    template <typename T> 
+    struct has_operator_round_brackets 
+        : decltype(details::vc12_test_operator_round_brackets<T>(0))
+    { };
+
+#else
     template <typename _T, typename _Enable = void>
     struct has_operator_round_brackets
         : std::false_type
@@ -214,6 +241,7 @@ namespace yato
     struct has_operator_round_brackets <_T, typename test_type< decltype(&_T::operator()) >::type >
         : std::true_type
     { };
+#endif
 
     template <typename _T>
     struct is_callable

@@ -109,7 +109,7 @@ TEST(Yato_TypeTraits, is_callable)
     static_assert(yato::is_function_pointer<op_type>::value, "is_function_pointer fail");
     static_assert(yato::is_function_pointer<decltype(&FooCallable::operator())>::value, "is_function_pointer fail");
     //-------------------------------------------------------
-#ifndef YATO_MSVC_2013
+
     static_assert(!yato::has_operator_round_brackets<void>::value, "has_operator_round_brackets fail");
     static_assert(!yato::has_operator_round_brackets<int>::value, "has_operator_round_brackets fail");
     static_assert(!yato::has_operator_round_brackets<FooNotCallable>::value, "has_operator_round_brackets fail");
@@ -136,7 +136,6 @@ TEST(Yato_TypeTraits, is_callable)
     static_assert(yato::is_callable<int(*)(float)>::value, "is_callable fail");
     static_assert(yato::is_callable<op_type>::value, "is_callable fail");
     static_assert(yato::is_callable<decltype(&FooCallable::operator())>::value, "is_callable fail");
-#endif
 }
 
 namespace
@@ -177,7 +176,7 @@ TEST(Yato_TypeTraits, callable_trait)
     static_assert(foo_trait::arguments_num == 2, "callable_trait fail");
     static_assert(std::is_same<foo_trait::arguments_list, yato::meta::list<int, long>>::value, "callable_trait fail");
     static_assert(std::is_same<foo_trait::function_type, std::function<void(int, long)> >::value, "callable_trait fail");
-#ifndef YATO_MSVC_2013
+
     using func = std::function<int(float, double)>;
     using func_trait = yato::callable_trait<func>;
     static_assert(std::is_same<func_trait::result_type, int>::value, "callable_trait fail");
@@ -194,10 +193,8 @@ TEST(Yato_TypeTraits, callable_trait)
     static_assert(l_trait::arguments_num == 2, "callable_trait fail");
     static_assert(std::is_same<l_trait::arguments_list, yato::meta::list<int, const float&>>::value, "callable_trait fail");
     static_assert(std::is_same<l_trait::function_type, std::function<double(int, const float &)> >::value, "callable_trait fail");
-#endif
 }
 
-#ifndef YATO_MSVC_2013
 TEST(Yato_TypeTraits, make_function)
 {
     const auto l = [](int, const float &)->double { return 42.0; };
@@ -209,7 +206,6 @@ TEST(Yato_TypeTraits, make_function)
     float x;
     EXPECT_EQ(42.0, f3(0, x));
 }
-#endif
 
 TEST(Yato_TypeTraits, functional)
 {
