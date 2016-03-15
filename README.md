@@ -43,6 +43,12 @@ Also there are additional tools for working with types. The library provides lit
 * **yato::narrow_cast** - casts one arithmetic type to another. If correct value was lost due to narrowing then it throws exception in debug build
 * **yato::pointer_cast** - performs reinterpret casting for pointers. Saves CV-cvalifiers and doens't allow to cast intergral value to pointer
 
+Functional traits
+
+* **yato::is_callable** - checks if type is a callable type, i.e. it is pointer to function or it has operator() (including closure type)
+* **yato::callable_trait** - deduces return type and all arguments types for any callable type
+* **yato::make_function** - converts any callable type to std::function with corresponding return and arguments types
+
 ### "Annotations" ###
 There are a couple of experiments inspired by [Cpp Core Guidelines](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md)
 
@@ -73,5 +79,6 @@ Yato library provides few compile time algorithms on tuples
 * **tuple_all_of** - checks if unary predicate returns true for all elements of the tuple (or binary predicate for all elements of two tuples)
 * **tuple_any_of** - checks if unary predicate returns true for at least one element of the tuple (or binary predicate for at least one element of two tuples) 
 
-### Zip iterator ###
-**yato::zip_iterator** is an analogue of [boost::zip_iterator](http://www.boost.org/doc/libs/1_60_0/libs/iterator/doc/zip_iterator.html) but implemented in terms of modern C++ in order to get rid of any boost dependency
+### Iterators ###
+* **yato::zip_iterator** is an analogue of [boost::zip_iterator](http://www.boost.org/doc/libs/1_60_0/libs/iterator/doc/zip_iterator.html) but implemented in terms of modern C++ in order to get rid of any boost dependency
+* **yato::transform_iterator** is an analogue of [boost::transform_iterator](http://www.boost.org/doc/libs/1_60_0/libs/iterator/doc/transform_iterator.html) but implemented in terms of modern C++ in order to get rid of any boost dependency
