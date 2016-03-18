@@ -28,26 +28,26 @@ namespace yato
         //-------------------------------------------------------
         // Definitions for iterator_traits
         /**
-            * Category is not greater than bidirectional
-            */
+         * Category is not greater than bidirectional
+         */
         using iterator_category = typename std::conditional<!std::is_same<underlying_iterator_category, std::random_access_iterator_tag>::value,
             underlying_iterator_category,
             std::bidirectional_iterator_tag >::type;
         /**
-            * Dereferencing the iterator yields the same type as base iterator
-            */
+         * Dereferencing the iterator yields the same type as base iterator
+         */
         using reference = typename std::iterator_traits<iterator_type>::reference;
         /**
-            * Value type preserves cv-qualifiers
-            */
+         * Value type preserves cv-qualifiers
+         */
         using value_type = typename std::iterator_traits<iterator_type>::value_type;
         /**
-            * Pointer to value
-            */
+         * Pointer to value
+         */
         using pointer = typename std::iterator_traits<iterator_type>::pointer;
         /**
-            * Difference type is same as iterator's difference type
-            */
+         * Difference type is same as iterator's difference type
+         */
         using difference_type = typename std::iterator_traits<iterator_type>::difference_type;
         //-------------------------------------------------------
 
@@ -66,9 +66,9 @@ namespace yato
 
     public:
         /**
-            *  Create from iterators and predicate
-            *  Immediately moves to the first correct position
-            */
+         *  Create from iterators and predicate
+         *  Immediately moves to the first correct position
+         */
         template <typename _IteratorReference, typename _PredicateReference>
         filter_iterator(_IteratorReference && iter, _IteratorReference && end, _PredicateReference && predicate,
             typename std::enable_if<(std::is_convertible<typename std::remove_reference<_IteratorReference>::type, iterator_type>::value && std::is_convertible<typename std::remove_reference<_PredicateReference>::type, predicate_type>::value)>::type* = nullptr)
@@ -78,15 +78,15 @@ namespace yato
         }
 
         /**
-        *  Copy
-        */
+         *  Copy
+         */
         filter_iterator(const my_type & other)
             : m_iterator(other.m_iterator), m_end(other.m_end), m_predicate(other.m_predicate)
         { }
 
         /**
-            *  Copy
-            */
+         *  Copy
+         */
         template<typename _AnotherIterator, typename _AnotherPredicate>
         filter_iterator(const filter_iterator<_AnotherPredicate, _AnotherIterator> & other,
             typename std::enable_if<(std::is_convertible<_AnotherPredicate, predicate_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value)>::type* = nullptr)
@@ -94,15 +94,15 @@ namespace yato
         { }
 
         /**
-            *  Move
-            */
+         *  Move
+         */
         filter_iterator(my_type && other)
             : m_iterator(std::move(other.m_iterator)), m_end(std::move(other.m_end)), m_predicate(std::move(other.m_predicate))
         { }
 
         /**
-            *  Move
-            */
+         *  Move
+         */
         template<typename _AnotherIterator, typename _AnotherPredicate>
         filter_iterator(filter_iterator<_AnotherPredicate, _AnotherIterator> && other,
             typename std::enable_if<(std::is_convertible<_AnotherPredicate, predicate_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value)>::type* = nullptr)
@@ -110,14 +110,14 @@ namespace yato
         { }
 
         /**
-            *  Destroy
-            */
+         *  Destroy
+         */
         ~filter_iterator()
         { }
 
         /**
-            *  Swap iterators
-            */
+         *  Swap iterators
+         */
         void swap(my_type & other) YATO_NOEXCEPT_KEYWORD
         {
             using std::swap;
@@ -129,8 +129,8 @@ namespace yato
         }
 
         /**
-            *  Copy
-            */
+         *  Copy
+         */
         my_type & operator = (const my_type & other)
         {
             if (this != &other) {
@@ -141,8 +141,8 @@ namespace yato
         }
 
         /**
-            *  Copy
-            */
+         *  Copy
+         */
         template<typename _AnotherPredicate, typename _AnotherIterator>
         auto operator = (const filter_iterator<_AnotherPredicate, _AnotherIterator> & other)
             -> typename std::enable_if<(std::is_convertible<_AnotherPredicate, predicate_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value), my_type &>::type
@@ -153,8 +153,8 @@ namespace yato
         }
 
         /**
-            *  Move
-            */
+         *  Move
+         */
         my_type & operator = (my_type && other)
         {
             if (this != &other) {
@@ -166,8 +166,8 @@ namespace yato
         }
 
         /**
-            *  Move
-            */
+         *  Move
+         */
         template<typename _AnotherPredicate, typename _AnotherIterator>
         auto operator = (filter_iterator<_AnotherPredicate, _AnotherIterator> && other)
             -> typename std::enable_if<(std::is_convertible<_AnotherPredicate, predicate_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value), my_type &>::type
@@ -179,24 +179,24 @@ namespace yato
         }
 
         /**
-            *  Dereference
-            */
+         *  Dereference
+         */
         const reference operator*() const
         {
             return *m_iterator;
         }
 
         /**
-            *  Dereference
-            */
+         *  Dereference
+         */
         reference operator*()
         {
             return *m_iterator;
         }
 
         /**
-            *  Increment and skip all values not satisfying the predicate
-            */
+         *  Increment and skip all values not satisfying the predicate
+         */
         my_type & operator++ ()
         {
             ++m_iterator;
@@ -205,8 +205,8 @@ namespace yato
         }
 
         /**
-            *  Increment and skip all values not satisfying the predicate
-            */
+         *  Increment and skip all values not satisfying the predicate
+         */
         my_type operator++ (int)
         {
             auto copy(*this);
@@ -215,8 +215,8 @@ namespace yato
         }
 
         /**
-            *  Decrement
-            */
+         *  Decrement and skip all values not satisfying the predicate
+         */
         template<typename _MyCategory = iterator_category>
         auto operator-- ()
             -> typename std::enable_if<std::is_base_of<std::bidirectional_iterator_tag, _MyCategory>::value, my_type &>::type
@@ -229,8 +229,8 @@ namespace yato
         }
 
         /**
-            *  Decrement
-            */
+         *  Decrement and skip all values not satisfying the predicate
+         */
         template<typename _MyCategory = iterator_category>
         auto operator-- (int)
             -> typename std::enable_if<std::is_base_of<std::bidirectional_iterator_tag, _MyCategory>::value, my_type>::type
@@ -241,32 +241,32 @@ namespace yato
         }
 
         /**
-            *  Compare inequality
-            */
+         *  Compare inequality
+         */
         bool operator != (const my_type & other)  const
         {
             return m_iterator != other.m_iterator;
         }
 
         /**
-            *  Compare inequality
-            */
+         *  Compare inequality
+         */
         bool operator != (const iterator_type & other)  const
         {
             return m_iterator != other;
         }
 
         /**
-            *  Compare equality
-            */
+         *  Compare equality
+         */
         bool operator == (const my_type & other) const
         {
             return !(*this != other);
         }
 
         /**
-            *  Compare equality
-            */
+         *  Compare equality
+         */
         bool operator == (const iterator_type & other) const
         {
             return !(*this != other);
