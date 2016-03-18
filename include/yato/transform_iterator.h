@@ -161,10 +161,9 @@ namespace yato
         auto operator = (transform_iterator<_AnotherUnaryFunction, _AnotherIterator> && other)
             -> typename std::enable_if<(std::is_convertible<_AnotherUnaryFunction, unary_function_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value), my_type &>::type
         {
-            if (this != &other) {
-                m_iterator = std::move(other.m_iterator);
-                m_function = std::move(other.m_function);
-            }
+            m_iterator = std::move(other.m_iterator);
+            m_function = std::move(other.m_function);
+            return *this;
         }
 
         /**
@@ -176,6 +175,7 @@ namespace yato
                 m_iterator = std::move(other.m_iterator);
                 m_function = std::move(other.m_function);
             }
+            return *this;
         }
 
         /**
