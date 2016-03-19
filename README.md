@@ -58,6 +58,14 @@ There are a couple of experiments inspired by [Cpp Core Guidelines](https://gith
 ### Ranges ###
 **yato::range** - aggregator of a couple of iterators simplifing passing two iterators to functions, returning iteratos from functions, hepling to hold iterators of one container together. Can be ued in ranged *for* expressions. Together with **yato::numeric_iterator** the range can represent a sequence of integer numbers without actual storing them
 
+Range provides the following functional style operations:
+
+* **map** - returns a range of **yato::transform_iterator** lazily applying a function to the each element of the range
+* **filter** - returns a range of **yato::filter_iterator** lazily selecting only those elements of the range which satify some predicate
+* **zip** - returns a range of **yato::zip_iterator** joining the range with other ranges into a range of tuples
+* **foldLeft** - accumulates all elements of the range applying some binary operation from the left to the right
+* **foldRight** - accumulates all elements of the range applying some binary operation from the right ot the left
+
 ### Containers ###
 Yato implemets a number of general purpose containers: 
 
@@ -80,5 +88,7 @@ Yato library provides few compile time algorithms on tuples
 * **tuple_any_of** - checks if unary predicate returns true for at least one element of the tuple (or binary predicate for at least one element of two tuples) 
 
 ### Iterators ###
+* **yato::numeric_iterator** enumerates sequental integer values allowing to iterate over an integer sequence witout storing it 
 * **yato::zip_iterator** is an analogue of [boost::zip_iterator](http://www.boost.org/doc/libs/1_60_0/libs/iterator/doc/zip_iterator.html) but implemented in terms of modern C++ in order to get rid of any boost dependency
 * **yato::transform_iterator** is an analogue of [boost::transform_iterator](http://www.boost.org/doc/libs/1_60_0/libs/iterator/doc/transform_iterator.html) but implemented in terms of modern C++ in order to get rid of any boost dependency
+* **yato::filter_iterator** is an analogue of [boost::filter_iterator](http://www.boost.org/doc/libs/master/libs/iterator/doc/filter_iterator.html) but implemented in terms of modern C++ in order to get rid of any boost dependency
