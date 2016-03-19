@@ -28,10 +28,8 @@ namespace yato
 
         using value_type = _T;
         using difference_type = std::ptrdiff_t;
-        using pointer = typename std::add_pointer<_T>::type;
-        using pointer_to_const = typename std::add_pointer<const _T>::type;
-        using reference = typename std::add_lvalue_reference<_T>::type;
-        using reference_to_const = typename std::add_lvalue_reference<const _T>::type;
+        using pointer = typename std::add_pointer<const _T>::type;
+        using reference = typename std::add_lvalue_reference<const _T>::type;
         using iterator_category = std::random_access_iterator_tag;
 
     private:
@@ -65,12 +63,14 @@ namespace yato
         ~numeric_iterator() 
         { }
 
-        YATO_CONSTEXPR_FUNC reference_to_const operator*() const YATO_NOEXCEPT_KEYWORD
+        YATO_CONSTEXPR_FUNC 
+        reference operator*() const YATO_NOEXCEPT_KEYWORD
         {
             return m_value;
         }
 
-        YATO_CONSTEXPR_FUNC pointer_to_const operator->() const YATO_NOEXCEPT_KEYWORD
+        YATO_CONSTEXPR_FUNC 
+        pointer operator->() const YATO_NOEXCEPT_KEYWORD
         {
             return &m_value;
         }
@@ -129,7 +129,7 @@ namespace yato
             return m_value - right.m_value;
         }
 
-        YATO_CONSTEXPR_FUNC reference_to_const operator[](difference_type offset) const
+        YATO_CONSTEXPR_FUNC reference operator[](difference_type offset) const
         {
             return (*(*this + offset));
         }
