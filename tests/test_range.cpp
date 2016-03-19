@@ -46,6 +46,11 @@ TEST(Yato_Range, numeric_range_2)
     for (size_t x : yato::make_range(100U)) {
         EXPECT_TRUE(x == i++);
     }
+
+    int j = 0;
+    for (int x : yato::make_range(100)) {
+        EXPECT_TRUE(x == j++);
+    }
 }
 
 #if defined(YATO_MSVC_2015) || (__cplusplus >= 201400L)
@@ -78,6 +83,26 @@ TEST(Yato_Range, make_range_2)
         {
             return yato::make_range(m_data->cbegin(), m_data->cend());
         }
+
+        std::vector<int>::iterator begin()
+        {
+            return m_data->begin();
+        }
+
+        std::vector<int>::iterator end()
+        {
+            return m_data->end();
+        }
+
+        std::vector<int>::const_iterator cbegin() const
+        {
+            return m_data->cbegin();
+        }
+
+        std::vector<int>::const_iterator cend() const
+        {
+            return m_data->cend();
+        }
     };
 
     std::vector<int> vec;
@@ -93,7 +118,89 @@ TEST(Yato_Range, make_range_2)
 
     const A& c_a = a;
     it = vec.begin();
-    for (const int & x : yato::make_range(c_a)) {
+    for (const int & x : yato::make_crange(c_a)) {
         EXPECT_TRUE(x == *it++);
     }
 }
+
+TEST(Yato_Range, reverse)
+{
+    std::vector<int> v = { 1, 2, 3, 4 };
+    auto r1 = yato::make_range(v);
+
+    int i = 4;
+    for (auto it = r1.rbegin(); it != r1.rend(); ++it) {
+        EXPECT_EQ(i--, *it);
+    }
+
+    int j = 4;
+    auto r2 = yato::make_range(v).reverse();
+    for (auto it = r2.begin(); it != r2.end(); ++it) {
+        EXPECT_EQ(j--, *it);
+    }
+}
+
+TEST(Yato_Range, map)
+{
+    std::vector<int> v = { 1, 2, 3, 4 };
+
+    int i = 1;
+    for (int x : yato::make_range(v).map([](int y) { return 2 * y; })) {
+        EXPECT_EQ(x, i++ * 2);
+    }
+
+    const std::vector<int> u = { 1, 2, 3, 4 };
+    auto r = yato::make_range(u).map([](int y) { return y + 1; });
+    std::vector<int> w;
+    for (int x : r) {
+        w.push_back(x);
+    }
+    EXPECT_EQ(w, (std::vector<int>{ 2, 3, 4, 5}));
+}
+
+TEST(Yato_Range, filter)
+{
+    std::vector<int> v = { 1, 2, 3, 4, 5, 6, 7 };
+
+    std::vector<int> u;
+    for (int x : yato::make_range(v).filter([](int y) { return (y & 1) == 0; })) {
+        u.push_back(x);
+    }
+    EXPECT_EQ(u, (std::vector<int>{ 2, 4, 6 }));
+}
+
+TEST(Yato_Range, zip)
+{
+    std::vector<int> v = {  1,  2,  3,  4 };
+    std::vector<int> u = { -1, -2, -3, -4 };
+    
+    auto r1 = yato::make_range(v).zip(yato::make_range(u));
+    for (const auto & t : r1) {
+        EXPECT_EQ(std::get<0>(t), -std::get<1>(t));
+    }
+
+    auto r2 = yato::make_range(v).zip(yato::make_range(u), yato::make_range(1U, 5U));
+    for (const auto & t : r2) {
+        EXPECT_EQ(std::get<0>(t), -std::get<1>(t));
+        EXPECT_EQ(std::get<0>(t),  std::get<2>(t));
+    }
+}
+
+TEST(Yato_Range, fold)
+{
+    std::vector<int> v = { 1, 2, 3, 4 };
+    long s1 = yato::make_range(v).foldLeft(std::plus<long>(), static_cast<long>(0));
+    EXPECT_EQ(10, s1);
+    long s2 = yato::make_range(v).foldRight(std::multiplies<long>(), static_cast<long>(1));
+    EXPECT_EQ(24, s2);
+}
+
+TEST(Yato_Range, superposition)
+{
+    //Count number of numbers '1' after rounding
+    std::vector<float> v = {4.1f, 0.0f, -2.4f, 4.9f, 1.9f, 1.1f, 4.0f, 0.4f, -5.0f, 6.1f, 2.4f, 1.0f, 5.3f, 0.9f, 1.0f, 0.0f, 5.4f, -1.1f, 5.0f};
+
+    size_t num = yato::make_range(v).map([](float y)->int {return static_cast<int>(std::round(y)); }).filter([](int x) {return x == 1; }).foldLeft(std::plus<size_t>(), static_cast<size_t>(0));
+    EXPECT_EQ(4, num);
+}
+
