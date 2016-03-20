@@ -189,9 +189,9 @@ TEST(Yato_Range, zip)
 TEST(Yato_Range, fold)
 {
     std::vector<int> v = { 1, 2, 3, 4 };
-    long s1 = yato::make_range(v).foldLeft(std::plus<long>(), static_cast<long>(0));
+    long s1 = yato::make_range(v).fold_left(std::plus<long>(), static_cast<long>(0));
     EXPECT_EQ(10, s1);
-    long s2 = yato::make_range(v).foldRight(std::multiplies<long>(), static_cast<long>(1));
+    long s2 = yato::make_range(v).fold_right(std::multiplies<long>(), static_cast<long>(1));
     EXPECT_EQ(24, s2);
 }
 
@@ -200,7 +200,19 @@ TEST(Yato_Range, superposition)
     //Count number of numbers '1' after rounding
     std::vector<float> v = {4.1f, 0.0f, -2.4f, 4.9f, 1.9f, 1.1f, 4.0f, 0.4f, -5.0f, 6.1f, 2.4f, 1.0f, 5.3f, 0.9f, 1.0f, 0.0f, 5.4f, -1.1f, 5.0f};
 
-    size_t num = yato::make_range(v).map([](float y)->int {return static_cast<int>(std::round(y)); }).filter([](int x) {return x == 1; }).foldLeft(std::plus<size_t>(), static_cast<size_t>(0));
+    size_t num = yato::make_range(v).map([](float y)->int {return static_cast<int>(std::round(y)); }).filter([](int x) {return x == 1; }).fold_left(std::plus<size_t>(), static_cast<size_t>(0));
     EXPECT_EQ(4, num);
 }
 
+TEST(Yato_Range, convertion)
+{
+    std::vector<float> v = { 1.1f, 2.0f, 3.5f, 4.8f };
+
+    auto r = yato::make_range(v).map([](float y)->int {return static_cast<int>(std::round(y)); });
+    std::vector<int> u = r.to_vector();
+    EXPECT_EQ(u, (std::vector<int>{ 1, 2, 4, 5 }));
+    std::list<int> l = r.to_list();
+    EXPECT_EQ(l, (std::list<int>{ 1, 2, 4, 5 }));
+    auto s = r.to_set<std::greater<int>>();
+    EXPECT_EQ(s, (std::set<int, std::greater<int>>{ 1, 2, 4, 5 }));
+}

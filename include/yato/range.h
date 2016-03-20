@@ -9,6 +9,9 @@
 #define _YATO_RANGE_H_
 
 #include <numeric>
+#include <vector>
+#include <list>
+#include <set>
 
 #include "numeric_iterator.h"
 #include "transform_iterator.h"
@@ -17,6 +20,30 @@
 
 namespace yato
 {
+#ifdef YATO_MSVC_2013
+    namespace details
+    {
+        template <typename _RangesList, typename... _Iterators>
+        struct ranges_to_zip_iterator_impl
+        {
+            using head_range = typename _RangesList::head;
+            using type = typename ranges_to_zip_iterator_impl<typename _RangesList::tail, _Iterators..., typename head_range::iterator_type>::type;
+        };
+
+        template <typename... _Iterators>
+        struct ranges_to_zip_iterator_impl<meta::null_list, _Iterators...>
+        {
+            using type = zip_iterator<_Iterators...>;
+        };
+
+        template <typename... _Ranges>
+        struct ranges_to_zip_iterator
+        {
+            using type = typename ranges_to_zip_iterator_impl<meta::list<_Ranges...>>::type;
+        };
+    }
+#endif
+
     /**
      *  Immutable object aggregating two iterators
      *  Helps to express a range of one container
@@ -28,7 +55,7 @@ namespace yato
         using iterator_type = _IteratorType;
         using reverse_iterator_type = std::reverse_iterator<iterator_type>;
         static_assert(is_iterator<iterator_type>::value, "yato::range can be used only for iterators");
-
+        using my_type = range<iterator_type>;
 
         using difference_type = typename std::iterator_traits<iterator_type>::difference_type;
         //-------------------------------------------------------
@@ -161,7 +188,11 @@ namespace yato
         auto zip(const _Ranges & ...ranges) const
             -> range<zip_iterator<iterator_type, typename _Ranges::iterator_type...>> 
         {
+#ifdef YATO_MSVC_2013
+            using _zipped_iterator_type = typename details::ranges_to_zip_iterator<my_type, _Ranges...>::type;
+#else
             using _zipped_iterator_type = zip_iterator<iterator_type, typename _Ranges::iterator_type...>;
+#endif
             return range<_zipped_iterator_type>(_zipped_iterator_type(std::make_tuple(begin(), ranges.begin()...)), _zipped_iterator_type(std::make_tuple(end(), ranges.end()...)));
         }
 
@@ -170,7 +201,7 @@ namespace yato
          */
         template <typename _BinaryFunction, typename _ValueType>
         YATO_CONSTEXPR_FUNC
-        _ValueType foldLeft(_BinaryFunction && function, const _ValueType & initialValue) const
+        _ValueType fold_left(_BinaryFunction && function, const _ValueType & initialValue) const
         {
             return std::accumulate(begin(), end(), initialValue, std::forward<_BinaryFunction>(function));
         }
@@ -180,9 +211,36 @@ namespace yato
          */
         template <typename _BinaryFunction, typename _ValueType>
         YATO_CONSTEXPR_FUNC
-        _ValueType foldRight(_BinaryFunction && function, const _ValueType & initialValue) const
+        _ValueType fold_right(_BinaryFunction && function, const _ValueType & initialValue) const
         {
             return std::accumulate(rbegin(), rend(), initialValue, std::forward<_BinaryFunction>(function));
+        }
+
+        /**
+         *  Convert range to vector via copying
+         */
+        template <typename _Allocator = std::allocator<typename std::iterator_traits<iterator_type>::value_type>>
+        std::vector<typename std::iterator_traits<iterator_type>::value_type, _Allocator> to_vector(const _Allocator & allocator = _Allocator()) const
+        {
+            return std::vector<typename std::iterator_traits<iterator_type>::value_type, _Allocator>(begin(), end(), allocator);
+        }
+
+        /**
+         *  Convert range to list via copying
+         */
+        template <typename _Allocator = std::allocator<typename std::iterator_traits<iterator_type>::value_type>>
+        std::list<typename std::iterator_traits<iterator_type>::value_type, _Allocator> to_list(const _Allocator & allocator = _Allocator()) const
+        {
+            return std::list<typename std::iterator_traits<iterator_type>::value_type, _Allocator>(begin(), end(), allocator);
+        }
+
+        /**
+         *  Convert range to set via copying
+         */
+        template <typename _Comparator = std::less<typename std::iterator_traits<iterator_type>::value_type>, typename _Allocator = std::allocator<typename std::iterator_traits<iterator_type>::value_type>>
+        std::set<typename std::iterator_traits<iterator_type>::value_type, _Comparator, _Allocator> to_set(const _Comparator & comparator = _Comparator(), const _Allocator & allocator = _Allocator()) const
+        {
+            return std::set<typename std::iterator_traits<iterator_type>::value_type, _Comparator, _Allocator>(begin(), end(), comparator, allocator);
         }
     };
     
