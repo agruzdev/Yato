@@ -309,6 +309,7 @@ namespace yato
             using type = typename meta::list_at<arguments_list, _Idx>::type;
         };
 
+        using pointer_type = _R(*)(_Args...);
         using function_type = std::function<_R(_Args...)>;
     };
 
@@ -326,6 +327,7 @@ namespace yato
             using type = typename meta::list_at<arguments_list, _Idx>::type;
         };
 
+        using pointer_type = _R(*)(_Args...);
         using function_type = std::function<_R(_Args...)>;
     };
 
@@ -350,6 +352,7 @@ namespace yato
             using type = typename meta::list_at<arguments_list, _Idx>::type;
         };
 
+        using pointer_type = _R(*)(_Args...);
         using function_type = std::function<_R(_Args...)>;
     };
 

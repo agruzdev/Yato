@@ -8,18 +8,25 @@
 #ifndef _YATO_TRANSFORM_ITERATOR_H_
 #define _YATO_TRANSFORM_ITERATOR_H_
 
-#include "prerequisites.h"
 #include "type_traits.h"
+#include "storage.h"
+
+#ifndef YATO_TRANSFORM_ITER_SIZE
+    #define YATO_TRANSFORM_ITER_SIZE (64)
+#endif
 
 namespace yato
 {
+
     template <typename _UnaryFunction, typename _Iterator>
     class transform_iterator
     {
+        static YATO_CONSTEXPR_VAR size_t _function_storage_size = YATO_TRANSFORM_ITER_SIZE;
     public:
         using unary_function_type = _UnaryFunction;
         using iterator_type = _Iterator;
         using my_type = transform_iterator<unary_function_type, iterator_type>;
+        using unary_function_storage = storage<unary_function_type, _function_storage_size>;
 
         //-------------------------------------------------------
         // Definitions for iterator_traits
@@ -51,14 +58,13 @@ namespace yato
 
     private:
         iterator_type m_iterator;
-        unary_function_type m_function;
+        unary_function_storage m_function;
         //-------------------------------------------------------
 
     public:
         /**
          *  Create from iterator and function
          */
-        YATO_CONSTEXPR_FUNC
         transform_iterator(const iterator_type & iter, const unary_function_type & function)
             : m_iterator(iter), m_function(function)
         { }
@@ -184,7 +190,7 @@ namespace yato
         YATO_CONSTEXPR_FUNC
         const reference operator*() const
         {
-            return m_function(*m_iterator);
+            return (*m_function)(*m_iterator);
         }
 
         /**
@@ -192,7 +198,7 @@ namespace yato
          */
         reference operator*()
         {
-            return m_function(*m_iterator);
+            return (*m_function)(*m_iterator);
         }
 
         /**
@@ -356,9 +362,9 @@ namespace yato
     template<typename _UnaryFunction, typename _Iterator>
     YATO_CONSTEXPR_FUNC
     auto make_transform_iterator(_Iterator && iterator, _UnaryFunction && function)
-        -> transform_iterator<typename callable_trait<typename std::remove_reference<_UnaryFunction>::type>::function_type, typename std::remove_reference<_Iterator>::type>
+        -> transform_iterator<typename std::remove_reference<_UnaryFunction>::type, typename std::remove_reference<_Iterator>::type>
     {
-        return transform_iterator<typename callable_trait<typename std::remove_reference<_UnaryFunction>::type>::function_type, typename std::remove_reference<_Iterator>::type>(std::forward<_Iterator>(iterator), std::forward<_UnaryFunction>(function));
+        return transform_iterator<typename std::remove_reference<_UnaryFunction>::type, typename std::remove_reference<_Iterator>::type>(std::forward<_Iterator>(iterator), std::forward<_UnaryFunction>(function));
     }
 
     template<typename _UnaryFunction, typename _Iterator>
