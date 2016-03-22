@@ -9,6 +9,7 @@
 #define _YATO_STORAGE_H_
 
 #include <memory>
+#include <array>
 
 #include "types.h"
 
@@ -63,7 +64,7 @@ namespace yato
             my_type & operator = (const my_type & other)
             {
                 if (this != &other) {
-                    auto tmp{ other };
+                    my_type tmp{ other };
                     tmp.swap(*this);
                 }
                 return *this;
@@ -119,59 +120,76 @@ namespace yato
             using pointer_to_const_type = const stored_type*;
             using reference_type = stored_type&;
             using reference_to_const_type = const stored_type&;
-            static constexpr size_t size = sizeof(stored_type);
-            static constexpr size_t max_size = _SizeLimit;
-            static constexpr bool   allocates_memory = false;
+            static YATO_CONSTEXPR_VAR size_t size = sizeof(stored_type);
+            static YATO_CONSTEXPR_VAR size_t max_size = _SizeLimit;
+            static YATO_CONSTEXPR_VAR bool   allocates_memory = false;
 
         private:
-            uint8_t m_buffer[size];
+            std::array<uint8_t, size> m_buffer;
+            //-------------------------------------------------------
 
-        public:
-#ifndef YATO_MSVC_2013
-            YATO_CONSTEXPR_FUNC
-#endif
-            storage_impl(const _T & obj)
-                : m_buffer()
+            void _create(const stored_type & obj)
             {
-                new(m_buffer) stored_type(obj);
+                new(m_buffer.data())stored_type(obj);
             }
 
-#ifndef YATO_MSVC_2013
-            YATO_CONSTEXPR_FUNC
-#endif
-            storage_impl(const my_type & other)
-                : m_buffer()
+            pointer_type _get_pointer() YATO_NOEXCEPT_KEYWORD
             {
-                new(m_buffer) stored_type(*other.get());
+                return pointer_cast<pointer_type>(m_buffer.data());
+            }
+
+            YATO_CONSTEXPR_FUNC
+            pointer_to_const_type _get_pointer() const YATO_NOEXCEPT_KEYWORD
+            {
+                return pointer_cast<pointer_to_const_type>(m_buffer.data());
+            }
+
+            void _destroy()
+            {
+                _get_pointer()->~stored_type();
+            }
+            //-------------------------------------------------------
+
+        public:
+            storage_impl(const _T & obj)
+                : m_buffer{}
+            {
+                _create(obj);
+            }
+
+            storage_impl(const my_type & other)
+                : m_buffer{}
+            {
+                _create(*other.get());
             }
 
             storage_impl(my_type && other)
-                : m_buffer()
+                : m_buffer{}
             {
-                new(m_buffer) stored_type(*other.get());
+                _create(*other.get());
             }
 
             ~storage_impl()
             {
-                get()->~stored_type();
+                _destroy();
             }
 
             void swap(my_type & other) 
             {
                 if (this != &other) {
-                    auto tmp{ *get() };
-                    get()->~stored_type();
-                    new(m_buffer) stored_type(*other.get());
-                    other.get()->~stored_type();
-                    new(other.m_buffer) stored_type(tmp);
+                    stored_type tmp{ *_get_pointer() };
+                    _destroy();
+                    _create(*other._get_pointer());
+                    other._destroy();
+                    other._create(tmp);
                 }
             }
 
             my_type & operator = (const my_type & other)
             {
                 if (this != &other) {
-                    get()->~stored_type();
-                    new(m_buffer) stored_type(*other.get());
+                    _destroy();
+                    _create(*other._get_pointer());
                 }
                 return *this;
             }
@@ -179,43 +197,43 @@ namespace yato
             my_type & operator = (my_type && other)
             {
                 if (this != &other) {
-                    get()->~stored_type();
-                    new(m_buffer) stored_type(*other.get());
+                    _destroy();
+                    _create(*other._get_pointer());
                 }
                 return *this;
             }
 
             pointer_type get()
             {
-                return pointer_cast<pointer_type>(m_buffer);
+                return _get_pointer();
             }
 
             YATO_CONSTEXPR_FUNC
             pointer_to_const_type get() const
             {
-                return pointer_cast<pointer_to_const_type>(m_buffer);
+                return _get_pointer();
             }
 
             pointer_type operator->()
             {
-                return get();
+                return _get_pointer();
             }
 
             YATO_CONSTEXPR_FUNC
             pointer_to_const_type operator->() const
             {
-                return get();
+                return _get_pointer();
             }
 
             reference_type operator*()
             {
-                return *get();
+                return *_get_pointer();
             }
 
             YATO_CONSTEXPR_FUNC
             reference_to_const_type operator*() const
             {
-                return *get();
+                return *_get_pointer();
             }
         };
 
