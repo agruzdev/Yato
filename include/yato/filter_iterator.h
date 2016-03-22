@@ -9,6 +9,11 @@
 #define _YATO_FILTER_ITERATOR_H_
 
 #include "type_traits.h"
+#include "storage.h"
+
+#ifndef YATO_FILTER_ITER_SIZE
+    #define YATO_FILTER_ITER_SIZE (64)
+#endif
 
 namespace yato
 {
@@ -24,6 +29,9 @@ namespace yato
         static_assert(std::is_convertible<typename yato::callable_trait<_Predicate>::result_type, bool>::value, "Predicate return type should be convertible to boolean");
 
         using underlying_iterator_category = typename std::iterator_traits<iterator_type>::iterator_category;
+
+        static YATO_CONSTEXPR_VAR size_t _predicate_storage_max_size = YATO_FILTER_ITER_SIZE;
+        using predicate_storage = storage<predicate_type, _predicate_storage_max_size>;
 
         //-------------------------------------------------------
         // Definitions for iterator_traits
@@ -54,11 +62,11 @@ namespace yato
     private:
         iterator_type m_iterator;
         iterator_type m_end;
-        predicate_type m_predicate;
+        predicate_storage m_predicate;
 
         void _skip_forward()
         {
-            while (m_iterator != m_end && !m_predicate(*m_iterator)) {
+            while (m_iterator != m_end && !(*m_predicate)(*m_iterator)) {
                 ++m_iterator;
             }
         }
@@ -90,7 +98,7 @@ namespace yato
         template<typename _AnotherIterator, typename _AnotherPredicate>
         filter_iterator(const filter_iterator<_AnotherPredicate, _AnotherIterator> & other,
             typename std::enable_if<(std::is_convertible<_AnotherPredicate, predicate_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value)>::type* = nullptr)
-            : m_iterator(other.m_iterator), m_end(other.m_end), m_predicate(other.m_predicate)
+            : m_iterator(other.m_iterator), m_end(other.m_end), m_predicate(predicate_type(*other.m_predicate))
         { }
 
         /**
@@ -106,7 +114,7 @@ namespace yato
         template<typename _AnotherIterator, typename _AnotherPredicate>
         filter_iterator(filter_iterator<_AnotherPredicate, _AnotherIterator> && other,
             typename std::enable_if<(std::is_convertible<_AnotherPredicate, predicate_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value)>::type* = nullptr)
-            : m_iterator(std::move(other.m_iterator)), m_end(std::move(other.m_end)), m_predicate(std::move(other.m_predicate))
+            : m_iterator(std::move(other.m_iterator)), m_end(std::move(other.m_end)), m_predicate(std::move(predicate_type(*other.m_predicate)))
         { }
 
         /**
@@ -174,7 +182,7 @@ namespace yato
         {
             m_iterator = std::move(other.m_iterator);
             m_end = std::move(other.m_end);
-            m_predicate = std::move(other.m_predicate);
+            m_predicate = std::move(predicate_type(*other.m_predicate));
             return *this;
         }
 
@@ -222,7 +230,7 @@ namespace yato
             -> typename std::enable_if<std::is_base_of<std::bidirectional_iterator_tag, _MyCategory>::value, my_type &>::type
         {
             --m_iterator;
-            while (!m_predicate(*m_iterator)) {
+            while (!(*m_predicate)(*m_iterator)) {
                 --m_iterator;
             }
             return *this;
@@ -554,16 +562,16 @@ namespace yato
 
     template<typename _Predicate, typename _Iterator>
     inline auto make_filter_iterator(_Iterator && iterator, _Iterator && end, _Predicate && predicate)
-        -> filter_iterator<typename callable_trait<typename std::remove_reference<_Predicate>::type>::function_type, typename std::remove_reference<_Iterator>::type>
+        -> filter_iterator<typename std::remove_reference<_Predicate>::type, typename std::remove_reference<_Iterator>::type>
     {
-        return filter_iterator<typename callable_trait<typename std::remove_reference<_Predicate>::type>::function_type, typename std::remove_reference<_Iterator>::type>(std::forward<_Iterator>(iterator), std::forward<_Iterator>(end), std::forward<_Predicate>(predicate));
+        return filter_iterator<typename std::remove_reference<_Predicate>::type, typename std::remove_reference<_Iterator>::type>(std::forward<_Iterator>(iterator), std::forward<_Iterator>(end), std::forward<_Predicate>(predicate));
     }
 
     template<typename _Predicate, typename _Iterator>
     inline auto make_filter_iterator(_Iterator && iterator, _Predicate && predicate)
-        -> filter_iterator<typename callable_trait<typename std::remove_reference<_Predicate>::type>::function_type, typename std::remove_reference<_Iterator>::type, false>
+        -> filter_iterator<typename std::remove_reference<_Predicate>::type, typename std::remove_reference<_Iterator>::type, false>
     {
-        return filter_iterator<typename callable_trait<typename std::remove_reference<_Predicate>::type>::function_type, typename std::remove_reference<_Iterator>::type, false>(std::forward<_Iterator>(iterator), std::forward<_Predicate>(predicate));
+        return filter_iterator<typename std::remove_reference<_Predicate>::type, typename std::remove_reference<_Iterator>::type, false>(std::forward<_Iterator>(iterator), std::forward<_Predicate>(predicate));
     }
 }
 

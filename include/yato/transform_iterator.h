@@ -97,7 +97,7 @@ namespace yato
         YATO_CONSTEXPR_FUNC
         transform_iterator(const transform_iterator<_AnotherUnaryFunction, _AnotherIterator> & other,
             typename std::enable_if<(std::is_convertible<_AnotherUnaryFunction, unary_function_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value)>::type* = nullptr)
-            : m_iterator(other.m_iterator), m_function(other.m_function)
+            : m_iterator(other.m_iterator), m_function(unary_function_type(*other.m_function))
         { }
         
         YATO_CONSTEXPR_FUNC
@@ -118,7 +118,7 @@ namespace yato
         template<typename _AnotherUnaryFunction, typename _AnotherIterator>
         transform_iterator(transform_iterator<_AnotherUnaryFunction, _AnotherIterator> && other,
             typename std::enable_if<(std::is_convertible<_AnotherUnaryFunction, unary_function_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value)>::type* = nullptr)
-            : m_iterator(std::move(other.m_iterator)), m_function(std::move(other.m_function))
+            : m_iterator(std::move(other.m_iterator)), m_function(std::move(unary_function_type(*other.m_function)))
         { }
 
         /**
@@ -168,7 +168,7 @@ namespace yato
             -> typename std::enable_if<(std::is_convertible<_AnotherUnaryFunction, unary_function_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value), my_type &>::type
         {
             m_iterator = std::move(other.m_iterator);
-            m_function = std::move(other.m_function);
+            m_function = std::move(unary_function_type(*other.m_function));
             return *this;
         }
 

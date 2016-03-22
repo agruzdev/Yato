@@ -125,8 +125,9 @@ TEST(Yato_FilterIterator, compare)
 TEST(Yato_FilterIterator, make_filter_iterator)
 {
     std::vector<int> v = { -1, 1, -2, -1, 2, -2, -3, -2, 3, -4, 4, -5, -9 };
-    auto it1 = yato::make_filter_iterator(v.begin(), v.end(), [](const int & x) { return x >= 0; });
-    static_assert(std::is_same<decltype(it1)::predicate_type, std::function<bool(const int&)>>::value, "filter iterator fail");
+    auto lambda = [](const int & x) { return x >= 0; };
+    auto it1 = yato::make_filter_iterator(v.begin(), v.end(), lambda);
+    static_assert(std::is_same<decltype(it1)::predicate_type, decltype(lambda)>::value, "filter iterator fail");
 }
 
 TEST(Yato_FilterIterator, input_iterator)
