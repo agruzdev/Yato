@@ -162,9 +162,9 @@ namespace yato
         template <typename _Callable>
         YATO_CONSTEXPR_FUNC
         auto map(const _Callable & callable) const
-            -> range<transform_iterator<typename callable_trait<_Callable>::function_type, iterator_type>>
+            -> range<transform_iterator<_Callable, iterator_type>>
         {
-            using _transformed_iterator_type = transform_iterator<typename callable_trait<_Callable>::function_type, iterator_type>;
+            using _transformed_iterator_type = transform_iterator<_Callable, iterator_type>;
             return range<_transformed_iterator_type>(_transformed_iterator_type(begin(), callable), _transformed_iterator_type(end(), callable));
         }
 
@@ -174,9 +174,9 @@ namespace yato
         template <typename _Predicate>
         YATO_CONSTEXPR_FUNC
         auto filter(const _Predicate & predicate) const
-            -> range<filter_iterator<typename callable_trait<_Predicate>::function_type, iterator_type>>
+            -> range<filter_iterator<_Predicate, iterator_type>>
         {
-            using _filtered_iterator_type = filter_iterator<typename callable_trait<_Predicate>::function_type, iterator_type>;
+            using _filtered_iterator_type = filter_iterator<_Predicate, iterator_type>;
             return range<_filtered_iterator_type>(_filtered_iterator_type(begin(), end(), predicate), _filtered_iterator_type(end(), end(), predicate));
         }
 
