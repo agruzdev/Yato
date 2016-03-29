@@ -171,12 +171,12 @@ namespace yato
         /**
          *  Apply lazy filtering 
          */
-        template <typename _Predicate>
+        template <typename _DereferencePolicy = dereference_policy_no_caching, typename _Predicate>
         YATO_CONSTEXPR_FUNC
         auto filter(const _Predicate & predicate) const
-            -> range<filter_iterator<_Predicate, iterator_type>>
+            -> range<filter_iterator<_Predicate, iterator_type, _DereferencePolicy>>
         {
-            using _filtered_iterator_type = filter_iterator<_Predicate, iterator_type>;
+            using _filtered_iterator_type = filter_iterator<_Predicate, iterator_type, _DereferencePolicy>;
             return range<_filtered_iterator_type>(_filtered_iterator_type(begin(), end(), predicate), _filtered_iterator_type(end(), end(), predicate));
         }
 

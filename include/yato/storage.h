@@ -35,6 +35,10 @@ namespace yato
             std::unique_ptr<stored_type> m_ptr;
 
         public:
+            YATO_CONSTEXPR_FUNC
+            storage_impl()
+            { }
+
             storage_impl(const stored_type & obj)
             {
                 m_ptr = std::make_unique<stored_type>(obj);
@@ -151,6 +155,10 @@ namespace yato
             //-------------------------------------------------------
 
         public:
+            YATO_CONSTEXPR_FUNC
+            storage_impl()
+            { }
+
             storage_impl(const _T & obj)
                 : m_buffer{}
             {

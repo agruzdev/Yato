@@ -18,18 +18,122 @@
 namespace yato
 {
  
-    template <typename _Predicate, typename _Iterator, bool _HasEnd = true>
-    class filter_iterator
+
+    /**
+     *  Save value after dereferencing to avoid multiple dereferencing of iterator
+     */
+    class dereference_policy_caching
+    { };
+
+    /**
+     *  Multiple dereferencing
+     */
+    class dereference_policy_no_caching
+    { };
+
+    namespace details
     {
+        template <typename _T, typename _Policy, typename _Enable = void>
+        struct filter_cache_base
+        {
+            static YATO_CONSTEXPR_VAR bool _base_cache = false;
+
+            filter_cache_base() 
+            { }
+
+            template <typename _AnotherType, typename _AnotherPolicy, typename _AnotherEnable>
+            filter_cache_base(const filter_cache_base<_AnotherType, _AnotherPolicy, _AnotherEnable> &)
+            { }
+
+            template <typename _AnotherType, typename _AnotherPolicy, typename _AnotherEnable>
+            filter_cache_base(filter_cache_base<_AnotherType, _AnotherPolicy, _AnotherEnable> &&)
+            { }
+
+            template <typename _AnotherType, typename _AnotherPolicy, typename _AnotherEnable>
+            void swap(filter_cache_base<_AnotherType, _AnotherPolicy, _AnotherEnable> &)
+            { }
+
+            template <typename _AnotherType, typename _AnotherPolicy, typename _AnotherEnable>
+            void _move_impl(filter_cache_base<_AnotherType, _AnotherPolicy, _AnotherEnable> &&)
+            { }
+        };
+
+        template <typename _T, typename _Policy>
+        struct filter_cache_base<_T, _Policy, typename std::enable_if<std::is_same<_Policy, dereference_policy_caching>::value>::type>
+        {
+            static YATO_CONSTEXPR_VAR bool _base_cache = true;
+            storage<_T> m_cached;
+
+            filter_cache_base()
+            { }
+
+            template <typename _AnotherType, typename _AnotherPolicy, typename _AnotherEnable>
+            filter_cache_base(const filter_cache_base<_AnotherType, _AnotherPolicy, _AnotherEnable> &)
+            { }
+
+            template <typename _AnotherType, typename _AnotherEnable>
+            filter_cache_base(const filter_cache_base<_AnotherType, dereference_policy_caching, _AnotherEnable> & other)
+                : m_cached(other.m_cached)
+            { }
+
+            template <typename _AnotherType, typename _AnotherPolicy, typename _AnotherEnable>
+            filter_cache_base(filter_cache_base<_AnotherType, _AnotherPolicy, _AnotherEnable> &&)
+            { }
+
+            template <typename _AnotherType, typename _AnotherEnable>
+            filter_cache_base(filter_cache_base<_AnotherType, dereference_policy_caching, _AnotherEnable> && other)
+                : m_cached(std::move(other.m_cached))
+            { }
+
+            template <typename _AnotherType, typename _AnotherPolicy, typename _AnotherEnable>
+            void swap(filter_cache_base<_AnotherType, _AnotherPolicy, _AnotherEnable> &)
+            { }
+
+            template <typename _AnotherType, typename _AnotherEnable>
+            void swap(filter_cache_base<_AnotherType, dereference_policy_caching, _AnotherEnable> & other)
+            {
+                m_cached.swap(other.m_cached);
+            }
+
+            template <typename _AnotherType, typename _AnotherPolicy, typename _AnotherEnable>
+            void _move_impl(filter_cache_base<_AnotherType, _AnotherPolicy, _AnotherEnable> &&)
+            { }
+
+            template <typename _AnotherType, typename _AnotherEnable>
+            void _move_impl(filter_cache_base<_AnotherType, dereference_policy_caching, _AnotherEnable> && other)
+            { 
+                m_cached = std::move(other.m_cached);
+            }
+
+            void _save_cache(const _T & obj)
+            {
+                m_cached = obj;
+            }
+
+            _T & _get_cache()
+            {
+                return *m_cached;
+            }
+        };
+    }
+
+
+    template <typename _Predicate, typename _Iterator, typename _DereferencePolicy = dereference_policy_no_caching, bool _HasEnd = true>
+    class filter_iterator 
+        : private details::filter_cache_base<typename std::remove_reference<typename std::iterator_traits<_Iterator>::reference>::type, _DereferencePolicy>
+    {
+        using _base = details::filter_cache_base<typename std::remove_reference<typename std::iterator_traits<_Iterator>::reference>::type, _DereferencePolicy>;
     public:
         using predicate_type = _Predicate;
         using iterator_type = _Iterator;
-        using my_type = filter_iterator<predicate_type, iterator_type, true>;
+        using dereference_policy = _DereferencePolicy;
+        using my_type = filter_iterator<predicate_type, iterator_type, dereference_policy, true>;
 
         static_assert(std::is_convertible<typename yato::callable_trait<_Predicate>::result_type, bool>::value, "Predicate return type should be convertible to boolean");
 
         using underlying_iterator_category = typename std::iterator_traits<iterator_type>::iterator_category;
 
+        static YATO_CONSTEXPR_VAR bool uses_cache = _base::_base_cache;
         static YATO_CONSTEXPR_VAR size_t _predicate_storage_max_size = YATO_FILTER_ITER_SIZE;
         using predicate_storage = storage<predicate_type, _predicate_storage_max_size>;
 
@@ -64,12 +168,50 @@ namespace yato
         iterator_type m_end;
         predicate_storage m_predicate;
 
-        void _skip_forward()
+        template <typename _MyPolicy = dereference_policy>
+        auto _skip_forward()
+            -> typename std::enable_if<std::is_same<_MyPolicy, dereference_policy_caching>::value>::type
+        {
+            while (m_iterator != m_end) {
+                _base::_save_cache(*m_iterator);
+                if ((*m_predicate)(_base::_get_cache())) {
+                    break;
+                }
+                ++m_iterator;
+            }
+        }
+        
+        template <typename _MyPolicy = dereference_policy>
+        auto _skip_forward()
+            -> typename std::enable_if<std::is_same<_MyPolicy, dereference_policy_no_caching>::value>::type
         {
             while (m_iterator != m_end && !(*m_predicate)(*m_iterator)) {
                 ++m_iterator;
             }
         }
+
+        template <typename _MyPolicy = dereference_policy>
+        auto _skip_backward()
+            -> typename std::enable_if<std::is_same<_MyPolicy, dereference_policy_caching>::value>::type
+        {
+            for (;;) {
+                _base::_save_cache(*m_iterator);
+                if ((*m_predicate)(_base::_get_cache())) {
+                    break;
+                }
+                --m_iterator;
+            }
+        }
+
+        template <typename _MyPolicy = dereference_policy>
+        auto _skip_backward()
+            -> typename std::enable_if<std::is_same<_MyPolicy, dereference_policy_no_caching>::value>::type
+        {
+            while (!(*m_predicate)(*m_iterator)) {
+                --m_iterator;
+            }
+        }
+
         //-------------------------------------------------------
 
     public:
@@ -80,7 +222,7 @@ namespace yato
         template <typename _IteratorReference, typename _PredicateReference>
         filter_iterator(_IteratorReference && iter, _IteratorReference && end, _PredicateReference && predicate,
             typename std::enable_if<(std::is_convertible<typename std::remove_reference<_IteratorReference>::type, iterator_type>::value && std::is_convertible<typename std::remove_reference<_PredicateReference>::type, predicate_type>::value)>::type* = nullptr)
-            : m_iterator(std::forward<_IteratorReference>(iter)), m_end(std::forward<_IteratorReference>(end)), m_predicate(std::forward<_PredicateReference>(predicate))
+            :  m_iterator(std::forward<_IteratorReference>(iter)), m_end(std::forward<_IteratorReference>(end)), m_predicate(std::forward<_PredicateReference>(predicate))
         {
             _skip_forward();
         }
@@ -89,33 +231,34 @@ namespace yato
          *  Copy
          */
         filter_iterator(const my_type & other)
-            : m_iterator(other.m_iterator), m_end(other.m_end), m_predicate(other.m_predicate)
+            : _base(other), m_iterator(other.m_iterator), m_end(other.m_end), m_predicate(other.m_predicate)
         { }
 
         /**
          *  Copy
          */
-        template<typename _AnotherIterator, typename _AnotherPredicate>
-        filter_iterator(const filter_iterator<_AnotherPredicate, _AnotherIterator> & other,
+        template<typename _AnotherIterator, typename _AnotherPredicate, typename _AnotherPolicy>
+        filter_iterator(const filter_iterator<_AnotherPredicate, _AnotherIterator, _AnotherPolicy> & other,
             typename std::enable_if<(std::is_convertible<_AnotherPredicate, predicate_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value)>::type* = nullptr)
-            : m_iterator(other.m_iterator), m_end(other.m_end), m_predicate(predicate_type(*other.m_predicate))
+            : _base(other), m_iterator(other.m_iterator), m_end(other.m_end), m_predicate(predicate_type(*other.m_predicate))
         { }
 
         /**
          *  Move
          */
         filter_iterator(my_type && other)
-            : m_iterator(std::move(other.m_iterator)), m_end(std::move(other.m_end)), m_predicate(std::move(other.m_predicate))
+            : _base(std::move(other)), m_iterator(std::move(other.m_iterator)), m_end(std::move(other.m_end)), m_predicate(std::move(other.m_predicate))
         { }
 
         /**
          *  Move
          */
-        template<typename _AnotherIterator, typename _AnotherPredicate>
-        filter_iterator(filter_iterator<_AnotherPredicate, _AnotherIterator> && other,
+        template<typename _AnotherIterator, typename _AnotherPredicate, typename _AnotherPolicy>
+        filter_iterator(filter_iterator<_AnotherPredicate, _AnotherIterator, _AnotherPolicy> && other,
             typename std::enable_if<(std::is_convertible<_AnotherPredicate, predicate_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value)>::type* = nullptr)
-            : m_iterator(std::move(other.m_iterator)), m_end(std::move(other.m_end)), m_predicate(std::move(predicate_type(*other.m_predicate)))
+            : _base(std::move(other)), m_iterator(std::move(other.m_iterator)), m_end(std::move(other.m_end)), m_predicate(std::move(predicate_type(*other.m_predicate)))
         { }
+
 
         /**
          *  Destroy
@@ -130,6 +273,7 @@ namespace yato
         {
             using std::swap;
             if (this != &other) {
+                _base::swap(other);
                 swap(m_iterator, other.m_iterator);
                 swap(m_end, other.m_end);
                 swap(m_predicate, other.m_predicate);
@@ -151,8 +295,8 @@ namespace yato
         /**
          *  Copy
          */
-        template<typename _AnotherPredicate, typename _AnotherIterator>
-        auto operator = (const filter_iterator<_AnotherPredicate, _AnotherIterator> & other)
+        template<typename _AnotherPredicate, typename _AnotherIterator, typename _AnotherPolicy>
+        auto operator = (const filter_iterator<_AnotherPredicate, _AnotherIterator, _AnotherPolicy> & other)
             -> typename std::enable_if<(std::is_convertible<_AnotherPredicate, predicate_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value), my_type &>::type
         {
             my_type tmp(other);
@@ -166,6 +310,7 @@ namespace yato
         my_type & operator = (my_type && other)
         {
             if (this != &other) {
+                _base::_move_impl(std::move(other));
                 m_iterator = std::move(other.m_iterator);
                 m_end = std::move(other.m_end);
                 m_predicate = std::move(other.m_predicate);
@@ -176,10 +321,11 @@ namespace yato
         /**
          *  Move
          */
-        template<typename _AnotherPredicate, typename _AnotherIterator>
-        auto operator = (filter_iterator<_AnotherPredicate, _AnotherIterator> && other)
+        template<typename _AnotherPredicate, typename _AnotherIterator, typename _AnotherPolicy>
+        auto operator = (filter_iterator<_AnotherPredicate, _AnotherIterator, _AnotherPolicy> && other)
             -> typename std::enable_if<(std::is_convertible<_AnotherPredicate, predicate_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value), my_type &>::type
         {
+            _base::_move_impl(std::move(other));
             m_iterator = std::move(other.m_iterator);
             m_end = std::move(other.m_end);
             m_predicate = std::move(predicate_type(*other.m_predicate));
@@ -189,17 +335,29 @@ namespace yato
         /**
          *  Dereference
          */
-        const reference operator*() const
+        template <typename _MyPolicy = dereference_policy>
+        auto operator*()
+            -> typename std::enable_if<std::is_same<_MyPolicy, dereference_policy_caching>::value, reference>::type
+        {
+            return _base::_get_cache();
+        }
+
+        /**
+        *  Dereference
+        */
+        template <typename _MyPolicy = dereference_policy>
+        auto operator*()
+            -> typename std::enable_if<std::is_same<_MyPolicy, dereference_policy_no_caching>::value, reference>::type
         {
             return *m_iterator;
         }
 
         /**
-         *  Dereference
-         */
-        reference operator*()
+          *  Dereference
+        */
+        const reference operator*() const
         {
-            return *m_iterator;
+            return *(const_cast<my_type*>(this));
         }
 
         /**
@@ -230,9 +388,7 @@ namespace yato
             -> typename std::enable_if<std::is_base_of<std::bidirectional_iterator_tag, _MyCategory>::value, my_type &>::type
         {
             --m_iterator;
-            while (!(*m_predicate)(*m_iterator)) {
-                --m_iterator;
-            }
+            _skip_backward();
             return *this;
         }
 
@@ -281,24 +437,31 @@ namespace yato
         }
 
         // Make any other iterator friend to access fields in copy operator
-        template <typename _SomePredicate, typename _SomeIterator, bool _SomeEnd>
+        template <typename _SomePredicate, typename _SomeIterator, typename _SomePolicy, bool _SomeEnd>
         friend class filter_iterator;
     };
 
     /**
      *  Filter iterator without end limit
      */
-    template <typename _Predicate, typename _Iterator>
-    class filter_iterator <_Predicate, _Iterator, false>
+    template <typename _Predicate, typename _Iterator, typename _DereferencePolicy>
+    class filter_iterator <_Predicate, _Iterator, _DereferencePolicy, false>
+        : private details::filter_cache_base<typename std::remove_reference<typename std::iterator_traits<_Iterator>::reference>::type, _DereferencePolicy>
     {
+        using _base = details::filter_cache_base<typename std::remove_reference<typename std::iterator_traits<_Iterator>::reference>::type, _DereferencePolicy>;
     public:
         using predicate_type = _Predicate;
         using iterator_type = _Iterator;
-        using my_type = filter_iterator<predicate_type, iterator_type, false>;
+        using dereference_policy = _DereferencePolicy;
+        using my_type = filter_iterator<predicate_type, iterator_type, dereference_policy, false>;
 
         static_assert(std::is_convertible<typename yato::callable_trait<_Predicate>::result_type, bool>::value, "Predicate return type should be convertible to boolean");
 
         using underlying_iterator_category = typename std::iterator_traits<iterator_type>::iterator_category;
+
+        static YATO_CONSTEXPR_VAR bool uses_cache = _base::_base_cache;
+        static YATO_CONSTEXPR_VAR size_t _predicate_storage_max_size = YATO_FILTER_ITER_SIZE;
+        using predicate_storage = storage<predicate_type, _predicate_storage_max_size>;
 
         //-------------------------------------------------------
         // Definitions for iterator_traits
@@ -328,14 +491,52 @@ namespace yato
 
     private:
         iterator_type m_iterator;
-        predicate_type m_predicate;
+        predicate_storage m_predicate;
 
-        void _skip_forward()
+        template <typename _MyPolicy = dereference_policy>
+        auto _skip_forward()
+            -> typename std::enable_if<std::is_same<_MyPolicy, dereference_policy_caching>::value>::type
         {
-            while (!m_predicate(*m_iterator)) {
+            for (;;) {
+                _base::_save_cache(*m_iterator);
+                if ((*m_predicate)(_base::_get_cache())) {
+                    break;
+                }
                 ++m_iterator;
             }
         }
+
+        template <typename _MyPolicy = dereference_policy>
+        auto _skip_forward()
+            -> typename std::enable_if<std::is_same<_MyPolicy, dereference_policy_no_caching>::value>::type
+        {
+            while (!(*m_predicate)(*m_iterator)) {
+                ++m_iterator;
+            }
+        }
+
+        template <typename _MyPolicy = dereference_policy>
+        auto _skip_backward()
+            -> typename std::enable_if<std::is_same<_MyPolicy, dereference_policy_caching>::value>::type
+        {
+            for (;;) {
+                _base::_save_cache(*m_iterator);
+                if ((*m_predicate)(_base::_get_cache())) {
+                    break;
+                }
+                --m_iterator;
+            }
+        }
+
+        template <typename _MyPolicy = dereference_policy>
+        auto _skip_backward()
+            -> typename std::enable_if<std::is_same<_MyPolicy, dereference_policy_no_caching>::value>::type
+        {
+            while (!(*m_predicate)(*m_iterator)) {
+                --m_iterator;
+            }
+        }
+
         //-------------------------------------------------------
 
     public:
@@ -355,17 +556,17 @@ namespace yato
         *  Copy
         */
         filter_iterator(const my_type & other)
-            : m_iterator(other.m_iterator), m_predicate(other.m_predicate)
+            : _base(other), m_iterator(other.m_iterator), m_predicate(other.m_predicate)
         {
         }
 
         /**
         *  Copy
         */
-        template<typename _AnotherIterator, typename _AnotherPredicate>
-        filter_iterator(const filter_iterator<_AnotherPredicate, _AnotherIterator> & other,
+        template<typename _AnotherIterator, typename _AnotherPredicate, typename _AnotherPolicy>
+        filter_iterator(const filter_iterator<_AnotherPredicate, _AnotherIterator, _AnotherPolicy> & other,
             typename std::enable_if<(std::is_convertible<_AnotherPredicate, predicate_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value)>::type* = nullptr)
-            : m_iterator(other.m_iterator), m_predicate(other.m_predicate)
+            : _base(other), m_iterator(other.m_iterator), m_predicate(predicate_type(*other.m_predicate))
         {
         }
 
@@ -373,19 +574,20 @@ namespace yato
         *  Move
         */
         filter_iterator(my_type && other)
-            : m_iterator(std::move(other.m_iterator)), m_predicate(std::move(other.m_predicate))
+            : _base(std::move(other)), m_iterator(std::move(other.m_iterator)), m_predicate(std::move(other.m_predicate))
         {
         }
 
         /**
         *  Move
         */
-        template<typename _AnotherIterator, typename _AnotherPredicate>
-        filter_iterator(filter_iterator<_AnotherPredicate, _AnotherIterator> && other,
+        template<typename _AnotherIterator, typename _AnotherPredicate, typename _AnotherPolicy>
+        filter_iterator(filter_iterator<_AnotherPredicate, _AnotherIterator, _AnotherPolicy> && other,
             typename std::enable_if<(std::is_convertible<_AnotherPredicate, predicate_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value)>::type* = nullptr)
-            : m_iterator(std::move(other.m_iterator)), m_predicate(std::move(other.m_predicate))
+            : _base(std::move(other)), m_iterator(std::move(other.m_iterator)), m_predicate(std::move(predicate_type(*other.m_predicate)))
         {
         }
+
 
         /**
         *  Destroy
@@ -401,6 +603,7 @@ namespace yato
         {
             using std::swap;
             if (this != &other) {
+                _base::swap(other);
                 swap(m_iterator, other.m_iterator);
                 swap(m_predicate, other.m_predicate);
             }
@@ -421,8 +624,8 @@ namespace yato
         /**
         *  Copy
         */
-        template<typename _AnotherPredicate, typename _AnotherIterator>
-        auto operator = (const filter_iterator<_AnotherPredicate, _AnotherIterator> & other)
+        template<typename _AnotherPredicate, typename _AnotherIterator, typename _AnotherPolicy>
+        auto operator = (const filter_iterator<_AnotherPredicate, _AnotherIterator, _AnotherPolicy> & other)
             -> typename std::enable_if<(std::is_convertible<_AnotherPredicate, predicate_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value), my_type &>::type
         {
             my_type tmp(other);
@@ -436,6 +639,7 @@ namespace yato
         my_type & operator = (my_type && other)
         {
             if (this != &other) {
+                _base::_move_impl(std::move(other));
                 m_iterator = std::move(other.m_iterator);
                 m_predicate = std::move(other.m_predicate);
             }
@@ -445,13 +649,34 @@ namespace yato
         /**
         *  Move
         */
-        template<typename _AnotherPredicate, typename _AnotherIterator>
-        auto operator = (filter_iterator<_AnotherPredicate, _AnotherIterator> && other)
+        template<typename _AnotherPredicate, typename _AnotherIterator, typename _AnotherPolicy>
+        auto operator = (filter_iterator<_AnotherPredicate, _AnotherIterator, _AnotherPolicy> && other)
             -> typename std::enable_if<(std::is_convertible<_AnotherPredicate, predicate_type>::value && std::is_convertible<_AnotherIterator, iterator_type>::value), my_type &>::type
         {
+            _base::_move_impl(std::move(other));
             m_iterator = std::move(other.m_iterator);
-            m_predicate = std::move(other.m_predicate);
+            m_predicate = std::move(predicate_type(*other.m_predicate));
             return *this;
+        }
+
+        /**
+        *  Dereference
+        */
+        template <typename _MyPolicy = dereference_policy>
+        auto operator*()
+            -> typename std::enable_if<std::is_same<_MyPolicy, dereference_policy_caching>::value, reference>::type
+        {
+            return _base::_get_cache();
+        }
+
+        /**
+        *  Dereference
+        */
+        template <typename _MyPolicy = dereference_policy>
+        auto operator*()
+            -> typename std::enable_if<std::is_same<_MyPolicy, dereference_policy_no_caching>::value, reference>::type
+        {
+            return *m_iterator;
         }
 
         /**
@@ -459,15 +684,7 @@ namespace yato
         */
         const reference operator*() const
         {
-            return *m_iterator;
-        }
-
-        /**
-        *  Dereference
-        */
-        reference operator*()
-        {
-            return *m_iterator;
+            return *(const_cast<my_type*>(this));
         }
 
         /**
@@ -498,9 +715,7 @@ namespace yato
             -> typename std::enable_if<std::is_base_of<std::bidirectional_iterator_tag, _MyCategory>::value, my_type &>::type
         {
             --m_iterator;
-            while (!m_predicate(*m_iterator)) {
-                --m_iterator;
-            }
+            _skip_backward();
             return *this;
         }
 
@@ -549,29 +764,29 @@ namespace yato
         }
 
         // Make any other iterator friend to access fields in copy operator
-        template <typename _SomePredicate, typename _SomeIterator, bool _SomeEnd>
+        template <typename _SomePredicate, typename _SomeIterator, typename _SomePolicy, bool _SomeEnd>
         friend class filter_iterator;
     };
 
 
-    template<typename _Predicate, typename _Iterator, bool _HasEnd>
-    inline void swap(filter_iterator<_Predicate, _Iterator, _HasEnd> & one, filter_iterator<_Predicate, _Iterator, _HasEnd> & another)
+    template<typename _Predicate, typename _Iterator, typename _SomePolicy, bool _HasEnd>
+    inline void swap(filter_iterator<_Predicate, _Iterator, _SomePolicy, _HasEnd> & one, filter_iterator<_Predicate, _Iterator, _SomePolicy, _HasEnd> & another)
     {
         one.swap(another);
     }
 
-    template<typename _Predicate, typename _Iterator>
+    template<typename _DereferencePolicy = dereference_policy_no_caching, typename _Predicate, typename _Iterator>
     inline auto make_filter_iterator(_Iterator && iterator, _Iterator && end, _Predicate && predicate)
-        -> filter_iterator<typename std::remove_reference<_Predicate>::type, typename std::remove_reference<_Iterator>::type>
+        -> filter_iterator<typename std::remove_reference<_Predicate>::type, typename std::remove_reference<_Iterator>::type, _DereferencePolicy>
     {
-        return filter_iterator<typename std::remove_reference<_Predicate>::type, typename std::remove_reference<_Iterator>::type>(std::forward<_Iterator>(iterator), std::forward<_Iterator>(end), std::forward<_Predicate>(predicate));
+        return filter_iterator<typename std::remove_reference<_Predicate>::type, typename std::remove_reference<_Iterator>::type, _DereferencePolicy>(std::forward<_Iterator>(iterator), std::forward<_Iterator>(end), std::forward<_Predicate>(predicate));
     }
 
-    template<typename _Predicate, typename _Iterator>
+    template<typename _DereferencePolicy = dereference_policy_no_caching, typename _Predicate, typename _Iterator>
     inline auto make_filter_iterator(_Iterator && iterator, _Predicate && predicate)
-        -> filter_iterator<typename std::remove_reference<_Predicate>::type, typename std::remove_reference<_Iterator>::type, false>
+        -> filter_iterator<typename std::remove_reference<_Predicate>::type, typename std::remove_reference<_Iterator>::type, _DereferencePolicy, false>
     {
-        return filter_iterator<typename std::remove_reference<_Predicate>::type, typename std::remove_reference<_Iterator>::type, false>(std::forward<_Iterator>(iterator), std::forward<_Predicate>(predicate));
+        return filter_iterator<typename std::remove_reference<_Predicate>::type, typename std::remove_reference<_Iterator>::type, _DereferencePolicy, false>(std::forward<_Iterator>(iterator), std::forward<_Predicate>(predicate));
     }
 }
 
