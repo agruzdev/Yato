@@ -63,8 +63,8 @@ Range provides the following functional style operations:
 * **map** - returns a range of **yato::transform_iterator** lazily applying a function to the each element of the range
 * **filter** - returns a range of **yato::filter_iterator** lazily selecting only those elements of the range which satify some predicate
 * **zip** - returns a range of **yato::zip_iterator** joining the range with other ranges into a range of tuples
-* **foldLeft** - accumulates all elements of the range applying some binary operation from the left to the right
-* **foldRight** - accumulates all elements of the range applying some binary operation from the right ot the left
+* **fold_left** - accumulates all elements of the range applying some binary operation from the left to the right
+* **fold_right** - accumulates all elements of the range applying some binary operation from the right ot the left
 
 ### Containers ###
 Yato implemets a number of general purpose containers: 
