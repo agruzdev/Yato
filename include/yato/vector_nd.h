@@ -311,21 +311,15 @@ namespace yato
              *	Copy constructor
              */
             vector_nd_impl(const my_type & other)
-                : m_dimensions(other.m_dimensions),
-                m_sub_sizes(other.m_sub_sizes),
-                m_plain_vector(other.m_plain_vector)
-            {
-            }
+                : m_dimensions(other.m_dimensions), m_sub_sizes(other.m_sub_sizes), m_plain_vector(other.m_plain_vector)
+            { }
 
             /**
              * Move-copy constructor
              */
             vector_nd_impl(my_type && other)
-                : m_dimensions(std::move(other.m_dimensions)),
-                m_sub_sizes(std::move(other.m_sub_sizes)),
-                m_plain_vector(std::move(other.m_plain_vector))
-            {
-            }
+                : m_dimensions(std::move(other.m_dimensions)), m_sub_sizes(std::move(other.m_sub_sizes)), m_plain_vector(std::move(other.m_plain_vector))
+            { }
 
             /**
              *	Copy assign
@@ -333,12 +327,8 @@ namespace yato
             my_type & operator= (const my_type & other)
             {
                 if (this != &other) {
-                    //try to reserve memory to get out of memory exception before changing anything
-                    m_plain_vector.reserve(other.m_plain_vector.size());
-                    //copy data
-                    m_dimensions = other.m_dimensions;
-                    m_sub_sizes = other.m_sub_sizes;
-                    m_plain_vector = other.m_plain_vector;
+                    my_type tmp{ other };
+                    tmp.swap(*this);
                 }
                 return *this;
             }
@@ -372,11 +362,10 @@ namespace yato
              *  Assign from proxy
              */
             template<typename _DataIterator, typename _SizeIterator>
-            my_type & operator= (const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_num> & other)
+            my_type & operator = (const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_num> & other)
             {
-                _init_sizes(other.dimensions_range());
-                m_plain_vector.resize(m_sub_sizes[0]);
-                std::copy(other.plain_cbegin(), other.plain_cend(), plain_begin());
+                my_type tmp{ other };
+                tmp.swap(*this);
                 return *this;
             }
 
@@ -412,10 +401,12 @@ namespace yato
              */
             void swap(my_type & other) YATO_NOEXCEPT_KEYWORD
             {
-                using std::swap;
-                swap(m_dimensions, other.m_dimensions);
-                swap(m_sub_sizes, other.m_sub_sizes);
-                swap(m_plain_vector, other.m_plain_vector);
+                if (this != &other) {
+                    using std::swap;
+                    swap(m_dimensions, other.m_dimensions);
+                    swap(m_sub_sizes, other.m_sub_sizes);
+                    swap(m_plain_vector, other.m_plain_vector);
+                }
             }
 #ifdef YATO_MSVC
             /*  Disable unreachable code warning appearing due to additional code in ternary operator with throw
@@ -985,7 +976,8 @@ namespace yato
             my_type & operator= (const my_type & other)
             {
                 if (this != &other) {
-                    m_plain_vector = other.m_plain_vector;
+                    my_type tmp{ other };
+                    tmp.swap(*this);
                 }
                 return *this;
             }
@@ -1037,8 +1029,8 @@ namespace yato
             template<typename _DataIterator, typename _SizeIterator>
             my_type & operator= (const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_num> & other)
             {
-                m_plain_vector.resize(other.total_size());
-                std::copy(other.plain_cbegin(), other.plain_cend(), plain_begin());
+                my_type tmp{ other };
+                tmp.swap(*this);
                 return *this;
             }
 
@@ -1498,8 +1490,23 @@ namespace yato
 
     }
 
-    template<typename _DataType, size_t _DimensionsNum, typename _Allocator = std::allocator<_DataType> >
+    template <typename _DataType, size_t _DimensionsNum, typename _Allocator = std::allocator<_DataType> >
     using vector_nd = details::vector_nd_impl<_DataType, _DimensionsNum, _Allocator>;
+
+    template <typename _DataType, typename _Allocator = std::allocator<_DataType> >
+    using vector_1d = vector_nd<_DataType, 1, _Allocator>;
+
+    template <typename _DataType, typename _Allocator = std::allocator<_DataType> >
+    using vector = vector_1d<_DataType, _Allocator>;
+
+    template <typename _DataType, typename _Allocator = std::allocator<_DataType> >
+    using vector_2d = vector_nd<_DataType, 2, _Allocator>;
+
+    template <typename _DataType, typename _Allocator = std::allocator<_DataType> >
+    using vector_3d = vector_nd<_DataType, 3, _Allocator>;
+
+    template <typename _DataType, typename _Allocator = std::allocator<_DataType> >
+    using vector_4d = vector_nd<_DataType, 4, _Allocator>;
 }
 
 #endif
