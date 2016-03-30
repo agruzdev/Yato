@@ -12,7 +12,11 @@
 #include "storage.h"
 
 #ifndef YATO_FILTER_ITER_SIZE
-    #define YATO_FILTER_ITER_SIZE (64)
+# define YATO_FILTER_ITER_SIZE (64)
+#endif
+
+#ifndef YATO_FILTER_ITER_CACHE_SIZE
+# define YATO_FILTER_ITER_CACHE_SIZE (64)
 #endif
 
 namespace yato
@@ -37,6 +41,7 @@ namespace yato
         struct filter_cache_base
         {
             static YATO_CONSTEXPR_VAR bool _base_cache = false;
+            static YATO_CONSTEXPR_VAR size_t cache_max_size = 0;
 
             filter_cache_base() 
             { }
@@ -62,7 +67,8 @@ namespace yato
         struct filter_cache_base<_T, _Policy, typename std::enable_if<std::is_same<_Policy, dereference_policy_caching>::value>::type>
         {
             static YATO_CONSTEXPR_VAR bool _base_cache = true;
-            storage<_T> m_cached;
+            static YATO_CONSTEXPR_VAR size_t cache_max_size = YATO_FILTER_ITER_CACHE_SIZE;
+            storage<_T, cache_max_size> m_cached;
 
             filter_cache_base()
             { }
