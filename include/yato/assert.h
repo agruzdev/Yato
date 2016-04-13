@@ -30,6 +30,36 @@ namespace yato
         { }
     };
 
+    class runtime_error: public std::runtime_error
+    {
+    public:
+        runtime_error(const std::string & message)
+            : std::runtime_error(message)
+        { }
+
+        runtime_error(const char* message)
+            : std::runtime_error(message)
+        { }
+
+        ~runtime_error()
+        { }
+    };
+
+    class out_of_range_error : public std::runtime_error
+    {
+    public:
+        out_of_range_error(const std::string & message)
+            : std::runtime_error(message)
+        { }
+
+        out_of_range_error(const char* message)
+            : std::runtime_error(message)
+        { }
+
+        ~out_of_range_error()
+        { }
+    };
+
 }
 
 #define YATO_THROW_ASSERT_EXCEPT(Message) throw assertion_error(std::string(YATO_GET_FILE_LINE) + " " + Message)
