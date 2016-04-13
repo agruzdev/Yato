@@ -18,6 +18,7 @@ namespace yato
     template <typename _IteratorType>
     class vector_view
     {
+    public:
         using my_type = vector_view<_IteratorType>;
 
         using iterator = _IteratorType;
@@ -404,7 +405,7 @@ namespace yato
          */
         iterator erase(const_iterator first, const_iterator last)
         {
-            const auto count{ std::distance(first, last) };
+            const difference_type count{ std::distance(first, last) };
 #if YATO_DEBUG
             if (count < 0 || count > yato::narrow_cast<decltype(count)>(size())) {
                 throw yato::assertion_error("yato::vector_view[insert]: bad pair of the first and last iterators!");
@@ -418,6 +419,19 @@ namespace yato
         friend class vector_view;
     };
 
+    template <typename _Iterator>
+    YATO_CONSTEXPR_FUNC
+    vector_view<_Iterator> make_vector_view(_Iterator first, std::size_t max_size)
+    {
+        return vector_view<_Iterator>(first, max_size);
+    }
+
+    template <typename _Iterator>
+    YATO_CONSTEXPR_FUNC
+    vector_view<_Iterator> make_vector_view(_Iterator first, _Iterator last, std::size_t max_size)
+    {
+        return vector_view<_Iterator>(first, last, max_size);
+    }
 }
 
 #endif
