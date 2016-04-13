@@ -33,7 +33,7 @@ Currently the library cant be successfully used for the following compilers:
 ### Type support ###
 Yato library provides a set of additional type traits
 
-* **yato::is_shared_ptr/yato::is_unique_ptr** - chech if type is a smart pointer
+* **yato::is_shared_ptr** / **yato::is_unique_ptr** - chech if type is a smart pointer
 * **yato::is_same** - extended version of std::is_same checking that any number of types are same
 * **yato::one_of** - checks that type is one of the number of types
 * **yato::function_trait** - gets return type and all argument types of a function or function member
@@ -71,7 +71,8 @@ Yato implemets a number of general purpose containers:
 
 * **yato::array_nd** - multidimensional static array with interface and behaviour similar to *std::array*; The layout and size of the **yato::array_nd** are equal to native multidimensional array ( *T[ ][ ]...* )
 * **yato::vector_nd** - multidimensional dynamic array similar to *std::vector*; It supports dynamic adding/removing of elements and provides similar interface to std::vector
-* **yato::array_view** /** yato::array_view_nd** - non-owning containers which can be attached to any source of data and treat it similar to one-/multi-dimensional array
+* **yato::array_view** / **yato::array_view_nd** - non-owning containers which can be attached to any source of data and treat it similar to one-/multi-dimensional array
+* **yato::vector_view** - non-owning one-dimensional container providing an interface similar to *std::vector* for a fixed memory buffer
 
 ### Reflection ###
 WIP
