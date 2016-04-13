@@ -70,6 +70,6 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 
 #define YATO_GET_FILE_LINE (__FILE__ ": " YATO_QUOTE(__LINE__))
 
-
+#define YATO_MAYBE_UNUSED(X) ((void)(X));
 
 #endif
