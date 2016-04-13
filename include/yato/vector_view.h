@@ -420,6 +420,12 @@ namespace yato
     };
 
     template <typename _Iterator>
+    void swap(vector_view<_Iterator> & one, vector_view<_Iterator> & another)
+    {
+        one.swap(another);
+    }
+
+    template <typename _Iterator>
     YATO_CONSTEXPR_FUNC
     vector_view<_Iterator> make_vector_view(_Iterator first, std::size_t max_size)
     {
