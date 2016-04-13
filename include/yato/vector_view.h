@@ -420,6 +420,7 @@ namespace yato
     };
 
     template <typename _Iterator>
+    inline
     void swap(vector_view<_Iterator> & one, vector_view<_Iterator> & another)
     {
         one.swap(another);
