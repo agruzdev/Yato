@@ -62,7 +62,7 @@ namespace yato
 
 }
 
-#define YATO_THROW_ASSERT_EXCEPT(Message) throw assertion_error(std::string(YATO_GET_FILE_LINE) + " " + Message)
+#define YATO_THROW_ASSERT_EXCEPT(Message) throw yato::assertion_error(YATO_GET_FILE_LINE " " Message)
 
 #if YATO_DEBUG
 #define YATO_REQUIRES(Condition) if(!(Condition)) { YATO_THROW_ASSERT_EXCEPT("Precondition failure!"); }

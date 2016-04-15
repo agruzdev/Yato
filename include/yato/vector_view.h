@@ -40,21 +40,13 @@ namespace yato
 
         void _resize(size_type count)
         {
-#if YATO_DEBUG
-            if (count > m_max_size) {
-                throw yato::out_of_range_error("vector_view[_resize]: required size is bigger than the maximal size of the view");
-            }
-#endif
+            YATO_REQUIRES(count <= m_max_size);
             m_end = std::next(m_begin, count);
         }
 
         iterator _prepare_insert(const_iterator c_pos, size_type count)
         {
-#if YATO_DEBUG
-            if (std::distance(cbegin(), c_pos) > yato::narrow_cast<difference_type>(size())) {
-                throw yato::assertion_error("yato::vectr_view[_prepare_insert]: bad position!");
-            }
-#endif
+            YATO_REQUIRES(std::distance(cbegin(), c_pos) <= yato::narrow_cast<difference_type>(size()));
             const size_type old_size{ size() };
             const iterator pos{ std::next(begin(), std::distance(cbegin(), c_pos)) };
             if (count > 0) {
@@ -66,11 +58,7 @@ namespace yato
 
         iterator _erase_n(const_iterator c_pos, size_type count)
         {
-#if YATO_DEBUG
-            if (std::distance(cbegin(), c_pos) > yato::narrow_cast<difference_type>(size())) {
-                throw yato::assertion_error("yato::vectr_view[_erase_n]: bad position!");
-            }
-#endif
+            YATO_REQUIRES(std::distance(cbegin(), c_pos) <=yato::narrow_cast<difference_type>(size()))
             const iterator pos{ std::next(begin(), std::distance(cbegin(), c_pos)) };
             if (count > 0) {
                 std::move_backward(std::next(pos, count), end(), std::prev(end(), count));
@@ -305,21 +293,13 @@ namespace yato
 
         void push_back(const value_type & val)
         {
-#if YATO_DEBUG
-            if (size() >= max_size()) {
-                throw yato::out_of_range_error("yato::vector_view[push_back]: max size is reached!");
-            }
-#endif
+            YATO_REQUIRES(size() < max_size())
             *m_end++ = val;
         }
 
         void push_back(value_type && val)
         {
-#if YATO_DEBUG
-            if (size() >= max_size()) {
-                throw yato::out_of_range_error("yato::vector_view[push_back]: max size is reached!");
-            }
-#endif
+            YATO_REQUIRES(size() < max_size())
             *m_end++ = std::move(val);
         }
 
@@ -328,11 +308,7 @@ namespace yato
          */
         void pop_back()
         {
-#if YATO_DEBUG
-            if (empty()) {
-                throw yato::out_of_range_error("yato::vector_view[pop_back]: view is empty!");
-            }
-#endif
+            YATO_REQUIRES(!empty());
             --m_end;
         }
 
@@ -366,11 +342,7 @@ namespace yato
         iterator insert(const_iterator pos, _InputIterator first, _InputIterator last)
         {
             const typename std::iterator_traits<_InputIterator>::difference_type count{ std::distance(first, last) };
-#if YATO_DEBUG
-            if (count < 0) {
-                throw yato::assertion_error("yato::vector_view[insert]: bad pair of the first and last iterators!");
-            }
-#endif
+            YATO_REQUIRES(count >= 0);
             iterator it{ _prepare_insert(pos, count) };
             std::copy(first, last, it);
             return it;
@@ -391,11 +363,7 @@ namespace yato
          */
         iterator erase(const_iterator pos)
         {
-#if YATO_DEBUG
-            if (empty()) {
-                throw yato::assertion_error("yato::vector_view[insert]: view is empty!");
-            }
-#endif
+            YATO_REQUIRES(!empty());
             return _erase_n(pos, 1);
         }
 
@@ -406,11 +374,8 @@ namespace yato
         iterator erase(const_iterator first, const_iterator last)
         {
             const difference_type count{ std::distance(first, last) };
-#if YATO_DEBUG
-            if (count < 0 || count > yato::narrow_cast<decltype(count)>(size())) {
-                throw yato::assertion_error("yato::vector_view[insert]: bad pair of the first and last iterators!");
-            }
-#endif
+            YATO_REQUIRES(count >= 0);
+            YATO_REQUIRES(count <= yato::narrow_cast<decltype(count)>(size()))
             return _erase_n(first, count);
         }
 

@@ -62,7 +62,7 @@ TEST(Yato_VectorView, resize)
     EXPECT_TRUE(v1.empty());
 
 #if YATO_DEBUG
-    EXPECT_THROW(v1.resize(11), yato::out_of_range_error);
+    EXPECT_THROW(v1.resize(11), yato::assertion_error);
 #endif
     EXPECT_NO_THROW(v1.resize(10));
 }
@@ -115,7 +115,7 @@ TEST(Yato_VectorView, push_pop)
     EXPECT_EQ(1, v1[0]);
     EXPECT_EQ(2, v1[1]);
 #if YATO_DEBUG
-    EXPECT_THROW(v1.push_back(3), yato::out_of_range_error);
+    EXPECT_THROW(v1.push_back(3), yato::assertion_error);
 #endif
     v1.pop_back();
     EXPECT_EQ(1, v1.size());
@@ -128,7 +128,7 @@ TEST(Yato_VectorView, push_pop)
     EXPECT_EQ(0, v1.size());
     EXPECT_EQ(true, v1.empty());
 #if YATO_DEBUG
-    EXPECT_THROW(v1.pop_back(), yato::out_of_range_error);
+    EXPECT_THROW(v1.pop_back(), yato::assertion_error);
 #endif
 }
 
@@ -151,7 +151,7 @@ TEST(Yato_VectorView, insert)
     EXPECT_EQ(3, v[2]);
     EXPECT_EQ(2, *it);
 #if YATO_DEBUG
-    EXPECT_THROW(v.insert(v.begin(), 0), yato::out_of_range_error);
+    EXPECT_THROW(v.insert(v.begin(), 0), yato::assertion_error);
 #endif
     yato::vector_view<int*> v2(std::begin(a), 10);
     v2.insert(v.begin(), { 10, 10, 10 });
