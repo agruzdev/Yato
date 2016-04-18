@@ -6,40 +6,63 @@
 #include <vector>
 #include <list>
 
+namespace
+{
+    class Foo
+    {
+    public:
+        bool foo(int x) {
+            return (x == 42);
+        }
+
+        void zoo() const {
+        }
+    };
+}
+
 TEST(Yato_TypeTraits, is_smart_ptr)
 {
-    using sptr = std::shared_ptr<int>;
-    using uptr = std::unique_ptr<int>;
+    using sptr = std::shared_ptr<Foo>;
+    using uptr = std::unique_ptr<Foo>;
+    using wptr = std::weak_ptr<Foo>;
 
-    EXPECT_TRUE(yato::is_shared_ptr<sptr>::value);
-    EXPECT_TRUE(yato::is_unique_ptr<uptr>::value);
+    static_assert(yato::is_shared_ptr<sptr>::value, "is_smart_ptr fail");
+    static_assert(yato::is_unique_ptr<uptr>::value, "is_smart_ptr fail");
     
-    EXPECT_FALSE(yato::is_shared_ptr<uptr>::value);
-    EXPECT_FALSE(yato::is_unique_ptr<sptr>::value);
+    static_assert(!yato::is_shared_ptr<uptr>::value, "is_smart_ptr fail");
+    static_assert(!yato::is_unique_ptr<sptr>::value, "is_smart_ptr fail");
+    static_assert(!yato::is_shared_ptr<wptr>::value, "is_smart_ptr fail");
+    static_assert(!yato::is_unique_ptr<wptr>::value, "is_smart_ptr fail");
     
-    EXPECT_FALSE(yato::is_unique_ptr<int>::value);
-    EXPECT_FALSE(yato::is_unique_ptr<void>::value);
+    static_assert(!yato::is_unique_ptr<int>::value, "is_smart_ptr fail");
+    static_assert(!yato::is_unique_ptr<void>::value, "is_smart_ptr fail");
+
+    static_assert(yato::is_weak_ptr<wptr>::value, "is_smart_ptr fail");
+    static_assert(!yato::is_weak_ptr<int>::value, "is_smart_ptr fail");
+    static_assert(!yato::is_weak_ptr<void>::value, "is_smart_ptr fail");
+    static_assert(!yato::is_weak_ptr<uptr>::value, "is_smart_ptr fail");
+    static_assert(!yato::is_weak_ptr<sptr>::value, "is_smart_ptr fail");
 }
 
 TEST(Yato_TypeTraits, is_iterator)
 {
-    EXPECT_TRUE(yato::is_iterator<std::vector<int>::iterator>::value);
-    EXPECT_TRUE(yato::is_iterator<std::vector<int>::const_iterator>::value);
+    static_assert(yato::is_iterator<std::vector<int>::iterator>::value, "is_iterator fail");
+    static_assert(yato::is_iterator<std::vector<int>::const_iterator>::value, "is_iterator fail");
 
-    EXPECT_TRUE(yato::is_iterator<std::vector<int>::reverse_iterator>::value);
-    EXPECT_TRUE(yato::is_iterator<std::vector<int>::const_reverse_iterator>::value);
+    static_assert(yato::is_iterator<std::vector<int>::reverse_iterator>::value, "is_iterator fail");
+    static_assert(yato::is_iterator<std::vector<int>::const_reverse_iterator>::value, "is_iterator fail");
 
-    EXPECT_TRUE(yato::is_iterator<std::list<float>::iterator>::value);
-    EXPECT_TRUE(yato::is_iterator<std::list<float>::const_iterator>::value);
+    static_assert(yato::is_iterator<std::list<float>::iterator>::value, "is_iterator fail");
+    static_assert(yato::is_iterator<std::list<float>::const_iterator>::value, "is_iterator fail");
 
-    EXPECT_FALSE(yato::is_iterator<std::vector<int>>::value);
-    EXPECT_FALSE(yato::is_iterator<float>::value);
+    static_assert(!yato::is_iterator<std::vector<int>>::value, "is_iterator fail");
+    static_assert(!yato::is_iterator<float>::value, "is_iterator fail");
 }
 
 TEST(Yato_TypeTraits, numeric_iterator)
 {
-    EXPECT_TRUE(yato::is_iterator<yato::numeric_iterator<int>>::value);
-    EXPECT_TRUE(yato::is_iterator<yato::numeric_iterator<size_t>>::value);
+    static_assert(yato::is_iterator<yato::numeric_iterator<int>>::value, "numeric_iterator fail");
+    static_assert(yato::is_iterator<yato::numeric_iterator<size_t>>::value, "numeric_iterator fail");
 }
 
 TEST(Yato_TypeTraits, is_same)
@@ -47,34 +70,34 @@ TEST(Yato_TypeTraits, is_same)
     class Foo {};
     class Bar : public Foo {};
 
-    EXPECT_TRUE((true == yato::is_same<int, int>::value));
-    EXPECT_TRUE((true == yato::is_same<short, short>::value));
-    EXPECT_TRUE((true == yato::is_same<Foo, Foo, Foo, Foo, Foo, Foo, Foo>::value));
-    EXPECT_FALSE((true == yato::is_same<int, float>::value));
-    EXPECT_FALSE((true == yato::is_same<Foo, Bar>::value));
-    EXPECT_FALSE((true == yato::is_same<Foo, const Foo>::value));
+    static_assert((true == yato::is_same<int, int>::value), "is_same fail");
+    static_assert((true == yato::is_same<short, short>::value), "is_same fail");
+    static_assert((true == yato::is_same<Foo, Foo, Foo, Foo, Foo, Foo, Foo>::value), "is_same fail");
+    static_assert(!(true == yato::is_same<int, float>::value), "is_same fail");
+    static_assert(!(true == yato::is_same<Foo, Bar>::value), "is_same fail");
+    static_assert(!(true == yato::is_same<Foo, const Foo>::value), "is_same fail");
 }
 
 TEST(Yato_TypeTraits, has_trait)
 {
     class Foo {};
 
-    EXPECT_TRUE((true == yato::has_trait< std::is_integral, int >::value));
-    EXPECT_TRUE((true == yato::has_trait< std::is_integral, int, long, short, bool >::value));
-    EXPECT_FALSE((true == yato::has_trait< std::is_integral, int, long, Foo, bool >::value));
+    static_assert((true == yato::has_trait< std::is_integral, int >::value), "has_trait fail");
+    static_assert((true == yato::has_trait< std::is_integral, int, long, short, bool >::value), "has_trait fail");
+    static_assert(!(true == yato::has_trait< std::is_integral, int, long, Foo, bool >::value), "has_trait fail");
 }
 
 TEST(Yato_TypeTraits, one_of)
 {
     class Foo {};
 
-    EXPECT_TRUE((true == yato::one_of< int, int >::value));
-    EXPECT_TRUE((true == yato::one_of< short, int, long, short, bool >::value));
-    EXPECT_TRUE((true == yato::one_of< Foo, int, long, Foo, bool >::value));
+    static_assert((true == yato::one_of< int, int >::value), "one_of fail");
+    static_assert((true == yato::one_of< short, int, long, short, bool >::value), "one_of fail");
+    static_assert((true == yato::one_of< Foo, int, long, Foo, bool >::value), "one_of fail");
 
-    EXPECT_FALSE((true == yato::one_of< int, const int >::value));
-    EXPECT_FALSE((true == yato::one_of< short, int, long, char, bool >::value));
-    EXPECT_FALSE((true == yato::one_of< Foo, int, long, Foo*, bool >::value));
+    static_assert(!(true == yato::one_of< int, const int >::value), "one_of fail");
+    static_assert(!(true == yato::one_of< short, int, long, char, bool >::value), "one_of fail");
+    static_assert(!(true == yato::one_of< Foo, int, long, Foo*, bool >::value), "one_of fail");
 }
 
 namespace

@@ -3,9 +3,9 @@
 #include <memory>
 #include <yato/invoke.h>
 
-TEST(Yato_Invoke, invoke)
+namespace
 {
-    class Foo 
+    class Foo
     {
     public:
         bool foo(int x) {
@@ -23,7 +23,10 @@ TEST(Yato_Invoke, invoke)
             return (x != 42);
         }
     };
+}
 
+TEST(Yato_Invoke, invoke)
+{
     Foo f;
     Bar b;
     yato::invoke(f, &Foo::foo, 1);

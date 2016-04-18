@@ -41,13 +41,13 @@ namespace yato
     //
     namespace details
     {
-        template<typename T, template<typename...> class SmartPtr, typename Enable = void>
+        template<typename _T, template <typename...> class _PtrType, typename _Enable = void>
         struct is_smart_ptr_impl 
             : std::false_type
         { };
 
-        template<typename T, template<typename...> class SmartPtr>
-        struct is_smart_ptr_impl<T, SmartPtr, typename std::enable_if< std::is_same<typename std::remove_cv<T>::type, SmartPtr< typename T::element_type> >::value >::type > 
+        template<typename _T, template <typename...> class _PtrType, typename... _Args>
+        struct is_smart_ptr_impl<_PtrType<_T, _Args...>, _PtrType, void>
             : std::true_type
         { };
     }
@@ -56,15 +56,22 @@ namespace yato
      * Detect shared_ptr
      * is_shared_ptr<T>::value is true when T is shared_ptr<V> for some V
      */
-    template<typename T>
-    using is_shared_ptr = details::is_smart_ptr_impl<T, std::shared_ptr>;
+    template<typename _T>
+    using is_shared_ptr = details::is_smart_ptr_impl<_T, std::shared_ptr>;
     
     /**
      * Detect unique_ptr
      * is_unique_ptr<T>::value is true when T is is_unique_ptr<V> for some V
      */
-    template<typename T>
-    using is_unique_ptr = details::is_smart_ptr_impl<T, std::unique_ptr>;
+    template<typename _T>
+    using is_unique_ptr = details::is_smart_ptr_impl<_T, std::unique_ptr>;
+    
+    /**
+     * Detect weak_ptr
+     * is_weak_ptr<T>::value is true when T is is_weak_ptr<V> for some V
+     */
+    template<typename _T>
+    using is_weak_ptr = details::is_smart_ptr_impl<_T, std::weak_ptr>;
     
     /**
      * Detect shared_ptr or unique_ptr
