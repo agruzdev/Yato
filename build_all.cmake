@@ -78,18 +78,15 @@ unset(error)
 if(NOT DEFINED _SOURCE_DIR)
     set(_SOURCE_DIR ${CMAKE_SOURCE_DIR})
 endif()
-message("_SOURCE_DIR=${_SOURCE_DIR}")
 
 if(NOT DEFINED _BUILD_DIR)
     set(_BUILD_DIR ${_SOURCE_DIR}/cmake_workspace/build)
 endif()
-message("_BUILD_DIR=${_BUILD_DIR}")
 file(MAKE_DIRECTORY ${_BUILD_DIR})
 
 if(NOT DEFINED _BIN_DIR)
     set(_BIN_DIR ${_SOURCE_DIR}/cmake_workspace/bin)
 endif()
-message("_BIN_DIR=${_BIN_DIR}")
 file(MAKE_DIRECTORY ${_BIN_DIR})
 
 if(_TARGET STREQUAL all)
@@ -164,7 +161,7 @@ foreach(CURRENT_TARGET ${all_build_targers})
         foreach(test_executable ${test_executables})
             
             message(STATUS "Run ${test_executable}")
-            execute_process(COMMAND ${test_executable}
+            execute_process(COMMAND ${CURRENT_BIN_DIR}/${test_executable}
                 WORKING_DIRECTORY ${CURRENT_BIN_DIR}
                 OUTPUT_FILE ${CURRENT_BIN_DIR}/${test_executable}.stdout.txt
                 ERROR_FILE ${CURRENT_BIN_DIR}/${test_executable}.stderr.txt
