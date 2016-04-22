@@ -46,12 +46,12 @@ set(MAKE_COMMAND_vc14x32 "$ENV{VS140COMNTOOLS}/../IDE/devenv.com")
 set(MAKE_COMMAND_vc14x64 "$ENV{VS140COMNTOOLS}/../IDE/devenv.com")
 set(MAKE_COMMAND_gcc "make")
 
-list(APPEND MAKE_ARGUMENTS_mingw "-j")
+list(APPEND MAKE_ARGUMENTS_mingw "-j" "2")
 list(APPEND MAKE_ARGUMENTS_vc12x32 "/build" "Release")
 list(APPEND MAKE_ARGUMENTS_vc12x64 "/build" "Release")
 list(APPEND MAKE_ARGUMENTS_vc14x32 "/build" "Release")
 list(APPEND MAKE_ARGUMENTS_vc14x64 "/build" "Release")
-list(APPEND MAKE_ARGUMENTS_gcc "-j")
+list(APPEND MAKE_ARGUMENTS_gcc "-j" "2")
 
 # ==============================================================
 # Input argumets
