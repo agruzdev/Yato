@@ -298,70 +298,72 @@ namespace yato
     template <typename _T> 
     using remove_class = details::remove_class_impl< typename std::remove_cv<_T>::type >;
 
-
-    template<typename T>
-    struct function_trait {};
-
-    template<typename _R, typename... _Args>
-    struct function_trait< std::function<_R(_Args...)> >
+    namespace details
     {
-        static YATO_CONSTEXPR_VAR size_t arguments_num = sizeof...(_Args);
+        template<typename T>
+        struct function_trait {};
 
-        using result_type = _R;
-        using arguments_list = typename meta::make_list<_Args...>::type;
-
-        template <size_t _Idx>
-        struct arg
+        template<typename _R, typename... _Args>
+        struct function_trait< std::function<_R(_Args...)> >
         {
-            using type = typename meta::list_at<arguments_list, _Idx>::type;
+            static YATO_CONSTEXPR_VAR size_t arguments_num = sizeof...(_Args);
+
+            using result_type = _R;
+            using arguments_list = typename meta::make_list<_Args...>::type;
+
+            template <size_t _Idx>
+            struct arg
+            {
+                using type = typename meta::list_at<arguments_list, _Idx>::type;
+            };
+
+            using pointer_type = _R(*)(_Args...);
+            using function_type = std::function<_R(_Args...)>;
         };
 
-        using pointer_type = _R(*)(_Args...);
-        using function_type = std::function<_R(_Args...)>;
-    };
-
-    template<typename _R, typename... _Args>
-    struct function_trait< _R(*)(_Args...) >
-    {
-        static YATO_CONSTEXPR_VAR size_t arguments_num = sizeof...(_Args);
-
-        using result_type = _R;
-        using arguments_list = typename meta::make_list<_Args...>::type;
-
-        template <size_t _Idx>
-        struct arg
+        template<typename _R, typename... _Args>
+        struct function_trait< _R(*)(_Args...) >
         {
-            using type = typename meta::list_at<arguments_list, _Idx>::type;
+            static YATO_CONSTEXPR_VAR size_t arguments_num = sizeof...(_Args);
+
+            using result_type = _R;
+            using arguments_list = typename meta::make_list<_Args...>::type;
+
+            template <size_t _Idx>
+            struct arg
+            {
+                using type = typename meta::list_at<arguments_list, _Idx>::type;
+            };
+
+            using pointer_type = _R(*)(_Args...);
+            using function_type = std::function<_R(_Args...)>;
         };
 
-        using pointer_type = _R(*)(_Args...);
-        using function_type = std::function<_R(_Args...)>;
-    };
+        /**
+        *  For class members
+        */
+        template<typename T>
+        struct function_member_trait {};
 
-    /**
-     *  For class members
-     */
-    template<typename T>
-    struct function_member_trait {};
-
-    template<class _Class, typename _R, typename... _Args>
-    struct function_member_trait< _R( _Class::* )(_Args...) >
-    {
-        static YATO_CONSTEXPR_VAR size_t arguments_num = sizeof...(_Args);
-
-        using my_class = _Class;
-        using result_type = _R;
-        using arguments_list = typename meta::make_list<_Args...>::type;
-
-        template <size_t _Idx>
-        struct arg
+        template<class _Class, typename _R, typename... _Args>
+        struct function_member_trait< _R( _Class::* )(_Args...) >
         {
-            using type = typename meta::list_at<arguments_list, _Idx>::type;
-        };
+            static YATO_CONSTEXPR_VAR size_t arguments_num = sizeof...(_Args);
 
-        using pointer_type = _R(*)(_Args...);
-        using function_type = std::function<_R(_Args...)>;
-    };
+            using my_class = _Class;
+            using result_type = _R;
+            using arguments_list = typename meta::make_list<_Args...>::type;
+
+            template <size_t _Idx>
+            struct arg
+            {
+                using type = typename meta::list_at<arguments_list, _Idx>::type;
+            };
+
+            using pointer_type = _R(*)(_Args...);
+            using function_type = std::function<_R(_Args...)>;
+        };
+    }
 
     /**
      *  Deduce information about arguments and return type for a callable entity
@@ -372,12 +374,12 @@ namespace yato
 
     template <typename _T>
     struct callable_trait <_T, typename std::enable_if<is_function_pointer<_T>::value>::type>
-        : function_trait< typename remove_class<_T>::type >
+        : details::function_trait< typename remove_class<_T>::type >
     { };
 
     template <typename _T>
     struct callable_trait <_T, typename std::enable_if<has_operator_round_brackets<_T>::value>::type>
-        : function_trait< typename remove_class<decltype(&_T::operator())>::type >
+        : details::function_trait< typename remove_class<decltype(&_T::operator())>::type >
     { };
 
     /**

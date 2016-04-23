@@ -158,6 +158,7 @@ TEST(Yato_Range, map)
     EXPECT_EQ(w, (std::vector<int>{ 2, 3, 4, 5}));
 }
 
+#ifndef YATO_MSVC_2013
 TEST(Yato_Range, filter)
 {
     std::vector<int> v = { 1, 2, 3, 4, 5, 6, 7 };
@@ -168,6 +169,7 @@ TEST(Yato_Range, filter)
     }
     EXPECT_EQ(u, (std::vector<int>{ 2, 4, 6 }));
 }
+#endif
 
 TEST(Yato_Range, zip)
 {
@@ -195,6 +197,7 @@ TEST(Yato_Range, fold)
     EXPECT_EQ(24, s2);
 }
 
+#ifndef YATO_MSVC_2013
 TEST(Yato_Range, superposition)
 {
     //Count number of numbers '1' after rounding
@@ -203,6 +206,7 @@ TEST(Yato_Range, superposition)
     size_t num = yato::make_range(v).map([](float y)->int {return static_cast<int>(std::round(y)); }).filter([](int x) {return x == 1; }).fold_left(std::plus<size_t>(), static_cast<size_t>(0));
     EXPECT_EQ(4, num);
 }
+#endif
 
 TEST(Yato_Range, convertion)
 {

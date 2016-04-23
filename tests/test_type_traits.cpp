@@ -232,14 +232,14 @@ TEST(Yato_TypeTraits, make_function)
 
 TEST(Yato_TypeTraits, functional)
 {
-    using foo_trait = yato::function_trait<decltype(&foo)>;
+    using foo_trait = yato::details::function_trait<decltype(&foo)>;
     static_assert(std::is_same<foo_trait::result_type, void>::value, "functional trait fail");
     static_assert(foo_trait::arguments_num == 2, "functional trait fail");
     static_assert(std::is_same<foo_trait::arguments_list, yato::meta::list<int, long>>::value, "functional trait fail");
     static_assert(std::is_same<foo_trait::arg<0>::type, int>::value, "functional trait fail");
     static_assert(std::is_same<foo_trait::arg<1>::type, long>::value, "functional trait fail");
 
-    using bar_trait = yato::function_member_trait<decltype(&Struct::bar)>;
+    using bar_trait = yato::details::function_member_trait<decltype(&Struct::bar)>;
     static_assert(std::is_same<bar_trait::result_type, const char*>::value, "functional trait fail");
     static_assert(bar_trait::arguments_num == 0, "functional trait fail");
     static_assert(std::is_same<bar_trait::arguments_list, yato::meta::null_list>::value, "functional trait fail");
