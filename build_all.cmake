@@ -79,13 +79,17 @@ if(NOT DEFINED _SOURCE_DIR)
     set(_SOURCE_DIR ${CMAKE_SOURCE_DIR})
 endif()
 
+if(NOT DEFINED _WORKSPACE)
+    set(_WORKSPACE ${_SOURCE_DIR}/cmake_workspace)
+endif()
+
 if(NOT DEFINED _BUILD_DIR)
-    set(_BUILD_DIR ${_SOURCE_DIR}/cmake_workspace/build)
+    set(_BUILD_DIR ${_WORKSPACE}/build)
 endif()
 file(MAKE_DIRECTORY ${_BUILD_DIR})
 
 if(NOT DEFINED _BIN_DIR)
-    set(_BIN_DIR ${_SOURCE_DIR}/cmake_workspace/bin)
+    set(_BIN_DIR ${_WORKSPACE}/bin)
 endif()
 file(MAKE_DIRECTORY ${_BIN_DIR})
 
@@ -99,16 +103,24 @@ endif()
 # Make all targets
 #
 
+set(REPORT_FILE ${_WORKSPACE}/report.txt)
+file(REMOVE ${REPORT_FILE})
+
+macro(LOGGED_MESSAGE _kind _message)
+    file(APPEND ${REPORT_FILE} "${_message}\n")
+    message(${_kind} ${_message})
+endmacro()
+
 macro(CHECK_RETURN_CODE _ret_code)
     if(${_ret_code} EQUAL 0)
-        message(STATUS OK)
+        LOGGED_MESSAGE(STATUS OK)
     else()
-        message(STATUS "ERROR! Return code ${${ret}}")
+        LOGGED_MESSAGE(STATUS "ERROR! Return code ${${ret}}")
     endif()
 endmacro()
 
 foreach(CURRENT_TARGET ${all_build_targers})
-    message(STATUS "------------------------------------------------------")
+    LOGGED_MESSAGE(STATUS "------------------------------------------------------")
     
     set(CURRENT_BUILD_DIR ${_BUILD_DIR}/${CURRENT_TARGET})
     set(CURRENT_BIN_DIR ${_BIN_DIR}/${CURRENT_TARGET})
@@ -119,7 +131,7 @@ foreach(CURRENT_TARGET ${all_build_targers})
     # ==============================================================
     # Configure
     #
-    message(STATUS "Configuring for: ${CURRENT_TARGET}") 
+    LOGGED_MESSAGE(STATUS "Configuring for: ${CURRENT_TARGET}") 
 
     execute_process(COMMAND cmake "-G${GENERATOR_${CURRENT_TARGET}}" -DBIN_OUTPUT_DIR=${CURRENT_BIN_DIR} ${_SOURCE_DIR}
         WORKING_DIRECTORY ${CURRENT_BUILD_DIR}
@@ -134,7 +146,7 @@ foreach(CURRENT_TARGET ${all_build_targers})
     # Build
     #
     if(ret EQUAL 0)
-        message(STATUS "Building: ${CURRENT_TARGET}") 
+        LOGGED_MESSAGE(STATUS "Building: ${CURRENT_TARGET}") 
         
         # Find solution files
         if(CURRENT_TARGET MATCHES vc*)
@@ -153,14 +165,14 @@ foreach(CURRENT_TARGET ${all_build_targers})
     # Run Tests
     #
     if(ret EQUAL 0)
-        message(STATUS "Run tests for: ${CURRENT_TARGET}") 
+        LOGGED_MESSAGE(STATUS "Run tests for: ${CURRENT_TARGET}") 
         
         file(GLOB test_executables RELATIVE ${CURRENT_BIN_DIR} ${CURRENT_BIN_DIR}/*Test* ${CURRENT_BIN_DIR}/*test* ${CURRENT_BIN_DIR}/*/*Test* ${CURRENT_BIN_DIR}/*/*test*)
         list(REMOVE_DUPLICATES test_executables)
-        message(STATUS "Found tests: ${test_executables}")
+        LOGGED_MESSAGE(STATUS "Found tests: ${test_executables}")
         foreach(test_executable ${test_executables})
             
-            message(STATUS "Run ${test_executable}")
+            LOGGED_MESSAGE(STATUS "Run ${test_executable}")
             execute_process(COMMAND ${CURRENT_BIN_DIR}/${test_executable}
                 WORKING_DIRECTORY ${CURRENT_BIN_DIR}
                 OUTPUT_FILE ${CURRENT_BIN_DIR}/${test_executable}.stdout.txt
@@ -168,17 +180,13 @@ foreach(CURRENT_TARGET ${all_build_targers})
                 RESULT_VARIABLE ret
             )
             if(ret EQUAL 0)
-                message(STATUS "> ${test_executable} PASSED")
+                LOGGED_MESSAGE(STATUS "> ${test_executable} PASSED")
             else()
-                message(STATUS "> ${test_executable} FAILED")
+                LOGGED_MESSAGE(STATUS "> ${test_executable} FAILED")
             endif()
             
         endforeach(test_executable)
     endif()
     
 endforeach(CURRENT_TARGET) 
-
-# ==============================================================
-# Make report
-#
-message(STATUS "------------------------------------------------------")
+LOGGED_MESSAGE(STATUS "------------------------------------------------------")
