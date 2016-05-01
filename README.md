@@ -49,6 +49,9 @@ Functional traits
 * **yato::callable_trait** - deduces return type and all arguments types for any callable type
 * **yato::make_function** - converts any callable type to std::function with corresponding return and arguments types
 
+### Type matching ###
+**yato::match** performs compile time matching of variable type based on function overloading mechinism 
+
 ### "Annotations" ###
 There are a couple of experiments inspired by [Cpp Core Guidelines](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md)
 
