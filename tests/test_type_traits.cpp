@@ -245,4 +245,16 @@ TEST(Yato_TypeTraits, functional)
     static_assert(std::is_same<bar_trait::arguments_list, yato::meta::null_list>::value, "functional trait fail");
 }
 
-
+TEST(Yato_TypeTraits, functional_2)
+{
+    {
+        auto f = [](int &) {};
+        using f_trait = yato::callable_trait<decltype(f)>;
+        static_assert(std::is_same<f_trait::arg<0>::type, int &>::value, "functional trait fail");
+    }
+    {
+        auto f = [](int &&) {};
+        using f_trait = yato::callable_trait<decltype(f)>;
+        static_assert(std::is_same<f_trait::arg<0>::type, int &&>::value, "functional trait fail");
+    }
+}
