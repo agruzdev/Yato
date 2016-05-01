@@ -76,6 +76,9 @@ namespace yato
             }
         };
 
+        //-------------------------------------------------------
+        // Data members
+
         template<typename _MyClass, typename _MyType, counter_type _Idx>
         struct data_member_info final
             : public member_info<_MyClass>
@@ -109,6 +112,47 @@ namespace yato
             }
         };
 
+        //-------------------------------------------------------
+        // methods
+
+        
+
+        template<typename _MyClass, typename _MyType, counter_type _Idx>
+        struct member_function_info final
+            : public member_info<_MyClass>
+        {
+            using my_class = _MyClass;
+            using my_type = _MyType;
+            using result_type = typename yato::callable_trait<my_type>::result_type;
+            using arguments_list = typename yato::callable_trait<my_type>::arguments_list;
+
+            static YATO_CONSTEXPR_VAR counter_type my_idx = _Idx;
+            //-------------------------------------------------------
+
+        private:
+            const std::string m_name;
+            //-------------------------------------------------------
+
+        public:
+            member_function_info(const std::string & name)
+                : m_name(name)
+            {
+            }
+
+            ~member_function_info() override {}
+
+            std::string name() const YATO_NOEXCEPT_KEYWORD override
+            {
+                return m_name;
+            }
+
+            void* ptr(_MyClass*) const override
+            {
+                return nullptr;
+            }
+        };
+
+        //-------------------------------------------------------
         namespace details
         {
             /**
@@ -120,6 +164,7 @@ namespace yato
             public:
                 using class_type = _Class;
                 using data_members_list = decltype(_Class::_yato_data_members_list_getter(meta::number<MAX_COUNTER_VALUE>{}));
+                using member_functions_list = decltype(_Class::_yato_member_functions_list_getter(meta::number<MAX_COUNTER_VALUE>{}));
                 //-------------------------------------------------------
 
             private:
@@ -184,13 +229,12 @@ namespace yato
                  *  Registration function for reflection
                  *  Don't call it manually!
                  */
-                void _visit(std::unique_ptr<member_info<_Class>> && info)
+                void _register_member(std::unique_ptr<member_info<_Class>> && info)
                 {
                     if (m_members.cend() != m_members.find(info->name())) {
-                        throw yato::assertion_error("yato::reflection_manager_impl[visit]: Failed to register members with same name!");
+                        throw yato::assertion_error("yato::reflection_manager_impl[_register_member]: Failed to register members with same name!");
                     }
                     m_members[info->name()] = std::move(info);
-
                 }
 
                 friend struct create_using_new<reflection_manager_impl<_Class>>;
@@ -270,6 +314,8 @@ namespace yato
     /* base declarator for static list of member info */ \
     template <typename _Yato_Typename_Dummy = void> \
     static yato::meta::null_list _yato_data_members_list_getter(yato::meta::number<0>); \
+    template <typename _Yato_Typename_Dummy = void> \
+    static yato::meta::null_list _yato_member_functions_list_getter(yato::meta::number<0>); \
     \
     /* declare manager as friend to have access to registration functions */ \
     friend class yato::reflection::details::reflection_manager_impl<_yato_reflection_my_type>;\
@@ -287,7 +333,7 @@ namespace yato
     \
     /* static reflection info */ \
     using _yato_reflected_##Var = yato::reflection::data_member_info<_yato_reflection_my_type, decltype(_yato_reflection_my_type::Var), _yato_reflected_idx_##Var>;\
-    template <typename _Yato_Typename_Dummy = void> /* templte is necessary for using typename keyword (msvc 2013 comlains)*/ \
+    template <typename _Yato_Typename_Dummy = void> /* template is necessary for using typename keyword (msvc 2013 complains)*/ \
     static auto _yato_data_members_list_getter(yato::meta::number<_yato_reflected_idx_##Var>) \
         -> typename yato::meta::list_push_back<decltype(_yato_data_members_list_getter(yato::meta::number<_yato_reflected_idx_##Var - 1>{})), _yato_reflected_##Var>::type; \
     \
@@ -295,7 +341,7 @@ namespace yato
     static void _yato_runtime_register(yato::meta::number<_yato_reflected_idx_##Var>)\
     {\
         _yato_runtime_register(yato::meta::number<_yato_reflected_idx_##Var - 1>{});\
-        yato::reflection::reflection_manager<_yato_reflection_my_type>::instance()->_visit(\
+        yato::reflection::reflection_manager<_yato_reflection_my_type>::instance()->_register_member(\
             std::make_unique<_yato_reflected_##Var>(#Var, &_yato_reflection_my_type::Var));\
     }\
     /* tag for checking access */ \
@@ -306,5 +352,27 @@ namespace yato
 #define YATO_REFLECT_VAR_INLINE(Var) \
     Var; \
     YATO_REFLECT_VAR(Var)
+
+#define YATO_REFLECT_VAR_INLINE_INIT(Var, Initializer) \
+    Var { Initializer }; \
+    YATO_REFLECT_VAR(Var)
+
+
+   /**
+    *  Reflection for methods
+    */
+#define YATO_REFLECT_METHOD(Method) \
+    /* increment counter */ \
+    YATO_REFLECTION_GET_TYPED_COUNTER_VALUE(_yato_reflection_tag, _yato_reflected_fidx_##Method)\
+    YATO_REFLECTION_SET_TYPED_COUNTER_VALUE(_yato_reflection_tag, _yato_reflected_fidx_##Method + 1)\
+    \
+    /* static reflection info */ \
+    template <typename _Yato_Dummy_Argument = void>\
+    using _yato_reflected_method_impl_##Method = yato::reflection::member_function_info<_yato_reflection_my_type, typename std::remove_pointer<decltype(&_yato_reflection_my_type::Method)>::type, _yato_reflected_fidx_##Method>;\
+    using _yato_reflected_method_##Method = _yato_reflected_method_impl_##Method<void>;\
+    template <typename _Yato_Typename_Dummy = void> /* template is necessary for using typename keyword (msvc 2013 complains)*/ \
+    static auto _yato_member_functions_list_getter(yato::meta::number<_yato_reflected_fidx_##Method>) \
+        -> typename yato::meta::list_push_back<decltype(_yato_data_members_list_getter(yato::meta::number<_yato_reflected_fidx_##Method - 1>{})), _yato_reflected_method_##Method>::type; \
+
 
 #endif

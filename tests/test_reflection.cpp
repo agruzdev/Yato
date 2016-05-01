@@ -47,14 +47,23 @@ TEST(Yato_Reflection, commons)
 
 namespace
 {
+    class Bar { };
+
     class Foo
     {
         YATO_REFLECT_CLASS(Foo)
     private:
         int x;
-        YATO_REFLECT_VAR(x)
+        YATO_REFLECT_VAR(x);
+        int& g();
+        YATO_REFLECT_METHOD(g);
     public:
-        float YATO_REFLECT_VAR_INLINE(y)
+        float YATO_REFLECT_VAR_INLINE(y);
+        void f(float, double);
+        YATO_REFLECT_METHOD(f);
+
+    protected:
+        const Bar* YATO_REFLECT_VAR_INLINE_INIT(z, nullptr);
     };
 }
 
@@ -75,7 +84,7 @@ TEST(Yato_Reflection, data_members)
 
     EXPECT_NE(nullptr, yato::reflection::reflection_manager<Foo>::instance()->get_by_name("x"));
     EXPECT_NE(nullptr, yato::reflection::reflection_manager<Foo>::instance()->get_by_name("y"));
-    EXPECT_EQ(nullptr, yato::reflection::reflection_manager<Foo>::instance()->get_by_name("z"));
+    EXPECT_EQ(nullptr, yato::reflection::reflection_manager<Foo>::instance()->get_by_name("_"));
 
     Foo f;
     f.y = 0.0f;
@@ -90,31 +99,34 @@ TEST(Yato_Reflection, data_members)
 
     static_assert(std::is_same<all_data_members, yato::meta::list<
         yato::reflection::data_member_info<Foo, int, 1>,
-        yato::reflection::data_member_info<Foo, float, 2> >
+        yato::reflection::data_member_info<Foo, float, 3>,
+        yato::reflection::data_member_info<Foo, const Bar*, 5>>
     >::value, "reflection fail!");
 
 #ifdef YATO_MSVC_2015
     static_assert(false == yato::reflection::is_public<Foo, 1>::value, "is_public fail");
-    static_assert(true  == yato::reflection::is_public<Foo, 2>::value, "is_public fail");
+    static_assert(true  == yato::reflection::is_public<Foo, 3>::value, "is_public fail");
 #endif
 }
 
 namespace
 {
+    using members_range = decltype(yato::reflection::reflection_manager<Foo>::instance()->members());
+
     template<class _Class, typename _ListOfMembers>
     struct dump_members_impl
     {
-        static void print()
+        static void print(const members_range & members)
         {
-            std::cout << typeid(typename _ListOfMembers::head::my_type).name() << std::endl;
-            dump_members_impl<_Class, typename _ListOfMembers::tail>::print();
+            std::cout << "    " << typeid(typename _ListOfMembers::head::my_type).name() << " " << members.begin()->first << ";" << std::endl;
+            dump_members_impl<_Class, typename _ListOfMembers::tail>::print(members.tail());
         }
     };
 
     template<typename _Class>
     struct dump_members_impl<_Class, yato::meta::null_list>
     {
-        static void print()
+        static void print(const members_range&)
         { }
     };
 
@@ -123,8 +135,10 @@ namespace
     {
         static void print()
         {
-            std::cout << typeid(_Class).name() << std::endl;
-            dump_members_impl<_Class, typename yato::reflection::details::reflection_manager_impl<_Class>::data_members_list>::print();
+            std::cout << typeid(_Class).name() << std::endl << "{" << std::endl;
+            dump_members_impl<_Class, typename yato::reflection::details::reflection_manager_impl<_Class>::data_members_list>::print(
+                yato::reflection::reflection_manager<Foo>::instance()->members());
+            std::cout << "};" << std::endl;
         }
     };
 }
@@ -135,3 +149,12 @@ TEST(Yato_Reflection, data_members_2)
     dump_class<Foo>::print();
 }
 
+TEST(Yato_Reflection, data_methods)
+{
+    std::cout << typeid(Foo::_yato_reflected_method_f::my_type).name() << std::endl;
+}
+
+//TEST(Yato_Reflection, function_members)
+//{
+//    using f_trait = typename yato::reflection::reflection_manager<Foo>::member_functions_list::head;
+//}
