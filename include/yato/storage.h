@@ -185,7 +185,7 @@ namespace yato
             void swap(my_type & other) 
             {
                 if (this != &other) {
-                    stored_type tmp{ *_get_pointer() };
+                    stored_type tmp(*_get_pointer());
                     _destroy();
                     _create(*other._get_pointer());
                     other._destroy();
