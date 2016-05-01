@@ -10,7 +10,7 @@
 TEST(Yato_FilterIterator, base)
 {
     using input_iterator = std::istream_iterator<int>;
-    using output_iterator = std::ostream_iterator<int>;
+    //using output_iterator = std::ostream_iterator<int>;
     using forward_iterator = std::forward_list<int>::iterator;
     using bidirectional_iterator = std::list<int>::iterator;
     using random_access_iterator = int*;

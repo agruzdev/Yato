@@ -30,9 +30,15 @@ TEST(Yato_Types, narrow_cast)
 #endif
 }
 
-#pragma warning(push)
-#pragma warning(disable: 4189) //local variable is initialized but not referenced
-#pragma warning(disable: 4700) //uninitialized local variable 'p1' used
+#ifdef YATO_MSVC
+# pragma warning(push)
+# pragma warning(disable: 4189) //local variable is initialized but not referenced
+# pragma warning(disable: 4700) //uninitialized local variable 'p1' used
+#elif defined(YATO_CLANG)
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wunused-variable"
+#endif
+
 TEST(Yato_Types, pointer_cast)
 {
     {
@@ -52,7 +58,11 @@ TEST(Yato_Types, pointer_cast)
         const volatile char* p2 = yato::pointer_cast<const volatile char*>(p1);
     }
 }
-#pragma warning(pop)
+#ifdef YATO_MSVC
+# pragma warning(pop)
+#elif defined(YATO_CLANG)
+# pragma clang diagnostic pop
+#endif
 
 #if defined(YATO_MSVC_2015) || (__cplusplus >= 201400L)
 TEST(Yato_Types, TestLiterals)

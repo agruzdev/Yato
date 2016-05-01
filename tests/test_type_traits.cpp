@@ -140,7 +140,7 @@ TEST(Yato_TypeTraits, is_callable)
     static_assert(!yato::has_operator_round_brackets<op_type>::value, "has_operator_round_brackets fail");
     static_assert(!yato::has_operator_round_brackets<decltype(&FooCallable::operator())>::value, "has_operator_round_brackets fail");
 
-    using _t = decltype(&FooCallable::operator());
+    //using _t = decltype(&FooCallable::operator());
     using _v = yato::test_type<decltype(&FooCallable::operator())>::type;
     static_assert(std::is_same<void, _v>::value, "");
 

@@ -31,19 +31,26 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 #endif
 
 #ifdef _MSC_VER
-#define YATO_MSVC
+# define YATO_MSVC
+# if (_MSC_VER == 1800)
+#  define YATO_MSVC_2013 
+# elif (_MSC_VER == 1900)
+#  define YATO_MSVC_2015 
+# endif
 #endif
 
-#if defined(_MSC_VER) && (_MSC_VER == 1800)
-#define YATO_MSVC_2013 
-#endif
-
-#if defined(_MSC_VER) && (_MSC_VER == 1900)
-#define YATO_MSVC_2015 
+#ifdef __GNUC__
+# if defined(__clang__)
+#  define YATO_CLANG
+# elif defined(__MINGW32__)
+#  define YATO_MINGW
+# else
+#  define YATO_GCC
+# endif
 #endif
 
 #ifdef __ANDROID__
-#define  YATO_ANDROID
+# define YATO_ANDROID
 #endif
 
 #if defined(YATO_MSVC_2015) || (__cplusplus > 201100L) || (defined(YATO_ANDROID) && __cplusplus > 201300L)
@@ -71,5 +78,6 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 #define YATO_GET_FILE_LINE YATO_QUOTE(__FILE__) ": " YATO_QUOTE(__LINE__)
 
 #define YATO_MAYBE_UNUSED(X) ((void)(X));
+
 
 #endif

@@ -58,7 +58,7 @@ TEST(Yato_ArrayView, make_view)
     EXPECT_TRUE(view_3.size() == 4);
     view_3[0] = 0;
 
-    const std::array<int, 4> arr_4 = { 0 };
+    const std::array<int, 4> arr_4 = { { 0 } };
     auto view_4 = yato::make_view(arr_4);
 
     std::vector<int> arr_5(5, 0);

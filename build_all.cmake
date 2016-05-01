@@ -9,15 +9,24 @@ cmake_minimum_required (VERSION 3.1)
 #   vc12x64  - MSVC_2013 x64
 #   vc14x64  - MSVC_2015 x64
 #   mingw    - MinGW
-#   gcc      - unix GCC 
+#   gcc      - Unix GCC 
+#   clang    - clang (specify environment variable LLVM_ROOT in Windows)
 #   all      - enable all listed (filtered by operating system)
 
 # ==============================================================
 # Global variables
 #
 
+find_program(CLANG_FOUND clang)
+find_program(GCC_FOUND gcc)
+
 if(WIN32)
-    list(APPEND SUPPORTED_TARGETS mingw)
+    if(GCC_FOUND)
+        list(APPEND SUPPORTED_TARGETS mingw)
+    endif()
+    if(CLANG_FOUND)
+        list(APPEND SUPPORTED_TARGETS clang)
+    endif()
     if(IS_DIRECTORY $ENV{VS120COMNTOOLS})
         list(APPEND SUPPORTED_TARGETS vc12x32)
         list(APPEND SUPPORTED_TARGETS vc12x64)
@@ -29,7 +38,12 @@ if(WIN32)
 endif()
 
 if(UNIX)
-    list(APPEND SUPPORTED_TARGETS gcc)
+    if(GCC_FOUND)
+        list(APPEND SUPPORTED_TARGETS gcc)
+    endif()
+    if(CLANG_FOUND)
+        list(APPEND SUPPORTED_TARGETS clang)
+    endif()
 endif()
 
 set(GENERATOR_mingw "MinGW Makefiles")
@@ -38,6 +52,9 @@ set(GENERATOR_vc12x64 "Visual Studio 12 2013 Win64")
 set(GENERATOR_vc14x32 "Visual Studio 14 2015")
 set(GENERATOR_vc14x64 "Visual Studio 14 2015 Win64")
 set(GENERATOR_gcc "Unix Makefiles")
+set(GENERATOR_clang "MinGW Makefiles")
+
+set(TOOLCHAIN_clang "cmake/clang.toolchain.cmake")
 
 set(MAKE_COMMAND_mingw "mingw32-make")
 set(MAKE_COMMAND_vc12x32 "$ENV{VS120COMNTOOLS}/../IDE/devenv.com")
@@ -45,6 +62,7 @@ set(MAKE_COMMAND_vc12x64 "$ENV{VS120COMNTOOLS}/../IDE/devenv.com")
 set(MAKE_COMMAND_vc14x32 "$ENV{VS140COMNTOOLS}/../IDE/devenv.com")
 set(MAKE_COMMAND_vc14x64 "$ENV{VS140COMNTOOLS}/../IDE/devenv.com")
 set(MAKE_COMMAND_gcc "make")
+set(MAKE_COMMAND_clang "mingw32-make")
 
 list(APPEND MAKE_ARGUMENTS_mingw "-j" "2")
 list(APPEND MAKE_ARGUMENTS_vc12x32 "/build" "Release")
@@ -52,6 +70,7 @@ list(APPEND MAKE_ARGUMENTS_vc12x64 "/build" "Release")
 list(APPEND MAKE_ARGUMENTS_vc14x32 "/build" "Release")
 list(APPEND MAKE_ARGUMENTS_vc14x64 "/build" "Release")
 list(APPEND MAKE_ARGUMENTS_gcc "-j" "2")
+list(APPEND MAKE_ARGUMENTS_clang "-j" "2")
 
 # ==============================================================
 # Input argumets
@@ -59,7 +78,7 @@ list(APPEND MAKE_ARGUMENTS_gcc "-j" "2")
 
 set(error FALSE)
 if(NOT DEFINED _TARGET)
-    set(error TRUE)
+    set(_TARGET "all")
 elseif(NOT _TARGET STREQUAL all)
     list(FIND SUPPORTED_TARGETS ${_TARGET} TARGET_IDX)
     if(TARGET_IDX EQUAL -1)
@@ -133,7 +152,14 @@ foreach(CURRENT_TARGET ${all_build_targers})
     #
     LOGGED_MESSAGE(STATUS "Configuring for: ${CURRENT_TARGET}") 
 
-    execute_process(COMMAND cmake "-G${GENERATOR_${CURRENT_TARGET}}" -DBIN_OUTPUT_DIR=${CURRENT_BIN_DIR} ${_SOURCE_DIR}
+    if(DEFINED TOOLCHAIN_${CURRENT_TARGET})
+        set(CUSTOM_TOOLCHAIN_ARG "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/${TOOLCHAIN_${CURRENT_TARGET}}")
+        LOGGED_MESSAGE(STATUS "Using toolchain ${TOOLCHAIN_${CURRENT_TARGET}}")
+    else()
+        set(CUSTOM_TOOLCHAIN_ARG "")
+    endif()
+    
+    execute_process(COMMAND cmake "-G${GENERATOR_${CURRENT_TARGET}}" ${CUSTOM_TOOLCHAIN_ARG} -DBIN_OUTPUT_DIR=${CURRENT_BIN_DIR} ${_SOURCE_DIR}
         WORKING_DIRECTORY ${CURRENT_BUILD_DIR}
         OUTPUT_FILE ${CURRENT_BUILD_DIR}/config_log.stdout.txt
         ERROR_FILE ${CURRENT_BUILD_DIR}/config_log.stderr.txt

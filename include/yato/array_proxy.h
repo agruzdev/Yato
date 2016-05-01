@@ -40,7 +40,8 @@ namespace yato
             using data_iterator = _DataIterator;
             using const_data_iterator = const data_iterator;
             using data_type = typename std::remove_reference< decltype(*std::declval<data_iterator>()) >::type;
-            using data_reference = data_type&;
+            using data_reference = data_type &;
+            using const_data_reference = const data_type &;
 
             static YATO_CONSTEXPR_VAR size_t dimensions_num = _DimsNum;
 
@@ -174,7 +175,7 @@ namespace yato
 
             template<size_t _MyDimsNum = _DimsNum, typename... _IdxTail>
             auto at(size_t idx, _IdxTail... tail) const
-                -> typename std::enable_if < (_MyDimsNum > 1), const data_reference>::type
+                -> typename std::enable_if < (_MyDimsNum > 1), const_data_reference>::type
             {
                 if (idx >= *m_sizes_iter) {
                     YATO_THROW_ASSERT_EXCEPT("yato::array_sub_view_nd: out of range!");
@@ -194,7 +195,7 @@ namespace yato
 
             template<size_t _MyDimsNum = _DimsNum>
             auto at(size_t idx) const
-                -> typename std::enable_if < _MyDimsNum == 1, const data_reference>::type
+                -> typename std::enable_if < _MyDimsNum == 1, const_data_reference>::type
             {
                 if (idx >= *m_sizes_iter) {
                     YATO_THROW_ASSERT_EXCEPT("yato::array_sub_view_nd: out of range!");

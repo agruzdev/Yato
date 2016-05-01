@@ -22,6 +22,7 @@ namespace yato
         {
             using arg_type = typename yato::callable_trait<typename std::decay<typename std::tuple_element<_CaseIdx - 1, _CasesTuple>::type>::type>::template arg<0>::type;
             using match_dispatcher<_CasesTuple, _CaseIdx - 1>::_case;
+            //-------------------------------------------------------
 
             YATO_CONSTEXPR_FUNC
             auto _case(const _CasesTuple & functions, arg_type arg) const
@@ -42,19 +43,23 @@ namespace yato
         };
     }
 
-#pragma warning(push)
-#pragma warning(disable: 4814) // in C++14 'constexpr' will not imply 'const'; consider explicitly specifying 'const'
+#ifdef YATO_MSVC_2015
+# pragma warning(push)
+# pragma warning(disable: 4814) // in C++14 'constexpr' will not imply 'const'; consider explicitly specifying 'const'
+#endif
     template <typename _ValueRef>
     struct matcher
     {
         _ValueRef m_value;
-
+        //-------------------------------------------------------
+        matcher& operator = (const matcher&) = delete;
+        //-------------------------------------------------------
     public:
         YATO_CONSTEXPR_FUNC
         matcher(_ValueRef v) 
             : m_value(v)
         { }
-        
+        //-------------------------------------------------------
         template <typename... _Cases>
         YATO_CONSTEXPR_FUNC
         auto operator()(const _Cases & ...cases)
@@ -66,8 +71,11 @@ namespace yato
         {
             return details::match_dispatcher< std::tuple<const _Cases & ...> >()._case(std::make_tuple(cases...), m_value);
         }
+        //-------------------------------------------------------
     };
-#pragma warning(pop)
+#ifdef YATO_MSVC_2015
+# pragma warning(pop)
+#endif
 
     template <typename _T>
     YATO_CONSTEXPR_FUNC
