@@ -142,7 +142,7 @@ macro(CHECK_RETURN_CODE _ret_code)
     if(${_ret_code} EQUAL 0)
         LOGGED_MESSAGE(STATUS OK)
     else()
-        LOGGED_MESSAGE(STATUS "ERROR! Return code ${${ret}}")
+        LOGGED_MESSAGE(STATUS "ERROR! Return code ${${_ret_code}}")
     endif()
 endmacro()
 
@@ -159,7 +159,7 @@ foreach(CURRENT_TARGET ${all_build_targers})
     # Configure
     #
     LOGGED_MESSAGE(STATUS "Configuring for: ${CURRENT_TARGET}") 
-
+    
     if(DEFINED TOOLCHAIN_${CURRENT_TARGET})
         set(CUSTOM_TOOLCHAIN_ARG "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/${TOOLCHAIN_${CURRENT_TARGET}}")
         LOGGED_MESSAGE(STATUS "Using toolchain ${TOOLCHAIN_${CURRENT_TARGET}}")
@@ -201,8 +201,15 @@ foreach(CURRENT_TARGET ${all_build_targers})
     if(ret EQUAL 0)
         LOGGED_MESSAGE(STATUS "Run tests for: ${CURRENT_TARGET}") 
         
-        file(GLOB test_executables RELATIVE ${CURRENT_BIN_DIR} ${CURRENT_BIN_DIR}/*Test* ${CURRENT_BIN_DIR}/*test* ${CURRENT_BIN_DIR}/*/*Test* ${CURRENT_BIN_DIR}/*/*test*)
+        file(GLOB test_executables RELATIVE ${CURRENT_BIN_DIR} ${CURRENT_BIN_DIR}/*[Tt]est* ${CURRENT_BIN_DIR}/*/*[Tt]est*)
         list(REMOVE_DUPLICATES test_executables)
+        # remove libs
+        foreach(f ${test_executables})
+            if(${f} MATCHES ".*\.(a|lib|so|dll)$")
+                list(REMOVE_ITEM test_executables ${f})
+            endif()            
+        endforeach()
+        
         LOGGED_MESSAGE(STATUS "Found tests: ${test_executables}")
         foreach(test_executable ${test_executables})
             
