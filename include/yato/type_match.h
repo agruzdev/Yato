@@ -21,11 +21,11 @@ namespace yato
             : public match_dispatcher<_CasesTuple, _CaseIdx - 1>
         {
             using arg_type = typename yato::callable_trait<typename std::decay<typename std::tuple_element<_CaseIdx - 1, _CasesTuple>::type>::type>::template arg<0>::type;
-            using match_dispatcher<_CasesTuple, _CaseIdx - 1>::_case;
+            using match_dispatcher<_CasesTuple, _CaseIdx - 1>::_invoke_case;
             //-------------------------------------------------------
 
             YATO_CONSTEXPR_FUNC
-            auto _case(const _CasesTuple & functions, arg_type arg) const
+            auto _invoke_case(const _CasesTuple & functions, arg_type arg) const
 #ifdef YATO_MSVC_2013
                 -> typename yato::callable_trait<typename std::decay<typename std::tuple_element<_CaseIdx - 1, _CasesTuple>::type>::type>::result_type
 #else 
@@ -39,49 +39,49 @@ namespace yato
         template <typename _CasesTuple> 
         struct match_dispatcher<_CasesTuple, 0>
         {
-            void _case(); // dummy for 'using'
+            void _invoke_case(); // dummy for 'using'
         };
     }
 
-#ifdef YATO_MSVC_2015
-# pragma warning(push)
-# pragma warning(disable: 4814) // in C++14 'constexpr' will not imply 'const'; consider explicitly specifying 'const'
-#endif
-    template <typename _ValueRef>
-    struct matcher
+    template <typename... _Cases>
+    struct type_matcher
+        : details::match_dispatcher< std::tuple<const _Cases &...> >
     {
-        _ValueRef m_value;
-        //-------------------------------------------------------
-        matcher& operator = (const matcher&) = delete;
-        //-------------------------------------------------------
+        using cases_tuple = std::tuple<const _Cases &...>;
+        using dispatcher  = details::match_dispatcher<cases_tuple>;
+        cases_tuple m_cases;
+
     public:
         YATO_CONSTEXPR_FUNC
-        matcher(_ValueRef v) 
-            : m_value(v)
+        type_matcher(const cases_tuple & cases)
+            : m_cases(cases)
         { }
-        //-------------------------------------------------------
-        template <typename... _Cases>
+
+        template <typename _MatchedType>
         YATO_CONSTEXPR_FUNC
-        auto operator()(const _Cases & ...cases)
+        auto operator()(_MatchedType && val) const
 #ifdef YATO_MSVC_2013
-            -> decltype(details::match_dispatcher< std::tuple<const _Cases & ...> >()._case(std::make_tuple(cases...), m_value))
+            -> decltype(std::declval<dispatcher>()._invoke_case(m_cases, std::forward<_MatchedType>(val)))
 #else
             -> decltype(auto)
 #endif
         {
-            return details::match_dispatcher< std::tuple<const _Cases & ...> >()._case(std::make_tuple(cases...), m_value);
+            return dispatcher::_invoke_case(m_cases, std::forward<_MatchedType>(val));
         }
-        //-------------------------------------------------------
     };
-#ifdef YATO_MSVC_2015
-# pragma warning(pop)
-#endif
 
-    template <typename _T>
+    template <typename... _Cases>
     YATO_CONSTEXPR_FUNC
-    matcher<_T> match(_T && value)
+    type_matcher<_Cases...> match(const _Cases &... cases)
     {
-        return matcher<_T>{std::forward<_T>(value)};
+        return type_matcher<_Cases...>(std::tuple<const _Cases &...>(cases...));
+    }
+
+    template <typename... _Cases>
+    YATO_CONSTEXPR_FUNC
+    type_matcher<_Cases...> match(std::tuple<const _Cases &...> cases)
+    {
+        return type_matcher<_Cases...>(cases);
     }
 
 }
