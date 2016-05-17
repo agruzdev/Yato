@@ -44,9 +44,10 @@ namespace yato
     }
 
     template <typename... _Cases>
-    struct type_matcher
-        : details::match_dispatcher< std::tuple<const _Cases &...> >
+    class type_matcher
+        : public details::match_dispatcher< std::tuple<const _Cases &...> >
     {
+    private:
         using cases_tuple = std::tuple<const _Cases &...>;
         using dispatcher  = details::match_dispatcher<cases_tuple>;
         cases_tuple m_cases;
