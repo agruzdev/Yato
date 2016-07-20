@@ -40,7 +40,6 @@ namespace yato
     public:
         /**
          * Constructor associates whole range of _Key with val
-         * into the map
          */
         explicit
         interval_map(const mapped_type & val)
@@ -50,7 +49,6 @@ namespace yato
 
         /**
          * Constructor associates whole range of _Key with val
-         * into the map
          */
         explicit
         interval_map(mapped_type && val)
@@ -60,7 +58,15 @@ namespace yato
 
         /**
          * Constructor associates whole range of _Key with val
-         * into the map
+         */
+        interval_map(const mapped_type & val, const key_compare & comparator, const allocator_type & allocator = allocator_type())
+            : m_map(comparator, allocator)
+        {
+            _init_whole_range(val);
+        };
+
+        /**
+         * Constructor associates whole range of _Key with val
          */
         interval_map(mapped_type && val, const key_compare & comparator, const allocator_type & allocator = allocator_type())
             : m_map(comparator, allocator)
