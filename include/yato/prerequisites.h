@@ -53,6 +53,8 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 # define YATO_ANDROID
 #endif
 
+
+
 #if defined(YATO_MSVC_2015) || (__cplusplus > 201100L) || (defined(YATO_ANDROID) && __cplusplus > 201300L)
 #define YATO_CONSTEXPR_VAR constexpr
 #define YATO_CONSTEXPR_FUNC constexpr
@@ -67,10 +69,15 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 #define YATO_NOEXCEPT_OPERATOR(Condition) 
 #endif
 
+#ifndef YATO_MSVC_2013
+# define YATO_ALIGN(Alignment)  alignas(Alignment)
+# define YATO_ALIGN_OF(Type)    alignof(Type)
+#else
+# define YATO_ALIGN(Alignment)  __declspec(align(Alignment))
+# define YATO_ALIGN_OF(Type)    __alignof(Type)
+#endif
+
 #define YATO_NOEXCEPT_IN_RELEASE YATO_NOEXCEPT_KEYWORD_EXP(YATO_RELEASE_BOOL)
-
-
-
 
 #define _YATO_QUOTE_IMPL(X) #X
 #define YATO_QUOTE(X) _YATO_QUOTE_IMPL(X)

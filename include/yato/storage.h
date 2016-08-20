@@ -113,8 +113,15 @@ namespace yato
             }
         };
 
+        /*
+         *  May be wrong alignment for MSVC 2013
+         */
         template <typename _T, size_t _SizeLimit>
-        class storage_impl <_T, _SizeLimit, false> final
+        class 
+#ifndef YATO_MSVC_2013
+            alignas(_T)
+#endif
+            storage_impl <_T, _SizeLimit, false> final
         {
             static_assert(sizeof(_T) <= _SizeLimit, "yato::storage: Data type size should be less than the size limit");
         public:
@@ -124,28 +131,28 @@ namespace yato
             using pointer_to_const_type = const stored_type*;
             using reference_type = stored_type&;
             using reference_to_const_type = const stored_type&;
-            static YATO_CONSTEXPR_VAR size_t size = sizeof(stored_type);
+            static YATO_CONSTEXPR_VAR size_t size = sizeof(_T);
             static YATO_CONSTEXPR_VAR size_t max_size = _SizeLimit;
             static YATO_CONSTEXPR_VAR bool   allocates_memory = false;
 
         private:
-            std::array<uint8_t, size> m_buffer;
+            uint8_t m_buffer[size];
             //-------------------------------------------------------
-
-            void _create(const stored_type & obj)
-            {
-                new(m_buffer.data())stored_type(obj);
-            }
 
             pointer_type _get_pointer() YATO_NOEXCEPT_KEYWORD
             {
-                return pointer_cast<pointer_type>(m_buffer.data());
+                return pointer_cast<pointer_type>(m_buffer);
             }
 
             YATO_CONSTEXPR_FUNC
             pointer_to_const_type _get_pointer() const YATO_NOEXCEPT_KEYWORD
             {
-                return pointer_cast<pointer_to_const_type>(m_buffer.data());
+                return pointer_cast<pointer_to_const_type>(m_buffer);
+            }
+
+            void _create(const stored_type & obj)
+            {
+                new(pointer_cast<uint8_t*>(m_buffer))stored_type(obj);
             }
 
             void _destroy()
@@ -160,19 +167,16 @@ namespace yato
             { }
 
             storage_impl(const _T & obj)
-                : m_buffer{}
             {
                 _create(obj);
             }
 
             storage_impl(const my_type & other)
-                : m_buffer{}
             {
                 _create(*other.get());
             }
 
             storage_impl(my_type && other)
-                : m_buffer{}
             {
                 _create(*other.get());
             }

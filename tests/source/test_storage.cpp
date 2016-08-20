@@ -40,9 +40,13 @@ TEST(Yato_Storage, base)
     static_assert(sizeof(yato::storage<A>) == sizeof(A), "yato::storage fail");
     static_assert(!yato::storage<A>::allocates_memory, "yato::storage fail");
 
-    using B = Foo<1024>;
-    static_assert(sizeof(yato::storage<B>) == sizeof(void*), "yato::storage fail");
-    static_assert(yato::storage<B>::allocates_memory, "yato::storage fail");
+    using B = Foo<8>;
+    static_assert(sizeof(yato::storage<B>) == sizeof(B), "yato::storage fail");
+    static_assert(!yato::storage<B>::allocates_memory, "yato::storage fail");
+
+    using C = Foo<1024>;
+    static_assert(sizeof(yato::storage<C>) == sizeof(void*), "yato::storage fail");
+    static_assert(yato::storage<C>::allocates_memory, "yato::storage fail");
 }
 
 namespace
