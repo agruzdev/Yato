@@ -117,11 +117,7 @@ namespace yato
          *  May be wrong alignment for MSVC 2013
          */
         template <typename _T, size_t _SizeLimit>
-        class 
-#ifndef YATO_MSVC_2013
-            alignas(_T)
-#endif
-            storage_impl <_T, _SizeLimit, false> final
+        class storage_impl <_T, _SizeLimit, false> final
         {
             static_assert(sizeof(_T) <= _SizeLimit, "yato::storage: Data type size should be less than the size limit");
         public:
@@ -136,7 +132,7 @@ namespace yato
             static YATO_CONSTEXPR_VAR bool   allocates_memory = false;
 
         private:
-            uint8_t m_buffer[size];
+            typename std::aligned_storage<size, std::alignment_of<stored_type>::value>::type m_buffer[1];
             //-------------------------------------------------------
 
             pointer_type _get_pointer() YATO_NOEXCEPT_KEYWORD

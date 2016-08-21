@@ -38,15 +38,28 @@ TEST(Yato_Storage, base)
 {
     using A = Foo<1>;
     static_assert(sizeof(yato::storage<A>) == sizeof(A), "yato::storage fail");
+    static_assert(std::alignment_of<yato::storage<A>>::value == std::alignment_of<A>::value, "yato::storage fail");
     static_assert(!yato::storage<A>::allocates_memory, "yato::storage fail");
 
     using B = Foo<8>;
     static_assert(sizeof(yato::storage<B>) == sizeof(B), "yato::storage fail");
+    static_assert(std::alignment_of<yato::storage<B>>::value == std::alignment_of<B>::value, "yato::storage fail");
+    static_assert(std::alignment_of<yato::storage<B>>::value == std::alignment_of<B>::value, "yato::storage fail");
     static_assert(!yato::storage<B>::allocates_memory, "yato::storage fail");
 
     using C = Foo<1024>;
     static_assert(sizeof(yato::storage<C>) == sizeof(void*), "yato::storage fail");
     static_assert(yato::storage<C>::allocates_memory, "yato::storage fail");
+}
+
+TEST(Yato_Storage, alignment)
+{
+    static_assert(std::alignment_of< yato::storage<char> >::value == std::alignment_of<char>::value, "yato::storage fail");
+    static_assert(std::alignment_of< yato::storage<short> >::value == std::alignment_of<short>::value, "yato::storage fail");
+    static_assert(std::alignment_of< yato::storage<int> >::value == std::alignment_of<int>::value, "yato::storage fail");
+    static_assert(std::alignment_of< yato::storage<long long> >::value == std::alignment_of<long long>::value, "yato::storage fail");
+    static_assert(std::alignment_of< yato::storage<float> >::value == std::alignment_of<float>::value, "yato::storage fail");
+    static_assert(std::alignment_of< yato::storage<double> >::value == std::alignment_of<double>::value, "yato::storage fail");
 }
 
 namespace
