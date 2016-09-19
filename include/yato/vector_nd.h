@@ -575,6 +575,22 @@ namespace yato
             }
 
             /**
+             * Get a raw pointer to stored data beginning
+             */
+            data_type* data() YATO_NOEXCEPT_KEYWORD
+            {
+                return m_plain_vector.data();
+            }
+
+            /**
+             * Get a raw pointer to stored data beginning
+             */
+            const data_type* data() const YATO_NOEXCEPT_KEYWORD
+            {
+                return const_cast<my_type*>(this)->data();
+            }
+
+            /**
              *  Checks whether the vector is empty
              */
             YATO_CONSTEXPR_FUNC
@@ -587,7 +603,7 @@ namespace yato
              *  Get number of dimensions
              */
             YATO_CONSTEXPR_FUNC
-                size_t dimensions() const YATO_NOEXCEPT_KEYWORD
+            size_t dimensions() const YATO_NOEXCEPT_KEYWORD
             {
                 return dimensions_num;
             }
@@ -1242,6 +1258,22 @@ namespace yato
             yato::range<data_iterator> plain_range() YATO_NOEXCEPT_KEYWORD
             {
                 return yato::make_range(plain_begin(), plain_end());
+            }
+
+            /**
+             * Get a raw pointer to stored data beginning
+             */
+            data_type* data() YATO_NOEXCEPT_KEYWORD
+            {
+                return m_plain_vector.data();
+            }
+
+            /**
+             * Get a raw pointer to stored data beginning
+             */
+            const data_type* data() const YATO_NOEXCEPT_KEYWORD
+            {
+                return const_cast<my_type*>(this)->data();
             }
 
             /**
