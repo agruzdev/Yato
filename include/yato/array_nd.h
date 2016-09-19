@@ -17,7 +17,7 @@ namespace yato
 {
 #ifdef YATO_MSVC
 /*  Disable unreachable code warning appearing due to additional code in ternary operator with throw
- *	MSVC complains about type cast otherwise
+ *  MSVC complains about type cast otherwise
  */
 #pragma warning(push)
 #pragma warning(disable:4702) 
@@ -442,11 +442,59 @@ namespace yato
     using details::swap;
 
     /**
-     *	Create multidimensional array on stack
+     *  Create multidimensional array on stack
      */
     template<typename _DataType, size_t _First_Dimension, size_t... _More_Dimensions> 
     using array_nd = details::array_nd_impl < _DataType, details::plain_array_shape<_First_Dimension, _More_Dimensions...> >;
 
+    // Overload size accessors
+    template <typename _DataType, typename _Shape>
+    YATO_CONSTEXPR_FUNC
+    size_t length(const details::array_nd_impl<_DataType, _Shape> & /*array*/)
+    {
+        static_assert(_Shape::dimensions_number == 1, "Invalid shape");
+        return details::get_dimension<_Shape, 0>::value;
+    }
+
+    template <typename _DataType, typename _Shape>
+    YATO_CONSTEXPR_FUNC
+    size_t height_2d(const details::array_nd_impl<_DataType, _Shape> & /*array*/)
+    {
+        static_assert(_Shape::dimensions_number == 2, "Invalid shape");
+        return details::get_dimension<_Shape, 0>::value;
+    }
+
+    template <typename _DataType, typename _Shape>
+    YATO_CONSTEXPR_FUNC
+    size_t width_2d(const details::array_nd_impl<_DataType, _Shape> & /*array*/)
+    {
+        static_assert(_Shape::dimensions_number == 2, "Invalid shape");
+        return details::get_dimension<_Shape, 1>::value;
+    }
+
+    template <typename _DataType, typename _Shape>
+    YATO_CONSTEXPR_FUNC
+    size_t depth_3d(const details::array_nd_impl<_DataType, _Shape> & /*array*/)
+    {
+        static_assert(_Shape::dimensions_number == 3, "Invalid shape");
+        return details::get_dimension<_Shape, 0>::value;
+    }
+
+    template <typename _DataType, typename _Shape>
+    YATO_CONSTEXPR_FUNC
+    size_t height_3d(const details::array_nd_impl<_DataType, _Shape> & /*array*/)
+    {
+        static_assert(_Shape::dimensions_number == 3, "Invalid shape");
+        return details::get_dimension<_Shape, 1>::value;
+    }
+
+    template <typename _DataType, typename _Shape>
+    YATO_CONSTEXPR_FUNC
+    size_t width_3d(const details::array_nd_impl<_DataType, _Shape> & /*array*/)
+    {
+        static_assert(_Shape::dimensions_number == 3, "Invalid shape");
+        return details::get_dimension<_Shape, 2>::value;
+    }
 }
 
 #endif

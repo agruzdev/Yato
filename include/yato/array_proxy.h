@@ -12,6 +12,7 @@
 #include "not_null.h"
 #include "types.h"
 #include "range.h"
+#include "container_base.h"
 
 namespace yato
 {

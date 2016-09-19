@@ -11,7 +11,6 @@
 #include <array>
 #include <vector>
 #include "assert.h"
-#include "type_traits.h"
 #include "array_view.h"
 #include "range.h"
 
@@ -419,7 +418,7 @@ namespace yato
              *  Element access without bounds check in release
              */
             YATO_CONSTEXPR_FUNC
-                const_proxy operator[](size_t idx) const YATO_NOEXCEPT_IN_RELEASE
+            const_proxy operator[](size_t idx) const YATO_NOEXCEPT_IN_RELEASE
             {
 #if YATO_DEBUG
                 return (idx < m_dimensions[0])
@@ -451,7 +450,7 @@ namespace yato
             template<typename... _Tail>
             YATO_CONSTEXPR_FUNC
                 auto at(size_t idx, _Tail &&... tail) const
-                -> typename std::enable_if<(yato::length<_Tail...>::value == dimensions_num - 1), const_reference>::type
+                -> typename std::enable_if<(yato::args_length<_Tail...>::value == dimensions_num - 1), const_reference>::type
             {
                 if (idx >= m_dimensions[0]) {
                     throw yato::assertion_error("yato::array_nd: out of range!");
@@ -464,7 +463,7 @@ namespace yato
              */
             template<typename... _Tail>
             auto at(size_t idx, _Tail &&... tail)
-                -> typename std::enable_if<(yato::length<_Tail...>::value == dimensions_num - 1), reference>::type
+                -> typename std::enable_if<(yato::args_length<_Tail...>::value == dimensions_num - 1), reference>::type
             {
                 if (idx >= m_dimensions[0]) {
                     throw yato::assertion_error("yato::array_nd: out of range!");
@@ -476,7 +475,7 @@ namespace yato
              *  Iterator for accessing sub-array elements along the top dimension
              */
             YATO_CONSTEXPR_FUNC
-                const_iterator cbegin() const YATO_NOEXCEPT_KEYWORD
+            const_iterator cbegin() const YATO_NOEXCEPT_KEYWORD
             {
                 return _create_const_proxy(0);
             }
@@ -493,7 +492,7 @@ namespace yato
              *  Iterator for accessing sub-array elements along the top dimension
              */
             YATO_CONSTEXPR_FUNC
-                const_iterator cend() const YATO_NOEXCEPT_KEYWORD
+            const_iterator cend() const YATO_NOEXCEPT_KEYWORD
             {
                 return _create_const_proxy(size(0));
             }
@@ -527,7 +526,7 @@ namespace yato
              *  Iterator for accessing elements trough all dimensions
              */
             YATO_CONSTEXPR_FUNC
-                const_data_iterator plain_cend() const YATO_NOEXCEPT_KEYWORD
+            const_data_iterator plain_cend() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.cend();
             }
@@ -1321,7 +1320,7 @@ namespace yato
                     ? m_plain_vector.size()
                     : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[size]: dimension index is out of range"), 0);
 #else
-                (void)idx;
+                YATO_MAYBE_UNUSED(idx);
                 return m_plain_vector.size();
 #endif
             }

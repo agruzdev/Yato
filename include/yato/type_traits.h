@@ -163,17 +163,17 @@ namespace yato
      */
 #ifdef YATO_MSVC_2013
     template<typename _T, typename... _Tail>
-    struct length
-        : std::integral_constant<size_t, length<_Tail...>::value + 1>
+    struct args_length
+        : std::integral_constant<size_t, args_length<_Tail...>::value + 1>
     { };
 
     template<typename _T>
-    struct length<_T>
+    struct args_length<_T>
         : std::integral_constant<size_t, 1>
     { };
 #else
     template<typename ..._T>
-    struct length
+    struct args_length
         : std::integral_constant<size_t, sizeof...(_T)>
     { };
 #endif

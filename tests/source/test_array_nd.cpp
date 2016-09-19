@@ -15,6 +15,7 @@ TEST(Yato_Array_Nd, array_nd)
     EXPECT_THROW(array_1d[2] = 0, yato::assertion_error);
 #endif
 
+    EXPECT_EQ(2, yato::length(array_1d));
 
     yato::array_nd<int, 2, 3> array_2d;
     EXPECT_NO_THROW(array_2d[1]);
@@ -27,6 +28,9 @@ TEST(Yato_Array_Nd, array_nd)
     EXPECT_THROW(p[4] = 0, yato::assertion_error);
 #endif
 
+    EXPECT_EQ(2, yato::height_2d(array_2d));
+    EXPECT_EQ(3, yato::width_2d(array_2d));
+
     yato::array_nd<int, 2, 3, 4> array_3d;
     EXPECT_NO_THROW(array_3d[1][1][1] = 2);
     EXPECT_NO_THROW(array_3d[1][2][3] = 2);
@@ -35,6 +39,10 @@ TEST(Yato_Array_Nd, array_nd)
     EXPECT_THROW(array_3d[1][3][1] = 0, yato::assertion_error);
     EXPECT_THROW(array_3d[1][1][4] = 0, yato::assertion_error);
 #endif
+
+    EXPECT_EQ(2, yato::depth_3d(array_3d));
+    EXPECT_EQ(3, yato::height_3d(array_3d));
+    EXPECT_EQ(4, yato::width_3d(array_3d));
 };
 
 TEST(Yato_Array_Nd, array_nd_2)

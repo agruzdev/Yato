@@ -11,6 +11,7 @@
 #include <utility>
 #include <iterator>
 #include <algorithm>
+#include "container_base.h"
 #include "types.h"
 
 namespace yato
