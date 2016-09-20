@@ -72,7 +72,7 @@ namespace yato
             : m_sizes({ yato::narrow_cast<size_t>(std::forward<_Sizes>(sizes))... }),
               m_base_ptr(ptr)
         { 
-            static_assert(sizeof...(_Sizes) > 1, "Should have at least 2 dimensions");
+            static_assert(sizeof...(_Sizes) == dimensions_num, "Wrong arguments number");
             YATO_REQUIRES(ptr != nullptr);
             m_sub_array_sizes[dimensions_num - 1] = m_sizes[dimensions_num - 1];
             for (size_t i = dimensions_num - 1; i > 0; --i) {
