@@ -68,11 +68,12 @@ namespace yato
 
     public:
         template<typename... _Sizes>
-        array_view_nd(not_null<data_type*> ptr, _Sizes && ...sizes) YATO_NOEXCEPT_IN_RELEASE
+        array_view_nd(data_type* ptr, _Sizes && ...sizes) YATO_NOEXCEPT_IN_RELEASE
             : m_sizes({ yato::narrow_cast<size_t>(std::forward<_Sizes>(sizes))... }),
-              m_base_ptr(ptr.get())
+              m_base_ptr(ptr)
         { 
             static_assert(sizeof...(_Sizes) > 1, "Should have at least 2 dimensions");
+            YATO_REQUIRES(ptr != nullptr);
             m_sub_array_sizes[dimensions_num - 1] = m_sizes[dimensions_num - 1];
             for (size_t i = dimensions_num - 1; i > 0; --i) {
                 m_sub_array_sizes[i - 1] = m_sizes[i - 1] * m_sub_array_sizes[i];
@@ -238,6 +239,22 @@ namespace yato
         yato::range<data_iterator> plain_range() YATO_NOEXCEPT_KEYWORD
         {
             return make_range(plain_begin(), plain_end());
+        }
+
+        /**
+         * Get raw pointer to underlying data
+         */
+        data_type* data()
+        {
+            return m_base_ptr;
+        }
+
+        /**
+         * Get raw pointer to underlying data
+         */
+        const data_type* data() const
+        {
+            return const_cast<this_type*>(this)->data();
         }
     };
 
@@ -425,12 +442,23 @@ namespace yato
         {
             return make_range(plain_begin(), plain_end());
         }
+
     };
 #ifdef YATO_MSVC
 #pragma warning(pop)
 #endif
     template<typename _DataType>
     using array_view = array_view_nd<_DataType, 1>;
+
+    template<typename _DataType>
+    using array_view_1d = array_view_nd<_DataType, 1>;
+
+    template<typename _DataType>
+    using array_view_2d = array_view_nd<_DataType, 2>;
+
+    template<typename _DataType>
+    using array_view_3d = array_view_nd<_DataType, 3>;
+
 
     template<typename _T, size_t _Size>
     YATO_CONSTEXPR_FUNC
