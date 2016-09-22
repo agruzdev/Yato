@@ -92,6 +92,85 @@ namespace yato
     static_assert(sizeof(float80_t) >= 8, "Wrong float80_t type!");
 
 
+    //-------------------------------------------------------
+    // Helper for fixed size types
+
+    struct signed_type_tag {};
+    struct unsigned_type_tag {}; 
+    struct floating_type_tag {};
+
+    template <typename _Tag, size_t _Size>
+    struct make_type
+    { };
+
+    template <>
+    struct make_type<signed_type_tag, 8>
+    {
+        using type = int8_t;
+    };
+
+    template <>
+    struct make_type<signed_type_tag, 16>
+    {
+        using type = int16_t;
+    };
+
+    template <>
+    struct make_type<signed_type_tag, 32>
+    {
+        using type = int32_t;
+    };
+
+    template <>
+    struct make_type<signed_type_tag, 64>
+    {
+        using type = int64_t;
+    };
+
+    template <>
+    struct make_type<unsigned_type_tag, 8>
+    {
+        using type = uint8_t;
+    };
+
+    template <>
+    struct make_type<unsigned_type_tag, 16>
+    {
+        using type = uint16_t;
+    };
+
+    template <>
+    struct make_type<unsigned_type_tag, 32>
+    {
+        using type = uint32_t;
+    };
+
+    template <>
+    struct make_type<unsigned_type_tag, 64>
+    {
+        using type = uint64_t;
+    };
+
+    template <>
+    struct make_type<floating_type_tag, 32>
+    {
+        using type = float32_t;
+    };
+
+    template <>
+    struct make_type<floating_type_tag, 64>
+    {
+        using type = float64_t;
+    };
+
+    template <>
+    struct make_type<floating_type_tag, 80>
+    {
+        using type = float80_t;
+    };
+
+    template <typename _Tag, size_t _Size>
+    using make_type_t = typename make_type<_Tag, _Size>::type;
 
     //-------------------------------------------------------
     // Cast functions
