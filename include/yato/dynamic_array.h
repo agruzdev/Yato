@@ -79,6 +79,8 @@ namespace yato
             }
         }
 
+#pragma warning(push)
+#pragma warning(disable: 4127) // Condition expression is constant
         void _move_assign(my_type && other)
         {
             if (allocator_type::propagate_on_container_move_assignment::value || (m_allocator == other.m_allocator)) {
@@ -92,6 +94,7 @@ namespace yato
                 throw yato::runtime_error("dynamic_array[move]: Allocator can't be propagated");
             }
         }
+#pragma warning(pop)
 
     public:
         explicit dynamic_array(const allocator_type & allocator)
