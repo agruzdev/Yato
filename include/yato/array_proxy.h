@@ -37,6 +37,7 @@ namespace yato
         template<typename _DataIterator, typename _SizeIterator, size_t _DimsNum>
         class sub_array_proxy
         {
+            using my_type = sub_array_proxy < _DataIterator, _SizeIterator, _DimsNum>;
             using size_iterator = _SizeIterator;
             using data_iterator = _DataIterator;
             using const_data_iterator = const data_iterator;
@@ -97,7 +98,7 @@ namespace yato
                 : m_data_iter(std::move(other.m_data_iter)), m_sizes_iter(std::move(other.m_sizes_iter)), m_offsets_iter(std::move(other.m_offsets_iter))
             {}
 
-            sub_array_proxy & operator= (const sub_array_proxy & other)
+            my_type & operator= (const my_type & other)
             {
                 if (this != &other){
                     m_data_iter = other.m_data_iter;
@@ -107,7 +108,7 @@ namespace yato
                 return *this;
             }
 
-            sub_array_proxy & operator= (sub_array_proxy && other) YATO_NOEXCEPT_KEYWORD
+            my_type & operator= (my_type && other) YATO_NOEXCEPT_KEYWORD
             {
                 if (this != &other) {
                     m_data_iter = std::move(other.m_data_iter);
@@ -409,17 +410,19 @@ namespace yato
 
             /**
              *  Return the current proxy
+             *  Is necessary for supporting ranged 'for' 
              */
             YATO_CONSTEXPR_FUNC
-            const sub_array_proxy& operator* () const
+            const my_type & operator* () const
             {
                 return *this;
             }
 
             /**
              *  Return the current proxy
+             *  Is necessary for supporting ranged 'for'
              */
-            sub_array_proxy& operator* ()
+            my_type & operator* ()
             {
                 return *this;
             }
@@ -427,7 +430,7 @@ namespace yato
             /**
              *  Increment iterator
              */
-            sub_array_proxy& operator++() YATO_NOEXCEPT_KEYWORD
+            my_type & operator++() YATO_NOEXCEPT_KEYWORD
             {
                 m_data_iter += m_offsets_iter[0];
                 return *this;
@@ -436,9 +439,9 @@ namespace yato
             /**
              *  Increment iterator
              */
-            sub_array_proxy& operator++(int)
+            my_type & operator++(int)
             {
-                auto temp = *this;
+                my_type temp(*this);
                 ++(*this);
                 return temp;
             }
@@ -446,7 +449,7 @@ namespace yato
             /**
              *  Decrement iterator
              */
-            sub_array_proxy& operator--() YATO_NOEXCEPT_KEYWORD
+            my_type & operator--() YATO_NOEXCEPT_KEYWORD
             {
                 m_data_iter -= m_offsets_iter[0];
                 return *this;
@@ -455,7 +458,7 @@ namespace yato
             /**
              *  Decrement iterator
              */
-            sub_array_proxy& operator--(int)
+            my_type & operator--(int)
             {
                 auto temp = *this;
                 --(*this);
@@ -465,7 +468,7 @@ namespace yato
             /**
              *  Add offset
              */
-            sub_array_proxy& operator+= (size_t offset) YATO_NOEXCEPT_KEYWORD
+            my_type & operator+= (difference_type offset) YATO_NOEXCEPT_KEYWORD
             {
                 m_data_iter += offset * m_offsets_iter[0];
                 return *this;
@@ -474,17 +477,18 @@ namespace yato
             /**
              *  Add offset
              */
-            sub_array_proxy operator+ (size_t offset) const
+            friend 
+            my_type operator+ (const my_type & iter, difference_type offset)
             {
-                auto temp = *this;
+                my_type temp(iter);
                 return (temp += offset);
             }
 
             /**
              *  Add offset
              */
-            friend
-            sub_array_proxy operator+ (size_t offset, const sub_array_proxy& iter)
+            friend 
+            my_type operator+ (difference_type offset, const my_type & iter)
             {
                 return iter + offset;
             }
@@ -492,7 +496,7 @@ namespace yato
             /**
              *  Subtract offset
              */
-            sub_array_proxy& operator-= (size_t offset) YATO_NOEXCEPT_KEYWORD
+            my_type & operator-= (difference_type offset) YATO_NOEXCEPT_KEYWORD
             {
                 m_data_iter -= offset * m_offsets_iter[0];
                 return *this;
@@ -501,72 +505,76 @@ namespace yato
             /**
              *  Subtract offset
              */
-            sub_array_proxy operator- (size_t offset) const
+            friend 
+            my_type operator- (const my_type & iter, difference_type offset)
             {
-                auto temp = *this;
+                my_type temp(iter);
                 return (temp -= offset);
             }
 
             /**
              *  Distance between iterators
+             *  Can be computed only between iterators of the same container. Otherwise result is undefined
              */
-            difference_type operator- (const sub_array_proxy& other)
+            friend 
+            difference_type operator- (const my_type & one, const my_type & another)
             {
-                return (m_data_iter - other.m_data_iter) / m_offsets_iter[0];
+                YATO_REQUIRES(one.m_offsets_iter[0] == another.m_offsets_iter[0]);
+                return (one.m_data_iter - another.m_data_iter) / one.m_offsets_iter[0];
             }
 
             /**
              *  Equal
              */
-            YATO_CONSTEXPR_FUNC
-            bool operator== (const sub_array_proxy& other) const YATO_NOEXCEPT_KEYWORD
+            friend
+            bool operator== (const my_type & one, const my_type & another) YATO_NOEXCEPT_KEYWORD
             {
-                return m_data_iter == other.m_data_iter;
+                return one.m_data_iter == another.m_data_iter;
             }
 
             /**
              *  Not equal
              */
-            YATO_CONSTEXPR_FUNC
-            bool operator!= (const sub_array_proxy& other) const YATO_NOEXCEPT_KEYWORD
+            friend
+            bool operator!= (const my_type & one, const my_type & another) YATO_NOEXCEPT_KEYWORD
             {
-                return m_data_iter != other.m_data_iter;
+                return one.m_data_iter != another.m_data_iter;
             }
 
             /**
              *  Less
              */
-            YATO_CONSTEXPR_FUNC
-            bool operator< (const sub_array_proxy& other) const YATO_NOEXCEPT_KEYWORD
+            friend
+            bool operator< (const my_type & one, const my_type & another) YATO_NOEXCEPT_KEYWORD
             {
-                return m_data_iter < other.m_data_iter;
+                return one.m_data_iter < another.m_data_iter;
             }
 
             /**
              *  Greater
              */
-            YATO_CONSTEXPR_FUNC
-            bool operator> (const sub_array_proxy& other) const YATO_NOEXCEPT_KEYWORD
+            friend
+            bool operator> (const my_type & one, const my_type & another) YATO_NOEXCEPT_KEYWORD
             {
-                return m_data_iter > other.m_data_iter;
+                return one.m_data_iter > another.m_data_iter;
             }
 
             /**
              *  Less or equal
              */
-            YATO_CONSTEXPR_FUNC
-            bool operator<= (const sub_array_proxy& other) const YATO_NOEXCEPT_KEYWORD
+            friend
+            bool operator<= (const my_type & one, const my_type & another) YATO_NOEXCEPT_KEYWORD
             {
-                return m_data_iter <= other.m_data_iter;
+                return one.m_data_iter <= another.m_data_iter;
             }
 
             /**
              *  Greater or equal
              */
-            YATO_CONSTEXPR_FUNC
-            bool operator>= (const sub_array_proxy& other) const YATO_NOEXCEPT_KEYWORD
+            friend
+            bool operator>= (const my_type & one, const my_type & another) YATO_NOEXCEPT_KEYWORD
             {
-                return m_data_iter >= other.m_data_iter;
+                return one.m_data_iter >= another.m_data_iter;
             }
 
             //-------------------------------------------------------
