@@ -182,33 +182,33 @@ namespace yato
     //-------------------------------------------------------
     // functional traits
 
-    template <typename... _Types>
+    template <typename... T>
     struct is_function_pointer
         : std::false_type
     { };
 
-    template <typename _R, typename ..._Args>
-    struct is_function_pointer<_R(*)(_Args...)>
+    template <typename Ret, typename... Args>
+    struct is_function_pointer<Ret(*)(Args...)>
         : std::true_type
     { };
 
-    template <typename _R, typename _C, typename ..._Args>
-    struct is_function_pointer<_R(_C::*)(_Args...)>
+    template <typename Ret, typename Clazz, typename... Args>
+    struct is_function_pointer<Ret(Clazz::*)(Args...)>
         : std::true_type
     { };
 
-    template <typename _R, typename _C, typename ..._Args>
-    struct is_function_pointer<_R(_C::*)(_Args...) const>
+    template <typename Ret, typename Clazz, typename ...Args>
+    struct is_function_pointer<Ret(Clazz::*)(Args...) const>
         : std::true_type
     { };
 
-    template <typename _R, typename _C, typename ..._Args>
-    struct is_function_pointer<_R(_C::*)(_Args...) volatile>
+    template <typename Ret, typename Clazz, typename ...Args>
+    struct is_function_pointer<Ret(Clazz::*)(Args...) volatile>
         : std::true_type
     { };
 
-    template <typename _R, typename _C, typename ..._Args>
-    struct is_function_pointer<_R(_C::*)(_Args...) const volatile>
+    template <typename Ret, typename Clazz, typename ...Args>
+    struct is_function_pointer<Ret(Clazz::*)(Args...) const volatile>
         : std::true_type
     { };
 
