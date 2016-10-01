@@ -46,7 +46,7 @@ namespace yato
              * Public traits of the multidimensional vector
              */
             using my_type = vector_nd_impl<_DataType, _DimensionsNum, _Allocator>;
-            using dimensions_type = dimensions<_DimensionsNum, size_t>;
+            using dimensions_type = dimensionality<_DimensionsNum, size_t>;
             using data_type = _DataType;
             using allocator_type = _Allocator;
             using container_type = std::vector<data_type, allocator_type>;
@@ -866,7 +866,7 @@ namespace yato
             * Public traits of the multidimensional vector
             */
             using my_type = vector_nd_impl<_DataType, 1, _Allocator>;
-            using dimensions_type = dimensions<1, size_t>;
+            using dimensions_type = dimensionality<1, size_t>;
             using data_type = _DataType;
             using allocator_type = _Allocator;
             using container_type = std::vector<data_type, allocator_type>;

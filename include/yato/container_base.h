@@ -17,10 +17,10 @@ namespace yato
      * Storage for containers extents
      */
     template <size_t DimensionsNum, typename SizeType = size_t>
-    class dimensions
+    class dimensionality
     {
     private:
-        using my_type = dimensions<DimensionsNum, SizeType>;
+        using my_type = dimensionality<DimensionsNum, SizeType>;
         using container_type = std::array<SizeType, DimensionsNum>;
         template <typename T>
         using arg_to_size = cvt_type<T, SizeType>;
@@ -31,7 +31,7 @@ namespace yato
         static YATO_CONSTEXPR_VAR size_t dimensions_num = DimensionsNum;
         using iterator = typename container_type::iterator;
         using const_iterator = typename container_type::const_iterator;
-        using hyper_dimensions = dimensions<DimensionsNum - 1, SizeType>;
+        using hyper_dimensionality = dimensionality<DimensionsNum - 1, SizeType>;
         //---------------------------------------------------
 
     private:
@@ -40,25 +40,25 @@ namespace yato
 
     public:
         YATO_CONSTEXPR_FUNC
-        dimensions()
+        dimensionality()
             : m_extents()
         { }
 
         template <typename... Args>
         YATO_CONSTEXPR_FUNC explicit 
-        dimensions(const SizeType & extent1, const Args &... extents) YATO_NOEXCEPT_KEYWORD
+        dimensionality(const SizeType & extent1, const Args &... extents) YATO_NOEXCEPT_KEYWORD
             : m_extents({ extent1, extents... })
         {
             // ToDo (a.gruzdev): Make SFINAE friendly if necessary
-            static_assert(sizeof...(extents) + 1 == dimensions_num, "yato::dimensions[dimensions]: Invalid dimensions number");
+            static_assert(sizeof...(extents) + 1 == dimensions_num, "yato::dimensionality[dimensionality]: Invalid dimensions number");
         }
 
         YATO_CONSTEXPR_FUNC
-        dimensions(const my_type &) = default;
+        dimensionality(const my_type &) = default;
 #ifndef YATO_MSVC_2013
-        dimensions(my_type &&) = default;
+        dimensionality(my_type &&) = default;
 #endif
-        ~dimensions()
+        ~dimensionality()
         { }
 
         my_type & operator = (const my_type &) = default;
@@ -118,14 +118,14 @@ namespace yato
      * Zero-dimensional extents
      */
     template <typename SizeType>
-    class dimensions<0, SizeType>
+    class dimensionality<0, SizeType>
     {
     public:
         using size_type = SizeType;
         static YATO_CONSTEXPR_VAR size_t dimensions_num = 0;
 
         YATO_CONSTEXPR_FUNC
-        dimensions()
+        dimensionality()
         { }
 
         YATO_CONSTEXPR_FUNC
@@ -136,13 +136,13 @@ namespace yato
     };
 
     /**
-     * Helper function for creating dimensions
+     * Helper function for creating dimensionality
      */
     template <typename SizeType = size_t, typename... Extents>
     YATO_CONSTEXPR_FUNC
-    dimensions<sizeof...(Extents), SizeType> dims(const Extents &... extents)
+    dimensionality<sizeof...(Extents), SizeType> dims(const Extents &... extents)
     {
-        return dimensions<sizeof...(Extents), SizeType>(narrow_cast<SizeType>(extents)...);
+        return dimensionality<sizeof...(Extents), SizeType>(narrow_cast<SizeType>(extents)...);
     }
 
     //----------------------------------------------------------------------------------

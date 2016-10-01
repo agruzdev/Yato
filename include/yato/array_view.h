@@ -32,7 +32,7 @@ namespace yato
     {
     public:
         using this_type = array_view_nd<_DataType, _DimsNum>;
-        using dimensions_type = dimensions<_DimsNum, size_t>;
+        using dimensions_type = dimensionality<_DimsNum, size_t>;
         using data_type = _DataType;
         static YATO_CONSTEXPR_VAR size_t dimensions_num = _DimsNum;
         static_assert(dimensions_num > 1, "Dimensions number should be greater than 1");
@@ -262,7 +262,7 @@ namespace yato
     class array_view_nd<_DataType, 1>
     {
     public:
-        using dimensions_type = dimensions<1, size_t>;
+        using dimensions_type = dimensionality<1, size_t>;
         using data_type = _DataType;
         using data_iterator = data_type*;
         using const_data_iterator = const data_type*;
