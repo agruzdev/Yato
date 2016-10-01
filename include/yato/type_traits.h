@@ -392,6 +392,16 @@ namespace yato
         return typename callable_trait<typename std::remove_reference<_Callable>::type>::function_type(std::forward<_Callable>(callable));
     }
 
+
+    /**
+     * Maps any type to destination type
+     */
+    template <typename TypeFrom, typename TypeTo>
+    struct cvt_type
+    {
+        using type = TypeTo;
+    };
+
 }
 
 #endif

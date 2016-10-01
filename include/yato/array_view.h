@@ -32,13 +32,13 @@ namespace yato
     {
     public:
         using this_type = array_view_nd<_DataType, _DimsNum>;
+        using dimensions_type = dimensions<_DimsNum, size_t>;
         using data_type = _DataType;
         static YATO_CONSTEXPR_VAR size_t dimensions_num = _DimsNum;
         static_assert(dimensions_num > 1, "Dimensions number should be greater than 1");
 
     private:
-        using sizes_array = std::array<size_t, dimensions_num>;
-        using const_sizes_iterator = typename sizes_array::const_iterator;
+        using const_sizes_iterator = typename dimensions_type::const_iterator;
         using sub_view = details::sub_array_proxy<data_type*, const_sizes_iterator, dimensions_num - 1>;
         using const_sub_view = details::sub_array_proxy<const data_type*, const_sizes_iterator, dimensions_num - 1>;
 
@@ -50,8 +50,8 @@ namespace yato
 
         //-------------------------------------------------------
     private:
-        const sizes_array m_sizes;
-        /*const*/ sizes_array m_sub_array_sizes; // my size, sub array size, sub sub array size, etc
+        const dimensions_type m_sizes;
+        dimensions_type m_sub_array_sizes; // my size, sub array size, sub sub array size, etc
         data_iterator m_base_ptr;
 
         sub_view _create_sub_view(size_t offset) YATO_NOEXCEPT_KEYWORD
@@ -67,12 +67,9 @@ namespace yato
         //-------------------------------------------------------
 
     public:
-        template<typename... _Sizes>
-        array_view_nd(data_type* ptr, _Sizes && ...sizes) YATO_NOEXCEPT_IN_RELEASE
-            : m_sizes({ yato::narrow_cast<size_t>(std::forward<_Sizes>(sizes))... }),
-              m_base_ptr(ptr)
+        array_view_nd(data_type* ptr, const dimensions_type & extents) YATO_NOEXCEPT_IN_RELEASE
+            : m_sizes(extents), m_base_ptr(ptr)
         { 
-            static_assert(sizeof...(_Sizes) == dimensions_num, "Wrong arguments number");
             YATO_REQUIRES(ptr != nullptr);
             m_sub_array_sizes[dimensions_num - 1] = m_sizes[dimensions_num - 1];
             for (size_t i = dimensions_num - 1; i > 0; --i) {
@@ -265,6 +262,7 @@ namespace yato
     class array_view_nd<_DataType, 1>
     {
     public:
+        using dimensions_type = dimensions<1, size_t>;
         using data_type = _DataType;
         using data_iterator = data_type*;
         using const_data_iterator = const data_type*;
@@ -278,9 +276,11 @@ namespace yato
 
     public:
         YATO_CONSTEXPR_FUNC
-        array_view_nd(not_null<data_type*> ptr, size_t size) YATO_NOEXCEPT_KEYWORD
-            : m_base_ptr(ptr.get()), m_size(size) 
-        { }
+        array_view_nd(data_type* ptr, const dimensions_type & sizes) YATO_NOEXCEPT_IN_RELEASE
+            : m_base_ptr(ptr), m_size(sizes[0])
+        {
+            YATO_REQUIRES(ptr != nullptr);
+        }
 
         YATO_CONSTEXPR_FUNC
         array_view_nd(const array_view_nd & other) YATO_NOEXCEPT_KEYWORD
@@ -460,63 +460,62 @@ namespace yato
     using array_view_3d = array_view_nd<_DataType, 3>;
 
 
-    template<typename _T, size_t _Size>
+    template<typename T, size_t Size>
     YATO_CONSTEXPR_FUNC
-    array_view<_T> make_view(_T (& arr)[_Size]) YATO_NOEXCEPT_KEYWORD
+    array_view<T> make_view(T (& arr)[Size]) YATO_NOEXCEPT_KEYWORD
     {
-        return array_view<_T>(arr, _Size);
+        return array_view<T>(arr, yato::dims(Size));
     }
 
-    template<typename _T, size_t _Size>
+    template<typename T, size_t Size>
     YATO_CONSTEXPR_FUNC
-    array_view<_T> make_view(std::array<_T, _Size> & arr) YATO_NOEXCEPT_KEYWORD
+    array_view<T> make_view(std::array<T, Size> & arr) YATO_NOEXCEPT_KEYWORD
     {
-        return array_view<_T>(arr.data(), _Size);
+        return array_view<T>(arr.data(), yato::dims(Size));
     }
 
-    template<typename _T, size_t _Size>
+    template<typename T, size_t Size>
     YATO_CONSTEXPR_FUNC
-    array_view<const _T> make_view(const std::array<_T, _Size> & arr) YATO_NOEXCEPT_KEYWORD
+    array_view<const T> make_view(const std::array<T, Size> & arr) YATO_NOEXCEPT_KEYWORD
     {
-        return array_view<const _T>(arr.data(), _Size);
+        return array_view<const T>(arr.data(), yato::dims(Size));
     }
 
-    template<typename _T>
+    template<typename T>
     YATO_CONSTEXPR_FUNC
-    auto make_view(std::vector<_T> & vec) YATO_NOEXCEPT_KEYWORD 
-        -> typename std::enable_if<!std::is_same<_T, bool>::value, array_view<_T> >::type
+    auto make_view(std::vector<T> & vec) YATO_NOEXCEPT_KEYWORD 
+        -> typename std::enable_if<!std::is_same<T, bool>::value, array_view<T> >::type
     {
-        return array_view<_T>(vec.data(), vec.size());
+        return array_view<T>(vec.data(), yato::dims(vec.size()));
     }
 
-    template<typename _T>
+    template<typename T>
     YATO_CONSTEXPR_FUNC
-    auto make_view(const std::vector<_T> & vec) YATO_NOEXCEPT_KEYWORD
-        -> typename std::enable_if<!std::is_same<_T, bool>::value, array_view<const _T> >::type
+    auto make_view(const std::vector<T> & vec) YATO_NOEXCEPT_KEYWORD
+        -> typename std::enable_if<!std::is_same<T, bool>::value, array_view<const T> >::type
     {
-        return array_view<const _T>(vec.data(), vec.size());
+        return array_view<const T>(vec.data(), yato::dims(vec.size()));
     }
 
-    template<typename _T, typename _Size, typename... _Sizes>
+    template<typename T, typename Size1, typename... Sizes>
     YATO_CONSTEXPR_FUNC
-    auto make_view(_T* ptr, _Size&& size_1, _Sizes && ...sizes) YATO_NOEXCEPT_IN_RELEASE
-        -> array_view_nd<_T, sizeof...(_Sizes) + 1>
+    array_view_nd<T, sizeof...(Sizes) + 1> make_view(T* ptr, Size1 && size1, Sizes && ...sizes) YATO_NOEXCEPT_IN_RELEASE
     {
-        return array_view_nd<_T, sizeof...(_Sizes) + 1>(ptr, std::forward<_Size>(size_1), std::forward<_Sizes>(sizes)...);
+        return array_view_nd<T, sizeof...(Sizes) + 1>(ptr, yato::dims(std::forward<Size1>(size1), std::forward<Sizes>(sizes)...));
     }
 
-    template<typename _T, size_t _Size1, size_t _Size2>
+    template<typename T, size_t Size1, size_t Size2>
     YATO_CONSTEXPR_FUNC
-    array_view_nd<_T, 2> make_view(_T(&arr)[_Size1][_Size2]) YATO_NOEXCEPT_IN_RELEASE
+    array_view_nd<T, 2> make_view(T(&arr)[Size1][Size2]) YATO_NOEXCEPT_IN_RELEASE
     {
-        return array_view_nd<_T, 2>(&arr[0][0], _Size1, _Size2);
+        return array_view_nd<T, 2>(&arr[0][0], yato::dims(Size1, Size2));
     }
 
-    template<typename _T, size_t _Size1, size_t _Size2, size_t _Size3>
+    template<typename T, size_t Size1, size_t Size2, size_t Size3>
     YATO_CONSTEXPR_FUNC
-        array_view_nd<_T, 3> make_view(_T(&arr)[_Size1][_Size2][_Size3]) YATO_NOEXCEPT_IN_RELEASE
+    array_view_nd<T, 3> make_view(T(&arr)[Size1][Size2][Size3]) YATO_NOEXCEPT_IN_RELEASE
     {
-        return array_view_nd<_T, 3>(&arr[0][0][0], _Size1, _Size2, _Size3);
+        return array_view_nd<T, 3>(&arr[0][0][0], yato::dims(Size1, Size2, Size3));
     }
 
 }

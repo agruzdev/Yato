@@ -24,7 +24,7 @@ TEST(Yato_VectorND, common)
         EXPECT_EQ(0, vec0.size(2));
         EXPECT_EQ(0, vec0.total_size());
 
-        yato::vector_nd<int, 2> vec1({ 2, 3 });
+        yato::vector_nd<int, 2> vec1(yato::dims(2, 3));
         EXPECT_FALSE(vec1.empty());
         EXPECT_EQ(2, vec1.dimensions());
         EXPECT_EQ(2, vec1.size(0));
@@ -34,10 +34,10 @@ TEST(Yato_VectorND, common)
         EXPECT_EQ(2, yato::height_2d(vec1));
         EXPECT_EQ(3, yato::width_2d(vec1));
 
-        yato::vector_nd<int, 1> vec2(5, 1);
+        yato::vector_nd<int, 1> vec2(yato::dims(5), 1);
         EXPECT_EQ(5, vec2.size(0));
 
-        yato::vector_nd<float, 3> vec3({ 2, 3, 3 }, 11.0f);
+        yato::vector_nd<float, 3> vec3(yato::dims(2, 3, 3), 11.0f);
 
         yato::vector_nd<int, 2> vec4 = { {1, 1, 1}, {2, 2, 2} };
         yato::vector_nd<int, 3> vec5 = { { {1, 1}, {1, 2}, {1, 3} }, { {2, 4}, {2, 5}, {2, 6} } };
@@ -55,7 +55,7 @@ TEST(Yato_VectorND, common)
         sizes.push_back(2);
         const yato::vector_nd<int, 3> vec8(yato::make_range(sizes.cbegin(), sizes.cend()), 1);
 
-        yato::vector_nd<float, 3> vec9({ 2, 0, 3 }, 1.0f);
+        yato::vector_nd<float, 3> vec9(yato::dims(2, 0, 3), 1.0f);
         EXPECT_TRUE(vec9.empty());
     }
     catch (...)
@@ -103,7 +103,7 @@ TEST(Yato_VectorND, access_2)
     EXPECT_EQ(2, vec5[0].size(1));
     EXPECT_EQ(6, vec5[0].total_size());
 
-    auto vec0 = yato::vector_nd<int, 3>({ 2, 0, 2 }, 1);
+    auto vec0 = yato::vector_nd<int, 3>(yato::dims(2, 0, 2), 1);
     EXPECT_EQ(3, vec0.dimensions());
     EXPECT_EQ(2, vec0[0].dimensions());
     EXPECT_EQ(0, vec0.total_size());
@@ -155,7 +155,7 @@ TEST(Yato_VectorND, assign)
         EXPECT_TRUE(false);
     }
 
-    vec.assign({ 2, 2, 2 }, 1);
+    vec.assign(yato::dims(2, 2, 2), 1);
     
     EXPECT_FALSE(vec.empty());
     for (const int & x : vec.plain_crange()) {

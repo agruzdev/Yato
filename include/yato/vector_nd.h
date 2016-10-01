@@ -46,6 +46,7 @@ namespace yato
              * Public traits of the multidimensional vector
              */
             using my_type = vector_nd_impl<_DataType, _DimensionsNum, _Allocator>;
+            using dimensions_type = dimensions<_DimensionsNum, size_t>;
             using data_type = _DataType;
             using allocator_type = _Allocator;
             using container_type = std::vector<data_type, allocator_type>;
@@ -59,9 +60,8 @@ namespace yato
             //-------------------------------------------------------
 
         private:
-            using sizes_array = std::array<size_t, dimensions_num>;
-            using size_iterator = typename sizes_array::iterator;
-            using size_const_iterator = typename sizes_array::const_iterator;
+            using size_iterator = typename dimensions_type::iterator;
+            using size_const_iterator = typename dimensions_type::const_iterator;
 
             template<size_t _Dims>
             using initilizer_type = typename initilizer_list_nd<data_type, _Dims>::type;
@@ -69,8 +69,8 @@ namespace yato
             template<typename _SomeDataIter, typename _SomeSizeIter>
             using proxy_tmpl = details::sub_array_proxy<_SomeDataIter, _SomeSizeIter, dimensions_num - 1>;
 
-            using proxy = proxy_tmpl<data_iterator, typename sizes_array::const_iterator>;
-            using const_proxy = proxy_tmpl<const_data_iterator, typename sizes_array::const_iterator>;
+            using proxy = proxy_tmpl<data_iterator, typename dimensions_type::const_iterator>;
+            using const_proxy = proxy_tmpl<const_data_iterator, typename dimensions_type::const_iterator>;
 
         public:
             using iterator = proxy;
@@ -79,9 +79,9 @@ namespace yato
             //-------------------------------------------------------
 
         private:
-            sizes_array m_dimensions;
-            sizes_array m_sub_sizes;
-            container_type m_plain_vector;
+            dimensions_type m_dimensions;
+            dimensions_type m_sub_sizes;
+            container_type  m_plain_vector;
             //-------------------------------------------------------
 
             proxy _create_proxy(size_t offset) YATO_NOEXCEPT_KEYWORD
@@ -229,43 +229,39 @@ namespace yato
              */
             YATO_CONSTEXPR_FUNC
             vector_nd_impl() YATO_NOEXCEPT_KEYWORD
-                : m_dimensions({ 0 }), m_sub_sizes({ 0 }), m_plain_vector()
-            {
-            }
+                : m_dimensions(), m_sub_sizes(), m_plain_vector()
+            { }
 
             /**
              *	Create empty vector
              */
             explicit
             vector_nd_impl(const allocator_type & alloc) YATO_NOEXCEPT_KEYWORD
-                : m_dimensions({ 0 }), m_sub_sizes({ 0 }), m_plain_vector(alloc)
-            {
-            }
+                : m_dimensions(), m_sub_sizes(), m_plain_vector(alloc)
+            { }
 
             /**
-             *	Create without initialization
+             *  Create without initialization
              */
-            vector_nd_impl(const std::initializer_list<size_t> & sizes, const allocator_type & alloc = allocator_type())
+            explicit
+            vector_nd_impl(const dimensions_type & sizes, const allocator_type & alloc = allocator_type())
                 : m_plain_vector(alloc)
             {
-                if (sizes.size() != dimensions_num) {
-                    throw yato::assertion_error("Constructor takes the amount of arguments equal to dimensions number");
-                }
-                _init_sizes(yato::make_range(sizes.begin(), sizes.end()));
+                _init_sizes(yato::make_range(sizes.cbegin(), sizes.cend()));
                 m_plain_vector.resize(m_sub_sizes[0]);
             }
 
             /**
-             *	Create with initialization
+             *  Create with initialization
              */
-            vector_nd_impl(const std::initializer_list<size_t> & sizes, const data_type & value, const allocator_type & alloc = allocator_type())
+            vector_nd_impl(const dimensions_type & sizes, const data_type & value, const allocator_type & alloc = allocator_type())
                 : m_plain_vector(alloc)
             {
                 assign(sizes, value);
             }
 
             /**
-             *	Create from initializer list
+             *  Create from initializer list
              */
             vector_nd_impl(const initilizer_type<dimensions_num> & init_list)
                 : m_plain_vector()
@@ -378,12 +374,12 @@ namespace yato
             /**
              *  Replaces the contents of the container
              */
-            void assign(const std::initializer_list<size_t> & sizes, const data_type & value)
+            void assign(const dimensions_type & sizes, const data_type & value)
             {
                 if (sizes.size() != dimensions_num) {
                     throw yato::assertion_error("Assign takes the amount of arguments equal to dimensions number");
                 }
-                _init_sizes(yato::make_range(sizes.begin(), sizes.end()));
+                _init_sizes(yato::make_range(sizes.cbegin(), sizes.cend()));
                 m_plain_vector.resize(m_sub_sizes[0], value);
             }
 
@@ -870,6 +866,7 @@ namespace yato
             * Public traits of the multidimensional vector
             */
             using my_type = vector_nd_impl<_DataType, 1, _Allocator>;
+            using dimensions_type = dimensions<1, size_t>;
             using data_type = _DataType;
             using allocator_type = _Allocator;
             using container_type = std::vector<data_type, allocator_type>;
@@ -908,16 +905,17 @@ namespace yato
             /**
              *  Create without initialization
              */
-            vector_nd_impl(size_t size, const allocator_type & alloc = allocator_type())
+            explicit
+            vector_nd_impl(const dimensions_type & size, const allocator_type & alloc = allocator_type())
                 : m_plain_vector(alloc)
             {
-                m_plain_vector.resize(size);
+                m_plain_vector.resize(size[0]);
             }
 
             /**
              *  Create with initialization
              */
-            vector_nd_impl(size_t size, const data_type & value, const allocator_type & alloc = allocator_type())
+            vector_nd_impl(const dimensions_type & size, const data_type & value, const allocator_type & alloc = allocator_type())
                 : m_plain_vector(alloc)
             {
                 assign(size, value);
@@ -965,8 +963,8 @@ namespace yato
             { }
 
             /**
-            *  Create from std::vector
-            */
+             *  Create from std::vector
+             */
             vector_nd_impl(std::vector<data_type, allocator_type> && vector)
                 : m_plain_vector(std::move(vector))
             { }
@@ -1083,9 +1081,9 @@ namespace yato
             /**
              *  Replaces the contents of the container
              */
-            void assign(size_t size, const data_type & value)
+            void assign(const dimensions_type & size, const data_type & value)
             {
-                m_plain_vector.resize(size, value);
+                m_plain_vector.resize(size[0], value);
             }
 
             /**

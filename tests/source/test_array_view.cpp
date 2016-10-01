@@ -9,7 +9,7 @@ TEST(Yato_ArrayView, array_view)
 {
     int arr[10] = { 0 };
 
-    yato::array_view<int> view(arr, 10);
+    yato::array_view<int> view(arr, yato::dims(10));
     EXPECT_TRUE(view.size(0) == 10);
     for (int i = 0; i < 10; ++i) {
         view[i] = i + 1;
@@ -17,8 +17,10 @@ TEST(Yato_ArrayView, array_view)
     }
     EXPECT_THROW(view.at(10), yato::assertion_error);
 
+#if defined(YATO_DEBUG) && (YATO_DEBUG != 0)
     int* p = nullptr;
-    EXPECT_THROW(yato::array_view<int>(p, 100), yato::assertion_error);
+    EXPECT_THROW(yato::array_view<int>(p, yato::dims(100)), yato::assertion_error);
+#endif
 
     int j = 1;
     for (auto x : view.plain_crange()){
@@ -30,7 +32,7 @@ TEST(Yato_ArrayView, array_view_const)
 {
     const int arr[10] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
-    yato::array_view<const int> view(arr, 10);
+    yato::array_view<const int> view(arr, yato::dims(10));
     EXPECT_TRUE(view.size() == 10);
     for (int i = 0; i < 10; ++i) {
         EXPECT_TRUE(view[i] == i);
