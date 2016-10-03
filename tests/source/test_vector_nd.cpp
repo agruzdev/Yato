@@ -18,7 +18,7 @@ TEST(Yato_VectorND, common)
     try {
         yato::vector_nd<int, 3> vec0{};
         EXPECT_TRUE(vec0.empty());
-        EXPECT_EQ(3, vec0.dimensions());
+        EXPECT_EQ(3, vec0.dimensions_num());
         EXPECT_EQ(0, vec0.size(0));
         EXPECT_EQ(0, vec0.size(1));
         EXPECT_EQ(0, vec0.size(2));
@@ -26,7 +26,7 @@ TEST(Yato_VectorND, common)
 
         yato::vector_nd<int, 2> vec1(yato::dims(2, 3));
         EXPECT_FALSE(vec1.empty());
-        EXPECT_EQ(2, vec1.dimensions());
+        EXPECT_EQ(2, vec1.dimensions_num());
         EXPECT_EQ(2, vec1.size(0));
         EXPECT_EQ(3, vec1.size(1));
         EXPECT_EQ(6, vec1.total_size());
@@ -98,14 +98,14 @@ TEST(Yato_VectorND, access_1)
 TEST(Yato_VectorND, access_2)
 {
     yato::vector_nd<int, 3> vec5 = { { { 1, 1 },{ 1, 2 },{ 1, 3 } },{ { 2, 4 },{ 2, 5 },{ 2, 6 } } };
-    EXPECT_EQ(2, vec5[0].dimensions());
+    EXPECT_EQ(2, vec5[0].dimensions_num());
     EXPECT_EQ(3, vec5[0].size(0));
     EXPECT_EQ(2, vec5[0].size(1));
     EXPECT_EQ(6, vec5[0].total_size());
 
     auto vec0 = yato::vector_nd<int, 3>(yato::dims(2, 0, 2), 1);
-    EXPECT_EQ(3, vec0.dimensions());
-    EXPECT_EQ(2, vec0[0].dimensions());
+    EXPECT_EQ(3, vec0.dimensions_num());
+    EXPECT_EQ(2, vec0[0].dimensions_num());
     EXPECT_EQ(0, vec0.total_size());
     EXPECT_EQ(0, vec0[0].total_size());
 }

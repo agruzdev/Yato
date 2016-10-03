@@ -45,15 +45,15 @@ namespace yato
             using data_reference = data_type &;
             using const_data_reference = const data_type &;
 
-            static YATO_CONSTEXPR_VAR size_t dimensions_num = _DimsNum;
+            static YATO_CONSTEXPR_VAR size_t dimensions_number = _DimsNum;
 
-            using sub_proxy = sub_array_proxy<data_iterator, const size_iterator, dimensions_num - 1>;
-            using const_sub_proxy = sub_array_proxy<const data_iterator, const size_iterator, dimensions_num - 1>;
+            using sub_proxy = sub_array_proxy<data_iterator, const size_iterator, dimensions_number - 1>;
+            using const_sub_proxy = sub_array_proxy<const data_iterator, const size_iterator, dimensions_number - 1>;
 
         public:
-            using value_type = typename std::conditional<(dimensions_num > 1), sub_proxy, data_type>::type;
-            using reference = typename std::conditional<(dimensions_num > 1), sub_proxy, data_type&>::type;
-            using pointer = typename std::conditional<(dimensions_num > 1), sub_proxy, data_type*>::type;
+            using value_type = typename std::conditional<(dimensions_number > 1), sub_proxy, data_type>::type;
+            using reference = typename std::conditional<(dimensions_number > 1), sub_proxy, data_type&>::type;
+            using pointer = typename std::conditional<(dimensions_number > 1), sub_proxy, data_type*>::type;
             using difference_type = std::ptrdiff_t;
             using iterator_category = std::random_access_iterator_tag;
 
@@ -85,12 +85,12 @@ namespace yato
                 : m_data_iter(data), m_sizes_iter(sizes), m_offsets_iter(offsets)
             {}
 
-            sub_array_proxy(const sub_array_proxy<data_iterator, size_iterator, dimensions_num> & other)
+            sub_array_proxy(const sub_array_proxy<data_iterator, size_iterator, dimensions_number> & other)
                 : m_data_iter(other.m_data_iter), m_sizes_iter(other.m_sizes_iter), m_offsets_iter(other.m_offsets_iter)
             { }
 
             template <typename _OtherDataIterator>
-            sub_array_proxy(const sub_array_proxy<_OtherDataIterator, size_iterator, dimensions_num> & other)
+            sub_array_proxy(const sub_array_proxy<_OtherDataIterator, size_iterator, dimensions_number> & other)
                 : m_data_iter(other.m_data_iter), m_sizes_iter(other.m_sizes_iter), m_offsets_iter(other.m_offsets_iter)
             {}
 
@@ -219,9 +219,9 @@ namespace yato
              *  Get number of dimensions
              */
             YATO_CONSTEXPR_FUNC
-            size_t dimensions() const YATO_NOEXCEPT_KEYWORD
+            size_t dimensions_num() const YATO_NOEXCEPT_KEYWORD
             {
-                return dimensions_num;
+                return dimensions_number;
             }
 
             /**
@@ -230,7 +230,7 @@ namespace yato
             auto dimensions_range() const
                 -> yato::range<size_iterator>
             {
-                return yato::range<size_iterator>(m_sizes_iter, std::next(m_sizes_iter, dimensions_num));
+                return yato::range<size_iterator>(m_sizes_iter, std::next(m_sizes_iter, dimensions_number));
             }
 
             /**
@@ -240,7 +240,7 @@ namespace yato
             size_t size(size_t idx) const YATO_NOEXCEPT_IN_RELEASE
             {
 #if YATO_DEBUG
-                return (idx < dimensions_num)
+                return (idx < dimensions_number)
                     ? *(std::next(m_sizes_iter, idx))
                     : (YATO_THROW_ASSERT_EXCEPT("yato::sub_array_proxy[size]: Dimension index is out of range"), 0);
 #else

@@ -34,13 +34,13 @@ namespace yato
         using this_type = array_view_nd<_DataType, _DimsNum>;
         using dimensions_type = dimensionality<_DimsNum, size_t>;
         using data_type = _DataType;
-        static YATO_CONSTEXPR_VAR size_t dimensions_num = _DimsNum;
-        static_assert(dimensions_num > 1, "Dimensions number should be greater than 1");
+        static YATO_CONSTEXPR_VAR size_t dimensions_number = _DimsNum;
+        static_assert(dimensions_number > 1, "Dimensions number should be greater than 1");
 
     private:
         using const_sizes_iterator = typename dimensions_type::const_iterator;
-        using sub_view = details::sub_array_proxy<data_type*, const_sizes_iterator, dimensions_num - 1>;
-        using const_sub_view = details::sub_array_proxy<const data_type*, const_sizes_iterator, dimensions_num - 1>;
+        using sub_view = details::sub_array_proxy<data_type*, const_sizes_iterator, dimensions_number - 1>;
+        using const_sub_view = details::sub_array_proxy<const data_type*, const_sizes_iterator, dimensions_number - 1>;
 
     public:
         using data_iterator = data_type*;
@@ -71,8 +71,8 @@ namespace yato
             : m_sizes(extents), m_base_ptr(ptr)
         { 
             YATO_REQUIRES(ptr != nullptr);
-            m_sub_array_sizes[dimensions_num - 1] = m_sizes[dimensions_num - 1];
-            for (size_t i = dimensions_num - 1; i > 0; --i) {
+            m_sub_array_sizes[dimensions_number - 1] = m_sizes[dimensions_number - 1];
+            for (size_t i = dimensions_number - 1; i > 0; --i) {
                 m_sub_array_sizes[i - 1] = m_sizes[i - 1] * m_sub_array_sizes[i];
             }
         }
@@ -164,12 +164,39 @@ namespace yato
         size_t size(size_t idx) const YATO_NOEXCEPT_IN_RELEASE
         {
 #if YATO_DEBUG
-            return idx < dimensions_num
+            return idx < dimensions_number
                 ? return m_sizes[idx]
                 : (YATO_THROW_ASSERT_EXCEPT("yato::array_view_nd[size]: idx out of range!"), m_sizes[0]);
 #else
             return m_sizes[idx];
 #endif
+        }
+
+        /**
+         * Get dimensions
+         */
+        YATO_CONSTEXPR_FUNC
+        const dimensions_type & dimensions() const
+        {
+            return m_sizes;
+        }
+
+        /**
+         * Get number of dimensions
+         */
+        YATO_CONSTEXPR_FUNC
+        size_t dimensions_num() const
+        {
+            return dimensions_number;
+        }
+
+        /**
+         *  Get dimensions range
+         */
+        auto dimensions_range() const
+            -> yato::range<typename dimensions_type::const_iterator>
+        {
+            return yato::make_range(m_sizes.cbegin(), m_sizes.cend());
         }
 
         YATO_CONSTEXPR_FUNC
@@ -268,16 +295,16 @@ namespace yato
         using const_data_iterator = const data_type*;
         using iterator = data_iterator;
         using const_iterator = const_data_iterator;
-        static YATO_CONSTEXPR_VAR size_t dimensions_num = 1;
+        static YATO_CONSTEXPR_VAR size_t dimensions_number = 1;
 
     private:
         data_type * m_base_ptr;
-        const size_t m_size;
+        const dimensions_type m_size;
 
     public:
         YATO_CONSTEXPR_FUNC
         array_view_nd(data_type* ptr, const dimensions_type & sizes) YATO_NOEXCEPT_IN_RELEASE
-            : m_base_ptr(ptr), m_size(sizes[0])
+            : m_base_ptr(ptr), m_size(sizes)
         {
             YATO_REQUIRES(ptr != nullptr);
         }
@@ -335,14 +362,14 @@ namespace yato
         YATO_CONSTEXPR_FUNC
         const data_type & at(size_t idx) const
         {
-            return idx < m_size
+            return idx < m_size[0]
                 ? m_base_ptr[idx]
                 : (YATO_THROW_ASSERT_EXCEPT("yato::array_view: index out of range!"), m_base_ptr[idx]);
         }
 
         data_type & at(size_t idx)
         {
-            return idx < m_size
+            return idx < m_size[0]
                 ? m_base_ptr[idx]
                 : (YATO_THROW_ASSERT_EXCEPT("yato::array_view: index out of range!"), m_base_ptr[idx]);
         }
@@ -361,20 +388,47 @@ namespace yato
         YATO_CONSTEXPR_FUNC
         size_t total_size() const YATO_NOEXCEPT_KEYWORD
         {
-            return m_size;
+            return m_size[0];
         }
 
         YATO_CONSTEXPR_FUNC
         size_t size(size_t idx = 0) const YATO_NOEXCEPT_IN_RELEASE
         {
 #if YATO_DEBUG
-            return idx < dimensions_num
-                ? m_size
-                : (YATO_THROW_ASSERT_EXCEPT("yato::array_view[size]: idx is out of range!"), m_size);
+            return idx < dimensions_number
+                ? m_size[0]
+                : (YATO_THROW_ASSERT_EXCEPT("yato::array_view[size]: idx is out of range!"), m_size[0]);
 #else
             (void)idx;
-            return m_size;
+            return m_size[0];
 #endif
+        }
+
+        /**
+        * Get dimensions
+        */
+        YATO_CONSTEXPR_FUNC
+        const dimensions_type & dimensions() const
+        {
+            return m_size;
+        }
+
+        /**
+        * Get number of dimensions
+        */
+        YATO_CONSTEXPR_FUNC
+        size_t dimensions_num() const
+        {
+            return dimensions_number;
+        }
+
+        /**
+        *  Get dimensions range
+        */
+        auto dimensions_range() const
+            -> yato::range<typename dimensions_type::const_iterator>
+        {
+            return yato::make_range(m_size.cbegin(), m_size.cend());
         }
 
         YATO_CONSTEXPR_FUNC
@@ -391,12 +445,12 @@ namespace yato
         YATO_CONSTEXPR_FUNC
         const_iterator cend() const YATO_NOEXCEPT_KEYWORD
         {
-            return m_base_ptr + m_size;
+            return m_base_ptr + m_size[0];
         }
 
         iterator end() YATO_NOEXCEPT_KEYWORD
         {
-            return m_base_ptr + m_size;
+            return m_base_ptr + m_size[0];
         }
 
         YATO_CONSTEXPR_FUNC
@@ -413,12 +467,12 @@ namespace yato
         YATO_CONSTEXPR_FUNC
         const_data_iterator plain_cend() const YATO_NOEXCEPT_KEYWORD
         {
-            return m_base_ptr + m_size;
+            return m_base_ptr + m_size[0];
         }
 
         data_iterator plain_end() YATO_NOEXCEPT_KEYWORD
         {
-            return m_base_ptr + m_size;
+            return m_base_ptr + m_size[0];
         }
 
         YATO_CONSTEXPR_FUNC

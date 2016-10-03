@@ -58,8 +58,7 @@ namespace yato
 #ifndef YATO_MSVC_2013
         dimensionality(my_type &&) = default;
 #endif
-        ~dimensionality()
-        { }
+        ~dimensionality() = default;
 
         my_type & operator = (const my_type &) = default;
 #ifndef YATO_MSVC_2013
@@ -152,7 +151,7 @@ namespace yato
     YATO_CONSTEXPR_FUNC
     size_t length(_ContainerType && container)
     {
-        YATO_REQUIRES(container.dimensions() == 1);
+        YATO_REQUIRES(container.dimensions_num() == 1);
         return container.size(0);
     }
 
@@ -160,7 +159,7 @@ namespace yato
     YATO_CONSTEXPR_FUNC
     size_t height_2d(_ContainerType && container)
     {
-        YATO_REQUIRES(container.dimensions() == 2);
+        YATO_REQUIRES(container.dimensions_num() == 2);
         return container.size(0);
     }
 
@@ -168,7 +167,7 @@ namespace yato
     YATO_CONSTEXPR_FUNC
     size_t width_2d(_ContainerType && container)
     {
-        YATO_REQUIRES(container.dimensions() == 2);
+        YATO_REQUIRES(container.dimensions_num() == 2);
         return container.size(1);
     }
 
@@ -176,7 +175,7 @@ namespace yato
     YATO_CONSTEXPR_FUNC
     size_t depth_3d(_ContainerType && container)
     {
-        YATO_REQUIRES(container.dimensions() == 3);
+        YATO_REQUIRES(container.dimensions_num() == 3);
         return container.size(0);
     }
 
@@ -184,7 +183,7 @@ namespace yato
     YATO_CONSTEXPR_FUNC
     size_t height_3d(_ContainerType && container)
     {
-        YATO_REQUIRES(container.dimensions() == 3);
+        YATO_REQUIRES(container.dimensions_num() == 3);
         return container.size(1);
     }
 
@@ -192,7 +191,7 @@ namespace yato
     YATO_CONSTEXPR_FUNC
     size_t width_3d(_ContainerType && container)
     {
-        YATO_REQUIRES(container.dimensions() == 3);
+        YATO_REQUIRES(container.dimensions_num() == 3);
         return container.size(2);
     }
 

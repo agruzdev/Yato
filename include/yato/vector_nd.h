@@ -55,8 +55,8 @@ namespace yato
             using reference = decltype(*std::declval<data_iterator>());
             using const_reference = decltype(*std::declval<const_data_iterator>());
 
-            static YATO_CONSTEXPR_VAR size_t dimensions_num = _DimensionsNum;
-            static_assert(dimensions_num > 1, "Implementation for dimensions number larger than 1");
+            static YATO_CONSTEXPR_VAR size_t dimensions_number = _DimensionsNum;
+            static_assert(dimensions_number > 1, "Implementation for dimensions number larger than 1");
             //-------------------------------------------------------
 
         private:
@@ -67,7 +67,7 @@ namespace yato
             using initilizer_type = typename initilizer_list_nd<data_type, _Dims>::type;
 
             template<typename _SomeDataIter, typename _SomeSizeIter>
-            using proxy_tmpl = details::sub_array_proxy<_SomeDataIter, _SomeSizeIter, dimensions_num - 1>;
+            using proxy_tmpl = details::sub_array_proxy<_SomeDataIter, _SomeSizeIter, dimensions_number - 1>;
 
             using proxy = proxy_tmpl<data_iterator, typename dimensions_type::const_iterator>;
             using const_proxy = proxy_tmpl<const_data_iterator, typename dimensions_type::const_iterator>;
@@ -108,8 +108,8 @@ namespace yato
 
             void _init_subsizes() YATO_NOEXCEPT_KEYWORD
             {
-                m_sub_sizes[dimensions_num - 1] = m_dimensions[dimensions_num - 1];
-                for (size_t i = dimensions_num - 1; i > 0; --i) {
+                m_sub_sizes[dimensions_number - 1] = m_dimensions[dimensions_number - 1];
+                for (size_t i = dimensions_number - 1; i > 0; --i) {
                     m_sub_sizes[i - 1] = m_dimensions[i - 1] * m_sub_sizes[i];
                 }
             }
@@ -117,7 +117,7 @@ namespace yato
             template<typename _RangeType>
             void _init_sizes(_RangeType range) YATO_NOEXCEPT_IN_RELEASE
             {
-                YATO_REQUIRES(range.distance() == dimensions_num);
+                YATO_REQUIRES(range.distance() == dimensions_number);
                 std::copy(range.begin(), range.end(), m_dimensions.begin());
                 _init_subsizes();
             }
@@ -126,7 +126,7 @@ namespace yato
             auto _init_sizes(const initilizer_type<_Depth> & init_list) YATO_NOEXCEPT_KEYWORD
                 -> typename std::enable_if < (_Depth > 1), void > ::type
             {
-                m_dimensions[dimensions_num - _Depth] = init_list.size();
+                m_dimensions[dimensions_number - _Depth] = init_list.size();
                 _init_sizes<_Depth - 1>(*(init_list.begin()));
             }
 
@@ -134,7 +134,7 @@ namespace yato
             auto _init_sizes(const initilizer_type<_Depth> & init_list) YATO_NOEXCEPT_KEYWORD
                 -> typename std::enable_if<(_Depth == 1), void>::type
             {
-                m_dimensions[dimensions_num - _Depth] = init_list.size();
+                m_dimensions[dimensions_number - _Depth] = init_list.size();
                 _init_subsizes();
             }
 
@@ -263,14 +263,14 @@ namespace yato
             /**
              *  Create from initializer list
              */
-            vector_nd_impl(const initilizer_type<dimensions_num> & init_list)
+            vector_nd_impl(const initilizer_type<dimensions_number> & init_list)
                 : m_plain_vector()
             {
-                _init_sizes<dimensions_num>(init_list);
+                _init_sizes<dimensions_number>(init_list);
                 if (m_sub_sizes[0] > 0) {
                     m_plain_vector.reserve(m_sub_sizes[0]);
                     auto iter = std::back_inserter(m_plain_vector);
-                    _init_values<dimensions_num>(init_list, iter);
+                    _init_values<dimensions_number>(init_list, iter);
                 }
             }
 
@@ -281,7 +281,7 @@ namespace yato
             vector_nd_impl(const yato::range<_IteratorType> & range, const allocator_type & alloc = allocator_type())
                 : m_plain_vector(alloc)
             {
-                if (range.distance() != dimensions_num) {
+                if (range.distance() != dimensions_number) {
                     throw yato::assertion_error("Constructor takes the amount of arguments equal to dimensions number");
                 }
                 _init_sizes(range);
@@ -295,7 +295,7 @@ namespace yato
             vector_nd_impl(const yato::range<_IteratorType> & range, const data_type & value, const allocator_type & alloc = allocator_type())
                 : m_plain_vector(alloc)
             {
-                if (range.distance() != dimensions_num) {
+                if (range.distance() != dimensions_number) {
                     throw yato::assertion_error("Constructor takes the amount of arguments equal to dimensions number");
                 }
                 _init_sizes(range);
@@ -346,7 +346,7 @@ namespace yato
              */
             template<typename _DataIterator, typename _SizeIterator>
             explicit
-            vector_nd_impl(const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_num> & other)
+            vector_nd_impl(const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & other)
             {
                 _init_sizes(other.dimensions_range());
                 m_plain_vector.resize(m_sub_sizes[0]);
@@ -357,7 +357,7 @@ namespace yato
              *  Assign from proxy
              */
             template<typename _DataIterator, typename _SizeIterator>
-            my_type & operator = (const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_num> & other)
+            my_type & operator = (const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & other)
             {
                 my_type tmp{ other };
                 tmp.swap(*this);
@@ -376,7 +376,7 @@ namespace yato
              */
             void assign(const dimensions_type & sizes, const data_type & value)
             {
-                if (sizes.size() != dimensions_num) {
+                if (sizes.size() != dimensions_number) {
                     throw yato::assertion_error("Assign takes the amount of arguments equal to dimensions number");
                 }
                 _init_sizes(yato::make_range(sizes.cbegin(), sizes.cend()));
@@ -446,7 +446,7 @@ namespace yato
             template<typename... _Tail>
             YATO_CONSTEXPR_FUNC
                 auto at(size_t idx, _Tail &&... tail) const
-                -> typename std::enable_if<(yato::args_length<_Tail...>::value == dimensions_num - 1), const_reference>::type
+                -> typename std::enable_if<(yato::args_length<_Tail...>::value == dimensions_number - 1), const_reference>::type
             {
                 if (idx >= m_dimensions[0]) {
                     throw yato::assertion_error("yato::array_nd: out of range!");
@@ -459,7 +459,7 @@ namespace yato
              */
             template<typename... _Tail>
             auto at(size_t idx, _Tail &&... tail)
-                -> typename std::enable_if<(yato::args_length<_Tail...>::value == dimensions_num - 1), reference>::type
+                -> typename std::enable_if<(yato::args_length<_Tail...>::value == dimensions_number - 1), reference>::type
             {
                 if (idx >= m_dimensions[0]) {
                     throw yato::assertion_error("yato::array_nd: out of range!");
@@ -595,12 +595,21 @@ namespace yato
             }
 
             /**
+             *  Get dimensions
+             */
+            YATO_CONSTEXPR_FUNC
+            const dimensions_type & dimensions() const YATO_NOEXCEPT_KEYWORD
+            {
+                return m_dimensions;
+            }
+
+            /**
              *  Get number of dimensions
              */
             YATO_CONSTEXPR_FUNC
-            size_t dimensions() const YATO_NOEXCEPT_KEYWORD
+            size_t dimensions_num() const YATO_NOEXCEPT_KEYWORD
             {
-                return dimensions_num;
+                return dimensions_number;
             }
 
             /**
@@ -627,7 +636,7 @@ namespace yato
             size_t size(size_t idx) const YATO_NOEXCEPT_IN_RELEASE
             {
 #if YATO_DEBUG
-                return (idx < dimensions_num)
+                return (idx < dimensions_number)
                     ? m_dimensions[idx]
                     : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[size]: dimension index is out of range"), 0);
 #else
@@ -739,7 +748,7 @@ namespace yato
              *  Add sub-vector element to the back
              */
             template<typename _OtherDataType, typename _OtherAllocator>
-            void push_back(const vector_nd_impl<_OtherDataType, dimensions_num - 1, _OtherAllocator> & sub_vector)
+            void push_back(const vector_nd_impl<_OtherDataType, dimensions_number - 1, _OtherAllocator> & sub_vector)
             {
                 auto insert_range = _prepare_push_back(sub_vector.dimensions_range());
                 std::copy(sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
@@ -748,7 +757,7 @@ namespace yato
             /**
              *  Add sub-vector element to the back
              */
-            void push_back(vector_nd_impl<data_type, dimensions_num - 1, allocator_type> && sub_vector)
+            void push_back(vector_nd_impl<data_type, dimensions_number - 1, allocator_type> && sub_vector)
             {
                 auto insert_range = _prepare_push_back(sub_vector.dimensions_range());
                 std::move(sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
@@ -771,7 +780,7 @@ namespace yato
              *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
              */
             template<typename _OtherDataType, typename _OtherAllocator>
-            iterator insert(const const_iterator & position, const vector_nd_impl<_OtherDataType, dimensions_num - 1, _OtherAllocator> & sub_vector)
+            iterator insert(const const_iterator & position, const vector_nd_impl<_OtherDataType, dimensions_number - 1, _OtherAllocator> & sub_vector)
             {
                 auto insert_range = _prepare_insert(sub_vector.dimensions_range(), position, 1);
                 std::copy(sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
@@ -782,7 +791,7 @@ namespace yato
              *  Insert sub-vector element
              *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
              */
-            iterator insert(const const_iterator & position, vector_nd_impl<data_type, dimensions_num - 1, allocator_type> && sub_vector)
+            iterator insert(const const_iterator & position, vector_nd_impl<data_type, dimensions_number - 1, allocator_type> && sub_vector)
             {
                 auto insert_range = _prepare_insert(sub_vector.dimensions_range(), position, 1);
                 std::move(sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
@@ -794,7 +803,7 @@ namespace yato
              *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
              */
             template<typename _OtherDataType, typename _OtherAllocator>
-            iterator insert(const const_iterator & position, size_t count, const vector_nd_impl<_OtherDataType, dimensions_num - 1, _OtherAllocator> & sub_vector)
+            iterator insert(const const_iterator & position, size_t count, const vector_nd_impl<_OtherDataType, dimensions_number - 1, _OtherAllocator> & sub_vector)
             {
                 auto insert_range = _prepare_insert(sub_vector.dimensions_range(), position, count);
                 const size_t copy_size = sub_vector.total_size();
@@ -875,7 +884,7 @@ namespace yato
             using reference = decltype(*std::declval<data_iterator>());
             using const_reference = decltype(*std::declval<const_data_iterator>());
 
-            static YATO_CONSTEXPR_VAR size_t dimensions_num = 1;
+            static YATO_CONSTEXPR_VAR size_t dimensions_number = 1;
 
             using iterator = data_iterator;
             using const_iterator = const_data_iterator;
@@ -935,7 +944,7 @@ namespace yato
             vector_nd_impl(const yato::range<_IteratorType> & range, const allocator_type & alloc = allocator_type())
                 : m_plain_vector(alloc)
             {
-                if (range.distance() != dimensions_num) {
+                if (range.distance() != dimensions_number) {
                     throw yato::assertion_error("Constructor takes the amount of arguments equal to dimensions number");
                 }
                 m_plain_vector.resize(*range.begin());
@@ -948,7 +957,7 @@ namespace yato
             vector_nd_impl(const yato::range<_IteratorType> & range, const data_type & value, const allocator_type & alloc = allocator_type())
                 : m_plain_vector(alloc)
             {
-                if (range.distance() != dimensions_num) {
+                if (range.distance() != dimensions_number) {
                     throw yato::assertion_error("Constructor takes the amount of arguments equal to dimensions number");
                 }
                 m_plain_vector.resize(*range.begin(), value);
@@ -1030,7 +1039,7 @@ namespace yato
              */
             template<typename _DataIterator, typename _SizeIterator>
             explicit
-            vector_nd_impl(const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_num> & other)
+            vector_nd_impl(const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & other)
             {
                 m_plain_vector.resize(other.total_size());
                 std::copy(other.plain_cbegin(), other.plain_cend(), plain_begin());
@@ -1040,7 +1049,7 @@ namespace yato
              *  Assign from proxy
              */
             template<typename _DataIterator, typename _SizeIterator>
-            my_type & operator= (const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_num> & other)
+            my_type & operator= (const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & other)
             {
                 my_type tmp{ other };
                 tmp.swap(*this);
@@ -1283,12 +1292,21 @@ namespace yato
             }
 
             /**
+             *  Get dimensions
+             */
+            YATO_CONSTEXPR_FUNC
+            dimensions_type dimensions() const YATO_NOEXCEPT_KEYWORD
+            {
+                return yato::dims(m_plain_vector.size());
+            }
+
+            /**
              *  Get number of dimensions
              */
             YATO_CONSTEXPR_FUNC
-            size_t dimensions() const YATO_NOEXCEPT_KEYWORD
+            size_t dimensions_num() const YATO_NOEXCEPT_KEYWORD
             {
-                return dimensions_num;
+                return dimensions_number;
             }
 
             /**
@@ -1314,7 +1332,7 @@ namespace yato
             size_t size(size_t idx) const YATO_NOEXCEPT_IN_RELEASE
             {
 #if YATO_DEBUG
-                return (idx < dimensions_num)
+                return (idx < dimensions_number)
                     ? m_plain_vector.size()
                     : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[size]: dimension index is out of range"), 0);
 #else
