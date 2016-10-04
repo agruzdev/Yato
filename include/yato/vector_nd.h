@@ -376,11 +376,8 @@ namespace yato
              */
             void assign(const dimensions_type & sizes, const data_type & value)
             {
-                if (sizes.size() != dimensions_number) {
-                    throw yato::assertion_error("Assign takes the amount of arguments equal to dimensions number");
-                }
                 _init_sizes(yato::make_range(sizes.cbegin(), sizes.cend()));
-                m_plain_vector.resize(m_sub_sizes[0], value);
+                m_plain_vector.assign(m_sub_sizes[0], value);
             }
 
             /**
@@ -682,12 +679,48 @@ namespace yato
 
             /**
              *  Resize vector length along the top dimension
+             *  If length is bigger than cirrent sze then all stored data will be preserved
              *  @param length desired length in number of sub-vectors
              */
             void resize(size_t length)
             {
                 _update_top_dimension(length);
                 m_plain_vector.resize(m_sub_sizes[0]);
+            }
+
+            /**
+             *  Resize vector length along the top dimension
+             *  If length is bigger than cirrent sze then all stored data will be preserved
+             *  @param length desired length in number of sub-vectors
+             *  @param value if length is bigger than current size new elements will be copy initialized from 'value'
+             */
+            void resize(size_t length, const data_type & value)
+            {
+                _update_top_dimension(length);
+                m_plain_vector.resize(m_sub_sizes[0], value);
+            }
+
+            /**
+             * Resize all vector's extents
+             * All stored data will become invalid
+             * @param extents desired size of the vector
+             */
+            void resize(const dimensions_type & extents)
+            {
+                _init_sizes(yato::make_range(extents.cbegin(), extents.cend()));
+                m_plain_vector.resize(m_sub_sizes[0]);
+            }
+
+            /**
+             * Resize all vector's extents
+             * All stored data will become invalid
+             * @param extents desired size of the vector
+             * @param value if the new size is bigger than the current size new elements will be copy initialized from 'value'
+             */
+            void resize(const dimensions_type & extents, const data_type & value)
+            {
+                _init_sizes(yato::make_range(extents.cbegin(), extents.cend()));
+                m_plain_vector.resize(m_sub_sizes[0], value);
             }
 
             /**
@@ -1092,7 +1125,7 @@ namespace yato
              */
             void assign(const dimensions_type & size, const data_type & value)
             {
-                m_plain_vector.resize(size[0], value);
+                m_plain_vector.assign(size[0], value);
             }
 
             /**
@@ -1387,10 +1420,38 @@ namespace yato
 
             /**
              *  Resize vector length along the top dimension
+             *  If length is bigger than the current size, then all containing data will be preserved
              */
             void resize(size_t length)
             {
                 m_plain_vector.resize(length);
+            }
+
+            /**
+             *  Resize vector length along the top dimension
+             *  If length is bigger than the current size, then all containing data will be preserved
+             */
+            void resize(size_t length, const data_type & value)
+            {
+                m_plain_vector.resize(length, value);
+            }
+
+            /**
+             *  Resize vector extents. 
+             *  All stored data becomes invalid
+             */
+            void resize(const dimensions_type & extents)
+            {
+                m_plain_vector.resize(extents[0]);
+            }
+
+            /**
+             *  Resize vector extents.
+             *  All stored data becomes invalid
+             */
+            void resize(const dimensions_type & extents, const data_type & value)
+            {
+                m_plain_vector.resize(extents[0], value);
             }
 
             /**

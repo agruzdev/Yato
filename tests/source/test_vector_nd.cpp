@@ -349,3 +349,36 @@ TEST(Yato_VectorND, erase)
     EXPECT_EQ(2, (*it)[1]);
 }
 
+
+TEST(Yato_VectorND, resize)
+{
+    yato::vector_nd<int, 2> vec1 = { { 1, 2 },{ 3, 4 } };
+    EXPECT_EQ(2, vec1.size(0));
+    EXPECT_EQ(2, vec1.size(1));
+
+    vec1.resize(3);
+    EXPECT_EQ(3, vec1.size(0));
+    EXPECT_EQ(2, vec1.size(1));
+
+    EXPECT_EQ(1, vec1[0][0]);
+    EXPECT_EQ(2, vec1[0][1]);
+    EXPECT_EQ(3, vec1[1][0]);
+    EXPECT_EQ(4, vec1[1][1]);
+
+    vec1.resize(yato::dims(4, 3));
+    EXPECT_EQ(4, vec1.size(0));
+    EXPECT_EQ(3, vec1.size(1));
+
+    vec1.resize(yato::dims(1, 1));
+    EXPECT_EQ(1, vec1.size(0));
+    EXPECT_EQ(1, vec1.size(1));
+
+    vec1.resize(0);
+    EXPECT_EQ(0, vec1.size(0));
+
+    vec1.resize(yato::dims(2, 2), 7);
+    EXPECT_EQ(7, vec1[0][0]);
+    EXPECT_EQ(7, vec1[0][1]);
+    EXPECT_EQ(7, vec1[1][0]);
+    EXPECT_EQ(7, vec1[1][1]);
+}
