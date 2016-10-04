@@ -28,7 +28,7 @@ namespace yato
 
     public:
         using size_type = SizeType;
-        static YATO_CONSTEXPR_VAR size_t dimensions_num = DimensionsNum;
+        static YATO_CONSTEXPR_VAR size_t dimensions_number = DimensionsNum;
         using iterator = typename container_type::iterator;
         using const_iterator = typename container_type::const_iterator;
         using hyper_dimensionality = dimensionality<DimensionsNum - 1, SizeType>;
@@ -50,7 +50,7 @@ namespace yato
             : m_extents({ extent1, extents... })
         {
             // ToDo (a.gruzdev): Make SFINAE friendly if necessary
-            static_assert(sizeof...(extents) + 1 == dimensions_num, "yato::dimensionality[dimensionality]: Invalid dimensions number");
+            static_assert(sizeof...(extents) + 1 == dimensions_number, "yato::dimensionality[dimensionality]: Invalid dimensions number");
         }
 
         YATO_CONSTEXPR_FUNC
@@ -121,7 +121,7 @@ namespace yato
     {
     public:
         using size_type = SizeType;
-        static YATO_CONSTEXPR_VAR size_t dimensions_num = 0;
+        static YATO_CONSTEXPR_VAR size_t dimensions_number = 0;
 
         YATO_CONSTEXPR_FUNC
         dimensionality()
