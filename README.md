@@ -17,7 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ## Build/Install ##
 The library consists of only headers, so it doesn't require build. The repository provides sources for some tests sources that can be configured and built with the help of cmake file. In order to build the tests you will need to add directory of googletest to the cmake ([GoogleTest repository](https://github.com/google/googletest))
 
-Currently the library cant be successfully used for the following compilers:
+Currently the library can be successfully built by the following compilers:
 
 * MSVC 2015
 * MSVC 2013 (with some limitations)
