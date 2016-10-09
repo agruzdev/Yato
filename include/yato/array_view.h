@@ -109,9 +109,20 @@ namespace yato
             return *this;
         }
 
-        ~array_view_nd()
-        { }
+        ~array_view_nd() = default;
 
+        /**
+         * Create a new array view on the same data but with another shape
+         * Total size should be unchanged
+         */
+        template <size_t NewDimsNum>
+        YATO_CONSTEXPR_FUNC
+        auto reshape(const dimensionality<NewDimsNum, size_t> & extents) const
+            -> array_view_nd<data_type, NewDimsNum>
+        {
+            YATO_REQUIRES(extents.total_size() == total_size());
+            return array_view_nd<data_type, NewDimsNum>(m_base_ptr, extents);
+        }
 
         YATO_CONSTEXPR_FUNC
         const_sub_view operator[](size_t idx) const YATO_NOEXCEPT_IN_RELEASE
@@ -165,7 +176,7 @@ namespace yato
         {
 #if YATO_DEBUG
             return idx < dimensions_number
-                ? return m_sizes[idx]
+                ? m_sizes[idx]
                 : (YATO_THROW_ASSERT_EXCEPT("yato::array_view_nd[size]: idx out of range!"), m_sizes[0]);
 #else
             return m_sizes[idx];
@@ -337,8 +348,20 @@ namespace yato
             return *this;
         }
 
-        ~array_view_nd()
-        { }
+        ~array_view_nd() = default;
+
+        /**
+         * Create a new array view on the same data but with another shape
+         * Total size should be unchanged
+         */
+        template <size_t NewDimsNum>
+        YATO_CONSTEXPR_FUNC
+        auto reshape(const dimensionality<NewDimsNum, size_t> & extents) const
+            -> array_view_nd<data_type, NewDimsNum>
+        {
+            YATO_REQUIRES(extents.total_size() == total_size());
+            return array_view_nd<data_type, NewDimsNum>(m_base_ptr, extents);
+        }
         
         YATO_CONSTEXPR_FUNC
         const data_type & operator[](size_t idx) const YATO_NOEXCEPT_IN_RELEASE

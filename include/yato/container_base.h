@@ -38,6 +38,15 @@ namespace yato
         container_type m_extents;
         //---------------------------------------------------
 
+        YATO_CONSTEXPR_FUNC
+        const SizeType total_size_impl(size_t idx) const
+        {
+            return idx >= dimensions_number - 1
+                ? m_extents[dimensions_number - 1]
+                : m_extents[idx] * total_size_impl(idx + 1);
+        }
+        //---------------------------------------------------
+
     public:
         YATO_CONSTEXPR_FUNC
         dimensionality()
@@ -86,9 +95,15 @@ namespace yato
         }
 
         YATO_CONSTEXPR_FUNC
-        const size_t size() const
+        const size_t dimensions_num() const
         {
-            return m_extents.size();
+            return dimensions_number;
+        }
+
+        YATO_CONSTEXPR_FUNC
+        const SizeType total_size() const
+        {
+            return total_size_impl(0);
         }
 
         iterator begin()
@@ -128,9 +143,9 @@ namespace yato
         { }
 
         YATO_CONSTEXPR_FUNC
-        const size_t size() const
+        const size_t dimensions_num() const
         {
-            return 0;
+            return dimensions_number;
         }
     };
 
