@@ -66,6 +66,40 @@ TEST(Yato_VectorND, common)
 }
 
 
+TEST(Yato_VectorND, ctor_from_range)
+{
+    int raw[] = { 1, 2, 3, 4, 5, 6 };
+
+    auto v1 = yato::vector_1d<int>(yato::dims(6), std::begin(raw), std::end(raw));
+    EXPECT_EQ(6, v1.size(0));
+    EXPECT_EQ(1, v1[0]);
+    EXPECT_EQ(2, v1[1]);
+    EXPECT_EQ(3, v1[2]);
+    EXPECT_EQ(4, v1[3]);
+    EXPECT_EQ(5, v1[4]);
+    EXPECT_EQ(6, v1[5]);
+
+    auto v2 = yato::vector_2d<int>(yato::dims(2, 3), std::begin(raw), std::end(raw));
+    EXPECT_EQ(2, v2.size(0));
+    EXPECT_EQ(3, v2.size(1));
+    EXPECT_EQ(1, v2[0][0]);
+    EXPECT_EQ(2, v2[0][1]);
+    EXPECT_EQ(3, v2[0][2]);
+    EXPECT_EQ(4, v2[1][0]);
+    EXPECT_EQ(5, v2[1][1]);
+    EXPECT_EQ(6, v2[1][2]);
+
+    auto v3 = yato::vector_3d<int>(yato::dims(1, 1, 6), yato::make_range(std::begin(raw), std::end(raw)));
+    EXPECT_EQ(1, v3.size(0));
+    EXPECT_EQ(1, v3.size(1));
+    EXPECT_EQ(6, v3.size(2));
+    EXPECT_EQ(1, v3[0][0][0]);
+    EXPECT_EQ(2, v3[0][0][1]);
+    EXPECT_EQ(3, v3[0][0][2]);
+    EXPECT_EQ(4, v3[0][0][3]);
+    EXPECT_EQ(5, v3[0][0][4]);
+    EXPECT_EQ(6, v3[0][0][5]);
+}
 
 TEST(Yato_VectorND, access)
 {

@@ -261,6 +261,29 @@ namespace yato
             }
 
             /**
+             *  Create from a range of elements
+             *  Amount of elements in the range [first, last) should exactly match the given sizes 
+             */
+            template <typename InputIt>
+            vector_nd_impl(const dimensions_type & sizes, const InputIt & first, const InputIt & last, const allocator_type & alloc = allocator_type())
+                : m_plain_vector(alloc)
+            {
+                YATO_REQUIRES(sizes.total_size() == narrow_cast<size_t>(std::distance(first, last)));
+                _init_sizes(yato::make_range(sizes.cbegin(), sizes.cend()));
+                m_plain_vector.resize(m_sub_sizes[0]);
+                std::copy(first, last, plain_begin());
+            }
+
+            /**
+             *  Create from a range of elements
+             *  Amount of elements in the range [first, last) should exactly match the given sizes
+             */
+            template <typename InputIt>
+            vector_nd_impl(const dimensions_type & sizes, const yato::range<InputIt> & range, const allocator_type & alloc = allocator_type())
+                : vector_nd_impl(sizes, range.begin(), range.end(), alloc)
+            { }
+
+            /**
              *  Create from initializer list
              */
             vector_nd_impl(const initilizer_type<dimensions_number> & init_list)
@@ -275,7 +298,7 @@ namespace yato
             }
 
             /**
-             *	Create with sizes from a generic range without initialization
+             *  Create with sizes from a generic range of sizes without initialization
              */
             template<typename _IteratorType>
             vector_nd_impl(const yato::range<_IteratorType> & range, const allocator_type & alloc = allocator_type())
@@ -289,8 +312,8 @@ namespace yato
             }
 
             /**
-            *	Create with sizes from a generic range without initialization
-            */
+             *  Create with sizes from a generic range of sizes with initialization
+             */
             template<typename _IteratorType>
             vector_nd_impl(const yato::range<_IteratorType> & range, const data_type & value, const allocator_type & alloc = allocator_type())
                 : m_plain_vector(alloc)
@@ -964,6 +987,26 @@ namespace yato
             }
 
             /**
+             *  Create from a range of elements
+             *  Amount of elements in the range [first, last) should exactly match the given sizes
+             */
+            template <typename InputIt>
+            vector_nd_impl(const dimensions_type & sizes, const InputIt & first, const InputIt & last, const allocator_type & alloc = allocator_type())
+                : m_plain_vector(first, last, alloc)
+            {
+                YATO_REQUIRES(sizes.total_size() == narrow_cast<size_t>(std::distance(first, last)));
+            }
+
+            /**
+             *  Create from a range of elements
+             *  Amount of elements in the range [first, last) should exactly match the given sizes
+             */
+            template <typename InputIt>
+            vector_nd_impl(const dimensions_type & sizes, const yato::range<InputIt> & range, const allocator_type & alloc = allocator_type())
+                : vector_nd_impl(sizes, range.begin(), range.end(), alloc)
+            { }
+
+            /**
              *  Create from initializer list
              */
             vector_nd_impl(const std::initializer_list<data_type> & init_list)
@@ -971,7 +1014,7 @@ namespace yato
             { }
 
             /**
-             *  Create with sizes from a generic range without initialization
+             *  Create with sizes from a generic range of sizes without initialization
              */
             template<typename _IteratorType>
             vector_nd_impl(const yato::range<_IteratorType> & range, const allocator_type & alloc = allocator_type())
@@ -984,7 +1027,7 @@ namespace yato
             }
 
             /**
-             *  Create with sizes from a generic range without initialization
+             *  Create with sizes from a generic range of sizes with initialization
              */
             template<typename _IteratorType>
             vector_nd_impl(const yato::range<_IteratorType> & range, const data_type & value, const allocator_type & alloc = allocator_type())
