@@ -221,6 +221,12 @@ namespace yato
                 return _create_proxy(std::next(plain_begin(), erase_offset));
             }
 
+            vector_nd_impl(container_type && plain_vector, const dimensions_type & sizes)
+                : m_plain_vector(std::move(plain_vector))
+            {
+                _init_sizes(yato::make_range(sizes.cbegin(), sizes.cend()));
+            }
+
             //-------------------------------------------------------
 
         public:
@@ -403,6 +409,30 @@ namespace yato
                 m_plain_vector.assign(m_sub_sizes[0], value);
             }
 
+            /**
+             * Create a new vector with another shape
+             * All data will be copied to the new vector
+             */
+            template <size_t NewDimsNum, typename NewAllocatorType = allocator_type>
+            vector_nd_impl<data_type, NewDimsNum, NewAllocatorType> reshape(const dimensionality<NewDimsNum, size_t> & extents, const NewAllocatorType & alloc = NewAllocatorType()) const
+            {
+                YATO_REQUIRES(extents.total_size() == total_size());
+                return vector_nd_impl<data_type, NewDimsNum, NewAllocatorType>(extents, plain_crange(), alloc);
+            }
+
+#ifndef YATO_MSVC_2013
+            /**
+             * Create a new vector with another shape
+             * All data will be moved to the new vector
+             */
+            template <size_t NewDimsNum>
+            vector_nd_impl<data_type, NewDimsNum, allocator_type> reshape(const dimensionality<NewDimsNum, size_t> & extents) &&
+            {
+                YATO_REQUIRES(extents.total_size() == total_size());
+                _update_top_dimension(0); // make "empty"
+                return vector_nd_impl<data_type, NewDimsNum, allocator_type>(std::move(m_plain_vector), extents);
+            }
+#endif
             /**
              *  Returns the allocator associated with the container
              */
@@ -911,6 +941,11 @@ namespace yato
             {
                 return _erase_impl(first, last);
             }
+
+            //------------------------------------------------------------
+
+            template <typename, size_t, typename>
+            friend class vector_nd_impl;
         };
 
 
@@ -948,6 +983,11 @@ namespace yato
 
         private:
             container_type m_plain_vector;
+            //-------------------------------------------------------
+
+            vector_nd_impl(container_type && plain_vector, const dimensions_type &)
+                : m_plain_vector(std::move(plain_vector))
+            { }
             //-------------------------------------------------------
 
         public:
@@ -1170,6 +1210,30 @@ namespace yato
             {
                 m_plain_vector.assign(size[0], value);
             }
+
+            /**
+             * Create a new vector with another shape
+             * All data will be copied to the new vector
+             */
+            template <size_t NewDimsNum, typename NewAllocatorType = allocator_type>
+            vector_nd_impl<data_type, NewDimsNum, NewAllocatorType> reshape(const dimensionality<NewDimsNum, size_t> & extents, const NewAllocatorType & alloc = NewAllocatorType()) const
+            {
+                YATO_REQUIRES(extents.total_size() == total_size());
+                return vector_nd_impl<data_type, NewDimsNum, NewAllocatorType>(extents, plain_crange(), alloc);
+            }
+
+#ifndef YATO_MSVC_2013
+            /**
+             * Create a new vector with another shape
+             * All data will be moved to the new vector
+             */
+            template <size_t NewDimsNum>
+            vector_nd_impl<data_type, NewDimsNum, allocator_type> reshape(const dimensionality<NewDimsNum, size_t> & extents) &&
+            {
+                YATO_REQUIRES(extents.total_size() == total_size());
+                return vector_nd_impl<data_type, NewDimsNum, allocator_type>(std::move(m_plain_vector), extents);
+            }
+#endif
 
             /**
              *  Returns the allocator associated with the container
@@ -1637,6 +1701,10 @@ namespace yato
                 m_plain_vector.erase(range.begin(), range.last());
             }
 
+            //------------------------------------------------------------
+
+            template <typename, size_t, typename>
+            friend class vector_nd_impl;
         };
 
     }

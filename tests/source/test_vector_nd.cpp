@@ -416,3 +416,85 @@ TEST(Yato_VectorND, resize)
     EXPECT_EQ(7, vec1[1][0]);
     EXPECT_EQ(7, vec1[1][1]);
 }
+
+TEST(Yato_VectorND, reshape)
+{
+    int raw[] = { 1, 2, 3, 4, 5, 6 };
+
+    auto plain_vec = yato::vector_1d<int>(yato::dims(6), std::begin(raw), std::end(raw));
+    EXPECT_EQ(6, plain_vec.size(0));
+    EXPECT_EQ(6, plain_vec.total_size());
+
+    auto vec_2x3 = plain_vec.reshape(yato::dims(2, 3));
+    EXPECT_EQ(2, vec_2x3.size(0));
+    EXPECT_EQ(3, vec_2x3.size(1));
+    EXPECT_EQ(6, vec_2x3.total_size());
+    EXPECT_EQ(1, vec_2x3[0][0]);
+    EXPECT_EQ(2, vec_2x3[0][1]);
+    EXPECT_EQ(3, vec_2x3[0][2]);
+    EXPECT_EQ(4, vec_2x3[1][0]);
+    EXPECT_EQ(5, vec_2x3[1][1]);
+    EXPECT_EQ(6, vec_2x3[1][2]);
+
+    auto vec_3x2 = vec_2x3.reshape(yato::dims(3, 2));
+    EXPECT_EQ(3, vec_3x2.size(0));
+    EXPECT_EQ(2, vec_3x2.size(1));
+    EXPECT_EQ(6, vec_3x2.total_size());
+    EXPECT_EQ(1, vec_3x2[0][0]);
+    EXPECT_EQ(2, vec_3x2[0][1]);
+    EXPECT_EQ(3, vec_3x2[1][0]);
+    EXPECT_EQ(4, vec_3x2[1][1]);
+    EXPECT_EQ(5, vec_3x2[2][0]);
+    EXPECT_EQ(6, vec_3x2[2][1]);
+
+    auto vec_6 = vec_3x2.reshape(yato::dims(6));
+    EXPECT_EQ(6, vec_6.size(0));
+    EXPECT_EQ(6, vec_6.total_size());
+    EXPECT_EQ(1, vec_6[0]);
+    EXPECT_EQ(2, vec_6[1]);
+    EXPECT_EQ(3, vec_6[2]);
+    EXPECT_EQ(4, vec_6[3]);
+    EXPECT_EQ(5, vec_6[4]);
+    EXPECT_EQ(6, vec_6[5]);
+}
+
+TEST(Yato_VectorND, reshape_2)
+{
+    int raw[] = { 1, 2, 3, 4, 5, 6 };
+
+    auto plain_vec = yato::vector_1d<int>(yato::dims(6), std::begin(raw), std::end(raw));
+    EXPECT_EQ(6, plain_vec.size(0));
+    EXPECT_EQ(6, plain_vec.total_size());
+
+    auto vec_2x3 = std::move(plain_vec).reshape(yato::dims(2, 3));
+    EXPECT_EQ(2, vec_2x3.size(0));
+    EXPECT_EQ(3, vec_2x3.size(1));
+    EXPECT_EQ(6, vec_2x3.total_size());
+    EXPECT_EQ(1, vec_2x3[0][0]);
+    EXPECT_EQ(2, vec_2x3[0][1]);
+    EXPECT_EQ(3, vec_2x3[0][2]);
+    EXPECT_EQ(4, vec_2x3[1][0]);
+    EXPECT_EQ(5, vec_2x3[1][1]);
+    EXPECT_EQ(6, vec_2x3[1][2]);
+
+    auto vec_3x2 = std::move(vec_2x3).reshape(yato::dims(3, 2));
+    EXPECT_EQ(3, vec_3x2.size(0));
+    EXPECT_EQ(2, vec_3x2.size(1));
+    EXPECT_EQ(6, vec_3x2.total_size());
+    EXPECT_EQ(1, vec_3x2[0][0]);
+    EXPECT_EQ(2, vec_3x2[0][1]);
+    EXPECT_EQ(3, vec_3x2[1][0]);
+    EXPECT_EQ(4, vec_3x2[1][1]);
+    EXPECT_EQ(5, vec_3x2[2][0]);
+    EXPECT_EQ(6, vec_3x2[2][1]);
+
+    auto vec_6 = std::move(vec_3x2).reshape(yato::dims(6));
+    EXPECT_EQ(6, vec_6.size(0));
+    EXPECT_EQ(6, vec_6.total_size());
+    EXPECT_EQ(1, vec_6[0]);
+    EXPECT_EQ(2, vec_6[1]);
+    EXPECT_EQ(3, vec_6[2]);
+    EXPECT_EQ(4, vec_6[3]);
+    EXPECT_EQ(5, vec_6[4]);
+    EXPECT_EQ(6, vec_6[5]);
+}
