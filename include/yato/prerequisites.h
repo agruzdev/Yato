@@ -61,12 +61,19 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 #define YATO_NOEXCEPT_KEYWORD noexcept
 #define YATO_NOEXCEPT_KEYWORD_EXP(Condition) noexcept(Condition)
 #define YATO_NOEXCEPT_OPERATOR(Condition) noexcept(Condition)
+#define YATO_DEPRECATED(Reason) [[deprecated(Reason)]]
 #else
 #define YATO_CONSTEXPR_VAR const
 #define YATO_CONSTEXPR_FUNC inline
 #define YATO_NOEXCEPT_KEYWORD throw()
 #define YATO_NOEXCEPT_KEYWORD_EXP(Condition)
-#define YATO_NOEXCEPT_OPERATOR(Condition) 
+#define YATO_NOEXCEPT_OPERATOR(Condition)
+#define YATO_DEPRECATED(Reason)
+#endif
+
+// ToDo (a.gruzdev): The condition will be made more precise after releasing C++17
+#if defined(__cplusplus) && (__cplusplus >= 201700L)
+# define YATO_CXX17
 #endif
 
 #ifndef YATO_MSVC_2013

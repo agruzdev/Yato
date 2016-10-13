@@ -113,9 +113,6 @@ namespace yato
             }
         };
 
-        /*
-         *  May be wrong alignment for MSVC 2013
-         */
         template <typename _T, size_t _SizeLimit>
         class storage_impl <_T, _SizeLimit, false> final
         {
