@@ -2,7 +2,7 @@
  * YATO library
  *
  * The MIT License (MIT)
- * Copyright (c) 2016 Alexey Gruzdev 
+ * Copyright (c) 2016 Alexey Gruzdev
  */
 
 #ifndef _YATO_ALIGNING_ALLOCATOR_H_
@@ -14,23 +14,84 @@
 namespace yato
 {
 
-    template <typename T, size_t Align, typename = void>
-    class aligning_allocator
-    { };
+    namespace details
+    {
+        template <typename T, size_t Align, typename = void>
+        struct aligning_allocator_base
+        {
+            using offset_type = size_t;
+            using byte_type = uint8_t;
+            static YATO_CONSTEXPR_VAR size_t extra_bytes = Align + 2 * sizeof(offset_type);
 
+            static
+            byte_type* ceil_address(byte_type* p, size_t align) 
+            {
+                return reinterpret_cast<byte_type*>((reinterpret_cast<size_t>(p) / align) * align);
+            }
+
+            static 
+            byte_type* get_offset_ptr(byte_type* aligned_ptr)
+            {
+                return ceil_address(aligned_ptr - sizeof(offset_type), std::alignment_of<offset_type>::value);
+            }
+
+            T* allocate_aligned(size_t n)
+            {
+                byte_type* const unaligned_ptr = new byte_type[n * sizeof(T) + extra_bytes];
+                byte_type* const aligned_ptr = ceil_address(unaligned_ptr + extra_bytes, Align);
+                YATO_ASSERT((unaligned_ptr <= aligned_ptr) && (aligned_ptr <= unaligned_ptr + extra_bytes), "aligned ptr is inside extra memory");
+                *pointer_cast<offset_type*>(get_offset_ptr(aligned_ptr)) = narrow_cast<offset_type>(aligned_ptr - unaligned_ptr);
+                return pointer_cast<T*>(aligned_ptr);
+            }
+
+            void deallocate_aligned(T* p, size_t)
+            {
+                byte_type* aligned_ptr = pointer_cast<byte_type*>(p);
+                const offset_type offset = *pointer_cast<offset_type*>(get_offset_ptr(aligned_ptr));
+                delete[] (aligned_ptr - offset);
+            }
+        };
+
+
+        template <typename T, size_t Align>
+        struct aligning_allocator_base <T, Align, typename std::enable_if <
+            ((Align != 0) && !(Align & (Align - 1))) && // is power of 2
+            (Align <= std::alignment_of<std::max_align_t>::value) // Extended alignment is not guaranteed 
+        >::type>
+        {
+            static YATO_CONSTEXPR_VAR size_t extra_bytes = 0;
+            using aligned_storage = typename std::aligned_storage<sizeof(T), Align>::type;
+
+            T* allocate_aligned(size_t n)
+            {
+                return pointer_cast<T*>(new aligned_storage[n]);
+            }
+
+            void deallocate_aligned(T* p, size_t)
+            {
+                delete[] pointer_cast<aligned_storage*>(p);
+            }
+        };
+
+
+        template <typename T, size_t Align>
+        struct aligning_allocator_base <T, Align, typename std::enable_if<(Align == 0)>::type>
+        { };
+    }
 
     // ToDo (a.gruzdev): Use aligning new from C++17 
     template <typename T, size_t Align>
-    class aligning_allocator <T, Align, typename std::enable_if<
-        ((Align != 0) && !(Align & (Align - 1))) && // is power of 2
-        (Align > 0) &&  // Alignment 0 is undefined behaviour
-        (Align <= std::alignment_of<std::max_align_t>::value) // Extended alignment is not guaranteed 
-    >::type>
+    class aligning_allocator
+        : private details::aligning_allocator_base<T, Align>
     {
     private:
         using my_type = aligning_allocator<T, Align>;
+        using super_type = details::aligning_allocator_base<T, Align>;
+
     public:
         static YATO_CONSTEXPR_VAR size_t alignment = Align;
+        using super_type::extra_bytes;
+
         using value_type = T;
         using is_always_equal = std::true_type;
         using propagate_on_container_copy_assignment = std::false_type;
@@ -86,12 +147,13 @@ namespace yato
 
         pointer allocate(size_type n)
         {
-            return pointer_cast<pointer>(new aligned_storage[n]);
+            YATO_REQUIRES(n > 0);
+            return super_type::allocate_aligned(n);
         }
 
-        void deallocate(pointer p, size_t)
+        void deallocate(pointer p, size_t n)
         {
-            delete[] pointer_cast<aligned_storage*>(p);
+            super_type::deallocate_aligned(p, n);
         }
 
 #ifndef YATO_CXX17

@@ -91,30 +91,49 @@ namespace
 
 TEST(Yato_AlignAlloc, common)
 {
+    yato::aligning_allocator<int, 3> a;
+    auto* p = a.allocate(4);
+    a.deallocate(p, 4);
+
     make_align_test<char, 1>();
     make_align_test<char, 2>();
-    //make_align_test<char, 3>(); //not power of two
+    make_align_test<char, 3>(); //not power of two
     make_align_test<char, 4>();
-    //make_align_test<char, 7>(); // not power of two
+    make_align_test<char, 7>(); // not power of two
     make_align_test<char, 8>();
-    //make_align_test<char, 121>(); // too big
-    //make_align_test<char, 128>();
-    //make_align_test<char, 1024>();
+    make_align_test<char, 121>(); // bigger than max_align_t
+    make_align_test<char, 128>();
+    make_align_test<char, 1024>();
 
     make_align_test<int, 1>();
     make_align_test<int, 2>();
+    make_align_test<int, 3>();
     make_align_test<int, 4>();
+    make_align_test<int, 7>();
     make_align_test<int, 8>();
+    make_align_test<int, 121>();
+    make_align_test<int, 128>();
+    make_align_test<int, 1024>();
 
     make_align_test<long double, 1>();
     make_align_test<long double, 2>();
+    make_align_test<long double, 3>();
     make_align_test<long double, 4>();
+    make_align_test<long double, 7>();
     make_align_test<long double, 8>();
+    make_align_test<long double, 121>();
+    make_align_test<long double, 128>();
+    make_align_test<long double, 1024>();
 
     make_align_test<Foo, 1>();
     make_align_test<Foo, 2>();
+    make_align_test<Foo, 3>();
     make_align_test<Foo, 4>();
+    make_align_test<Foo, 7>();
     make_align_test<Foo, 8>();
+    make_align_test<Foo, 121>();
+    make_align_test<Foo, 128>();
+    make_align_test<Foo, 1024>();
 }
 
 TEST(Yato_AlignAlloc, vector)
