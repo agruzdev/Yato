@@ -1034,6 +1034,7 @@ namespace yato
             vector_nd_impl(const dimensions_type & sizes, const InputIt & first, const InputIt & last, const allocator_type & alloc = allocator_type())
                 : m_plain_vector(first, last, alloc)
             {
+                YATO_MAYBE_UNUSED(sizes);
                 YATO_REQUIRES(sizes.total_size() == narrow_cast<size_t>(std::distance(first, last)));
             }
 

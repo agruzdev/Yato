@@ -8,12 +8,13 @@
 #ifndef _YATO_TYPE_TRAITS_H_
 #define _YATO_TYPE_TRAITS_H_
 
-#include <type_traits>
-#include <functional>
-#include <memory>
-#include <iterator>
-#include <vector>
 #include <array>
+#include <functional>
+#include <iterator>
+#include <limits>
+#include <memory>
+#include <type_traits>
+#include <vector>
 
 #include "prerequisites.h"
 #include "meta.h"
@@ -402,6 +403,51 @@ namespace yato
         using type = TypeTo;
     };
 
+
+
+#ifndef YATO_MSVC_2013
+    /**
+     * Get the narrowest type to store a value
+     */
+    namespace details
+    {
+        template <typename DstType, typename ValueType, ValueType Value>
+        struct fits_type
+            : std::integral_constant<bool, 
+                (Value >= static_cast<ValueType>(std::numeric_limits<DstType>::min())) && 
+                (Value <= static_cast<ValueType>(std::numeric_limits<DstType>::max()))>
+        { };
+
+        template <typename Tag, typename ValueType, ValueType Value, size_t Size, typename = void>
+        struct narrowest_fit_impl
+        {
+            using type = typename std::conditional< fits_type<typename make_type<Tag, Size>::type, ValueType, Value>::value,
+                    typename make_type<Tag, Size>::type,
+                    typename narrowest_fit_impl<Tag, ValueType, Value, 2 * Size>::type
+                >::type;
+        };
+
+        template <typename Tag, typename ValueType, ValueType Value, size_t Size>
+        struct narrowest_fit_impl <Tag, ValueType, Value, Size, typename std::enable_if<
+            (Size > 64)
+        >::type>
+        {
+            using type = void;
+        };
+    }
+
+    template <uint64_t Value>
+    using narrowest_fit_unsigned = details::narrowest_fit_impl<unsigned_type_tag, uint64_t, Value, 8>;
+    
+    template <int64_t Value>
+    using narrowest_fit_signed = details::narrowest_fit_impl<signed_type_tag, int64_t, Value, 8>;
+
+    template <uint64_t Value>
+    using narrowest_fit_unsigned_t = typename narrowest_fit_unsigned<Value>::type;
+
+    template <int64_t Value>
+    using narrowest_fit_signed_t = typename narrowest_fit_signed<Value>::type;
+#endif
 }
 
 #endif

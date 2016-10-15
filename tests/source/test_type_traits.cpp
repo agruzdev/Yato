@@ -258,3 +258,39 @@ TEST(Yato_TypeTraits, functional_2)
         static_assert(std::is_same<f_trait::arg<0>::type, int &&>::value, "functional trait fail");
     }
 }
+
+#ifndef YATO_MSVC_2013
+TEST(Yato_TypeTraits, narrowest_fit)
+{
+    static_assert(std::is_same< yato::narrowest_fit_unsigned<0>::type, uint8_t >::value, "narrowest_fit_unsigned fail");
+    static_assert(std::is_same< yato::narrowest_fit_unsigned<1>::type, uint8_t >::value, "narrowest_fit_unsigned fail");
+    static_assert(std::is_same< yato::narrowest_fit_unsigned<255>::type, uint8_t >::value, "narrowest_fit_unsigned fail");
+    static_assert(std::is_same< yato::narrowest_fit_unsigned<256>::type, uint16_t >::value, "narrowest_fit_unsigned fail");
+    static_assert(std::is_same< yato::narrowest_fit_unsigned<1024>::type, uint16_t >::value, "narrowest_fit_unsigned fail");
+    static_assert(std::is_same< yato::narrowest_fit_unsigned<65535>::type, uint16_t >::value, "narrowest_fit_unsigned fail");
+    static_assert(std::is_same< yato::narrowest_fit_unsigned<65536>::type, uint32_t >::value, "narrowest_fit_unsigned fail");
+    static_assert(std::is_same< yato::narrowest_fit_unsigned<4294967295>::type, uint32_t >::value, "narrowest_fit_unsigned fail");
+    static_assert(std::is_same< yato::narrowest_fit_unsigned<4294967296>::type, uint64_t >::value, "narrowest_fit_unsigned fail");
+
+    static_assert(std::is_same< yato::narrowest_fit_signed<0>::type, int8_t >::value, "narrowest_fit_signed fail");
+    static_assert(std::is_same< yato::narrowest_fit_signed<1>::type, int8_t >::value, "narrowest_fit_signed fail");
+    static_assert(std::is_same< yato::narrowest_fit_signed<127>::type, int8_t >::value, "narrowest_fit_signed fail");
+    static_assert(std::is_same< yato::narrowest_fit_signed<128>::type, int16_t >::value, "narrowest_fit_signed fail");
+    static_assert(std::is_same< yato::narrowest_fit_signed<1024>::type, int16_t >::value, "narrowest_fit_signed fail");
+    static_assert(std::is_same< yato::narrowest_fit_signed<32767>::type, int16_t >::value, "narrowest_fit_signed fail");
+    static_assert(std::is_same< yato::narrowest_fit_signed<32768>::type, int32_t >::value, "narrowest_fit_signed fail");
+    static_assert(std::is_same< yato::narrowest_fit_signed<65536>::type, int32_t >::value, "narrowest_fit_signed fail");
+    static_assert(std::is_same< yato::narrowest_fit_signed<2147483647>::type, int32_t >::value, "narrowest_fit_signed fail");
+    static_assert(std::is_same< yato::narrowest_fit_signed<2147483648>::type, int64_t >::value, "narrowest_fit_signed fail");
+
+    static_assert(std::is_same< yato::narrowest_fit_signed<-1>::type, int8_t >::value, "narrowest_fit_signed fail");
+    static_assert(std::is_same< yato::narrowest_fit_signed<-128>::type, int8_t >::value, "narrowest_fit_signed fail");
+    static_assert(std::is_same< yato::narrowest_fit_signed<-129>::type, int16_t >::value, "narrowest_fit_signed fail");
+    static_assert(std::is_same< yato::narrowest_fit_signed<-1024>::type, int16_t >::value, "narrowest_fit_signed fail");
+    static_assert(std::is_same< yato::narrowest_fit_signed<-32768>::type, int16_t >::value, "narrowest_fit_signed fail");
+    static_assert(std::is_same< yato::narrowest_fit_signed<-32769>::type, int32_t >::value, "narrowest_fit_signed fail");
+    static_assert(std::is_same< yato::narrowest_fit_signed<-65536>::type, int32_t >::value, "narrowest_fit_signed fail");
+    static_assert(std::is_same< yato::narrowest_fit_signed<-2147483648LL>::type, int32_t >::value, "narrowest_fit_signed fail");
+    static_assert(std::is_same< yato::narrowest_fit_signed<-2147483649LL>::type, int64_t >::value, "narrowest_fit_signed fail");
+}
+#endif
