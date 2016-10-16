@@ -16,12 +16,43 @@ namespace yato
 
     namespace details
     {
+        template <size_t Align, typename OffsetType>
+        struct get_extra_length
+            : public std::integral_constant<size_t, Align - 1 + sizeof(OffsetType) + std::alignment_of<OffsetType>::value - 1>
+        { };
+
+        template <size_t Align, size_t TypeSize = 8, typename = void>
+        struct select_offset_type
+        {
+            using offset_type = make_type_t<unsigned_type_tag, TypeSize>;
+            using type = typename std::conditional<
+#ifndef YATO_MSVC_2013
+                (get_extra_length<Align, offset_type>::value <= std::numeric_limits<offset_type>::max()),
+#else
+# pragma warning(push)
+# pragma warning(disable: 4293)
+                (get_extra_length<Align, offset_type>::value <= (static_cast<uint64_t>(1) << TypeSize) - static_cast<uint64_t>(1)),
+# pragma warning(pop)
+#endif
+                offset_type,
+                typename select_offset_type<Align, 2 * TypeSize>::type
+            >::type;
+        };
+
+        template <size_t Align, size_t TypeSize>
+        struct select_offset_type <Align, TypeSize, typename std::enable_if<
+            (TypeSize > 64)
+        >::type>
+        {
+            using type = void;
+        };
+
         template <typename T, size_t Align, typename = void>
         struct aligning_allocator_base
         {
-            using offset_type = size_t;
             using byte_type = uint8_t;
-            static YATO_CONSTEXPR_VAR size_t extra_bytes = Align + 2 * sizeof(offset_type);
+            using offset_type = typename select_offset_type<Align>::type;
+            static YATO_CONSTEXPR_VAR size_t extra_bytes = get_extra_length<Align, offset_type>::value;
 
             static
             byte_type* ceil_address(byte_type* p, size_t align) 

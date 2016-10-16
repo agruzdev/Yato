@@ -94,6 +94,8 @@ TEST(Yato_AlignAlloc, common)
     yato::aligning_allocator<int, 3> a;
     auto* p = a.allocate(4);
     a.deallocate(p, 4);
+    size_t overhead = decltype(a)::extra_bytes;
+    EXPECT_EQ(3, overhead);
 
     make_align_test<char, 1>();
     make_align_test<char, 2>();
