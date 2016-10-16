@@ -29,10 +29,7 @@ namespace yato
 #ifndef YATO_MSVC_2013
                 (get_extra_length<Align, offset_type>::value <= std::numeric_limits<offset_type>::max()),
 #else
-# pragma warning(push)
-# pragma warning(disable: 4293)
-                (get_extra_length<Align, offset_type>::value <= (static_cast<uint64_t>(1) << TypeSize) - static_cast<uint64_t>(1)),
-# pragma warning(pop)
+                (get_extra_length<Align, offset_type>::value <= (((static_cast<uint64_t>(1) << (TypeSize - 1)) - 1) << 1) + 1),
 #endif
                 offset_type,
                 typename select_offset_type<Align, 2 * TypeSize>::type
