@@ -1,8 +1,9 @@
 #include "gtest/gtest.h"
 
 #include <memory>
-#include <yato/array_view.h>
 
+#define YATO_THROW_ON_ASSERT
+#include <yato/array_view.h>
 
 
 TEST(Yato_ArrayView, array_view)

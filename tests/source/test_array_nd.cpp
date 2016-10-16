@@ -1,5 +1,7 @@
 #include "gtest/gtest.h"
 
+#define YATO_THROW_ON_ASSERT
+
 #include <yato/types.h>
 #include <yato/array_nd.h>
 

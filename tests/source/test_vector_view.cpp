@@ -1,6 +1,8 @@
 #include "gtest/gtest.h"
 
 #include <vector>
+
+#define YATO_THROW_ON_ASSERT
 #include <yato/vector_view.h>
 #include <yato/range.h>
 
