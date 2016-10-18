@@ -4,6 +4,7 @@ Yato - Yet another toolkit
 
 A small repository where I'm gatherting useful snippets and abstractions for C++ development
 
+If you find any bug, please feel free to submit an issue! It will be very helpful for me
 
 ##Licence##
 The MIT License (MIT)
@@ -96,3 +97,6 @@ Yato library provides few compile time algorithms on tuples
 * **yato::zip_iterator** is an analogue of [boost::zip_iterator](http://www.boost.org/doc/libs/1_60_0/libs/iterator/doc/zip_iterator.html) but implemented in terms of modern C++ in order to get rid of any boost dependency
 * **yato::transform_iterator** is an analogue of [boost::transform_iterator](http://www.boost.org/doc/libs/1_60_0/libs/iterator/doc/transform_iterator.html) but implemented in terms of modern C++ in order to get rid of any boost dependency
 * **yato::filter_iterator** is an analogue of [boost::filter_iterator](http://www.boost.org/doc/libs/master/libs/iterator/doc/filter_iterator.html) but implemented in terms of modern C++ in order to get rid of any boost dependency
+
+### Allocator ###
+* **yato::aligning_allocator** is STL-compatible allocator aloowing to alloc heap memory with any alignment. Alignments which are not power of 2 or bigger than alignment of std::max_align_t will have small memory overhead
