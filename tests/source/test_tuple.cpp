@@ -72,8 +72,8 @@ TEST(Yato_Tuple, tuple_transform_2)
         auto t1 = std::make_tuple(-1, 20U, 1.0f);
         auto t2 = std::make_tuple(1U, 10, 41.0);
         auto t3 = yato::tuple_transform<plus>(t1, t2);
-        EXPECT_EQ(0, std::get<0>(t3));
-        EXPECT_EQ(30, std::get<1>(t3));
+        EXPECT_EQ(0U, std::get<0>(t3));
+        EXPECT_EQ(30U, std::get<1>(t3));
         EXPECT_EQ(42.0, std::get<2>(t3));
     }
 #ifndef YATO_MSVC_2013

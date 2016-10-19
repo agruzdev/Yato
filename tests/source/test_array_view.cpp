@@ -63,6 +63,7 @@ TEST(Yato_ArrayView, make_view)
 
     const std::array<int, 4> arr_4 = { { 0 } };
     auto view_4 = yato::make_view(arr_4);
+    YATO_MAYBE_UNUSED(view_4);
 
     std::vector<int> arr_5(5, 0);
     auto view_5 = yato::make_view(arr_5);
@@ -158,6 +159,7 @@ TEST(Yato_ArrayView, array_view_nd_2)
         for (size_t j = 0; j < Size_2; ++j) {
             for (size_t k = 0; k < Size_3; ++k) {
                 EXPECT_TRUE(arr_3d[i][j][k] == view[i][j][k]);
+                EXPECT_TRUE(const_view[i][j][k] == view[i][j][k]);
             }
         }
     }
@@ -187,6 +189,7 @@ TEST(Yato_ArrayView, array_view_nd_3)
         for (size_t j = 0; j < Size_2; ++j) {
             for (size_t k = 0; k < Size_3; ++k) {
                 EXPECT_TRUE(arr_3d[i][j][k] == view.at(i, j, k));
+                EXPECT_TRUE(const_view[i][j][k] == view.at(i, j, k));
             }
         }
     }
@@ -235,16 +238,16 @@ TEST(Yato_ArrayView, reshape)
     int raw[6] = { 1, 2, 3, 4, 5, 6 };
 
     auto dim1 = yato::dims(6);
-    EXPECT_EQ(6, dim1.total_size());
+    EXPECT_EQ(6U, dim1.total_size());
 
     auto plain_view = yato::make_view(raw);
-    EXPECT_EQ(6, plain_view.size(0));
-    EXPECT_EQ(6, plain_view.total_size());
+    EXPECT_EQ(6U, plain_view.size(0));
+    EXPECT_EQ(6U, plain_view.total_size());
 
     auto view_2x3 = plain_view.reshape(yato::dims(2, 3));
-    EXPECT_EQ(2, view_2x3.size(0));
-    EXPECT_EQ(3, view_2x3.size(1));
-    EXPECT_EQ(6, view_2x3.total_size());
+    EXPECT_EQ(2U, view_2x3.size(0));
+    EXPECT_EQ(3U, view_2x3.size(1));
+    EXPECT_EQ(6U, view_2x3.total_size());
     EXPECT_EQ(1, view_2x3[0][0]);
     EXPECT_EQ(2, view_2x3[0][1]);
     EXPECT_EQ(3, view_2x3[0][2]);
@@ -253,9 +256,9 @@ TEST(Yato_ArrayView, reshape)
     EXPECT_EQ(6, view_2x3[1][2]);
 
     auto view_3x2 = view_2x3.reshape(yato::dims(3, 2));
-    EXPECT_EQ(3, view_3x2.size(0));
-    EXPECT_EQ(2, view_3x2.size(1));
-    EXPECT_EQ(6, view_3x2.total_size());
+    EXPECT_EQ(3U, view_3x2.size(0));
+    EXPECT_EQ(2U, view_3x2.size(1));
+    EXPECT_EQ(6U, view_3x2.total_size());
     EXPECT_EQ(1, view_3x2[0][0]);
     EXPECT_EQ(2, view_3x2[0][1]);
     EXPECT_EQ(3, view_3x2[1][0]);
@@ -264,8 +267,8 @@ TEST(Yato_ArrayView, reshape)
     EXPECT_EQ(6, view_3x2[2][1]);
 
     auto view_6 = view_3x2.reshape(yato::dims(6));
-    EXPECT_EQ(6, view_6.size(0));
-    EXPECT_EQ(6, view_6.total_size());
+    EXPECT_EQ(6U, view_6.size(0));
+    EXPECT_EQ(6U, view_6.total_size());
     EXPECT_EQ(1, view_6[0]);
     EXPECT_EQ(2, view_6[1]);
     EXPECT_EQ(3, view_6[2]);

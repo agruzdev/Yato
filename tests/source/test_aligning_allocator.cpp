@@ -6,9 +6,13 @@
 
 namespace
 {
-    class YATO_ALIGN(512) Foo
+    class Foo
     {
         char x[512]; 
+
+        void foo() {
+            (void)x;
+        }
 
     public:
         Foo()  = default;
@@ -26,7 +30,7 @@ namespace
         for (size_t n : sizes) {
             T* ptr = alloc.allocate(n);
             EXPECT_NE(nullptr, ptr);
-            EXPECT_EQ(0, reinterpret_cast<size_t>(ptr) % Align);
+            EXPECT_EQ(0U, reinterpret_cast<size_t>(ptr) % Align);
             pointers.push_back(ptr);
         }
 
@@ -38,7 +42,7 @@ namespace
         for (int i = 0; i < ITERS; ++i) {
             T* ptr = alloc.allocate(1);
             EXPECT_NE(nullptr, ptr);
-            EXPECT_EQ(0, reinterpret_cast<size_t>(ptr) % Align);
+            EXPECT_EQ(0U, reinterpret_cast<size_t>(ptr) % Align);
             std::allocator_traits<decltype(alloc)>::construct(alloc, ptr);
             std::allocator_traits<decltype(alloc)>::destroy(alloc, ptr);
             alloc.deallocate(ptr, 1);
@@ -51,17 +55,17 @@ namespace
         const int ITERS = 10000;
         for (int i = 0; i < 2; ++i) {
             std::vector<T, yato::aligning_allocator<T, Align>> v(10, 1);
-            EXPECT_EQ(1, v[0]);
-            EXPECT_EQ(0, reinterpret_cast<size_t>(&v[0]) % Align);
+            EXPECT_EQ(static_cast<T>(1), v[0]);
+            EXPECT_EQ(0U, reinterpret_cast<size_t>(&v[0]) % Align);
             v.resize(1);
-            EXPECT_EQ(1, v[0]);
-            EXPECT_EQ(0, reinterpret_cast<size_t>(&v[0]) % Align);
+            EXPECT_EQ(static_cast<T>(1), v[0]);
+            EXPECT_EQ(0U, reinterpret_cast<size_t>(&v[0]) % Align);
             v.resize(100);
-            EXPECT_EQ(0, reinterpret_cast<size_t>(&v[0]) % Align);
+            EXPECT_EQ(0U, reinterpret_cast<size_t>(&v[0]) % Align);
             for (int j = 0; j < ITERS; ++j) {
                 v.push_back(2);
-                EXPECT_EQ(2, v.back());
-                EXPECT_EQ(0, reinterpret_cast<size_t>(&v[0]) % Align);
+                EXPECT_EQ(static_cast<T>(2), v.back());
+                EXPECT_EQ(0U, reinterpret_cast<size_t>(&v[0]) % Align);
             }
         }
     }
@@ -72,18 +76,18 @@ namespace
         const int ITERS = 10000;
         for (int i = 0; i < 2; ++i) {
             yato::vector_2d<T, yato::aligning_allocator<T, Align>> v(yato::dims(10, 10), 1);
-            EXPECT_EQ(1, v[0][0]);
-            EXPECT_EQ(0, reinterpret_cast<size_t>(v.data()) % Align);
+            EXPECT_EQ(static_cast<T>(1), v[0][0]);
+            EXPECT_EQ(0U, reinterpret_cast<size_t>(v.data()) % Align);
             v.resize(yato::dims(1, 1));
-            EXPECT_EQ(1, v[0][0]);
-            EXPECT_EQ(0, reinterpret_cast<size_t>(v.data()) % Align);
+            EXPECT_EQ(static_cast<T>(1), v[0][0]);
+            EXPECT_EQ(0U, reinterpret_cast<size_t>(v.data()) % Align);
             v.resize(yato::dims(100, 100));
-            EXPECT_EQ(0, reinterpret_cast<size_t>(v.data()) % Align);
+            EXPECT_EQ(0U, reinterpret_cast<size_t>(v.data()) % Align);
             auto v1(std::move(v).reshape(yato::dims(10000)));
             for (int j = 0; j < ITERS; ++j) {
                 v1.push_back(2);
-                EXPECT_EQ(2, v1.back());
-                EXPECT_EQ(0, reinterpret_cast<size_t>(v1.data()) % Align);
+                EXPECT_EQ(static_cast<T>(2), v1.back());
+                EXPECT_EQ(0U, reinterpret_cast<size_t>(v1.data()) % Align);
             }
         }
     }
@@ -95,7 +99,7 @@ TEST(Yato_AlignAlloc, common)
     auto* p = a.allocate(4);
     a.deallocate(p, 4);
     size_t overhead = decltype(a)::extra_bytes;
-    EXPECT_EQ(3, overhead);
+    EXPECT_EQ(3U, overhead);
 
     make_align_test<char, 1>();
     make_align_test<char, 2>();

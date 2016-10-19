@@ -94,4 +94,23 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 #define YATO_MAYBE_UNUSED(X) ((void)(X));
 
 
+
+#if defined(YATO_MSVC)
+# define YATO_PRAGMA_WARNING_PUSH __pragma(warning(push))
+# define YATO_PRAGMA_WARNING_POP  __pragma(warning(pop))
+# define YATO_MSCV_WARNING_IGNORE(Number) __pragma(warning( disable: Number ))
+# define YATO_CLANG_WARNING_IGNORE(X)
+#elif defined(YATO_CLANG)
+# define YATO_PRAGMA_WARNING_PUSH _Pragma(_YATO_QUOTE_IMPL(clang diagnostic push))
+# define YATO_PRAGMA_WARNING_POP _Pragma(_YATO_QUOTE_IMPL(clang diagnostic pop))
+# define YATO_MSCV_WARNING_IGNORE(X) 
+# define YATO_CLANG_WARNING_IGNORE(Flag) _Pragma(_YATO_QUOTE_IMPL(clang diagnostic ignored Flag))
+#else
+# define YATO_PRAGMA_WARNING_PUSH 
+# define YATO_PRAGMA_WARNING_POP 
+# define YATO_MSCV_WARNING_IGNORE(X) 
+# define YATO_CLANG_WARNING_IGNORE(X) 
+#endif
+
+
 #endif

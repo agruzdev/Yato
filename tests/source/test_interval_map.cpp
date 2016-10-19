@@ -132,7 +132,7 @@ TEST(Yato_IntervalMap, bruteforce)
             size_t l = test[i][0];
             size_t r = test[i][1];
             size_t v = test[i][2];
-            if (false == l < r) {
+            if (!(l < r)) {
                 continue;
             }
             for (size_t k = l; k < r; ++k) {

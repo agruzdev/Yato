@@ -53,6 +53,8 @@ namespace yato
             : m_extents()
         { }
 
+YATO_PRAGMA_WARNING_PUSH
+YATO_CLANG_WARNING_IGNORE("-Wmissing-braces")
         template <typename... Args>
         YATO_CONSTEXPR_FUNC explicit 
         dimensionality(const SizeType & extent1, const Args &... extents) YATO_NOEXCEPT_KEYWORD
@@ -61,6 +63,7 @@ namespace yato
             // ToDo (a.gruzdev): Make SFINAE friendly if necessary
             static_assert(sizeof...(extents) + 1 == dimensions_number, "yato::dimensionality[dimensionality]: Invalid dimensions number");
         }
+YATO_PRAGMA_WARNING_POP
 
         YATO_CONSTEXPR_FUNC
         dimensionality(const my_type &) = default;

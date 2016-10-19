@@ -1,12 +1,13 @@
 #include "gtest/gtest.h"
 
-#include <yato/range.h>
-#include <yato/types.h>
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <memory>
 #include <vector>
 
-#include <memory>
-#include <algorithm>
-#include <iostream>
+#include <yato/types.h>
+#include <yato/range.h>
 
 TEST(Yato_Range, range)
 {
@@ -184,7 +185,7 @@ TEST(Yato_Range, zip)
     auto r2 = yato::make_range(v).zip(yato::make_range(u), yato::make_range(1U, 5U));
     for (const auto & t : r2) {
         EXPECT_EQ(std::get<0>(t), -std::get<1>(t));
-        EXPECT_EQ(std::get<0>(t),  std::get<2>(t));
+        EXPECT_EQ(std::get<0>(t), static_cast<int>(std::get<2>(t)));
     }
 }
 
@@ -204,7 +205,7 @@ TEST(Yato_Range, superposition)
     std::vector<float> v = {4.1f, 0.0f, -2.4f, 4.9f, 1.9f, 1.1f, 4.0f, 0.4f, -5.0f, 6.1f, 2.4f, 1.0f, 5.3f, 0.9f, 1.0f, 0.0f, 5.4f, -1.1f, 5.0f};
 
     size_t num = yato::make_range(v).map([](float y)->int {return static_cast<int>(std::round(y)); }).filter([](int x) {return x == 1; }).fold_left(std::plus<size_t>(), static_cast<size_t>(0));
-    EXPECT_EQ(4, num);
+    EXPECT_EQ(4U, num);
 }
 #endif
 

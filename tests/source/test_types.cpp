@@ -45,17 +45,21 @@ TEST(Yato_Types, pointer_cast)
         int x = 0;
         int* p1 = &x;
         float* p2 = yato::pointer_cast<float*>(p1);
+        YATO_MAYBE_UNUSED(p2);
     }
     {
         float x = 0.0f;
         const float* p1 = &x;
         const int* p2 = yato::pointer_cast<const int*>(p1);
         float* p3 = const_cast<float*>(yato::pointer_cast<const float*>(p1));
+        YATO_MAYBE_UNUSED(p2);
+        YATO_MAYBE_UNUSED(p3);
     }
     {
         volatile float x = 0.0f;
         const volatile float* p1 = &x;
         const volatile char* p2 = yato::pointer_cast<const volatile char*>(p1);
+        YATO_MAYBE_UNUSED(p2);
     }
 }
 #ifdef YATO_MSVC

@@ -74,10 +74,10 @@ namespace
 TEST(Yato_DynamicArray, assign)
 {
     Foo f;
-    EXPECT_EQ(0, f.x);
+    EXPECT_EQ(0U, f.x);
     yato::dynamic_array<Foo> a1(3, f);
-    EXPECT_EQ(3, f.x);
+    EXPECT_EQ(3U, f.x);
     a1.assign(2, f);
-    EXPECT_EQ(5, f.x);
+    EXPECT_EQ(5U, f.x);
 }
 
