@@ -118,8 +118,7 @@ namespace yato
                 return *this;
             }
 
-            ~sub_array_proxy()
-            {}
+            ~sub_array_proxy()= default;
 
             template<size_t _MyDimsNum = _DimsNum>
             YATO_CONSTEXPR_FUNC
