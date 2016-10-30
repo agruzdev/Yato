@@ -268,7 +268,6 @@ namespace yato
          *  Shift by offset
          */
         template<typename _MyCategory = iterator_category>
-        YATO_CONSTEXPR_FUNC
         auto operator + (difference_type offset) const
             -> typename std::enable_if<std::is_base_of<std::random_access_iterator_tag, _MyCategory>::value, my_type>::type
         {

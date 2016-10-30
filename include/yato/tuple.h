@@ -325,6 +325,45 @@ namespace yato
     {
         return details::tuple_any_of_2_impl<_Tuple1, _Tuple2, std::tuple_size<typename std::decay<_Tuple1>::type>::value, 0>::template apply<_Pred>(tuple1, tuple2, std::forward<_PredArgs>(args)...);
     }
+
+    /**
+     * Functor for accessing tuple element by reference
+     */
+    template <typename TupleType, size_t Idx>
+    struct tuple_getter
+    {
+        auto operator()(TupleType & t) const
+            -> decltype(std::get<Idx>(t))
+        {
+            return std::get<Idx>(t);
+        }
+    };
+
+    /**
+     * Functor for accessing tuple element by const reference
+     */
+    template <typename TupleType, size_t Idx>
+    struct tuple_cgetter
+    {
+        auto operator()(const TupleType & t) const
+            -> decltype(std::get<Idx>(t))
+        {
+            return std::get<Idx>(t);
+        }
+    };
+
+    /**
+     * Functor for accessing tuple element by rvalue-reference
+     */
+    template <typename TupleType, size_t Idx>
+    struct tuple_rgetter
+    {
+        auto operator()(TupleType && t) const
+            -> decltype(std::get<Idx>(t))
+        {
+            return std::get<Idx>(t);
+        }
+    };
 }
 
 #endif

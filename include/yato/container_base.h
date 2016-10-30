@@ -9,10 +9,50 @@
 #define _YATO_CONTAINER_BASE_H_
 
 #include <array>
+#include <tuple>
 #include "type_traits.h"
+#include "range.h"
 
 namespace yato
 {
+    /**
+     * Trait class for dimension descriptors used in containers
+     * Stores size and offset
+     *
+     * [     size 0     ] [        size 1        ] [      size 2          ] ...
+     * [   total_size   ] [ sub_view<N - 1> size ] [ sub_view<N - 2> size ] ...
+     */
+    template <typename SizeType = size_t>
+    struct dimension_descriptor
+    {
+        using size_type = SizeType;
+        using type = std::tuple<size_type, size_type>;
+
+        static YATO_CONSTEXPR_VAR size_t idx_size   = 0;
+        static YATO_CONSTEXPR_VAR size_t idx_total  = 1;
+        static YATO_CONSTEXPR_VAR size_t idx_offset = 1;
+    };
+
+    /**
+     * Trait class for dimension descriptors used in containers
+     * Stores size, stride and offset
+     *
+     * [     size 0       ] [        size 1        ] [      size 2          ] ...
+     * [   total_size     ] [ sub_view<N - 1> size ] [ sub_view<N - 2> size ] ...
+     * [  total_reserved  ] [    offset<N - 1>     ] [    offset<N - 2>     ] ...
+     */
+    template <typename SizeType = size_t>
+    struct dimension_descriptor_strided
+    {
+        using size_type = SizeType;
+        using type = std::tuple<size_type, size_type, size_type>;
+
+        static YATO_CONSTEXPR_VAR size_t idx_size   = 0;
+        static YATO_CONSTEXPR_VAR size_t idx_total  = 1;
+        static YATO_CONSTEXPR_VAR size_t idx_offset = 2;
+    };
+
+
     /**
      * Storage for containers extents
      */
@@ -22,8 +62,6 @@ namespace yato
     private:
         using my_type = dimensionality<DimensionsNum, SizeType>;
         using container_type = std::array<SizeType, DimensionsNum>;
-        template <typename T>
-        using arg_to_size = cvt_type<T, SizeType>;
         //---------------------------------------------------
 
     public:
@@ -31,7 +69,7 @@ namespace yato
         static YATO_CONSTEXPR_VAR size_t dimensions_number = DimensionsNum;
         using iterator = typename container_type::iterator;
         using const_iterator = typename container_type::const_iterator;
-        using hyper_dimensionality = dimensionality<DimensionsNum - 1, SizeType>;
+        using sub_dimensionality = dimensionality<DimensionsNum - 1, SizeType>;
         //---------------------------------------------------
 
     private:
@@ -39,7 +77,7 @@ namespace yato
         //---------------------------------------------------
 
         YATO_CONSTEXPR_FUNC
-        const SizeType total_size_impl(size_t idx) const
+        const size_type total_size_impl(size_t idx) const
         {
             return idx >= dimensions_number - 1
                 ? m_extents[dimensions_number - 1]
@@ -57,13 +95,21 @@ YATO_PRAGMA_WARNING_PUSH
 YATO_CLANG_WARNING_IGNORE("-Wmissing-braces")
         template <typename... Args>
         YATO_CONSTEXPR_FUNC explicit 
-        dimensionality(const SizeType & extent1, const Args &... extents) YATO_NOEXCEPT_KEYWORD
+        dimensionality(const size_type & extent1, const Args &... extents) YATO_NOEXCEPT_KEYWORD
             : m_extents({ extent1, extents... })
         {
             // ToDo (a.gruzdev): Make SFINAE friendly if necessary
             static_assert(sizeof...(extents) + 1 == dimensions_number, "yato::dimensionality[dimensionality]: Invalid dimensions number");
         }
 YATO_PRAGMA_WARNING_POP
+
+        template <typename SizeIter>
+        YATO_CONSTEXPR_FUNC_EX explicit
+        dimensionality(const range<SizeIter> & extents)
+        {
+            YATO_REQUIRES(extents.distance() == dimensions_number);
+            std::copy(extents.begin(), extents.end(), m_extents.begin());
+        }
 
         YATO_CONSTEXPR_FUNC
         dimensionality(const my_type &) = default;
@@ -128,6 +174,12 @@ YATO_PRAGMA_WARNING_POP
         {
             return m_extents.cend();
         }
+
+        YATO_CONSTEXPR_FUNC_EX
+        sub_dimensionality sub_dims() const
+        {
+            return sub_dimensionality(make_range(std::next(m_extents.cbegin()), m_extents.cend()));
+        }
     };
 
 
@@ -144,6 +196,13 @@ YATO_PRAGMA_WARNING_POP
         YATO_CONSTEXPR_FUNC
         dimensionality()
         { }
+
+        template <typename SizeIter>
+        YATO_CONSTEXPR_FUNC_EX explicit
+        dimensionality(const range<SizeIter> & extents)
+        { }
+
+        ~dimensionality() = default;
 
         YATO_CONSTEXPR_FUNC
         const size_t dimensions_num() const
