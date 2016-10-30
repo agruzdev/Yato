@@ -36,13 +36,16 @@ namespace yato
         not_null(T ptr)
             : m_pointer(ptr) 
         {
-            if(ptr == nullptr){
-                throw yato::assertion_error("not_null: null pointer exception!");
-            }
+            YATO_REQUIRES(ptr != nullptr);
         }
         
         not_null(std::nullptr_t ptr) = delete;
         
+        not_null(const not_null&) = default;
+        not_null& operator=(const not_null&) = default;
+
+        ~not_null() = default;
+
         YATO_CONSTEXPR_FUNC 
         operator T () const YATO_NOEXCEPT_KEYWORD
         {
@@ -87,18 +90,15 @@ namespace yato
         not_null(const T & ptr) 
             : m_smart_pointer(ptr) 
         {
-            if(m_smart_pointer.get() == nullptr){
-                throw yato::assertion_error("not_null: null pointer exception!");
-            }
+            YATO_REQUIRES(ptr != nullptr);
         }
 
         not_null(std::nullptr_t ptr) = delete;
         
-        not_null(const not_null&) = delete;
-        not_null& operator=(const not_null&) = delete;
+        not_null(const not_null&) = default;
+        not_null& operator=(const not_null&) = default;
 
-        ~not_null()
-        { }
+        ~not_null() = default;
 
         operator T& () YATO_NOEXCEPT_KEYWORD
         {
