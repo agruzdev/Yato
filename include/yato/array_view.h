@@ -179,6 +179,7 @@ namespace yato
         template<typename... _IdxTail>
         const value_type & at(size_t idx, _IdxTail... tail) const
         {
+            static_assert(1 + sizeof...(_IdxTail) == dimensions_number, "Invalid arguments number");
             if (idx >= size(0)) {
                 throw yato::out_of_range_error("yato::array_view_nd: out of range!");
             }
@@ -188,6 +189,7 @@ namespace yato
         template<typename... _IdxTail>
         value_type & at(size_t idx, _IdxTail... tail)
         {
+            static_assert(1 + sizeof...(_IdxTail) == dimensions_number, "Invalid arguments number");
             if (idx >= size(0)) {
                 throw yato::out_of_range_error("yato::array_view_nd: out of range!");
             }
