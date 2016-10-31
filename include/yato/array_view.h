@@ -61,10 +61,6 @@ namespace yato
 
         void set_extents_(const dimensions_type & extents, const strides_type & strides)
         {
-            //m_descriptors[dimensions_number - 1] = std::make_tuple(extents[dimensions_number - 1], extents[dimensions_number - 1], static_cast<size_type>(1));
-            //for (size_t i = dimensions_number - 1; i > 0; --i) {
-            //    m_descriptors[i - 1] = std::make_tuple(extents[i - 1], extents[i - 1] * std::get<dim_descriptor::idx_total>(m_descriptors[i]), strides[i - 1] * std::get<dim_descriptor::idx_offset>(m_descriptors[i]));
-            //}
             m_descriptors[dimensions_number - 1] = std::make_tuple(extents[dimensions_number - 1], extents[dimensions_number - 1], strides[dimensions_number - 2]);
             for (size_t i = dimensions_number - 1; i > 0; --i) {
                 m_descriptors[i - 1] = std::make_tuple( extents[i - 1], 

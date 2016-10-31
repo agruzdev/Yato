@@ -82,31 +82,31 @@ namespace yato
             //-------------------------------------------------------
 
         private:
-            std::array<dim_descriptor::type, dimensions_number> m_descriptors;
+            std::array<dim_descriptor::type, dimensions_number> m_descriptors = {};
             container_type  m_plain_vector;
             //-------------------------------------------------------
 
-            proxy _create_proxy(size_t offset) YATO_NOEXCEPT_KEYWORD
+            proxy create_proxy_(size_t offset) YATO_NOEXCEPT_KEYWORD
             {
                 return proxy(std::next(m_plain_vector.begin(), offset * std::get<dim_descriptor::idx_total>(m_descriptors[1])), &m_descriptors[1]);
             }
 
-            proxy _create_proxy(data_iterator plain_position) YATO_NOEXCEPT_KEYWORD
+            proxy create_proxy_(data_iterator plain_position) YATO_NOEXCEPT_KEYWORD
             {
                 return proxy(plain_position, &m_descriptors[1]);
             }
 
-            const_proxy _create_const_proxy(size_t offset) const YATO_NOEXCEPT_KEYWORD
+            const_proxy create_const_proxy_(size_t offset) const YATO_NOEXCEPT_KEYWORD
             {
                 return const_proxy(std::next(m_plain_vector.cbegin(), offset * std::get<dim_descriptor::idx_total>(m_descriptors[1])), &m_descriptors[1]);
             }
 
-            const_proxy _create_const_proxy(const_data_iterator plain_position) const YATO_NOEXCEPT_KEYWORD
+            const_proxy create_const_proxy_(const_data_iterator plain_position) const YATO_NOEXCEPT_KEYWORD
             {
                 return const_proxy(plain_position, &m_descriptors[1]);
             }
 
-            void _init_subsizes() YATO_NOEXCEPT_KEYWORD
+            void init_subsizes_() YATO_NOEXCEPT_KEYWORD
             {
                 std::get<dim_descriptor::idx_total>(m_descriptors[dimensions_number - 1]) = std::get<dim_descriptor::idx_size>(m_descriptors[dimensions_number - 1]);
                 for (size_t i = dimensions_number - 1; i > 0; --i) {
@@ -114,7 +114,7 @@ namespace yato
                 }
             }
 
-            void _init_sizes(const dimensions_type & extents) YATO_NOEXCEPT_KEYWORD
+            void init_sizes_(const dimensions_type & extents) YATO_NOEXCEPT_KEYWORD
             {
                 m_descriptors[dimensions_number - 1] = std::make_tuple(extents[dimensions_number - 1], extents[dimensions_number - 1]);
                 for (size_t i = dimensions_number - 1; i > 0; --i) {
@@ -122,47 +122,47 @@ namespace yato
                 }
             }
 
-            auto dimensions_ref_range()
+            auto dimensions_ref_range_()
                 -> decltype(yato::make_range(m_descriptors).map(tuple_getter<typename dim_descriptor::type, dim_descriptor::idx_size>()))
             {
                 return yato::make_range(m_descriptors).map(tuple_getter<typename dim_descriptor::type, dim_descriptor::idx_size>());
             }
 
             template<typename RangeType>
-            void _init_sizes(RangeType range) YATO_NOEXCEPT_IN_RELEASE
+            void init_sizes_(RangeType range) YATO_NOEXCEPT_IN_RELEASE
             {
                 YATO_REQUIRES(range.distance() == dimensions_number);
-                std::copy(range.begin(), range.end(), dimensions_ref_range().begin());
-                _init_subsizes();
+                std::copy(range.begin(), range.end(), dimensions_ref_range_().begin());
+                init_subsizes_();
             }
 
             template<size_t _Depth>
-            auto _init_sizes(const initilizer_type<_Depth> & init_list) YATO_NOEXCEPT_KEYWORD
+            auto init_sizes_(const initilizer_type<_Depth> & init_list) YATO_NOEXCEPT_KEYWORD
                 -> typename std::enable_if < (_Depth > 1), void > ::type
             {
                 std::get<dim_descriptor::idx_size>(m_descriptors[dimensions_number - _Depth]) = init_list.size();
-                _init_sizes<_Depth - 1>(*(init_list.begin()));
+                init_sizes_<_Depth - 1>(*(init_list.begin()));
             }
             
             template<size_t _Depth>
-            auto _init_sizes(const initilizer_type<_Depth> & init_list) YATO_NOEXCEPT_KEYWORD
+            auto init_sizes_(const initilizer_type<_Depth> & init_list) YATO_NOEXCEPT_KEYWORD
                 -> typename std::enable_if<(_Depth == 1), void>::type
             {
                 std::get<dim_descriptor::idx_size>(m_descriptors[dimensions_number - _Depth]) = init_list.size();
-                _init_subsizes();
+                init_subsizes_();
             }
 
             template<size_t _Depth, typename _Iter>
-            auto _init_values(const initilizer_type<_Depth> & init_list, _Iter & iter) YATO_NOEXCEPT_KEYWORD
+            auto init_values_(const initilizer_type<_Depth> & init_list, _Iter & iter) YATO_NOEXCEPT_KEYWORD
                 -> typename std::enable_if < (_Depth > 1), void > ::type
             {
                 for (const auto & init_sub_list : init_list) {
-                    _init_values<_Depth - 1>(init_sub_list, iter);
+                    init_values_<_Depth - 1>(init_sub_list, iter);
                 }
             }
 
             template<size_t _Depth, typename _Iter>
-            auto _init_values(const initilizer_type<_Depth> & init_list, _Iter & iter) YATO_NOEXCEPT_KEYWORD
+            auto init_values_(const initilizer_type<_Depth> & init_list, _Iter & iter) YATO_NOEXCEPT_KEYWORD
                 -> typename std::enable_if<(_Depth == 1), void>::type
             {
                 for (const auto & value : init_list) {
@@ -170,10 +170,8 @@ namespace yato
                 }
             }
 
-            void _update_top_dimension(size_t new_size) YATO_NOEXCEPT_KEYWORD
+            void update_top_dimension_(size_t new_size) YATO_NOEXCEPT_KEYWORD
             {
-                //m_dimensions[0] = new_size;
-                //m_sub_sizes[0] = m_sub_sizes[1] * new_size;
                 std::get<dim_descriptor::idx_size>(m_descriptors[0])  = new_size;
                 std::get<dim_descriptor::idx_total>(m_descriptors[0]) = std::get<dim_descriptor::idx_total>(m_descriptors[1]) * new_size;
             }
@@ -185,10 +183,10 @@ namespace yato
             }
 
             template<typename _SizeIterator>
-            yato::range<data_iterator> _prepare_push_back(const yato::range<_SizeIterator> & sub_dims)
+            yato::range<data_iterator> prepare_push_back_(const yato::range<_SizeIterator> & sub_dims)
             {
                 const size_t old_size = m_plain_vector.size();
-                auto current_sub_dims = dimensions_ref_range().tail();
+                auto current_sub_dims = dimensions_ref_range_().tail();
                 if (old_size > 0) {
                     //if (!std::equal(std::next(m_dimensions.cbegin()), m_dimensions.cend(), sub_dims.begin())) {
                     if (!std::equal(current_sub_dims.begin(), current_sub_dims.end(), sub_dims.begin())) {
@@ -197,18 +195,18 @@ namespace yato
                 }
                 else {
                     std::copy(sub_dims.begin(), sub_dims.end(), current_sub_dims.begin());
-                    _init_subsizes();
+                    init_subsizes_();
                 }
-                _update_top_dimension(get_top_dimension_() + 1);
+                update_top_dimension_(get_top_dimension_() + 1);
                 m_plain_vector.resize(total_size());
                 return yato::make_range(std::next(m_plain_vector.begin(), old_size), m_plain_vector.end());
             }
 
             template<typename _SizeIterator, typename _Iterator>
-            yato::range<data_iterator> _prepare_insert(const yato::range<_SizeIterator> & sub_dims, const _Iterator & position, size_t length)
+            yato::range<data_iterator> prepare_insert_(const yato::range<_SizeIterator> & sub_dims, const _Iterator & position, size_t length)
             {
                 const size_t old_size = m_plain_vector.size();
-                auto current_sub_dims = dimensions_ref_range().tail();
+                auto current_sub_dims = dimensions_ref_range_().tail();
                 if (old_size > 0) {
                     //if (!std::equal(std::next(m_dimensions.cbegin()), m_dimensions.cend(), sub_dims.begin())) {
                     if (!std::equal(current_sub_dims.begin(), current_sub_dims.end(), sub_dims.begin())) {
@@ -217,7 +215,7 @@ namespace yato
                 }
                 else {
                     std::copy(sub_dims.begin(), sub_dims.end(), current_sub_dims.begin());
-                    _init_subsizes();
+                    init_subsizes_();
                 }
                 // Compute offsets because iterators may be destroyed
                 auto insert_begin_offset = std::distance<const_data_iterator>(m_plain_vector.cbegin(), position.plain_cbegin());
@@ -227,7 +225,7 @@ namespace yato
                 //auto insert_end_offset = insert_begin_offset + length * m_dimensions[1];
                 auto insert_end_offset = insert_begin_offset + length * std::get<dim_descriptor::idx_total>(m_descriptors[1]);
                 //Allocate new memory
-                _update_top_dimension(get_top_dimension_() + length);
+                update_top_dimension_(get_top_dimension_() + length);
                 m_plain_vector.resize(total_size());
                 //Shift stored elements to the end
                 std::move_backward(std::next(m_plain_vector.cbegin(), insert_begin_offset), std::next(m_plain_vector.cbegin(), old_size), m_plain_vector.end());
@@ -235,7 +233,7 @@ namespace yato
                 return yato::make_range(std::next(m_plain_vector.begin(), insert_begin_offset), std::next(m_plain_vector.begin(), insert_end_offset));
             }
 
-            iterator _erase_impl(const const_iterator & first, const const_iterator & last)
+            iterator erase_impl_(const const_iterator & first, const const_iterator & last)
             {
                 auto count = std::distance(first, last);
                 if (count < 0) {
@@ -245,37 +243,30 @@ namespace yato
                 size_t erase_offset = std::distance(plain_cbegin(), first.plain_cbegin());
                 std::move(std::next(plain_cbegin(), erase_offset + erase_size), plain_cend(), std::next(plain_begin(), erase_offset));
                 resize(get_top_dimension_() - count);
-                return _create_proxy(std::next(plain_begin(), erase_offset));
+                return create_proxy_(std::next(plain_begin(), erase_offset));
             }
 
             vector_nd_impl(container_type && plain_vector, const dimensions_type & sizes)
                 : m_plain_vector(std::move(plain_vector))
             {
-                _init_sizes(yato::make_range(sizes.cbegin(), sizes.cend()));
+                init_sizes_(yato::make_range(sizes.cbegin(), sizes.cend()));
             }
 
             //-------------------------------------------------------
 
         public:
             /**
-             *	Create empty vector
+             *  Create empty vector
              */
-            YATO_CONSTEXPR_FUNC
-            vector_nd_impl() YATO_NOEXCEPT_KEYWORD
-                : m_descriptors(), m_plain_vector()
-            {
-                std::get<dim_descriptor::idx_size>(m_descriptors[0]) = 0;
-            }
+            vector_nd_impl() = default;
 
             /**
              *	Create empty vector
              */
             explicit
             vector_nd_impl(const allocator_type & alloc) YATO_NOEXCEPT_KEYWORD
-                : m_descriptors(), m_plain_vector(alloc)
-            {
-                std::get<dim_descriptor::idx_size>(m_descriptors[0]) = 0;
-            }
+                :  m_plain_vector(alloc)
+            { }
 
             /**
              *  Create without initialization
@@ -284,7 +275,7 @@ namespace yato
             vector_nd_impl(const dimensions_type & sizes, const allocator_type & alloc = allocator_type())
                 : m_plain_vector(alloc)
             {
-                _init_sizes(sizes);
+                init_sizes_(sizes);
                 m_plain_vector.resize(total_size());
             }
 
@@ -306,7 +297,7 @@ namespace yato
                 : m_plain_vector(alloc)
             {
                 YATO_REQUIRES(sizes.total_size() == narrow_cast<size_t>(std::distance(first, last)));
-                _init_sizes(sizes);
+                init_sizes_(sizes);
                 m_plain_vector.resize(total_size());
                 std::copy(first, last, plain_begin());
             }
@@ -326,11 +317,11 @@ namespace yato
             vector_nd_impl(const initilizer_type<dimensions_number> & init_list)
                 : m_plain_vector()
             {
-                _init_sizes<dimensions_number>(init_list);
+                init_sizes_<dimensions_number>(init_list);
                 if (get_top_dimension_() > 0) {
                     m_plain_vector.reserve(total_size());
                     auto iter = std::back_inserter(m_plain_vector);
-                    _init_values<dimensions_number>(init_list, iter);
+                    init_values_<dimensions_number>(init_list, iter);
                 }
             }
 
@@ -342,7 +333,7 @@ namespace yato
                 : m_plain_vector(alloc)
             {
                 YATO_REQUIRES(range.distance() == dimensions_number); // "Constructor takes the amount of arguments equal to dimensions number"
-                _init_sizes(range);
+                init_sizes_(range);
                 m_plain_vector.resize(total_size());
             }
 
@@ -354,7 +345,7 @@ namespace yato
                 : m_plain_vector(alloc)
             {
                 YATO_REQUIRES(range.distance() == dimensions_number); // "Constructor takes the amount of arguments equal to dimensions number"
-                _init_sizes(range);
+                init_sizes_(range);
                 m_plain_vector.assign(total_size(), value);
             }
 
@@ -402,7 +393,7 @@ namespace yato
             explicit
             vector_nd_impl(const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & other)
             {
-                _init_sizes(other.dimensions_range());
+                init_sizes_(other.dimensions_range());
                 m_plain_vector.resize(total_size());
                 std::copy(other.plain_cbegin(), other.plain_cend(), plain_begin());
             }
@@ -428,7 +419,7 @@ namespace yato
              */
             void assign(const dimensions_type & sizes, const data_type & value)
             {
-                _init_sizes(sizes);
+                init_sizes_(sizes);
                 m_plain_vector.assign(total_size(), value);
             }
 
@@ -452,7 +443,7 @@ namespace yato
             vector_nd_impl<data_type, NewDimsNum, allocator_type> reshape(const dimensionality<NewDimsNum, size_t> & extents) &&
             {
                 YATO_REQUIRES(extents.total_size() == total_size());
-                _update_top_dimension(0); // make "empty"
+                update_top_dimension_(0); // make "empty"
                 return vector_nd_impl<data_type, NewDimsNum, allocator_type>(std::move(m_plain_vector), extents);
             }
 #endif
@@ -488,10 +479,10 @@ namespace yato
             {
 #if YATO_DEBUG
                 return (idx < size(0))
-                    ? _create_const_proxy(idx)
-                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), _create_const_proxy(0));
+                    ? create_const_proxy_(idx)
+                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), create_const_proxy_(0));
 #else
-                return _create_const_proxy(idx);
+                return create_const_proxy_(idx);
 #endif
             }
             /**
@@ -501,10 +492,10 @@ namespace yato
             {
 #if YATO_DEBUG
                 return (idx < size(0))
-                    ? _create_proxy(idx)
-                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), _create_proxy(0));
+                    ? create_proxy_(idx)
+                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), create_proxy_(0));
 #else
-                return _create_proxy(idx);
+                return create_proxy_(idx);
 #endif
             }
 #ifdef YATO_MSVC
@@ -543,7 +534,7 @@ namespace yato
             YATO_CONSTEXPR_FUNC
             const_iterator cbegin() const YATO_NOEXCEPT_KEYWORD
             {
-                return _create_const_proxy(0);
+                return create_const_proxy_(0);
             }
 
             /**
@@ -551,7 +542,7 @@ namespace yato
              */
             iterator begin() YATO_NOEXCEPT_KEYWORD
             {
-                return _create_proxy(0);
+                return create_proxy_(0);
             }
 
             /**
@@ -560,7 +551,7 @@ namespace yato
             YATO_CONSTEXPR_FUNC
             const_iterator cend() const YATO_NOEXCEPT_KEYWORD
             {
-                return _create_const_proxy(size(0));
+                return create_const_proxy_(size(0));
             }
 
             /**
@@ -568,7 +559,7 @@ namespace yato
              */
             iterator end() YATO_NOEXCEPT_KEYWORD
             {
-                return _create_proxy(size(0));
+                return create_proxy_(size(0));
             }
 
             /**
@@ -757,7 +748,7 @@ namespace yato
              */
             void resize(size_t length)
             {
-                _update_top_dimension(length);
+                update_top_dimension_(length);
                 m_plain_vector.resize(total_size());
             }
 
@@ -769,7 +760,7 @@ namespace yato
              */
             void resize(size_t length, const data_type & value)
             {
-                _update_top_dimension(length);
+                update_top_dimension_(length);
                 m_plain_vector.resize(total_size(), value);
             }
 
@@ -780,7 +771,7 @@ namespace yato
              */
             void resize(const dimensions_type & extents)
             {
-                _init_sizes(extents);
+                init_sizes_(extents);
                 m_plain_vector.resize(total_size());
             }
 
@@ -792,7 +783,7 @@ namespace yato
              */
             void resize(const dimensions_type & extents, const data_type & value)
             {
-                _init_sizes(extents);
+                init_sizes_(extents);
                 m_plain_vector.resize(total_size(), value);
             }
 
@@ -864,7 +855,7 @@ namespace yato
             template<typename _OtherDataType, typename _OtherAllocator>
             void push_back(const vector_nd_impl<_OtherDataType, dimensions_number - 1, _OtherAllocator> & sub_vector)
             {
-                auto insert_range = _prepare_push_back(sub_vector.dimensions_range());
+                auto insert_range = prepare_push_back_(sub_vector.dimensions_range());
                 std::copy(sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
             }
 
@@ -873,7 +864,7 @@ namespace yato
              */
             void push_back(vector_nd_impl<data_type, dimensions_number - 1, allocator_type> && sub_vector)
             {
-                auto insert_range = _prepare_push_back(sub_vector.dimensions_range());
+                auto insert_range = prepare_push_back_(sub_vector.dimensions_range());
                 std::move(sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
             }
 
@@ -887,7 +878,7 @@ namespace yato
                     throw yato::out_of_range_error("yato::vector_nd[pop_back]: vector is already empty!");
                 }
 #endif
-                _update_top_dimension(size(0) - 1);
+                update_top_dimension_(size(0) - 1);
                 m_plain_vector.resize(total_size());
             }
 
@@ -898,9 +889,9 @@ namespace yato
             template<typename _OtherDataType, typename _OtherAllocator>
             iterator insert(const const_iterator & position, const vector_nd_impl<_OtherDataType, dimensions_number - 1, _OtherAllocator> & sub_vector)
             {
-                auto insert_range = _prepare_insert(sub_vector.dimensions_range(), position, 1);
+                auto insert_range = prepare_insert_(sub_vector.dimensions_range(), position, 1);
                 std::copy(sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
-                return _create_proxy(insert_range.begin());
+                return create_proxy_(insert_range.begin());
             }
 
             /**
@@ -909,9 +900,9 @@ namespace yato
              */
             iterator insert(const const_iterator & position, vector_nd_impl<data_type, dimensions_number - 1, allocator_type> && sub_vector)
             {
-                auto insert_range = _prepare_insert(sub_vector.dimensions_range(), position, 1);
+                auto insert_range = prepare_insert_(sub_vector.dimensions_range(), position, 1);
                 std::move(sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
-                return _create_proxy(insert_range.begin());
+                return create_proxy_(insert_range.begin());
             }
 
             /**
@@ -921,13 +912,13 @@ namespace yato
             template<typename _OtherDataType, typename _OtherAllocator>
             iterator insert(const const_iterator & position, size_t count, const vector_nd_impl<_OtherDataType, dimensions_number - 1, _OtherAllocator> & sub_vector)
             {
-                auto insert_range = _prepare_insert(sub_vector.dimensions_range(), position, count);
+                auto insert_range = prepare_insert_(sub_vector.dimensions_range(), position, count);
                 const size_t copy_size = sub_vector.total_size();
                 auto copy_dst = insert_range.begin();
                 for (size_t i = 0; i < count; ++i, std::advance(copy_dst, copy_size)) {
                     std::copy(sub_vector.plain_cbegin(), sub_vector.plain_cend(), copy_dst);
                 }
-                return _create_proxy(insert_range.begin());
+                return create_proxy_(insert_range.begin());
             }
 
             /**
@@ -941,9 +932,9 @@ namespace yato
                 if (count < 0) {
                     YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[insert]: invalid iterators range!");
                 }
-                auto insert_range = _prepare_insert(first.dimensions_range(), position, count);
+                auto insert_range = prepare_insert_(first.dimensions_range(), position, count);
                 std::copy(first.plain_cbegin(), last.plain_cbegin(), insert_range.begin());
-                return _create_proxy(insert_range.begin());
+                return create_proxy_(insert_range.begin());
             }
 
             /**
@@ -961,7 +952,7 @@ namespace yato
              */
             iterator erase(const const_iterator & position)
             {
-                return _erase_impl(position, std::next(position));
+                return erase_impl_(position, std::next(position));
             }
 
             /**
@@ -969,7 +960,7 @@ namespace yato
              */
             iterator erase(const const_iterator & first, const const_iterator & last)
             {
-                return _erase_impl(first, last);
+                return erase_impl_(first, last);
             }
 
             //------------------------------------------------------------

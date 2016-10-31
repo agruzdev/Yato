@@ -22,8 +22,8 @@ TEST(Yato_VectorND, common)
         EXPECT_TRUE(vec0.empty());
         EXPECT_EQ(3U, vec0.dimensions_num());
         EXPECT_EQ(0U, vec0.size(0));
-        //EXPECT_EQ(0U, vec0.size(1));
-        //EXPECT_EQ(0U, vec0.size(2));
+        EXPECT_EQ(0U, vec0.size(1));
+        EXPECT_EQ(0U, vec0.size(2));
         EXPECT_EQ(0U, vec0.total_size());
 
         yato::vector_nd<int, 2> vec1(yato::dims(2, 3));
