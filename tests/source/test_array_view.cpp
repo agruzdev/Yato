@@ -12,25 +12,25 @@ TEST(Yato_ArrayView, common)
 
     yato::array_view_3d<int> view(arr, yato::dims(2, 3, 4), yato::dims(5, 6));
 
-    EXPECT_EQ(2, view.size(0));
-    EXPECT_EQ(3, view.size(1));
-    EXPECT_EQ(4, view.size(2));
+    EXPECT_EQ(2U, view.size(0));
+    EXPECT_EQ(3U, view.size(1));
+    EXPECT_EQ(4U, view.size(2));
 
-    EXPECT_EQ(5, view.stride(0));
-    EXPECT_EQ(6, view.stride(1));
+    EXPECT_EQ(5U, view.stride(0));
+    EXPECT_EQ(6U, view.stride(1));
 
-    EXPECT_EQ(24, view.total_size());
-    EXPECT_EQ(60, view.total_reserved());
+    EXPECT_EQ(24U, view.total_size());
+    EXPECT_EQ(60U, view.total_reserved());
 
     auto r = view.dimensions_range();
-    EXPECT_EQ(2, *(r.begin()));
-    EXPECT_EQ(3, *(r.begin() + 1));
-    EXPECT_EQ(4, *(r.begin() + 2));
+    EXPECT_EQ(2U, *(r.begin()));
+    EXPECT_EQ(3U, *(r.begin() + 1));
+    EXPECT_EQ(4U, *(r.begin() + 2));
 
     auto dims = view.dimensions();
-    EXPECT_EQ(2, dims[0]);
-    EXPECT_EQ(3, dims[1]);
-    EXPECT_EQ(4, dims[2]);
+    EXPECT_EQ(2U, dims[0]);
+    EXPECT_EQ(3U, dims[1]);
+    EXPECT_EQ(4U, dims[2]);
 
     int i = 0;
     for (auto it = view.plain_begin(); it != view.plain_end(); ++it, ++i) {

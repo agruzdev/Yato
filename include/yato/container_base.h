@@ -199,7 +199,7 @@ YATO_PRAGMA_WARNING_POP
 
         template <typename SizeIter>
         YATO_CONSTEXPR_FUNC_EX explicit
-        dimensionality(const range<SizeIter> & extents)
+        dimensionality(const range<SizeIter> &)
         { }
 
         ~dimensionality() = default;
