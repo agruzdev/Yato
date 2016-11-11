@@ -45,7 +45,7 @@ TEST(Yato_Array_Nd, array_nd)
     EXPECT_EQ(2U, yato::depth_3d(array_3d));
     EXPECT_EQ(3U, yato::height_3d(array_3d));
     EXPECT_EQ(4U, yato::width_3d(array_3d));
-};
+}
 
 TEST(Yato_Array_Nd, array_nd_2)
 {
@@ -66,7 +66,7 @@ TEST(Yato_Array_Nd, array_nd_2)
 
     EXPECT_TRUE(0 == memcmp(&native_2x3[0][0], &array_2x3[0][0], sizeof(native_2x3)));
     EXPECT_TRUE(0 == memcmp(&native_3x2[0][0], &array_3x2[0][0], sizeof(native_3x2)));
-};
+}
 
 
 TEST(Yato_Array_Nd, array_nd_bool)
@@ -75,7 +75,7 @@ TEST(Yato_Array_Nd, array_nd_bool)
     arr[3] = true;
 
     EXPECT_TRUE(true);
-};
+}
 
 TEST(Yato_Array_Nd, array_nd_iterator)
 {
@@ -86,7 +86,7 @@ TEST(Yato_Array_Nd, array_nd_iterator)
     for (int x : arr) {
         EXPECT_TRUE(x == i++);
     }
-};
+}
 
 TEST(Yato_Array_Nd, array_nd_iterator_2)
 {
@@ -103,7 +103,7 @@ TEST(Yato_Array_Nd, array_nd_iterator_2)
     }
 
     EXPECT_TRUE(0 == memcmp(&gt[0][0], &arr[0][0], sizeof(gt)));
-};
+}
 
 
 TEST(Yato_Array_Nd, array_nd_copy)
@@ -134,7 +134,7 @@ TEST(Yato_Array_Nd, array_nd_copy)
     for (auto copyIt = copy.begin(), arrIt = arr.begin(); copyIt != copy.end(); ++copyIt, ++arrIt) {
         EXPECT_TRUE(*copyIt == *arrIt);
     }
-};
+}
 
 
 
@@ -150,7 +150,7 @@ TEST(Yato_Array_Nd, array_nd_dimensions)
     EXPECT_TRUE(vec.size<0>() == N);
     EXPECT_TRUE(vec.size<1>() == M);
     EXPECT_TRUE(vec.size<2>() == L);
-};
+}
 
 
 
@@ -172,7 +172,7 @@ TEST(Yato_Array_Nd, array_nd_at)
     EXPECT_THROW(arr_2.at(3, 3, 3), std::runtime_error);
     EXPECT_THROW(arr_2.at(0, 3, 3), std::runtime_error);
     EXPECT_THROW(arr_2.at(0, 0, 3), std::runtime_error);
-};
+}
 
 
 TEST(Yato_Array_Nd, array_nd_fill)
@@ -182,7 +182,7 @@ TEST(Yato_Array_Nd, array_nd_fill)
     for (int x : arr) {
         EXPECT_TRUE(x == 1);
     }
-};
+}
 
 
 TEST(Yato_Array_Nd, array_nd_swap)
@@ -202,4 +202,4 @@ TEST(Yato_Array_Nd, array_nd_swap)
         EXPECT_TRUE(x == 1);
     }
 
-};
+}

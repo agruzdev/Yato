@@ -144,7 +144,7 @@ YATO_PRAGMA_WARNING_POP
         }
 
         YATO_CONSTEXPR_FUNC
-        const size_t dimensions_num() const
+        size_t dimensions_num() const
         {
             return dimensions_number;
         }
@@ -205,7 +205,7 @@ YATO_PRAGMA_WARNING_POP
         ~dimensionality() = default;
 
         YATO_CONSTEXPR_FUNC
-        const size_t dimensions_num() const
+        size_t dimensions_num() const
         {
             return dimensions_number;
         }

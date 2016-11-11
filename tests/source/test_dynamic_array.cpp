@@ -40,7 +40,9 @@ namespace
     public:
         mean_alloc() {}
 
-        mean_alloc(const mean_alloc&) {}
+        mean_alloc(const mean_alloc & other)
+            :std::allocator<_T>(other)
+        { }
 
         mean_alloc(mean_alloc &&) = delete;
         mean_alloc& operator=(mean_alloc &&) = delete;

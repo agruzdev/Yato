@@ -220,14 +220,14 @@ namespace yato
 
     template <typename T1, size_t Align1, typename T2, size_t Align2>
     YATO_CONSTEXPR_FUNC
-    bool operator == (const aligning_allocator<T1, Align1> & one, const aligning_allocator<T2, Align2> & another)
+    bool operator == (const aligning_allocator<T1, Align1> &, const aligning_allocator<T2, Align2> &)
     {
         return true;
     }
 
     template <typename T1, size_t Align1, typename T2, size_t Align2>
     YATO_CONSTEXPR_FUNC
-    bool operator != (const aligning_allocator<T1, Align1> & one, const aligning_allocator<T2, Align2> & another)
+    bool operator != (const aligning_allocator<T1, Align1> &, const aligning_allocator<T2, Align2> &)
     {
         return false;
     }
