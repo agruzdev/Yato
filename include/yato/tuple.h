@@ -5,8 +5,8 @@
 * Copyright (c) 2016 Alexey Gruzdev
 */
 
-#ifndef _YATO_INVOKE_H_
-#define _YATO_INVOKE_H_
+#ifndef _YATO_TUPLE_H_
+#define _YATO_TUPLE_H_
 
 #include <tuple>
 #include "prerequisites.h"

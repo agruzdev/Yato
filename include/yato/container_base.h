@@ -228,7 +228,9 @@ YATO_PRAGMA_WARNING_POP
     YATO_CONSTEXPR_FUNC
     size_t length(_ContainerType && container)
     {
+#ifdef YATO_HAS_EXTENDED_CONSTEXPR
         YATO_REQUIRES(container.dimensions_num() == 1);
+#endif
         return container.size(0);
     }
 
@@ -236,7 +238,9 @@ YATO_PRAGMA_WARNING_POP
     YATO_CONSTEXPR_FUNC
     size_t height_2d(_ContainerType && container)
     {
+#ifdef YATO_HAS_EXTENDED_CONSTEXPR
         YATO_REQUIRES(container.dimensions_num() == 2);
+#endif
         return container.size(0);
     }
 
@@ -244,7 +248,9 @@ YATO_PRAGMA_WARNING_POP
     YATO_CONSTEXPR_FUNC
     size_t width_2d(_ContainerType && container)
     {
+#ifdef YATO_HAS_EXTENDED_CONSTEXPR
         YATO_REQUIRES(container.dimensions_num() == 2);
+#endif
         return container.size(1);
     }
 
@@ -252,7 +258,9 @@ YATO_PRAGMA_WARNING_POP
     YATO_CONSTEXPR_FUNC
     size_t depth_3d(_ContainerType && container)
     {
+#ifdef YATO_HAS_EXTENDED_CONSTEXPR
         YATO_REQUIRES(container.dimensions_num() == 3);
+#endif
         return container.size(0);
     }
 
@@ -260,7 +268,9 @@ YATO_PRAGMA_WARNING_POP
     YATO_CONSTEXPR_FUNC
     size_t height_3d(_ContainerType && container)
     {
+#ifdef YATO_HAS_EXTENDED_CONSTEXPR
         YATO_REQUIRES(container.dimensions_num() == 3);
+#endif
         return container.size(1);
     }
 
@@ -268,7 +278,9 @@ YATO_PRAGMA_WARNING_POP
     YATO_CONSTEXPR_FUNC
     size_t width_3d(_ContainerType && container)
     {
+#ifdef YATO_HAS_EXTENDED_CONSTEXPR
         YATO_REQUIRES(container.dimensions_num() == 3);
+#endif
         return container.size(2);
     }
 

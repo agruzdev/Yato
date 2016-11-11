@@ -73,6 +73,7 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 
 // Extended constexpr
 #if (defined(_MSC_VER) && (_MSC_VER > 1900)) || (__cplusplus >= 201400L)
+#define YATO_HAS_EXTENDED_CONSTEXPR
 #define YATO_CONSTEXPR_FUNC_EX constexpr 
 #else
 #define YATO_CONSTEXPR_FUNC_EX inline
@@ -107,16 +108,25 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 # define YATO_PRAGMA_WARNING_POP  __pragma(warning(pop))
 # define YATO_MSCV_WARNING_IGNORE(Number) __pragma(warning( disable: Number ))
 # define YATO_CLANG_WARNING_IGNORE(X)
+# define YATO_GCC_WARNING_IGNORE(Flag)
 #elif defined(YATO_CLANG)
 # define YATO_PRAGMA_WARNING_PUSH _Pragma(_YATO_QUOTE_IMPL(clang diagnostic push))
 # define YATO_PRAGMA_WARNING_POP _Pragma(_YATO_QUOTE_IMPL(clang diagnostic pop))
 # define YATO_MSCV_WARNING_IGNORE(X) 
 # define YATO_CLANG_WARNING_IGNORE(Flag) _Pragma(_YATO_QUOTE_IMPL(clang diagnostic ignored Flag))
+# define YATO_GCC_WARNING_IGNORE(Flag)
+#elif defined(YATO_GCC) || defined(YATO_MINGW)
+# define YATO_PRAGMA_WARNING_PUSH _Pragma(_YATO_QUOTE_IMPL(GCC diagnostic push))
+# define YATO_PRAGMA_WARNING_POP _Pragma(_YATO_QUOTE_IMPL(GCC diagnostic pop))
+# define YATO_MSCV_WARNING_IGNORE(X)
+# define YATO_CLANG_WARNING_IGNORE(Flag)
+# define YATO_GCC_WARNING_IGNORE(Flag) _Pragma(_YATO_QUOTE_IMPL(GCC diagnostic ignored Flag))
 #else
 # define YATO_PRAGMA_WARNING_PUSH 
 # define YATO_PRAGMA_WARNING_POP 
 # define YATO_MSCV_WARNING_IGNORE(X) 
 # define YATO_CLANG_WARNING_IGNORE(X) 
+# define YATO_GCC_WARNING_IGNORE(Flag)
 #endif
 
 

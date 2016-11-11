@@ -11,8 +11,8 @@ TEST(Yato_DynamicArray, common)
 
     yato::dynamic_array<int> a3(std::move(a1));
 
-    EXPECT_EQ(42U, a3[0]);
-    EXPECT_EQ(42U, a3[1]);
+    EXPECT_EQ(42, a3[0]);
+    EXPECT_EQ(42, a3[1]);
     EXPECT_EQ(42, a3.at(2));
     EXPECT_EQ(42, a3.at(3));
 

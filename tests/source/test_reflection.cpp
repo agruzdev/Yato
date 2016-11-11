@@ -1,13 +1,13 @@
 #include "gtest/gtest.h"
 
 #include <yato/prerequisites.h>
-#ifdef YATO_CLANG
+
 // Disable warning, clang says that counter declarations are unnecessary
 // ToDo: Reflections are in progress. This warnings are to be fixed.
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-function"
-#pragma clang diagnostic ignored "-Wunneeded-internal-declaration"
-#endif
+
+YATO_GCC_WARNING_IGNORE("-Wunused-function")
+YATO_CLANG_WARNING_IGNORE("-Wunused-function")
+
 #include <yato/reflection.h>
 
 namespace
@@ -156,16 +156,14 @@ TEST(Yato_Reflection, data_members_2)
     dump_class<Foo>::print();
 }
 
-TEST(Yato_Reflection, data_methods)
-{
-    std::cout << typeid(Foo::_yato_reflected_method_f::my_type).name() << std::endl;
-}
+//TEST(Yato_Reflection, data_methods)
+//{
+//    std::cout << typeid(Foo::_yato_reflected_method_f::my_type).name() << std::endl;
+//}
 
 //TEST(Yato_Reflection, function_members)
 //{
 //    using f_trait = typename yato::reflection::reflection_manager<Foo>::member_functions_list::head;
 //}
 
-#ifdef YATO_CLANG
-#pragma clang diagnostic pop
-#endif
+

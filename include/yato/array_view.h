@@ -382,7 +382,7 @@ namespace yato
 
         reference operator[](size_t idx)
         {
-            YATO_REQUIRES(idx < get_size_(0));
+            YATO_REQUIRES(idx < base_type::get_size_(0));
             return base_type::get_sub_view_(idx);
         }
 

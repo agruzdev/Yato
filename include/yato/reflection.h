@@ -39,7 +39,7 @@ namespace yato
         {
             using my_class = _MyClass;
 
-            virtual ~member_info() {}
+            virtual ~member_info() = default;
 
             /**
              *  Get member name
@@ -99,7 +99,7 @@ namespace yato
                 : m_name(name), m_ptr(mem_ptr)
             { }
 
-            ~data_member_info() override {}
+            ~data_member_info() override = default;
 
             std::string name() const YATO_NOEXCEPT_KEYWORD override
             {
@@ -136,10 +136,9 @@ namespace yato
         public:
             member_function_info(const std::string & name)
                 : m_name(name)
-            {
-            }
+            { }
 
-            ~member_function_info() override {}
+            ~member_function_info() override = default;
 
             std::string name() const YATO_NOEXCEPT_KEYWORD override
             {
