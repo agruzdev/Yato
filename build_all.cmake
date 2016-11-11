@@ -61,13 +61,13 @@ endif()
 
 set(TOOLCHAIN_clang "cmake/clang.toolchain.cmake")
 
-list(APPEND MAKE_ARGUMENTS_mingw "-j" "2")
+list(APPEND MAKE_ARGUMENTS_mingw "")
 list(APPEND MAKE_ARGUMENTS_vc12x32 "")
 list(APPEND MAKE_ARGUMENTS_vc12x64 "")
 list(APPEND MAKE_ARGUMENTS_vc14x32 "")
 list(APPEND MAKE_ARGUMENTS_vc14x64 "")
-list(APPEND MAKE_ARGUMENTS_gcc "-j" "2")
-list(APPEND MAKE_ARGUMENTS_clang "-j" "2")
+list(APPEND MAKE_ARGUMENTS_gcc "")
+list(APPEND MAKE_ARGUMENTS_clang "")
 
 # ==============================================================
 # Input argumets
@@ -222,7 +222,7 @@ foreach(CURRENT_TARGET ${all_build_targers})
             foreach(test_executable ${test_executables})
                 
                 LOGGED_MESSAGE(STATUS "Run ${test_executable}")
-                execute_process(COMMAND ${CURRENT_BIN_DIR}/${test_executable}
+                execute_process(COMMAND ${CURRENT_BIN_DIR}/${test_executable} "--gtest_output=xml:gtest_results.xml"
                     WORKING_DIRECTORY ${CURRENT_BIN_DIR}
                     OUTPUT_FILE ${CURRENT_BIN_DIR}/${test_executable}.stdout.txt
                     ERROR_FILE ${CURRENT_BIN_DIR}/${test_executable}.stderr.txt
