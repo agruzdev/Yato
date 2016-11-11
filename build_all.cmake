@@ -3,6 +3,7 @@ cmake_minimum_required (VERSION 3.1)
 # ==============================================================
 # Usage
 #   -D_TARGET=<target name>
+#   -D_CONFIGURATION=[Debug, Release, All]
 # Supported targets:
 #   vc12x32  - MSVC_2013 x32
 #   vc14x32  - MSVC_2015 x32
@@ -60,23 +61,11 @@ endif()
 
 set(TOOLCHAIN_clang "cmake/clang.toolchain.cmake")
 
-set(MAKE_COMMAND_mingw "mingw32-make")
-set(MAKE_COMMAND_vc12x32 "$ENV{VS120COMNTOOLS}/../IDE/devenv.com")
-set(MAKE_COMMAND_vc12x64 "$ENV{VS120COMNTOOLS}/../IDE/devenv.com")
-set(MAKE_COMMAND_vc14x32 "$ENV{VS140COMNTOOLS}/../IDE/devenv.com")
-set(MAKE_COMMAND_vc14x64 "$ENV{VS140COMNTOOLS}/../IDE/devenv.com")
-set(MAKE_COMMAND_gcc "make")
-if(WIN32)
-    set(MAKE_COMMAND_clang "mingw32-make")
-else()
-    set(MAKE_COMMAND_clang "make")
-endif()
-
 list(APPEND MAKE_ARGUMENTS_mingw "-j" "2")
-list(APPEND MAKE_ARGUMENTS_vc12x32 "/build" "Release")
-list(APPEND MAKE_ARGUMENTS_vc12x64 "/build" "Release")
-list(APPEND MAKE_ARGUMENTS_vc14x32 "/build" "Release")
-list(APPEND MAKE_ARGUMENTS_vc14x64 "/build" "Release")
+list(APPEND MAKE_ARGUMENTS_vc12x32 "")
+list(APPEND MAKE_ARGUMENTS_vc12x64 "")
+list(APPEND MAKE_ARGUMENTS_vc14x32 "")
+list(APPEND MAKE_ARGUMENTS_vc14x64 "")
 list(APPEND MAKE_ARGUMENTS_gcc "-j" "2")
 list(APPEND MAKE_ARGUMENTS_clang "-j" "2")
 
@@ -126,6 +115,21 @@ else()
     set(all_build_targers ${_TARGET})
 endif()
 
+list(APPEND possible_configurations "Debug")
+list(APPEND possible_configurations "Release")
+set(CMAKE_CONFIGURATION_TYPES ${possible_configurations})
+if(_CONFIGURATION)
+    list(FIND possible_configurations ${_CONFIGURATION} idx)
+    if(idx LESS 0)
+        message(FATAL_ERROR "Invalid configuration value. Possible configurations: ${possible_configurations}")
+    endif()
+    list(APPEND all_configuratins ${_CONFIGURATION})
+else()
+    set(all_configuratins ${possible_configurations})
+endif()
+unset(possible_configurations)
+message(STATUS "Building for the following configurations: ${all_configuratins}")
+
 # ==============================================================
 # Make all targets
 #
@@ -146,88 +150,101 @@ macro(CHECK_RETURN_CODE _ret_code)
     endif()
 endmacro()
 
+set(OVERALL_STATUS ON)
+
 foreach(CURRENT_TARGET ${all_build_targers})
-    LOGGED_MESSAGE(STATUS "------------------------------------------------------")
+    LOGGED_MESSAGE(STATUS "======================================================")
     
-    set(CURRENT_BUILD_DIR ${_BUILD_DIR}/${CURRENT_TARGET})
-    set(CURRENT_BIN_DIR ${_BIN_DIR}/${CURRENT_TARGET})
+    foreach(CURRENT_CONFIGURATION ${all_configuratins})
+        LOGGED_MESSAGE(STATUS "------------------------------------------------------")
     
-    file(REMOVE_RECURSE ${CURRENT_BUILD_DIR} ${CURRENT_BIN_DIR})
-    file(MAKE_DIRECTORY ${CURRENT_BUILD_DIR} ${CURRENT_BIN_DIR}) 
-    
-    # ==============================================================
-    # Configure
-    #
-    LOGGED_MESSAGE(STATUS "Configuring for: ${CURRENT_TARGET}") 
-    
-    if(DEFINED TOOLCHAIN_${CURRENT_TARGET})
-        set(CUSTOM_TOOLCHAIN_ARG "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/${TOOLCHAIN_${CURRENT_TARGET}}")
-        LOGGED_MESSAGE(STATUS "Using toolchain ${TOOLCHAIN_${CURRENT_TARGET}}")
-    else()
-        set(CUSTOM_TOOLCHAIN_ARG "")
-    endif()
-    
-    execute_process(COMMAND cmake "-G${GENERATOR_${CURRENT_TARGET}}" ${CUSTOM_TOOLCHAIN_ARG} -DBIN_OUTPUT_DIR=${CURRENT_BIN_DIR} ${_SOURCE_DIR}
-        WORKING_DIRECTORY ${CURRENT_BUILD_DIR}
-        OUTPUT_FILE ${CURRENT_BUILD_DIR}/config_log.stdout.txt
-        ERROR_FILE ${CURRENT_BUILD_DIR}/config_log.stderr.txt
-        RESULT_VARIABLE ret
-    )
-    CHECK_RETURN_CODE(ret)
-    
-    
-    # ==============================================================
-    # Build
-    #
-    if(ret EQUAL 0)
-        LOGGED_MESSAGE(STATUS "Building: ${CURRENT_TARGET}") 
+        set(CURRENT_BUILD_DIR ${_BUILD_DIR}/${CURRENT_TARGET}/${CURRENT_CONFIGURATION})
+        set(CURRENT_BIN_DIR ${_BIN_DIR}/${CURRENT_TARGET}/${CURRENT_CONFIGURATION})
         
-        # Find solution files
-        if(CURRENT_TARGET MATCHES vc*)
-            set(msvc_project ${CURRENT_BUILD_DIR}/ALL_BUILD.vcxproj)
-        endif() 
+        file(REMOVE_RECURSE ${CURRENT_BUILD_DIR} ${CURRENT_BIN_DIR})
+        file(MAKE_DIRECTORY ${CURRENT_BUILD_DIR} ${CURRENT_BIN_DIR}) 
         
-        execute_process(COMMAND ${MAKE_COMMAND_${CURRENT_TARGET}} ${msvc_project} ${MAKE_ARGUMENTS_${CURRENT_TARGET}} 
+        # ==============================================================
+        # Configure
+        #
+        LOGGED_MESSAGE(STATUS "Configuring for: ${CURRENT_TARGET} / ${CURRENT_CONFIGURATION}") 
+        
+        if(DEFINED TOOLCHAIN_${CURRENT_TARGET})
+            set(CUSTOM_TOOLCHAIN_ARG "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/${TOOLCHAIN_${CURRENT_TARGET}}")
+            LOGGED_MESSAGE(STATUS "Using toolchain ${TOOLCHAIN_${CURRENT_TARGET}}")
+        else()
+            set(CUSTOM_TOOLCHAIN_ARG "")
+        endif()
+        
+        execute_process(COMMAND cmake "-G${GENERATOR_${CURRENT_TARGET}}" ${CUSTOM_TOOLCHAIN_ARG} -DBIN_OUTPUT_DIR=${CURRENT_BIN_DIR} ${_SOURCE_DIR} -DCMAKE_BUILD_TYPE=${CURRENT_CONFIGURATION}
             WORKING_DIRECTORY ${CURRENT_BUILD_DIR}
-            OUTPUT_FILE ${CURRENT_BUILD_DIR}/build_log.stdout.txt
-            ERROR_FILE ${CURRENT_BUILD_DIR}/build_log.stderr.txt
+            OUTPUT_FILE ${CURRENT_BUILD_DIR}/config_log.stdout.txt
+            ERROR_FILE ${CURRENT_BUILD_DIR}/config_log.stderr.txt
             RESULT_VARIABLE ret
         )
         CHECK_RETURN_CODE(ret)
-    endif()
-    # ==============================================================
-    # Run Tests
-    #
-    if(ret EQUAL 0)
-        LOGGED_MESSAGE(STATUS "Run tests for: ${CURRENT_TARGET}") 
         
-        file(GLOB test_executables RELATIVE ${CURRENT_BIN_DIR} ${CURRENT_BIN_DIR}/*[Tt]est* ${CURRENT_BIN_DIR}/*/*[Tt]est*)
-        list(REMOVE_DUPLICATES test_executables)
-        # remove libs
-        foreach(f ${test_executables})
-            if(${f} MATCHES ".*\.(a|lib|so|dll)$")
-                list(REMOVE_ITEM test_executables ${f})
-            endif()            
-        endforeach()
         
-        LOGGED_MESSAGE(STATUS "Found tests: ${test_executables}")
-        foreach(test_executable ${test_executables})
+        # ==============================================================
+        # Build
+        #
+        if(ret EQUAL 0)
+            LOGGED_MESSAGE(STATUS "Building: ${CURRENT_TARGET}") 
             
-            LOGGED_MESSAGE(STATUS "Run ${test_executable}")
-            execute_process(COMMAND ${CURRENT_BIN_DIR}/${test_executable}
-                WORKING_DIRECTORY ${CURRENT_BIN_DIR}
-                OUTPUT_FILE ${CURRENT_BIN_DIR}/${test_executable}.stdout.txt
-                ERROR_FILE ${CURRENT_BIN_DIR}/${test_executable}.stderr.txt
+            # Find solution files
+            if(CURRENT_TARGET MATCHES vc*)
+                set(msvc_configuration "/property:Configuration=${CURRENT_CONFIGURATION}")
+            endif() 
+            execute_process(COMMAND "cmake" "--build" ${CURRENT_BUILD_DIR} "--" ${msvc_configuration} ${MAKE_ARGUMENTS_${CURRENT_TARGET}}
+                #WORKING_DIRECTORY ${CURRENT_BUILD_DIR}
+                OUTPUT_FILE ${CURRENT_BUILD_DIR}/build_log.stdout.txt
+                ERROR_FILE ${CURRENT_BUILD_DIR}/build_log.stderr.txt
                 RESULT_VARIABLE ret
             )
-            if(ret EQUAL 0)
-                LOGGED_MESSAGE(STATUS "> ${test_executable} PASSED")
-            else()
-                LOGGED_MESSAGE(STATUS "> ${test_executable} FAILED")
-            endif()
+            CHECK_RETURN_CODE(ret)
+        endif()
+        # ==============================================================
+        # Run Tests
+        #
+        if(ret EQUAL 0)
+            LOGGED_MESSAGE(STATUS "Run tests for: ${CURRENT_TARGET}") 
             
-        endforeach(test_executable)
-    endif()
-    
+            file(GLOB test_executables RELATIVE ${CURRENT_BIN_DIR} ${CURRENT_BIN_DIR}/*[Tt]est* ${CURRENT_BIN_DIR}/*/*[Tt]est*)
+            list(REMOVE_DUPLICATES test_executables)
+            # remove libs
+            foreach(f ${test_executables})
+                if(${f} MATCHES ".*\.(a|lib|so|dll|pdb|ilk)$")
+                    list(REMOVE_ITEM test_executables ${f})
+                endif()            
+            endforeach()
+            
+            LOGGED_MESSAGE(STATUS "Found tests: ${test_executables}")
+            foreach(test_executable ${test_executables})
+                
+                LOGGED_MESSAGE(STATUS "Run ${test_executable}")
+                execute_process(COMMAND ${CURRENT_BIN_DIR}/${test_executable}
+                    WORKING_DIRECTORY ${CURRENT_BIN_DIR}
+                    OUTPUT_FILE ${CURRENT_BIN_DIR}/${test_executable}.stdout.txt
+                    ERROR_FILE ${CURRENT_BIN_DIR}/${test_executable}.stderr.txt
+                    RESULT_VARIABLE ret
+                )
+                if(ret EQUAL 0)
+                    LOGGED_MESSAGE(STATUS "> ${test_executable} PASSED")
+                else()
+                    LOGGED_MESSAGE(STATUS "> ${test_executable} FAILED")
+                    set(OVERALL_STATUS OFF)
+                endif()
+                
+            endforeach(test_executable)
+        endif()
+    endforeach(CURRENT_CONFIGURATION)
+    LOGGED_MESSAGE(STATUS "------------------------------------------------------")
 endforeach(CURRENT_TARGET) 
-LOGGED_MESSAGE(STATUS "------------------------------------------------------")
+LOGGED_MESSAGE(STATUS "======================================================")
+
+if(NOT OVERALL_STATUS)
+    message(FATAL_ERROR "Some tests have failed!")
+else()
+    message(STATUS "All tests are passed!")
+endif()
+LOGGED_MESSAGE(STATUS "======================================================")

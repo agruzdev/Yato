@@ -22,6 +22,11 @@ endif()
 #==========================================
 # Targets
 
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+message(STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
+
 option(YATO_BUILD_TESTS "Build unit tests" ON)
 if(YATO_BUILD_TESTS)
     add_subdirectory(./tests)
