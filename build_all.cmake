@@ -147,6 +147,7 @@ macro(CHECK_RETURN_CODE _ret_code)
         LOGGED_MESSAGE(STATUS OK)
     else()
         LOGGED_MESSAGE(STATUS "ERROR! Return code ${${_ret_code}}")
+        set(OVERALL_STATUS OFF)
     endif()
 endmacro()
 
