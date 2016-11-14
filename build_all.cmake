@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.1)
+cmake_minimum_required (VERSION 3.2)
 
 # ==============================================================
 # Usage
@@ -12,6 +12,7 @@ cmake_minimum_required (VERSION 3.1)
 #   mingw    - MinGW
 #   gcc      - Unix GCC 
 #   clang    - clang (specify environment variable LLVM_ROOT in Windows)
+#   android  - android toolchain (clang) (specify environment variable ANDROID_TOOLCHAIN with path of standalone toolchain)
 #   all      - enable all listed (filtered by operating system)
 
 # ==============================================================
@@ -47,6 +48,16 @@ if(UNIX)
     endif()
 endif()
 
+if(NOT ANDROID_TOOLCHAIN)
+    set(ANDROID_TOOLCHAIN $ENV{ANDROID_TOOLCHAIN})
+endif()
+if(ANDROID_TOOLCHAIN)
+    find_path(ANDROID_FOUND "AndroidVersion.txt" ${ANDROID_TOOLCHAIN})
+    if(ANDROID_FOUND)
+        list(APPEND SUPPORTED_TARGETS android)
+    endif()
+endif()
+
 set(GENERATOR_mingw "MinGW Makefiles")
 set(GENERATOR_vc12x32 "Visual Studio 12 2013")
 set(GENERATOR_vc12x64 "Visual Studio 12 2013 Win64")
@@ -55,11 +66,14 @@ set(GENERATOR_vc14x64 "Visual Studio 14 2015 Win64")
 set(GENERATOR_gcc "Unix Makefiles")
 if(WIN32)
     set(GENERATOR_clang "MinGW Makefiles")
+    set(GENERATOR_android "MinGW Makefiles")
 else()
     set(GENERATOR_clang "Unix Makefiles")
+    set(GENERATOR_android "Unix Makefiles")
 endif()
 
 set(TOOLCHAIN_clang "cmake/clang.toolchain.cmake")
+set(TOOLCHAIN_android "cmake/android.toolchain.cmake")
 
 list(APPEND MAKE_ARGUMENTS_mingw "")
 list(APPEND MAKE_ARGUMENTS_vc12x32 "")
@@ -68,6 +82,7 @@ list(APPEND MAKE_ARGUMENTS_vc14x32 "")
 list(APPEND MAKE_ARGUMENTS_vc14x64 "")
 list(APPEND MAKE_ARGUMENTS_gcc "")
 list(APPEND MAKE_ARGUMENTS_clang "")
+list(APPEND MAKE_ARGUMENTS_android "")
 
 # ==============================================================
 # Input argumets
@@ -115,6 +130,7 @@ else()
     set(all_build_targers ${_TARGET})
 endif()
 
+
 list(APPEND possible_configurations "Debug")
 list(APPEND possible_configurations "Release")
 set(CMAKE_CONFIGURATION_TYPES ${possible_configurations})
@@ -128,7 +144,7 @@ else()
     set(all_configuratins ${possible_configurations})
 endif()
 unset(possible_configurations)
-message(STATUS "Building for the following configurations: ${all_configuratins}")
+
 
 # ==============================================================
 # Make all targets
@@ -152,6 +168,11 @@ macro(CHECK_RETURN_CODE _ret_code)
 endmacro()
 
 set(OVERALL_STATUS ON)
+
+message(STATUS "Building for the following targets: ${all_build_targers}")
+message(STATUS "Building for the following configurations: ${all_configuratins}")
+file(APPEND ${REPORT_FILE} "Building for the following targets: ${all_build_targers}\n")
+file(APPEND ${REPORT_FILE} "Building for the following configurations: ${all_configuratins}")
 
 foreach(CURRENT_TARGET ${all_build_targers})
     LOGGED_MESSAGE(STATUS "======================================================")
@@ -209,6 +230,11 @@ foreach(CURRENT_TARGET ${all_build_targers})
         #
         if(ret EQUAL 0)
             LOGGED_MESSAGE(STATUS "Run tests for: ${CURRENT_TARGET}") 
+            
+            if(CURRENT_TARGET STREQUAL "android")
+                LOGGED_MESSAGE(STATUS "SKIPPING")
+                continue()
+            endif()
             
             file(GLOB test_executables RELATIVE ${CURRENT_BIN_DIR} ${CURRENT_BIN_DIR}/*[Tt]est* ${CURRENT_BIN_DIR}/*/*[Tt]est*)
             list(REMOVE_DUPLICATES test_executables)
