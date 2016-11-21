@@ -241,7 +241,7 @@ namespace yato
              * Get total number of elements in the view with strides
              */
             YATO_CONSTEXPR_FUNC
-            size_type total_reserved() const
+            size_type total_stored() const
             {
                 return std::get<dim_descriptor::idx_offset>(*m_desc_iter);
             }
@@ -339,7 +339,7 @@ namespace yato
              */
             data_iterator plain_end() const YATO_NOEXCEPT_KEYWORD
             {
-                return std::next(m_data_iter, total_reserved());
+                return std::next(m_data_iter, total_stored());
             }
 
             /**
@@ -355,7 +355,7 @@ namespace yato
              */
             data_iterator plain_cend() const YATO_NOEXCEPT_KEYWORD
             {
-                return std::next(m_data_iter, total_reserved());
+                return std::next(m_data_iter, total_stored());
             }
 
             /**
@@ -399,7 +399,7 @@ namespace yato
             YATO_CONSTEXPR_FUNC_EX
             this_type & operator++() YATO_NOEXCEPT_KEYWORD
             {
-                std::advance(m_data_iter, total_reserved());
+                std::advance(m_data_iter, total_stored());
                 return *this;
             }
 
@@ -419,7 +419,7 @@ namespace yato
             YATO_CONSTEXPR_FUNC_EX
             this_type & operator--() YATO_NOEXCEPT_KEYWORD
             {
-                std::advance(m_data_iter, -narrow_cast<difference_type>(total_reserved()));
+                std::advance(m_data_iter, -narrow_cast<difference_type>(total_stored()));
                 return *this;
             }
 
@@ -438,7 +438,7 @@ namespace yato
              */
             this_type & operator+= (difference_type offset) YATO_NOEXCEPT_KEYWORD
             {
-                std::advance(m_data_iter, offset * total_reserved());
+                std::advance(m_data_iter, offset * total_stored());
                 return *this;
             }
 
@@ -466,7 +466,7 @@ namespace yato
              */
             this_type & operator-= (difference_type offset) YATO_NOEXCEPT_KEYWORD
             {
-                std::advance(m_data_iter, -offset * narrow_cast<difference_type>(total_reserved()));
+                std::advance(m_data_iter, -offset * narrow_cast<difference_type>(total_stored()));
                 return *this;
             }
 
@@ -487,8 +487,8 @@ namespace yato
             friend 
             difference_type operator- (const this_type & one, const this_type & another)
             {
-                YATO_REQUIRES(one.total_reserved() == another.total_reserved());
-                return (one.m_data_iter - another.m_data_iter) / one.total_reserved();
+                YATO_REQUIRES(one.total_stored() == another.total_stored());
+                return (one.m_data_iter - another.m_data_iter) / one.total_stored();
             }
 
             /**

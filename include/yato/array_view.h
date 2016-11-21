@@ -112,7 +112,7 @@ namespace yato
                 return std::get<dim_descriptor::idx_total>(m_descriptors[0]);
             }
 
-            size_type get_total_reserved_() const
+            size_type get_total_stored_() const
             {
                 return std::get<dim_descriptor::idx_offset>(m_descriptors[0]);
             }
@@ -242,7 +242,7 @@ namespace yato
                 return m_size[0];
             }
 
-            size_type get_total_reserved_() const
+            size_type get_total_stored_() const
             {
                 return m_size[0];
             }
@@ -358,7 +358,7 @@ namespace yato
         auto reshape(const dimensionality<NewDimsNum, size_type> & extents) const
             -> array_view_nd<value_type, NewDimsNum>
         {
-            YATO_REQUIRES(extents.total_size() == total_reserved());
+            YATO_REQUIRES(extents.total_size() == total_stored());
             return array_view_nd<value_type, NewDimsNum>(base_type::get_pointer_(), extents);
         }
 
@@ -370,7 +370,7 @@ namespace yato
         auto reshape(const dimensionality<NewDimsNum, size_type> & extents, const dimensionality<NewDimsNum - 1, size_type> & strides) const
             -> array_view_nd<value_type, NewDimsNum>
         {
-            YATO_REQUIRES(extents[0] * strides.total_size() == total_reserved());
+            YATO_REQUIRES(extents[0] * strides.total_size() == total_stored());
             return array_view_nd<value_type, NewDimsNum>(base_type::get_pointer_(), extents, strides);
         }
 
@@ -448,9 +448,9 @@ namespace yato
         /**
          * Get total number of elements in the view with strides
          */
-        size_type total_reserved() const
+        size_type total_stored() const
         {
-            return base_type::get_total_reserved_();
+            return base_type::get_total_stored_();
         }
 
         /**
@@ -510,12 +510,12 @@ namespace yato
 
         const_value_iterator plain_cend() const
         {
-            return base_type::get_pointer_() + base_type::get_total_reserved_();
+            return base_type::get_pointer_() + base_type::get_total_stored_();
         }
 
         value_iterator plain_end()
         {
-            return base_type::get_pointer_() + base_type::get_total_reserved_();
+            return base_type::get_pointer_() + base_type::get_total_stored_();
         }
 
         yato::range<const_iterator> crange() const

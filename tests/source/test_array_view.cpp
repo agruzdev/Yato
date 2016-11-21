@@ -20,7 +20,7 @@ TEST(Yato_ArrayView, common)
     EXPECT_EQ(6U, view.stride(1));
 
     EXPECT_EQ(24U, view.total_size());
-    EXPECT_EQ(60U, view.total_reserved());
+    EXPECT_EQ(60U, view.total_stored());
 
     auto r = view.dimensions_range();
     EXPECT_EQ(2U, *(r.begin()));
