@@ -19,9 +19,22 @@ include_directories(${GTEST_INCLUDE_DIR})
 include_directories("${CMAKE_SOURCE_DIR}/include")
 
 file(GLOB_RECURSE all_tests "source/*.cpp" "source/*.h")
-file(GLOB_RECURSE yato_sources "${CMAKE_SOURCE_DIR}/include/*.h")
 list(APPEND all_sources ${all_tests})
 list(APPEND all_sources ${yato_sources})
+
+foreach(f ${all_sources})
+    # Get the path of the file relative to ${CMAKE_HOME_DIRECTORY},
+    # then alter it (not compulsory)
+    file(RELATIVE_PATH SRCGR ${CMAKE_HOME_DIRECTORY} ${f})
+    set(SRCGR "${SRCGR}")
+
+    # Extract the folder, ie remove the filename part
+    string(REGEX REPLACE "(.*)(/[^/]*)$" "\\1" SRCGR ${SRCGR})
+
+    # Source_group expects \\ (double antislash), not / (slash)
+    string(REPLACE / \\ SRCGR ${SRCGR})
+    source_group("${SRCGR}" FILES ${f})
+endforeach()
 
 #==========================================
 # Targets
