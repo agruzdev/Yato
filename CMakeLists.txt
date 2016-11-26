@@ -18,6 +18,10 @@ elseif(UNIX OR MINGW OR ANDROID)
     set(TARGET_CONFIG_LISTS ${CMAKE_SOURCE_DIR}/cmake/CMakeLists-GCC.cmake)
 endif()
 
+#==========================================
+# Core sources
+
+file(GLOB_RECURSE yato_sources "${CMAKE_SOURCE_DIR}/include/*.h")
 
 #==========================================
 # Targets

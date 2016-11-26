@@ -172,7 +172,7 @@ set(OVERALL_STATUS ON)
 message(STATUS "Building for the following targets: ${all_build_targers}")
 message(STATUS "Building for the following configurations: ${all_configuratins}")
 file(APPEND ${REPORT_FILE} "Building for the following targets: ${all_build_targers}\n")
-file(APPEND ${REPORT_FILE} "Building for the following configurations: ${all_configuratins}")
+file(APPEND ${REPORT_FILE} "Building for the following configurations: ${all_configuratins}\n")
 
 foreach(CURRENT_TARGET ${all_build_targers})
     LOGGED_MESSAGE(STATUS "======================================================")
@@ -191,11 +191,10 @@ foreach(CURRENT_TARGET ${all_build_targers})
         #
         LOGGED_MESSAGE(STATUS "Configuring for: ${CURRENT_TARGET} / ${CURRENT_CONFIGURATION}") 
         
+        unset(CUSTOM_TOOLCHAIN_ARG)
         if(DEFINED TOOLCHAIN_${CURRENT_TARGET})
             set(CUSTOM_TOOLCHAIN_ARG "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/${TOOLCHAIN_${CURRENT_TARGET}}")
             LOGGED_MESSAGE(STATUS "Using toolchain ${TOOLCHAIN_${CURRENT_TARGET}}")
-        else()
-            set(CUSTOM_TOOLCHAIN_ARG "")
         endif()
         
         execute_process(COMMAND cmake "-G${GENERATOR_${CURRENT_TARGET}}" ${CUSTOM_TOOLCHAIN_ARG} -DBIN_OUTPUT_DIR=${CURRENT_BIN_DIR} ${_SOURCE_DIR} -DCMAKE_BUILD_TYPE=${CURRENT_CONFIGURATION}
@@ -214,6 +213,7 @@ foreach(CURRENT_TARGET ${all_build_targers})
             LOGGED_MESSAGE(STATUS "Building: ${CURRENT_TARGET}") 
             
             # Find solution files
+            unset(msvc_configuration)
             if(CURRENT_TARGET MATCHES vc*)
                 set(msvc_configuration "/property:Configuration=${CURRENT_CONFIGURATION}")
             endif() 
