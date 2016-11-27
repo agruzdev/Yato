@@ -14,7 +14,7 @@ namespace
             return yato::make_optional<std::string>("Something");
         }
         else {
-            return yato::make_optional<std::string>();
+            return yato::nullopt;
         }
     }
 }

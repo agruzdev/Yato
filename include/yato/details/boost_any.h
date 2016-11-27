@@ -81,10 +81,9 @@ namespace boost
         class holder
             : public placeholder
         {
+        public:
             ValueType m_payload;
-            //--------------------------------------------------------------
-
-        public: 
+            
             holder(const ValueType & value)
                 : m_payload(value)
             { }
@@ -115,15 +114,13 @@ namespace boost
          */
         template<typename ValueType>
         class holder <ValueType, typename std::enable_if<
-			    !std::is_copy_assignable<ValueType>::value
+                !std::is_copy_assignable<ValueType>::value
             , void>::type>
             : public placeholder
         {
-        private:
+        public:
             ValueType m_payload;
-            //--------------------------------------------------------------
 
-        public: 
             holder(const ValueType &) = delete;
 
             holder(ValueType && value)
@@ -228,6 +225,9 @@ namespace boost
 
         template<typename ValueType>
         friend ValueType* unsafe_any_cast(any*) YATO_NOEXCEPT_KEYWORD;
+
+        template<typename ValueType>
+        friend ValueType& unsafe_any_cast(any&) YATO_NOEXCEPT_KEYWORD;
     };
  
     inline void swap(any & lhs, any & rhs) YATO_NOEXCEPT_KEYWORD
@@ -240,7 +240,7 @@ namespace boost
     {
         //return operand && operand->type() == boost::typeindex::type_id<ValueType>()
         return operand && operand->type() == typeid(ValueType)
-            ? &static_cast<details::holder<typename std::remove_cv<ValueType>::type > * > (operand->m_content)->held
+            ? &static_cast<details::holder<typename std::remove_cv<ValueType>::type > * > (operand->m_content.get())->m_payload
             : 0;
     }
 
@@ -300,13 +300,25 @@ namespace boost
     template<typename ValueType>
     inline ValueType * unsafe_any_cast(any * operand) YATO_NOEXCEPT_KEYWORD
     {
-        return &static_cast<details::holder<ValueType> *>(operand->m_content)->held;
+        return &static_cast<details::holder<ValueType>*>(operand->m_content.get())->m_payload;
     }
 
     template<typename ValueType>
     inline const ValueType * unsafe_any_cast(const any * operand) YATO_NOEXCEPT_KEYWORD
     {
-        return unsafe_any_cast<ValueType>(const_cast<any *>(operand));
+        return unsafe_any_cast<ValueType>(const_cast<any*>(operand));
+    }
+
+    template<typename ValueType>
+    inline ValueType & unsafe_any_cast(any & operand) YATO_NOEXCEPT_KEYWORD
+    {
+        return static_cast<details::holder<ValueType>*>(operand.m_content.get())->m_payload;
+    }
+
+    template<typename ValueType>
+    inline const ValueType & unsafe_any_cast(const any & operand) YATO_NOEXCEPT_KEYWORD
+    {
+        return unsafe_any_cast<ValueType>(const_cast<any&>(operand));
     }
 }
 
