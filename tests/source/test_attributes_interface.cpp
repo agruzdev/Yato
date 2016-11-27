@@ -59,6 +59,47 @@ TEST(Yato_Attributes, copy)
     f3 = std::move(f4);
 }
 
+namespace
+{
+    enum class FooAttr
+    {
+        e1,
+        e2
+    };
+
+    class FooAccepts
+        : public yato::attributes_map<FooAttr>
+    { };
+
+    class FooIngore
+        : public yato::ignores_attributes<FooAttr>
+    { };
+}
+
+TEST(Yato_Attributes, ignore)
+{
+    FooAccepts fa;
+    FooIngore fi;
+    std::array<yato::attributes_interface<FooAttr>*, 2> foos;
+    foos[0] = &fa;
+    foos[1] = &fi;
+
+    for (auto attrI : foos) {
+        attrI->set_attribute(FooAttr::e1, 1);
+        attrI->set_attribute(FooAttr::e2, 1.0);
+    }
+
+    EXPECT_TRUE(fa.has_attribute(FooAttr::e1));
+    EXPECT_TRUE(fa.has_attribute(FooAttr::e2));
+    EXPECT_EQ(1,   fa.get_attribute_as<int>(FooAttr::e1, 0));
+    EXPECT_EQ(1.0, fa.get_attribute_as<double>(FooAttr::e2, 0.0));
+
+    EXPECT_TRUE(fa.is_valide_attribute(FooAttr::e1));
+    EXPECT_TRUE(fa.is_valide_attribute(FooAttr::e1));
+    EXPECT_FALSE(fi.is_valide_attribute(FooAttr::e1));
+    EXPECT_FALSE(fi.is_valide_attribute(FooAttr::e1));
+}
+
 TEST(Yato_Attributes, concurrency)
 {
     static const int N = 1000;

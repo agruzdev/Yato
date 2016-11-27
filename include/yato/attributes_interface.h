@@ -258,6 +258,58 @@ namespace yato
             return std::unique_lock<std::mutex>(m_mutex);
         }
     };
+
+
+    /**
+     *  Base class for types which ignore any attributes
+     */
+    template <typename KeyType = std::string>
+    class ignores_attributes
+        : public yato::attributes_interface<KeyType>
+    {
+    public:
+        using this_type = ignores_attributes<KeyType>;
+        using key_type = KeyType;
+        static YATO_CONSTEXPR_VAR bool is_thread_safe = true;
+        //--------------------------------------------------------------------
+
+    protected:
+        void do_set_attribute(const KeyType & /*key*/, const yato::any & /*value*/) override
+        { }
+
+        void do_set_attribute(const KeyType & /*key*/, yato::any && /*value*/) override
+        { }
+
+        void do_clear_attribute(const KeyType & /*key*/) override
+        { }
+
+        bool do_is_valide_attribute(const KeyType & /*key*/) const override
+        {
+            return false;
+        }
+        //--------------------------------------------------------------------
+
+    public:
+        ignores_attributes() = default;
+
+        ignores_attributes(const this_type &) = default;
+
+        ignores_attributes & operator = (const this_type &) = default;
+
+#ifndef YATO_MSVC_2013
+        ignores_attributes(this_type&&) = default;
+        ignores_attributes & operator = (this_type&&) = default;
+#else
+        ignores_attributes(this_type&&)
+        { }
+
+        ignores_attributes & operator = (this_type&&)
+        {
+            return *this;
+        }
+#endif
+        ~ignores_attributes() = default;
+    };
 }
 
 #endif
