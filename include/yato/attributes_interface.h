@@ -74,43 +74,136 @@ namespace yato
      *  Thrown on bad access
      */
     class bad_attribute
-        : public std::exception
+        : public std::runtime_error
     {
     public:
-        const char* what() const YATO_NOEXCEPT_KEYWORD override
+        bad_attribute()
+            : std::runtime_error("yato::bad_attribute: attribute with the given name doesn't exist")
+        { }
+    };
+
+    /**
+     *  Thrown on if locking is not supported
+     */
+    class bad_lock
+        : public std::runtime_error
+    {
+    public:
+        bad_lock()
+            : std::runtime_error("yato::bad_lock: lock is not provided")
+        { }
+    };
+
+    /**
+     *  Validator class for attributes_map
+     *  Allows any key values
+     */
+    template <typename KeyType>
+    class accept_any
+    {
+    public:
+        bool operator()(const KeyType &) const YATO_NOEXCEPT_KEYWORD
         {
-            return "yato::bad_attribute: attribute with the given name doesn't exist";
+            return true;
+        }
+    };
+
+    /**
+     *  Validator class for attributes_map
+     *  Disallows all key values
+     */
+    template <typename KeyType>
+    class accept_none
+    {
+    public:
+        bool operator()(const KeyType &) const YATO_NOEXCEPT_KEYWORD
+        {
+            return false;
+        }
+    };
+
+
+    /**
+     *  Lock provider based on std::mutex and std::unique_lock
+     */
+    class mutex_lock
+    {
+    private:
+        std::mutex m_mutex;
+    public:
+        using lock_type = std::unique_lock<std::mutex>;
+
+        lock_type operator()()
+        {
+            return std::unique_lock<std::mutex>(m_mutex);
+        }
+    };
+
+    /**
+     *  Empty lock provider
+     */
+    class no_lock
+    {
+    public:
+        using lock_type = void*;
+
+        YATO_NORETURN
+        lock_type operator()()
+        {
+            throw bad_lock();
         }
     };
 
 
     /**
      *  Basic imlementation of attributes interface based on std::map
+     *  Validator is not propagated on copy/move/assign
+     *  LockProvider is not propagated on copy/move/assign
      */
-    template <typename KeyType = std::string>
+    template <typename KeyType   = std::string, 
+              typename Validator = accept_any<KeyType>,
+              typename LockProvider = mutex_lock>
     class attributes_map
         : public attributes_interface<KeyType>
     {
-    public: 
+    private:
         using this_type = attributes_map<KeyType>;
+    public: 
         using key_type  = KeyType;
+        using validator_type = Validator;
+        using lock_provider_type = LockProvider;
+        using lock_type = typename LockProvider::lock_type;
         static YATO_CONSTEXPR_VAR bool is_thread_safe = false;
         //--------------------------------------------------------------------
 
     private:
         std::map<key_type, yato::any> m_attributes;
-        std::mutex m_mutex;
+        lock_provider_type m_lock_provider;
+        validator_type m_validator;
+        //--------------------------------------------------------------------
+
+        template <typename ValTy_>
+        void insert_or_assign_(const key_type & key, ValTy_ && value)
+        {
+            auto pos = m_attributes.lower_bound(key);
+            if (pos == m_attributes.end() || key < (*pos).first) {
+                m_attributes.emplace_hint(pos, key, std::forward<ValTy_>(value));
+            }
+            else {
+                (*pos).second = std::forward<ValTy_>(value);
+            }
+        }
         //--------------------------------------------------------------------
 
     protected:
         void do_set_attribute(const KeyType & key, const yato::any & value) override
         {
-            m_attributes[key] = value;
+            insert_or_assign_(key, value);
         }
 
         void do_set_attribute(const KeyType & key, yato::any && value) override
         {
-            m_attributes[key] = std::move(value);
+            insert_or_assign_(key, std::move(value));
         }
 
         void do_clear_attribute(const KeyType & key) override
@@ -118,14 +211,19 @@ namespace yato
             m_attributes.erase(key);
         }
 
-        bool do_is_valide_attribute(const KeyType & /*key*/) const override
+        bool do_is_valide_attribute(const KeyType & key) const override
         {
-            return true;
+            return m_validator(key);
         }
         //--------------------------------------------------------------------
 
     public:
         attributes_map() = default;
+
+        explicit
+        attributes_map(const validator_type & validator)
+            : m_validator(validator)
+        { }
 
         ~attributes_map() override = default;
 
@@ -253,9 +351,9 @@ namespace yato
          *  Acquire lock for this interface
          *  Can be used for thread-safe access
          */
-        std::unique_lock<std::mutex> lock_attributes()
+        lock_type lock_attributes()
         {
-            return std::unique_lock<std::mutex>(m_mutex);
+            return m_lock_provider();
         }
     };
 
@@ -308,7 +406,7 @@ namespace yato
             return *this;
         }
 #endif
-        ~ignores_attributes() = default;
+        ~ignores_attributes() override = default;
     };
 }
 

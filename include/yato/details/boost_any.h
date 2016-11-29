@@ -137,6 +137,7 @@ namespace boost
                 return typeid(ValueType);
             }
 
+            YATO_NORETURN
             std::unique_ptr<placeholder> clone() const override
             {
                 // Can't be copied

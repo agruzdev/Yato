@@ -64,6 +64,7 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 #define YATO_NOEXCEPT_KEYWORD_EXP(Condition) noexcept(Condition)
 #define YATO_NOEXCEPT_OPERATOR(Condition) noexcept(Condition)
 #define YATO_DEPRECATED(Reason) [[deprecated(Reason)]]
+#define YATO_NORETURN [[noreturn]]
 #else
 #define YATO_CONSTEXPR_VAR const
 #define YATO_CONSTEXPR_FUNC inline
@@ -71,6 +72,7 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 #define YATO_NOEXCEPT_KEYWORD_EXP(Condition)
 #define YATO_NOEXCEPT_OPERATOR(Condition)
 #define YATO_DEPRECATED(Reason)
+#define YATO_NORETURN
 #endif
 
 // Extended constexpr
