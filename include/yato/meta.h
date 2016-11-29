@@ -58,6 +58,15 @@ namespace yato
         struct null_list {};
 
         /**
+         *  Non-position value of index in the list
+         */
+#ifndef YATO_MSVC_2013
+        constexpr size_t list_npos = std::numeric_limits<size_t>::max();
+#else
+        static YATO_CONSTEXPR_VAR size_t list_npos = static_cast<size_t>(-1);
+#endif
+
+        /**
          *  List for aggregating a sequence of types
          */
         template<typename _Head, typename... _Tail>
@@ -176,21 +185,37 @@ namespace yato
             using type = typename _List::head;
         };
 
-		/**
-		 *  Convert list to std::tuple
-		 */
-		template <typename _List, typename... _Types>
-		struct list_to_tuple
-		{
-			using type = typename list_to_tuple <typename _List::tail, _Types..., typename _List::head>::type;
-		};
+        /**
+         *  Convert list to std::tuple
+         */
+        template <typename _List, typename... _Types>
+        struct list_to_tuple
+        {
+            using type = typename list_to_tuple <typename _List::tail, _Types..., typename _List::head>::type;
+        };
 
-		template <typename... _Types>
-		struct list_to_tuple <null_list, _Types...>
-		{
-			using type = std::tuple<_Types...>;
-		};
+        template <typename... _Types>
+        struct list_to_tuple <null_list, _Types...>
+        {
+            using type = std::tuple<_Types...>;
+        };
 
+
+        /**
+         *  Find type in types list, value is index of found element
+         */
+        template <typename List, typename Type, size_t Idx = 0>
+        struct list_find
+            : public std::integral_constant<size_t, 
+                std::is_same<typename List::head, Type>::value 
+                ? Idx
+                : list_find<typename List::tail, Type, Idx + 1>::value>
+        { };
+
+        template <typename Type, size_t Idx>
+        struct list_find<null_list, Type, Idx>
+            : public std::integral_constant<size_t, list_npos>
+        { };
     }
 }
 

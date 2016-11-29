@@ -43,6 +43,20 @@ TEST(Yato_Meta, list)
     static_assert(std::is_same<l6, yato::meta::list<int, short>>::value, "yato::meta::list fail!");
     static_assert(std::is_same<l7, yato::meta::list<float, double>>::value, "yato::meta::list fail!");
 
-	using t7 = yato::meta::list_to_tuple<l7>::type;
-	static_assert(std::is_same<t7, std::tuple<float, double>>::value, "yato::meta::list fail!");
+    using t7 = yato::meta::list_to_tuple<l7>::type;
+    static_assert(std::is_same<t7, std::tuple<float, double>>::value, "yato::meta::list fail!");
+}
+
+TEST(Yato_Meta, list_find)
+{
+    using l1 = yato::meta::list<int, void, float, void>;
+
+    static_assert(yato::meta::list_find<l1, int>::value == 0, "yato::meta::list_find fail");
+    static_assert(yato::meta::list_find<l1, void>::value == 1, "yato::meta::list_find fail");
+    static_assert(yato::meta::list_find<l1, float>::value == 2, "yato::meta::list_find fail");
+    static_assert(yato::meta::list_find<l1, char>::value == yato::meta::list_npos, "yato::meta::list_find fail");
+
+    static_assert(std::is_same< yato::meta::list_at<l1, yato::meta::list_find<l1, int>::value>::type, int >::value, "yato::meta::list_find fail");
+    static_assert(std::is_same< yato::meta::list_at<l1, yato::meta::list_find<l1, void>::value>::type, void >::value, "yato::meta::list_find fail");
+    static_assert(std::is_same< yato::meta::list_at<l1, yato::meta::list_find<l1, float>::value>::type, float >::value, "yato::meta::list_find fail");
 }
