@@ -60,3 +60,16 @@ TEST(Yato_Meta, list_find)
     static_assert(std::is_same< yato::meta::list_at<l1, yato::meta::list_find<l1, void>::value>::type, void >::value, "yato::meta::list_find fail");
     static_assert(std::is_same< yato::meta::list_at<l1, yato::meta::list_find<l1, float>::value>::type, float >::value, "yato::meta::list_find fail");
 }
+
+TEST(Yato_Meta, list_length)
+{
+    using l1 = yato::meta::list<int, char, void, double>;
+    using l2 = yato::meta::list<int*, void*>;
+    using l3 = yato::meta::list<void>;
+    using l4 = yato::meta::null_list;
+
+    static_assert(yato::meta::list_length<l1>::value == 4, "yato::meta::list_length fail");
+    static_assert(yato::meta::list_length<l2>::value == 2, "yato::meta::list_length fail");
+    static_assert(yato::meta::list_length<l3>::value == 1, "yato::meta::list_length fail");
+    static_assert(yato::meta::list_length<l4>::value == 0, "yato::meta::list_length fail");
+}

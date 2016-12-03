@@ -216,6 +216,20 @@ namespace yato
         struct list_find<null_list, Type, Idx>
             : public std::integral_constant<size_t, list_npos>
         { };
+
+        /**
+         *  Get list length
+         */
+        template <typename List>
+        struct list_length
+            : public std::integral_constant<size_t,
+                1 + list_length<typename List::tail>::value>
+        { };
+
+        template <>
+        struct list_length<null_list>
+            : public std::integral_constant<size_t, 0>
+        { };
     }
 }
 

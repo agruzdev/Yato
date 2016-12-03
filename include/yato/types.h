@@ -305,6 +305,42 @@ namespace yato
         }
 #endif
     }
+
+    //--------------------------------------------------------------------
+
+    /**
+     *  Helper type to indicate in place constructors
+     */
+    struct in_place_t 
+    {
+        explicit in_place_t() = default;
+    };
+
+    /**
+     *  Helper type to indicate in place constructors
+     */
+    template <typename Ty>
+    struct in_place_type_t
+    {
+        explicit in_place_type_t() = default;
+    };
+#ifndef YATO_MSVC_2013
+    template <typename Ty>
+    constexpr yato::in_place_type_t<Ty> in_place_type{};
+#endif
+
+    /**
+     *  Helper type to indicate in place constructors
+     */
+    template <size_t Idx>
+    struct in_place_index_t
+    {
+        explicit in_place_index_t() = default;
+    };
+#ifndef YATO_MSVC_2013
+    template <size_t Idx>
+    constexpr yato::in_place_index_t<Idx> in_place_index{};
+#endif
 }
 
 
