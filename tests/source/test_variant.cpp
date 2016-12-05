@@ -55,7 +55,7 @@ TEST(Yato_Variant, copy)
     yato::variant<float, void> v4(v3);
 
     yato::variant<void, int> v5(std::move(v2));
-    EXPECT_EQ(typeid(void), v2.type());
+    //EXPECT_EQ(typeid(void), v2.type());
     EXPECT_EQ(typeid(int), v5.type());
 
     yato::variant<void, int> v6(6);
@@ -65,7 +65,7 @@ TEST(Yato_Variant, copy)
 
     yato::variant<void, int> v8;
     v8 = std::move(v1);
-    EXPECT_EQ(typeid(void), v1.type());
+    EXPECT_NE(typeid(void), v1.type());
 }
 
 namespace
@@ -157,7 +157,7 @@ TEST(Yato_Variant, copy2)
 
     yato::variant<void, Foo> v3(std::move(v1));
     EXPECT_TRUE(info.moveCtor);
-    EXPECT_TRUE(info.dtor);
+    EXPECT_FALSE(info.dtor);
 }
 
 TEST(Yato_Variant, copy3)
@@ -178,7 +178,7 @@ TEST(Yato_Variant, copy3)
     yato::variant<void, Foo> v3{ Foo(nullptr) };
     v3 = std::move(v1);
     EXPECT_TRUE(info.moveAssign);
-    EXPECT_TRUE(info.dtor);
+    EXPECT_FALSE(info.dtor);
 }
 
 TEST(Yato_Variant, get)

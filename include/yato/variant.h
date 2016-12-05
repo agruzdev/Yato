@@ -408,7 +408,6 @@ namespace yato
             : m_type_idx(other.m_type_idx)
         {
             details::variant_dispatcher<alternativies_list>().move_copy(other.m_type_idx, &m_storage, &other.m_storage);
-            other.clear();
         }
 
         /**
@@ -446,7 +445,6 @@ namespace yato
                     details::variant_dispatcher<alternativies_list>().move_assign(other.m_type_idx, &m_storage, &other.m_storage);
                 }
             }
-            other.clear();
             return *this;
         }
 
