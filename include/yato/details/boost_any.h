@@ -60,6 +60,15 @@ namespace boost
         }
     };
 
+    struct nullany_t 
+    {
+        explicit
+        nullany_t() = default;
+    };
+#ifndef YATO_MSVC_2013
+    constexpr nullany_t nullany{};
+#endif
+
 
     namespace details
     {
@@ -92,6 +101,11 @@ namespace boost
                 : m_payload(std::move(value))
             { }
 
+            template <typename ... Args>
+            holder(yato::in_place_t, Args && ... args)
+                : m_payload(std::forward<Args>(args)...)
+            { }
+
             holder & operator=(const holder &) = delete;
             holder & operator=(holder&&) = delete;
 
@@ -114,7 +128,7 @@ namespace boost
          */
         template<typename ValueType>
         class holder <ValueType, typename std::enable_if<
-                !std::is_copy_assignable<ValueType>::value
+                !std::is_copy_assignable<ValueType>::value && std::is_move_constructible<ValueType>::value
             , void>::type>
             : public placeholder
         {
@@ -125,6 +139,51 @@ namespace boost
 
             holder(ValueType && value)
                 : m_payload(std::move(value))
+            { }
+
+            template <typename ... Args>
+            holder(yato::in_place_t, Args && ... args)
+                : m_payload(std::forward<Args>(args)...)
+            { }
+
+            holder & operator=(const holder &) = delete;
+            holder & operator=(holder&&) = delete;
+
+            ~holder() override = default;
+
+            const std::type_info & type() const YATO_NOEXCEPT_KEYWORD override
+            {
+                return typeid(ValueType);
+            }
+
+            YATO_NORETURN
+            std::unique_ptr<placeholder> clone() const override
+            {
+                // Can't be copied
+                throw any_copy_error();
+            }
+        };
+        //--------------------------------------------------------------------
+
+        /**
+         * Holder for non-CopyConstructible and non-MoveConstructible classes
+         */
+        template<typename ValueType>
+        class holder <ValueType, typename std::enable_if<
+            !std::is_copy_assignable<ValueType>::value && !std::is_move_constructible<ValueType>::value
+            , void>::type>
+            : public placeholder
+        {
+        public:
+            ValueType m_payload;
+
+            holder(const ValueType &) = delete;
+
+            holder(ValueType &&) = delete;
+
+            template <typename ... Args>
+            holder(yato::in_place_t, Args && ... args)
+                : m_payload(std::forward<Args>(args)...)
             { }
 
             holder & operator=(const holder &) = delete;
@@ -154,9 +213,10 @@ namespace boost
         //------------------------------------------------
 
     public:
+        YATO_CONSTEXPR_VAR
         any() = default;
 
-        template<typename ValueType>
+        template <typename ValueType>
         any(ValueType && value)
             : m_content(std::make_unique<details::holder<typename std::decay<ValueType>::type>>(
                 std::forward<ValueType>(value)))
@@ -166,6 +226,16 @@ namespace boost
             : m_content(other.m_content 
                 ? other.m_content->clone() 
                 : nullptr)
+        { }
+
+        template <typename Ty, typename ... Args>
+        any(yato::in_place_type_t<Ty>, Args && ... args)
+            : m_content(std::make_unique<details::holder<Ty>>(yato::in_place_t(), std::forward<Args>(args)...))
+        { }
+
+        YATO_CONSTEXPR_VAR
+        any(nullany_t) 
+            : m_content(nullptr)
         { }
 
 #ifndef YATO_MSVC_2013
@@ -211,12 +281,58 @@ namespace boost
 
         void clear() YATO_NOEXCEPT_KEYWORD
         {
-            any().swap(*this);
+            m_content.reset();
         }
 
         const std::type_info & type() const YATO_NOEXCEPT_KEYWORD
         {
             return m_content ? m_content->type() : typeid(void);
+        }
+
+        template <typename Ty, typename ... Args>
+        void emplace(Args && ... args)
+        {
+            any tmp(yato::in_place_type_t<Ty>(), std::forward<Args>(args)...);
+            tmp.swap(*this);
+        }
+
+        template <typename Ty>
+        Ty & get_as()
+        {
+            if (std::type_index(typeid(Ty)) == std::type_index(type())) {
+                if (m_content != nullptr) {
+                    return static_cast<details::holder<Ty>*>(m_content.get())->m_payload;
+                }
+            }
+            throw bad_any_cast();
+        }
+
+        template <typename Ty>
+        const Ty & get_as() const
+        {
+            return const_cast<any*>(this)->get_as<Ty>();
+        }
+
+        template <typename Ty>
+        Ty & get_as(Ty & default_value)
+        {
+            if (std::type_index(typeid(Ty)) == std::type_index(type())) {
+                if (m_content != nullptr) {
+                    return static_cast<details::holder<Ty>>(m_content.get())->m_payload;
+                }
+            }
+            return default_value;
+        }
+
+        template <typename Ty>
+        const Ty & get_as(const Ty & default_value) const
+        {
+            if (std::type_index(typeid(Ty)) == std::type_index(type())) {
+                if (m_content != nullptr) {
+                    return static_cast<details::holder<Ty>>(m_content.get())->m_payload;
+                }
+            }
+            return default_value;
         }
 
     private:
