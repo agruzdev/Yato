@@ -22,6 +22,7 @@ namespace yato
     using boost::any_copy_error;
     using boost::any_cast;
     using boost::unsafe_any_cast;
+    using boost::nullany_t;
 }
 
 #endif

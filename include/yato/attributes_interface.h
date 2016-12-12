@@ -30,9 +30,9 @@ namespace yato
         //--------------------------------------------------------------------
 
     protected:
-        virtual void do_set_attribute(const KeyType & key, const yato::any & value) = 0;
+        virtual bool do_set_attribute(const KeyType & key, const yato::any & value) = 0;
 
-        virtual void do_set_attribute(const KeyType & key, yato::any && value) = 0;
+        virtual bool do_set_attribute(const KeyType & key, yato::any && value) = 0;
 
         virtual void do_clear_attribute(const KeyType & key) = 0;
 
@@ -44,11 +44,12 @@ namespace yato
         
         /**
          *  Set a new attribute of the object
+         *  @return true if attribute was accepted, false - if ignored
          */
         template <typename AttrType>
-        void set_attribute(const KeyType & key, AttrType && value)
+        bool set_attribute(const KeyType & key, AttrType && value)
         {
-            do_set_attribute(key, yato::any(std::forward<AttrType>(value)));
+            return do_set_attribute(key, yato::any(std::forward<AttrType>(value)));
         }
 
         /**
@@ -196,14 +197,16 @@ namespace yato
         //--------------------------------------------------------------------
 
     protected:
-        void do_set_attribute(const KeyType & key, const yato::any & value) override
+        bool do_set_attribute(const KeyType & key, const yato::any & value) override
         {
             insert_or_assign_(key, value);
+            return true;
         }
 
-        void do_set_attribute(const KeyType & key, yato::any && value) override
+        bool do_set_attribute(const KeyType & key, yato::any && value) override
         {
             insert_or_assign_(key, std::move(value));
+            return true;
         }
 
         void do_clear_attribute(const KeyType & key) override
@@ -372,11 +375,15 @@ namespace yato
         //--------------------------------------------------------------------
 
     protected:
-        void do_set_attribute(const KeyType & /*key*/, const yato::any & /*value*/) override
-        { }
+        bool do_set_attribute(const KeyType & /*key*/, const yato::any & /*value*/) override
+        {
+            return false;
+        }
 
-        void do_set_attribute(const KeyType & /*key*/, yato::any && /*value*/) override
-        { }
+        bool do_set_attribute(const KeyType & /*key*/, yato::any && /*value*/) override
+        {
+            return false;
+        }
 
         void do_clear_attribute(const KeyType & /*key*/) override
         { }
