@@ -4,6 +4,7 @@ cmake_minimum_required (VERSION 3.2)
 # Usage
 #   -D_TARGET=<target name>
 #   -D_CONFIGURATION=[Debug, Release, All]
+#   -D_MT=[ON/OFF] Multithreaded build
 # Supported targets:
 #   vc12x32  - MSVC_2013 x32
 #   vc14x32  - MSVC_2015 x32
@@ -83,6 +84,13 @@ list(APPEND MAKE_ARGUMENTS_vc14x64 "")
 list(APPEND MAKE_ARGUMENTS_gcc "")
 list(APPEND MAKE_ARGUMENTS_clang "")
 list(APPEND MAKE_ARGUMENTS_android "")
+
+if(_MT)
+    list(APPEND MAKE_ARGUMENTS_mingw "-j")
+    list(APPEND MAKE_ARGUMENTS_gcc "-j")
+    list(APPEND MAKE_ARGUMENTS_clang "-j")
+    list(APPEND MAKE_ARGUMENTS_android "-j")
+endif()
 
 # ==============================================================
 # Input argumets
@@ -217,7 +225,7 @@ foreach(CURRENT_TARGET ${all_build_targers})
             if(CURRENT_TARGET MATCHES vc*)
                 set(msvc_configuration "/property:Configuration=${CURRENT_CONFIGURATION}")
             endif() 
-            execute_process(COMMAND "cmake" "--build" ${CURRENT_BUILD_DIR} "--" ${msvc_configuration} ${MAKE_ARGUMENTS_${CURRENT_TARGET}}
+            execute_process(COMMAND cmake --build ${CURRENT_BUILD_DIR} -- ${msvc_configuration} ${MAKE_ARGUMENTS_${CURRENT_TARGET}}
                 #WORKING_DIRECTORY ${CURRENT_BUILD_DIR}
                 OUTPUT_FILE ${CURRENT_BUILD_DIR}/build_log.stdout.txt
                 ERROR_FILE ${CURRENT_BUILD_DIR}/build_log.stderr.txt
