@@ -176,7 +176,6 @@ namespace yato
                 std::get<dim_descriptor::idx_total>(m_descriptors[0]) = std::get<dim_descriptor::idx_total>(m_descriptors[1]) * new_size;
             }
 
-            YATO_CONSTEXPR_FUNC
             size_type get_top_dimension_() const YATO_NOEXCEPT_KEYWORD
             {
                 return std::get<dim_descriptor::idx_size>(m_descriptors[0]);
@@ -474,7 +473,6 @@ namespace yato
             /**
              *  Element access without bounds check in release
              */
-            YATO_CONSTEXPR_FUNC
             const_proxy operator[](size_t idx) const YATO_NOEXCEPT_IN_RELEASE
             {
 #if YATO_DEBUG
@@ -505,7 +503,6 @@ namespace yato
              *  Element access with bounds check
              */
             template<typename... _Tail>
-            YATO_CONSTEXPR_FUNC
             auto at(size_t idx, _Tail &&... tail) const
                 -> typename std::enable_if<(yato::args_length<_Tail...>::value == dimensions_number - 1), const_reference>::type
             {
@@ -531,7 +528,6 @@ namespace yato
             /**
              *  Iterator for accessing sub-array elements along the top dimension
              */
-            YATO_CONSTEXPR_FUNC
             const_iterator cbegin() const YATO_NOEXCEPT_KEYWORD
             {
                 return create_const_proxy_(0);
@@ -548,7 +544,6 @@ namespace yato
             /**
              *  Iterator for accessing sub-array elements along the top dimension
              */
-            YATO_CONSTEXPR_FUNC
             const_iterator cend() const YATO_NOEXCEPT_KEYWORD
             {
                 return create_const_proxy_(size(0));
@@ -565,7 +560,6 @@ namespace yato
             /**
              *  Iterator for accessing elements trough all dimensions
              */
-            YATO_CONSTEXPR_FUNC
             const_data_iterator plain_cbegin() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.cbegin();
@@ -582,7 +576,6 @@ namespace yato
             /**
              *  Iterator for accessing elements trough all dimensions
              */
-            YATO_CONSTEXPR_FUNC
             const_data_iterator plain_cend() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.cend();
@@ -599,7 +592,6 @@ namespace yato
             /**
              *  Range for accessing sub-array elements trough the top dimension
              */
-            YATO_CONSTEXPR_FUNC
             yato::range<const_data_iterator> crange() const YATO_NOEXCEPT_KEYWORD
             {
                 return yato::make_range(cbegin(), cend());
@@ -616,7 +608,6 @@ namespace yato
             /**
              *  Range for accessing elements trough all dimensions
              */
-            YATO_CONSTEXPR_FUNC
             yato::range<const_data_iterator> plain_crange() const YATO_NOEXCEPT_KEYWORD
             {
                 return yato::make_range(plain_cbegin(), plain_cend());
@@ -649,7 +640,6 @@ namespace yato
             /**
              *  Checks whether the vector is empty
              */
-            YATO_CONSTEXPR_FUNC
             bool empty() const YATO_NOEXCEPT_KEYWORD
             {
                 return (get_top_dimension_() == 0);
@@ -658,7 +648,6 @@ namespace yato
             /**
              *  Get dimensions
              */
-            YATO_CONSTEXPR_FUNC
             dimensions_type dimensions() const YATO_NOEXCEPT_KEYWORD
             {
                 return dimensions_type(dimensions_range());
@@ -667,7 +656,6 @@ namespace yato
             /**
              *  Get number of dimensions
              */
-            YATO_CONSTEXPR_FUNC
             size_t dimensions_num() const YATO_NOEXCEPT_KEYWORD
             {
                 return dimensions_number;
@@ -693,7 +681,6 @@ namespace yato
              *  Get size of specified dimension
              *  If the vector is empty ( empty() returns true ) then calling for size(idx) returns 0 for idx = 0; Return value for any idx > 0 is undefined
              */
-            YATO_CONSTEXPR_FUNC
             size_type size(size_t idx) const YATO_NOEXCEPT_IN_RELEASE
             {
 #if YATO_DEBUG
@@ -710,7 +697,6 @@ namespace yato
             /**
              *  Get the total size of the vector (number of all elements)
              */
-            YATO_CONSTEXPR_FUNC
             size_t total_size() const YATO_NOEXCEPT_KEYWORD
             {
                 return std::get<dim_descriptor::idx_total>(m_descriptors[0]);
@@ -719,7 +705,6 @@ namespace yato
             /**
              *  Returns the number of elements that the container has currently allocated space for
              */
-            YATO_CONSTEXPR_FUNC
             size_t capacity() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.capacity();
@@ -798,7 +783,6 @@ namespace yato
             /**
              *  Get the first sub-vector proxy
              */
-            YATO_CONSTEXPR_FUNC
             const_proxy front() const
             {
 #if defined(YATO_DEBUG) && (YATO_DEBUG != 0)
@@ -825,7 +809,6 @@ namespace yato
             /**
              *  Get the last sub-vector proxy
              */
-            YATO_CONSTEXPR_FUNC
             const_proxy back() const
             {
 #if defined(YATO_DEBUG) && (YATO_DEBUG != 0)
@@ -1015,7 +998,6 @@ namespace yato
             /**
              *  Create empty vector
              */
-            YATO_CONSTEXPR_FUNC
             vector_nd_impl() YATO_NOEXCEPT_KEYWORD
                 : m_plain_vector()
             {}
@@ -1282,7 +1264,6 @@ namespace yato
             /**
              *  Element access without bounds check in release
              */
-            YATO_CONSTEXPR_FUNC
             const_reference operator[](size_t idx) const YATO_NOEXCEPT_IN_RELEASE
             {
 #if YATO_DEBUG
@@ -1312,7 +1293,6 @@ namespace yato
             /**
              *  Element access with bounds check
              */
-            YATO_CONSTEXPR_FUNC
             const_reference at(size_t idx) const
             {
                 return m_plain_vector.at(idx);
@@ -1329,7 +1309,6 @@ namespace yato
             /**
              *  Iterator for accessing sub-array elements along the top dimension
              */
-            YATO_CONSTEXPR_FUNC
             const_iterator cbegin() const YATO_NOEXCEPT_KEYWORD
             {
                 return plain_cbegin();
@@ -1346,7 +1325,6 @@ namespace yato
             /**
              *  Iterator for accessing sub-array elements along the top dimension
              */
-            YATO_CONSTEXPR_FUNC
             const_iterator cend() const YATO_NOEXCEPT_KEYWORD
             {
                 return plain_cend();
@@ -1363,7 +1341,6 @@ namespace yato
             /**
              *  Iterator for accessing elements trough all dimensions
              */
-            YATO_CONSTEXPR_FUNC
             const_data_iterator plain_cbegin() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.cbegin();
@@ -1380,7 +1357,6 @@ namespace yato
             /**
              *  Iterator for accessing elements trough all dimensions
              */
-            YATO_CONSTEXPR_FUNC
             const_data_iterator plain_cend() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.cend();
@@ -1397,7 +1373,6 @@ namespace yato
             /**
              *  Range for accessing sub-array elements trough the top dimension
              */
-            YATO_CONSTEXPR_FUNC
             yato::range<const_data_iterator> crange() const YATO_NOEXCEPT_KEYWORD
             {
                 return yato::make_range(cbegin(), cend());
@@ -1414,7 +1389,6 @@ namespace yato
             /**
              *  Range for accessing elements trough all dimensions
              */
-            YATO_CONSTEXPR_FUNC
             yato::range<const_data_iterator> plain_crange() const YATO_NOEXCEPT_KEYWORD
             {
                 return yato::make_range(plain_cbegin(), plain_cend());
@@ -1447,7 +1421,6 @@ namespace yato
             /**
              *  Checks whether the vector is empty
              */
-            YATO_CONSTEXPR_FUNC
             bool empty() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.empty();
@@ -1456,7 +1429,6 @@ namespace yato
             /**
              *  Get dimensions
              */
-            YATO_CONSTEXPR_FUNC
             dimensions_type dimensions() const YATO_NOEXCEPT_KEYWORD
             {
                 return yato::dims(m_plain_vector.size());
@@ -1465,7 +1437,6 @@ namespace yato
             /**
              *  Get number of dimensions
              */
-            YATO_CONSTEXPR_FUNC
             size_t dimensions_num() const YATO_NOEXCEPT_KEYWORD
             {
                 return dimensions_number;
@@ -1490,7 +1461,6 @@ namespace yato
             /**
              *  Get size of specified dimension
              */
-            YATO_CONSTEXPR_FUNC
             size_t size(size_t idx) const YATO_NOEXCEPT_IN_RELEASE
             {
 #if YATO_DEBUG
@@ -1508,7 +1478,6 @@ namespace yato
             /**
              *  Get the total size of the vector (number of all elements)
              */
-            YATO_CONSTEXPR_FUNC
             size_t total_size() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.size();
@@ -1517,7 +1486,6 @@ namespace yato
             /**
              *  Returns the number of elements that the container has currently allocated space for
              */
-            YATO_CONSTEXPR_FUNC
             size_t capacity() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_vector.capacity();
@@ -1586,7 +1554,6 @@ namespace yato
             /**
              *  Get the first sub-vector proxy
              */
-            YATO_CONSTEXPR_FUNC
             const_reference front() const
             {
                 if (empty()) {
@@ -1596,8 +1563,8 @@ namespace yato
             }
 
             /**
-            *  Get the first sub-vector proxy
-            */
+             *  Get the first sub-vector proxy
+             */
             reference front()
             {
                 if (empty()) {
@@ -1607,9 +1574,8 @@ namespace yato
             }
 
             /**
-            *  Get the last sub-vector proxy
-            */
-            YATO_CONSTEXPR_FUNC
+             *  Get the last sub-vector proxy
+             */
             const_reference back() const
             {
                 if (empty()) {
@@ -1619,8 +1585,8 @@ namespace yato
             }
 
             /**
-            *  Get the last sub-vector proxy
-            */
+             *  Get the last sub-vector proxy
+             */
             reference back()
             {
                 if (empty()) {
