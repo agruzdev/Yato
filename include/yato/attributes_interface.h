@@ -290,7 +290,7 @@ namespace yato
             if (attr.type() != typeid(AttrType)) {
                 throw yato::bad_attribute();
             }
-            return yato::unsafe_any_cast<AttrType>(attr);
+            return attr.get_as<AttrType>();
         }
 
         /**
@@ -298,36 +298,14 @@ namespace yato
          *  If attribute doesn't exist then returns default_value
          */
         template <typename AttrType>
-        const AttrType & get_attribute_as(const key_type & key, const AttrType & default_value) const
+        const AttrType & get_attribute_as(const key_type & key, const AttrType & default_value) const YATO_NOEXCEPT_KEYWORD
         {
             auto it = m_attributes.find(key);
             if (it == m_attributes.cend()) {
                 return default_value;
             }
             const yato::any & attr = (*it).second;
-            if (attr.type() != typeid(AttrType)) {
-                return default_value;
-            }
-            return yato::unsafe_any_cast<AttrType>(attr);
-        }
-
-        /**
-         *  Get attribute by key
-         *  If attribute doesn't exist then behavior is undefined
-         */
-        const yato::any & unsafe_get_attribute(const key_type & key) const
-        {
-            return (*m_attributes.find(key)).second;
-        }
-
-        /**
-         *  Get attribute as given type
-         *  If attribute doesn't exist then throws bad_attribute
-         */
-        template <typename AttrType>
-        const AttrType & unsafe_get_attribute_as(const key_type & key) const
-        {
-            return yato::unsafe_any_cast<AttrType>(unsafe_get_attribute(key));
+            return attr.get_as<AttrType>(default_value);
         }
 
 #ifdef YATO_HAS_OPTIONAL
@@ -346,7 +324,7 @@ namespace yato
             if (attr.type() != typeid(AttrType)) {
                 return yato::nullopt;
             }
-            return yato::make_optional<AttrType>(yato::unsafe_any_cast<AttrType>(attr));
+            return yato::make_optional<AttrType>(yato::any_cast<AttrType>(attr));
         }
 #endif
 

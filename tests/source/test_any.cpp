@@ -58,6 +58,14 @@ TEST(Yato_Any, common)
 #endif
 }
 
+TEST(Yato_Any, bad_any_cast)
+{
+    yato::any anyInt(1);
+    EXPECT_THROW(anyInt.get_as<float>(), yato::bad_any_cast);
+    EXPECT_THROW(anyInt.get_as<short>(), yato::bad_any_cast);
+    EXPECT_NO_THROW(anyInt.get_as<int>());
+}
+
 // is_copy_constructible is broken in MSVC2013 
 // https://connect.microsoft.com/VisualStudio/feedback/details/802032 
 #ifndef YATO_MSVC_2013

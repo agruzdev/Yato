@@ -248,7 +248,7 @@ namespace yato
          *  If attribute doesn't exist then throws bad_attribute
          */
         template <typename AttrType>
-        AttrType get_attribute_as(const key_type & key, const AttrType & default_value, std::memory_order mem_order = atomic_memory_order) const
+        AttrType get_attribute_as(const key_type & key, const AttrType & default_value, std::memory_order mem_order = atomic_memory_order) const YATO_NOEXCEPT_KEYWORD
         {
             auto pos = m_attributes.find(key);
             if (pos == m_attributes.cend()) {
