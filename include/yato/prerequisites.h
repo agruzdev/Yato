@@ -57,7 +57,7 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 
 
 
-#if (defined(_MSC_VER) && (_MSC_VER >= 1900)) || (defined(YATO_ANDROID) && __cplusplus > 201300L)
+#if (defined(_MSC_VER) && (_MSC_VER >= 1900)) || (defined(__cplusplus) && __cplusplus > 201300L)
 #define YATO_CONSTEXPR_VAR constexpr
 #define YATO_CONSTEXPR_FUNC constexpr
 #define YATO_NOEXCEPT_KEYWORD noexcept
@@ -76,7 +76,7 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 #endif
 
 // Extended constexpr
-#if (defined(_MSC_VER) && (_MSC_VER > 1900)) || (__cplusplus >= 201400L)
+#if (defined(_MSC_VER) && (_MSC_VER > 1900)) || (defined(__cplusplus) && __cplusplus >= 201400L)
 #define YATO_HAS_EXTENDED_CONSTEXPR
 #define YATO_CONSTEXPR_FUNC_EX constexpr 
 #else

@@ -194,7 +194,7 @@ namespace yato
         //------------------------------------------------
 
     public:
-        YATO_CONSTEXPR_VAR
+        YATO_CONSTEXPR_FUNC
         any() = default;
 
         template <typename ValueType>
