@@ -100,3 +100,17 @@ Yato library provides few compile time algorithms on tuples
 
 ### Allocator ###
 * **yato::aligning_allocator** is STL-compatible allocator aloowing to alloc heap memory with any alignment. Alignments which are not power of 2 or bigger than alignment of std::max_align_t will have small memory overhead
+
+### Type safe wrappers ###
+* **yato::any** type safe wrapper for any type. Is similar to std::any or [boost::any](http://www.boost.org/doc/libs/1_61_0/doc/html/any.html), but this implementation supports non-copyable and non-movable types as well
+* **yato::any_ptr** type safe wrapper for any pointer (i.e. `void*`)
+* **yato::variant** type safe wrapper for a specified alternativies. Similar to std::variant but can't have empty state. If empty state is necessary, then `void` should be in alternatives list
+
+### Attributes interface ###
+**yato::atrributes_interface** is interface class allowing to add arbitrary attributes to a class instance (as key-value pair). Attributes are completely generic and are passed as **yato::any**. 
+Only the concrete implementation is able to take or discard passed attribute. Is useful for passing parameters to very different types in one hierarchy so that base classes don't know about parameters types.
+
+There are few generic implementations 
+* **yato::atrributes_map** accepts any attributes and stores in std::map. Is not thread safe
+* **yato::ignores_attributes** ignores any attributes passed to the class.
+* **yato::atomic_attributes** accepts a number of previously registered attributes. All opetarions with the attrinutes are atomic and thread safe (except for registration). Supports only arithmetic types or pointers
