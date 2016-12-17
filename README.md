@@ -1,4 +1,4 @@
-## Yato ##
+## Yato
 
 Yato - Yet another toolkit
 
@@ -6,7 +6,8 @@ A small repository where I'm gatherting useful snippets and abstractions for C++
 
 If you find any bug, please feel free to submit an issue! It will be very helpful for me
 
-##Licence##
+##Licence
+
 The MIT License (MIT)
 
 Copyright (c) 2016 Alexey Gruzdev
@@ -15,7 +16,8 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-## Build/Install ##
+## Build/Install
+
 The library consists of only headers, so it doesn't require build. The repository provides sources for some tests sources that can be configured and built with the help of cmake file. In order to build the tests you will need to add directory of googletest to the cmake ([GoogleTest repository](https://github.com/google/googletest))
 
 Currently the library can be successfully built by the following compilers:
@@ -29,9 +31,10 @@ Currently the library can be successfully built by the following compilers:
 
 (Android CrystaX NDK support will be added in future)
 
-## Description ##
+## Description
 
-### Type support ###
+### Type support
+
 Yato library provides a set of additional type traits
 
 * **yato::is_shared_ptr** / **yato::is_unique_ptr** - chech if type is a smart pointer
@@ -50,16 +53,19 @@ Functional traits
 * **yato::callable_trait** - deduces return type and all arguments types for any callable type
 * **yato::make_function** - converts any callable type to std::function with corresponding return and arguments types
 
-### Type matching ###
+### Type matching
+
 **yato::match** performs compile time matching of variable type based on function overloading mechinism 
 
-### "Annotations" ###
+### "Annotations"
+
 There are a couple of experiments inspired by [Cpp Core Guidelines](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md)
 
 * **yato::not_null** - pointer wrapper preventing from passing null pointer
 * **yato::instance_of** - pointer wrapper checking the dynamic type of passed pointer 
 
-### Ranges ###
+### Ranges
+
 **yato::range** - aggregator of a couple of iterators simplifing passing two iterators to functions, returning iteratos from functions, hepling to hold iterators of one container together. Can be ued in ranged *for* expressions. Together with **yato::numeric_iterator** the range can represent a sequence of integer numbers without actual storing them
 
 Range provides the following functional style operations:
@@ -70,7 +76,8 @@ Range provides the following functional style operations:
 * **fold_left** - accumulates all elements of the range applying some binary operation from the left to the right
 * **fold_right** - accumulates all elements of the range applying some binary operation from the right ot the left
 
-### Containers ###
+### Containers
+
 Yato implemets a number of general purpose containers: 
 
 * **yato::array_nd** - multidimensional static array with interface and behaviour similar to *std::array*; The layout and size of the **yato::array_nd** are equal to native multidimensional array ( *T[ ][ ]...* )
@@ -78,13 +85,15 @@ Yato implemets a number of general purpose containers:
 * **yato::array_view** / **yato::array_view_nd** - non-owning containers which can be attached to any source of data and treat it similar to one-/multi-dimensional array
 * **yato::vector_view** - non-owning one-dimensional container providing an interface similar to *std::vector* for a fixed memory buffer
 
-### Reflection ###
+### Reflection
+
 WIP
 
 Current implementation allows to reflect classes and data fields
 Reflection information allows to get a list of data fields and its types in compile time, iterate over all data fields and get pointers to fields in run-time
 
-### Tuple algorighms ###
+### Tuple algorighms
+
 Yato library provides few compile time algorithms on tuples
 
 * **tuple_transform** - applies unary function to all tuple elements (or binary function to elements of two tuples) and returns tuple with result values
@@ -92,25 +101,30 @@ Yato library provides few compile time algorithms on tuples
 * **tuple_all_of** - checks if unary predicate returns true for all elements of the tuple (or binary predicate for all elements of two tuples)
 * **tuple_any_of** - checks if unary predicate returns true for at least one element of the tuple (or binary predicate for at least one element of two tuples) 
 
-### Iterators ###
+### Iterators
+
 * **yato::numeric_iterator** enumerates sequental integer values allowing to iterate over an integer sequence witout storing it 
 * **yato::zip_iterator** is an analogue of [boost::zip_iterator](http://www.boost.org/doc/libs/1_60_0/libs/iterator/doc/zip_iterator.html) but implemented in terms of modern C++ in order to get rid of any boost dependency
 * **yato::transform_iterator** is an analogue of [boost::transform_iterator](http://www.boost.org/doc/libs/1_60_0/libs/iterator/doc/transform_iterator.html) but implemented in terms of modern C++ in order to get rid of any boost dependency
 * **yato::filter_iterator** is an analogue of [boost::filter_iterator](http://www.boost.org/doc/libs/master/libs/iterator/doc/filter_iterator.html) but implemented in terms of modern C++ in order to get rid of any boost dependency
 
-### Allocator ###
+### Allocator
+
 * **yato::aligning_allocator** is STL-compatible allocator aloowing to alloc heap memory with any alignment. Alignments which are not power of 2 or bigger than alignment of std::max_align_t will have small memory overhead
 
-### Type safe wrappers ###
+### Type safe wrappers
+
 * **yato::any** type safe wrapper for any type. Is similar to std::any or [boost::any](http://www.boost.org/doc/libs/1_61_0/doc/html/any.html), but this implementation supports non-copyable and non-movable types as well
 * **yato::any_ptr** type safe wrapper for any pointer (i.e. `void*`)
 * **yato::variant** type safe wrapper for a specified alternativies. Similar to std::variant but can't have empty state. If empty state is necessary, then `void` should be in alternatives list
 
-### Attributes interface ###
-**yato::atrributes_interface** is interface class allowing to add arbitrary attributes to a class instance (as key-value pair). Attributes are completely generic and are passed as **yato::any**. 
+### Attributes interface
+
+**yato::attributes_interface** is interface class allowing to add arbitrary attributes to a class instance (as key-value pair). Attributes are completely generic and are passed as **yato::any**. 
 Only the concrete implementation is able to take or discard passed attribute. Is useful for passing parameters to very different types in one hierarchy so that base classes don't know about parameters types.
 
-There are few generic implementations 
-* **yato::atrributes_map** accepts any attributes and stores in std::map. Is not thread safe
+There are few generic implementations
+
+* **yato::attributes_map** accepts any attributes and stores in std::map. Is not thread safe
 * **yato::ignores_attributes** ignores any attributes passed to the class.
 * **yato::atomic_attributes** accepts a number of previously registered attributes. All opetarions with the attrinutes are atomic and thread safe (except for registration). Supports only arithmetic types or pointers
