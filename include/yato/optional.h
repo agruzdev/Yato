@@ -8,7 +8,7 @@
 #ifndef _YATO_OPTIONAL_H_
 #define _YATO_OPTIONAL_H_
 
-#if (defined(_MSC_VER) && (_MSC_VER > 1900)) ||\
+#if (defined(_MSC_VER) && (_MSC_VER > 1900 && _HAS_CXX17 != 0)) ||\
     (defined(__cplusplus) && (__cplusplus >= 201700L))
 # include <optional>
 # define YATO_HAS_OPTIONAL
