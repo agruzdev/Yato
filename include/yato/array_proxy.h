@@ -375,6 +375,14 @@ namespace yato
             }
 
             /**
+             *  Get raw pointer to underlying data
+             */
+            iter_pointer_type data() const YATO_NOEXCEPT_KEYWORD
+            {
+                return &(*plain_begin());
+            }
+
+            /**
              *  Return the current proxy
              *  Is necessary for supporting ranged 'for' 
              */

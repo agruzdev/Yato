@@ -500,3 +500,36 @@ TEST(Yato_VectorND, reshape_2)
     EXPECT_EQ(5, vec_6[4]);
     EXPECT_EQ(6, vec_6[5]);
 }
+
+namespace
+{
+    int foo(int* p)
+    {
+        return *p;
+    }
+
+    int cfoo(const int* p)
+    {
+        return *p;
+    }
+}
+
+TEST(Yato_VectorND, proxy_data)
+{
+    yato::vector_3d<int> v = { { { 1, 2 }, { 3, 4 } }, { { 5, 6 }, { 7, 8 } } };
+    EXPECT_EQ(&v[0][0][0], v.data());
+    EXPECT_EQ(&v[0][0][0], v[0].data());
+    EXPECT_EQ(&v[0][0][0], v[0][0].data());
+
+    EXPECT_EQ(&v[0][0][0], v.data());
+    EXPECT_EQ(&v[1][0][0], v[1].data());
+    EXPECT_EQ(&v[1][1][0], v[1][1].data());
+
+    auto plain  = v.begin()  + 1;
+    auto cplain = v.cbegin() + 1;
+
+    EXPECT_EQ(5, foo(plain.data()));
+    //EXPECT_EQ(5, foo(cplain.data())); // Error, const iterator
+    EXPECT_EQ(5, cfoo(plain.data()));
+    EXPECT_EQ(5, cfoo(cplain.data()));
+}
