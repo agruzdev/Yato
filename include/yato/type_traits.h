@@ -448,6 +448,39 @@ namespace yato
     template <int64_t Value>
     using narrowest_fit_signed_t = typename narrowest_fit_signed<Value>::type;
 #endif
+
+    /**
+     * Adds const if FromType is const
+     */
+    template <typename TypeFrom_, typename TypeTo_>
+    struct take_const_from
+    {
+        using type = typename std::conditional<std::is_const<TypeFrom_>::value,
+                typename std::add_const<TypeTo_>::type,
+                TypeTo_ 
+            >::type;
+    };
+
+    /**
+     * Adds volatile if FromType is volatile
+     */
+    template <typename TypeFrom_, typename TypeTo_>
+    struct take_volatile_from
+    {
+        using type = typename std::conditional<std::is_volatile<TypeFrom_>::value,
+            typename std::add_volatile<TypeTo_>::type,
+            TypeTo_
+        >::type;
+    };
+
+    /**
+     * Adds const and/or volatile if FromType is const and/or volatile
+     */
+    template <typename TypeFrom_, typename TypeTo_>
+    struct take_cv_from
+    {
+        using type = typename take_const_from<TypeFrom_, typename take_volatile_from<TypeFrom_, TypeTo_>::type>::type;
+    };
 }
 
 #endif

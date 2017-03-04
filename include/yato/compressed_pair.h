@@ -27,22 +27,9 @@ namespace yato
         {
             using result_type = typename PairTy_::first_type;
 
-            static result_type & apply(PairTy_ & pair)
-            {
-                return pair.first();
-            }
-
-            static const result_type & apply(const PairTy_ & pair)
-            {
-                return pair.first();
-            }
-
-            static volatile result_type & apply(volatile PairTy_ & pair)
-            {
-                return pair.first();
-            }
-
-            static const volatile result_type & apply(const volatile PairTy_ & pair)
+            template <typename CvPairRef_>
+            static auto apply(CvPairRef_ & pair)
+                -> typename take_cv_from<CvPairRef_, result_type>::type &
             {
                 return pair.first();
             }
@@ -55,22 +42,9 @@ namespace yato
         {
             using result_type = typename PairTy_::second_type;
 
-            static result_type & apply(PairTy_ & pair)
-            {
-                return pair.second();
-            }
-
-            static const result_type & apply(const PairTy_ & pair)
-            {
-                return pair.second();
-            }
-
-            static volatile result_type & apply(volatile PairTy_ & pair)
-            {
-                return pair.second();
-            }
-
-            static const volatile result_type & apply(const volatile PairTy_ & pair)
+            template <typename CvPairRef_>
+            static auto apply(CvPairRef_ & pair)
+                -> typename take_cv_from<CvPairRef_, result_type>::type &
             {
                 return pair.second();
             }

@@ -294,3 +294,47 @@ TEST(Yato_TypeTraits, narrowest_fit)
     static_assert(std::is_same< yato::narrowest_fit_signed<-2147483649LL>::type, int64_t >::value, "narrowest_fit_signed fail");
 }
 #endif
+
+TEST(Yato_TypeTraits, take_const_from)
+{
+    using footype = Foo;
+    using c_footype = const Foo;
+    using v_footype = volatile Foo;
+    using cv_footype = const volatile Foo;
+    
+    using testtype = void*;
+    {
+        using t1 = yato::take_const_from<footype, testtype>::type;
+        static_assert(!std::is_const<t1>::value, "yato::take_const_from failed");
+        using t2 = yato::take_const_from<c_footype, testtype>::type;
+        static_assert(std::is_const<t2>::value, "yato::take_const_from failed");
+        using t3 = yato::take_const_from<v_footype, testtype>::type;
+        static_assert(!std::is_const<t3>::value, "yato::take_const_from failed");
+        using t4 = yato::take_const_from<cv_footype, testtype>::type;
+        static_assert(std::is_const<t4>::value, "yato::take_const_from failed");
+    }
+    {
+        using t1 = yato::take_volatile_from<footype, testtype>::type;
+        static_assert(!std::is_volatile<t1>::value, "yato::take_const_from failed");
+        using t2 = yato::take_volatile_from<c_footype, testtype>::type;
+        static_assert(!std::is_volatile<t2>::value, "yato::take_const_from failed");
+        using t3 = yato::take_volatile_from<v_footype, testtype>::type;
+        static_assert(std::is_volatile<t3>::value, "yato::take_const_from failed");
+        using t4 = yato::take_volatile_from<cv_footype, testtype>::type;
+        static_assert(std::is_volatile<t4>::value, "yato::take_const_from failed");
+    }
+    {
+        using t1 = yato::take_cv_from<footype, testtype>::type;
+        static_assert(!std::is_const<t1>::value, "yato::take_const_from failed");
+        static_assert(!std::is_volatile<t1>::value, "yato::take_const_from failed");
+        using t2 = yato::take_cv_from<c_footype, testtype>::type;
+        static_assert(std::is_const<t2>::value, "yato::take_const_from failed");
+        static_assert(!std::is_volatile<t2>::value, "yato::take_const_from failed");
+        using t3 = yato::take_cv_from<v_footype, testtype>::type;
+        static_assert(!std::is_const<t3>::value, "yato::take_const_from failed");
+        static_assert(std::is_volatile<t3>::value, "yato::take_const_from failed");
+        using t4 = yato::take_cv_from<cv_footype, testtype>::type;
+        static_assert(std::is_const<t4>::value, "yato::take_const_from failed");
+        static_assert(std::is_volatile<t4>::value, "yato::take_const_from failed");
+    }
+}

@@ -15,15 +15,10 @@ namespace yato
 {
     namespace details
     {
-        void* make_void_ptr_helper(void*);
-        const void* make_void_ptr_helper(const void*);
-        volatile void* make_void_ptr_helper(volatile void*);
-        const volatile void* make_void_ptr_helper(const volatile void*);
-
         template <typename PTy>
         struct make_void_ptr
         {
-            using type = decltype(make_void_ptr_helper(std::declval<PTy>()));
+            using type = typename take_cv_from<PTy, void*>::type;
         };
 
     }
