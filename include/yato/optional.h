@@ -19,7 +19,6 @@ namespace yato
     using std::nullopt;
     using std::bad_optional_access;
     using std::make_optional;
-    using std::in_place;
 }
 #elif defined(__GNUC__) &&\
      (defined(__cplusplus) && (__cplusplus >= 201400L))
@@ -32,7 +31,6 @@ namespace yato
     using std::experimental::nullopt;
     using std::experimental::bad_optional_access;
     using std::experimental::make_optional;
-    using std::experimental::in_place;
 
     template< class T, class... Args >
     constexpr std::experimental::optional<T> make_optional(Args&&... args)
