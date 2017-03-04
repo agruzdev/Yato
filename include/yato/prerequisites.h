@@ -88,6 +88,12 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 # define YATO_CXX17
 #endif
 
+#if defined(__cplusplus) && (__cplusplus >= 201700L)
+# define YATO_INLINE_VARIABLE inline
+#else
+# define YATO_INLINE_VARIABLE
+#endif
+
 #ifndef YATO_MSVC_2013
 # define YATO_ALIGN(Alignment)  alignas(Alignment)
 # define YATO_ALIGN_OF(Type)    alignof(Type)

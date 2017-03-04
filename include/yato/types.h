@@ -315,6 +315,10 @@ namespace yato
     {
         explicit in_place_t() = default;
     };
+#ifndef YATO_MSVC_2013
+    YATO_INLINE_VARIABLE
+    constexpr yato::in_place_t in_place{};
+#endif
 
     /**
      *  Helper type to indicate in place constructors
@@ -326,6 +330,7 @@ namespace yato
     };
 #ifndef YATO_MSVC_2013
     template <typename Ty>
+    YATO_INLINE_VARIABLE
     constexpr yato::in_place_type_t<Ty> in_place_type{};
 #endif
 
@@ -339,8 +344,34 @@ namespace yato
     };
 #ifndef YATO_MSVC_2013
     template <size_t Idx>
+    YATO_INLINE_VARIABLE
     constexpr yato::in_place_index_t<Idx> in_place_index{};
 #endif
+
+    /**
+     *  Helper types for constructors with variadic number of arguments
+     */
+    struct zero_arg_then_variadic_t 
+    {
+        explicit zero_arg_then_variadic_t() = default;
+    };
+#ifndef YATO_MSVC_2013
+    YATO_INLINE_VARIABLE 
+    constexpr yato::zero_arg_then_variadic_t zero_arg_then_variadic{};
+#endif
+
+    /**
+     *  Helper types for constructors with variadic number of arguments
+     */
+    struct one_arg_then_variadic_t
+    {
+        explicit one_arg_then_variadic_t() = default;
+    };
+#ifndef YATO_MSVC_2013
+    YATO_INLINE_VARIABLE
+    constexpr yato::one_arg_then_variadic_t one_arg_then_variadic{};
+#endif
+
 }
 
 
