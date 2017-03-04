@@ -23,7 +23,7 @@ The library consists of only headers, so it doesn't require build. The repositor
 Currently the library can be successfully built by the following compilers:
 
 * MSVC 2015
-* MSVC 2013 (with some limitations)
+* MSVC 2013 (with some limitations; support stopped at revision #61ba2a0)
 * MinGW 6.2
 * Clang 3.7 
 * GCC 5.3
