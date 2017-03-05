@@ -182,3 +182,30 @@ TEST(Yato_Meta, list_sort)
     using s6 = yato::meta::list_sort<yato::meta::null_list, yato::meta::type_less_sizeof>::type;
     static_assert(std::is_same<s6, yato::meta::null_list>::value, "yato::meta::list_sort fail");
 }
+
+TEST(Yato_Meta, list_unique)
+{
+    using t1 = yato::meta::list<int, short, char, short, double, void, int, void, void, char, float>;
+    using t2 = yato::meta::list<Bar<8>, Bar<16>, Bar<8>, void, Bar<16>, Bar<42>, Bar<64>, Bar<128>, Bar<42>, Bar<128>, Bar<42>>;
+    using t3 = yato::meta::list<void, void>;
+    using t4 = yato::meta::list<int>;
+    using t5 = yato::meta::list<const int, short, char, short, double, void, volatile int, void, void*, const volatile char, float, float&>;
+
+    using s1 = yato::meta::list_unique<t1>::type;
+    static_assert(std::is_same<s1, yato::meta::list<int, short, char, double, void, float>>::value, "yato::meta::list_unique fail");
+
+    using s2 = yato::meta::list_unique<t2>::type;
+    static_assert(std::is_same<s2, yato::meta::list<Bar<8>, Bar<16>, void, Bar<42>, Bar<64>, Bar<128>>>::value, "yato::meta::list_unique fail");
+
+    using s3 = yato::meta::list_unique<t3>::type;
+    static_assert(std::is_same<s3, yato::meta::list<void>>::value, "yato::meta::list_unique fail");
+
+    using s4 = yato::meta::list_unique<t4>::type;
+    static_assert(std::is_same<s4, yato::meta::list<int>>::value, "yato::meta::list_unique fail");
+
+    using s5 = yato::meta::list_unique<t5>::type;
+    static_assert(std::is_same<s5, yato::meta::list<const int, short, char, double, void, volatile int, void*, const volatile char, float, float&>>::value, "yato::meta::list_unique fail");
+
+    using s6 = yato::meta::list_unique<yato::meta::null_list>::type;
+    static_assert(std::is_same<s6, yato::meta::null_list>::value, "yato::meta::list_unique fail");
+}

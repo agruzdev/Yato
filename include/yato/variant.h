@@ -324,6 +324,7 @@ namespace yato
             details::max_types_alignment<alternativies_list>::value >::type;
         static YATO_CONSTEXPR_VAR size_t alternativies_number = yato::meta::list_length<alternativies_list>::value;
 
+        static_assert(std::is_same<typename meta::list_unique<alternativies_list>::type, alternativies_list>::value, "yato::variant: alternatives must have unique types");
         //--------------------------------------------------------------------
     private:
         storage_type m_storage;

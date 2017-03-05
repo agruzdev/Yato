@@ -306,6 +306,25 @@ namespace yato
             using type = List_;
         };
 
+        /**
+         * Remove duplicates from the list
+         */
+        template <typename List_, typename... Elems_>
+        struct list_unique
+        {
+            using type = typename std::conditional<(meta::list_find<typename meta::make_list<Elems_...>::type, typename List_::head>::value != meta::list_npos),
+                typename list_unique<typename List_::tail, Elems_...>::type,
+                typename list_unique<typename List_::tail, Elems_..., typename List_::head>::type
+            >::type;
+        };
+
+        template <typename... Elems_>
+        struct list_unique<meta::null_list, Elems_...>
+        {
+            using type = typename meta::make_list<Elems_...>::type;
+        };
+
+
         //-------------------------------------------------------
         // type comparators
 
