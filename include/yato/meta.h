@@ -47,6 +47,18 @@ namespace yato
         };
 
 
+        //-------------------------------------------------------
+        // meta::pair
+
+        /**
+         * Pair of types
+         */
+        template <typename Ty1_, typename Ty2_>
+        struct pair
+        {
+            using first_type  = Ty1_;
+            using second_type = Ty2_;
+        };
 
         //-------------------------------------------------------
         // meta::list
@@ -229,6 +241,87 @@ namespace yato
         template <>
         struct list_length<null_list>
             : public std::integral_constant<size_t, 0>
+        { };
+
+
+        /**
+         * Split list at the specified position
+         */
+        template <typename List_, size_t Pos_, typename ... Elems_>
+        struct list_split
+        {
+            using type = typename list_split<typename List_::tail, Pos_ - 1, Elems_..., typename List_::head>::type;
+        };
+
+        template <typename List_, typename... Elems_>
+        struct list_split<List_, 0, Elems_...>
+        {
+            using type = meta::pair<typename meta::make_list<Elems_...>::type, List_>;
+        };
+
+        /**
+         * Merge two sorted list into one sorted list
+         */
+        template <typename List1_, typename List2_, template<typename, typename> class Less_>
+        struct list_merge
+        {
+            using type = typename std::conditional< Less_<typename List1_::head, typename List2_::head>::value,
+                typename list_push_front< typename List1_::head, typename list_merge< typename List1_::tail, List2_, Less_>::type >::type,
+                typename list_push_front< typename List2_::head, typename list_merge< List1_, typename List2_::tail, Less_>::type >::type
+            >::type;
+        };
+
+        template <typename List1_, template<typename, typename> class Less_>
+        struct list_merge<List1_, null_list, Less_>
+        {
+            using type = List1_;
+        };
+
+        template <typename List2_, template<typename, typename> class Less_>
+        struct list_merge<null_list, List2_, Less_>
+        {
+            using type = List2_;
+        };
+
+
+        /**
+         * Sort list
+         */
+        template <typename List_, template<typename, typename> class Less_, typename = void>
+        struct list_sort
+        {
+            using parts = typename meta::list_split<List_, (meta::list_length<List_>::value / 2)>::type;
+            using type  = typename meta::list_merge<
+                typename list_sort<typename parts::first_type,  Less_>::type,
+                typename list_sort<typename parts::second_type, Less_>::type,
+                Less_
+            >::type;
+        };
+
+        template <typename List_, template<typename, typename> class Less_>
+        struct list_sort<List_, Less_, typename std::enable_if<
+            (meta::list_length<List_>::value < 2)
+        >::type>
+        {
+            using type = List_;
+        };
+
+        //-------------------------------------------------------
+        // type comparators
+
+        template <typename Ty1_, typename Ty2_>
+        struct type_less_sizeof
+            : public std::integral_constant<bool, (sizeof(Ty1_) < sizeof(Ty2_))>
+        { };
+
+        template <typename Ty2_>
+        struct type_less_sizeof<void, Ty2_>
+            : public std::true_type
+        { };
+
+        template <typename Ty1_>
+        struct type_less_sizeof<Ty1_, void>
+            : public std::false_type
         { };
     }
 }

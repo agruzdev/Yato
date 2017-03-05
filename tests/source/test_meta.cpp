@@ -73,3 +73,112 @@ TEST(Yato_Meta, list_length)
     static_assert(yato::meta::list_length<l3>::value == 1, "yato::meta::list_length fail");
     static_assert(yato::meta::list_length<l4>::value == 0, "yato::meta::list_length fail");
 }
+
+TEST(Yato_Meta, list_split)
+{
+    using l1 = yato::meta::list<int, char, void, double>;
+    using l2 = yato::meta::list<void>;
+    using l3 = yato::meta::null_list;
+
+    using s1 = yato::meta::list_split<l1, 0>::type;
+    static_assert(std::is_same<s1::first_type,  yato::meta::null_list>::value, "yato::meta::list_split fail");
+    static_assert(std::is_same < s1::second_type, l1 > ::value, "yato::meta::list_split fail");
+
+    using s2 = yato::meta::list_split<l1, 1>::type;
+    static_assert(std::is_same<s2::first_type,  yato::meta::list<int>>::value, "yato::meta::list_split fail");
+    static_assert(std::is_same<s2::second_type, yato::meta::list<char, void, double>>::value, "yato::meta::list_split fail");
+
+    using s3 = yato::meta::list_split<l1, 2>::type;
+    static_assert(std::is_same<s3::first_type, yato::meta::list<int, char>>::value, "yato::meta::list_split fail");
+    static_assert(std::is_same<s3::second_type, yato::meta::list<void, double>>::value, "yato::meta::list_split fail");
+
+    using s4 = yato::meta::list_split<l1, 3>::type;
+    static_assert(std::is_same<s4::first_type, yato::meta::list<int, char, void>>::value, "yato::meta::list_split fail");
+    static_assert(std::is_same<s4::second_type, yato::meta::list<double>>::value, "yato::meta::list_split fail");
+
+    using s5 = yato::meta::list_split<l1, 4>::type;
+    static_assert(std::is_same<s5::first_type, l1>::value, "yato::meta::list_split fail");
+    static_assert(std::is_same<s5::second_type, yato::meta::null_list>::value, "yato::meta::list_split fail");
+
+
+    using s6 = yato::meta::list_split<l2, 0>::type;
+    static_assert(std::is_same<s6::first_type, yato::meta::null_list>::value, "yato::meta::list_split fail");
+    static_assert(std::is_same<s6::second_type, l2>::value, "yato::meta::list_split fail");
+    using s7 = yato::meta::list_split<l2, 1>::type;
+    static_assert(std::is_same<s7::first_type, l2>::value, "yato::meta::list_split fail");
+    static_assert(std::is_same<s7::second_type, yato::meta::null_list>::value, "yato::meta::list_split fail");
+
+
+    using s8 = yato::meta::list_split<l3, 0>::type;
+    static_assert(std::is_same<s8::first_type, yato::meta::null_list>::value, "yato::meta::list_split fail");
+    static_assert(std::is_same<s8::first_type, yato::meta::null_list>::value, "yato::meta::list_split fail");
+}
+
+
+namespace 
+{
+    struct Foo128
+    {
+        char x[128];
+    };
+}
+
+TEST(Yato_Meta, list_merge)
+{
+    static_assert(sizeof(Foo128) == 128, "yato::meta::list_merge fail");
+
+    using t1 = yato::meta::list<void, int16_t, int64_t>;
+    using t2 = yato::meta::list<int32_t, Foo128>;
+    using t3 = yato::meta::list<int8_t, int16_t>;
+
+    using m1 = yato::meta::list_merge<t1, t2, yato::meta::type_less_sizeof>::type;
+    static_assert(std::is_same<m1, yato::meta::list<void, int16_t, int32_t, int64_t, Foo128>>::value, "yato::meta::list_merge fail");
+
+    using m2 = yato::meta::list_merge<t1, t3, yato::meta::type_less_sizeof>::type;
+    static_assert(std::is_same<m2, yato::meta::list<void, int8_t, int16_t, int16_t, int64_t>>::value, "yato::meta::list_merge fail");
+
+    using m3 = yato::meta::list_merge<t2, t3, yato::meta::type_less_sizeof>::type;
+    static_assert(std::is_same<m3, yato::meta::list<int8_t, int16_t, int32_t, Foo128>>::value, "yato::meta::list_merge fail");
+
+    using m4 = yato::meta::list_merge<t2, yato::meta::null_list, yato::meta::type_less_sizeof>::type;
+    static_assert(std::is_same<m4, t2>::value, "yato::meta::list_merge fail");
+
+    using m5 = yato::meta::list_merge<t2, yato::meta::list<void>, yato::meta::type_less_sizeof>::type;
+    static_assert(std::is_same<m5, yato::meta::list<void, int32_t, Foo128>>::value, "yato::meta::list_merge fail");
+}
+
+namespace
+{
+    template <size_t Size_>
+    struct Bar
+    {
+        char x[Size_];
+    };
+}
+
+TEST(Yato_Meta, list_sort)
+{
+    using t1 = yato::meta::list<int64_t, Foo128, void, int16_t>;
+    using t2 = yato::meta::list<int32_t>;
+    using t3 = yato::meta::list<uint32_t, int8_t, int16_t>;
+    using t4 = yato::meta::list<void>;
+    using t5 = yato::meta::list<Bar<10>, Bar<1>, Bar<8>, void, Bar<16>, Bar<7>, Bar<64>, Bar<128>, Bar<2>, Bar<134>, Bar<42>>;
+
+    using s1 = yato::meta::list_sort<t1, yato::meta::type_less_sizeof>::type;
+    static_assert(std::is_same<s1, yato::meta::list<void, int16_t, int64_t, Foo128>>::value, "yato::meta::list_sort fail");
+
+    using s2 = yato::meta::list_sort<t2, yato::meta::type_less_sizeof>::type;
+    static_assert(std::is_same<s2, yato::meta::list<int32_t>>::value, "yato::meta::list_sort fail");
+
+    using s3 = yato::meta::list_sort<t3, yato::meta::type_less_sizeof>::type;
+    static_assert(std::is_same<s3, yato::meta::list<int8_t, int16_t, uint32_t>>::value, "yato::meta::list_sort fail");
+
+    using s4 = yato::meta::list_sort<t4, yato::meta::type_less_sizeof>::type;
+    static_assert(std::is_same<s4, t4>::value, "yato::meta::list_sort fail");
+
+    using s5 = yato::meta::list_sort<t5, yato::meta::type_less_sizeof>::type;
+    static_assert(std::is_same<s5, yato::meta::list<void, Bar<1>, Bar<2>, Bar<7>, Bar<8>, Bar<10>, Bar<16>, Bar<42>, Bar<64>, Bar<128>, Bar<134>>>::value, "yato::meta::list_sort fail");
+
+    using s6 = yato::meta::list_sort<yato::meta::null_list, yato::meta::type_less_sizeof>::type;
+    static_assert(std::is_same<s6, yato::meta::null_list>::value, "yato::meta::list_sort fail");
+}
