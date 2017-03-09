@@ -22,7 +22,6 @@ namespace yato
             template <template <typename> class _Func, typename... _Args>
             YATO_CONSTEXPR_FUNC
             static auto apply(_Tuple tuple, _Args && ...args)
-                -> decltype(tuple_transform_impl<_Tuple, _Length - 1, _Length - 1, _Idxs...>::template apply<_Func>(std::forward<_Tuple>(tuple), std::forward<_Args>(args)...))
             {
                 return tuple_transform_impl<_Tuple, _Length - 1, _Length - 1, _Idxs...>::template apply<_Func>(std::forward<_Tuple>(tuple), std::forward<_Args>(args)...);
             }
@@ -32,35 +31,14 @@ namespace yato
         struct tuple_transform_impl<_Tuple, 0, _Idxs...>
         {
             using tuple_pure_type = typename std::decay<_Tuple>::type;
-#ifndef YATO_MSVC_2013 
+
             template <template <typename> class _Func, typename... _Args>
             YATO_CONSTEXPR_FUNC
             static auto apply(_Tuple tuple, _Args && ...args)
-                -> std::tuple<decltype(_Func<typename std::tuple_element<_Idxs, tuple_pure_type>::type>{}(std::get<_Idxs>(tuple), std::forward<_Args>(args)...))...>
             {
                 return std::tuple<decltype(_Func<typename std::tuple_element<_Idxs, tuple_pure_type>::type>{}(std::get<_Idxs>(tuple), std::forward<_Args>(args)...))...>(
                     _Func<typename std::tuple_element<_Idxs, tuple_pure_type>::type>{}(std::get<_Idxs>(tuple), std::forward<_Args>(args)...)...);
             }
-#else
-//Due to problems of MSVC 2013 with expansion two arguments packs there is implemented only versions for 0 or 1 arguments
-            template <template <typename> class _Func>
-            YATO_CONSTEXPR_FUNC
-            static auto apply(_Tuple tuple)
-                ->std::tuple < decltype(_Func < typename std::tuple_element<_Idxs, tuple_pure_type>::type > {}(std::get<_Idxs>(tuple)))... >
-            {
-                return std::tuple<decltype(_Func < typename std::tuple_element<_Idxs, tuple_pure_type>::type > {}(std::get<_Idxs>(tuple)))...>(
-                    _Func < typename std::tuple_element<_Idxs, tuple_pure_type>::type > {}(std::get<_Idxs>(tuple))...);
-            }
-
-            template <template <typename> class _Func, typename _Arg>
-            YATO_CONSTEXPR_FUNC
-            static auto apply(_Tuple tuple, _Arg && arg)
-                ->std::tuple < decltype(_Func < typename std::tuple_element<_Idxs, tuple_pure_type>::type > {}(std::get<_Idxs>(tuple), std::forward<_Arg>(arg)))... >
-            {
-                return std::tuple<decltype(_Func < typename std::tuple_element<_Idxs, tuple_pure_type>::type > {}(std::get<_Idxs>(tuple), std::forward<_Arg>(arg)))...>(
-                    _Func < typename std::tuple_element<_Idxs, tuple_pure_type>::type > {}(std::get<_Idxs>(tuple), std::forward<_Arg>(arg))...);
-            }
-#endif
         };
 
     }
@@ -70,7 +48,6 @@ namespace yato
     template<template <typename> class _Func, typename _Tuple, typename... _Args>
     YATO_CONSTEXPR_FUNC
     auto tuple_transform(_Tuple && tuple, _Args && ...args)
-        -> decltype(details::tuple_transform_impl<_Tuple, std::tuple_size<typename std::decay<_Tuple>::type>::value>::template apply<_Func>(std::forward<_Tuple>(tuple), std::forward<_Args>(args)...))
     {
         return details::tuple_transform_impl<_Tuple, std::tuple_size<typename std::decay<_Tuple>::type>::value>::template apply<_Func>(std::forward<_Tuple>(tuple), std::forward<_Args>(args)...);
     }
@@ -84,7 +61,6 @@ namespace yato
             template <template <typename, typename> class _Func, typename... _Args>
             YATO_CONSTEXPR_FUNC
             static auto apply(_Tuple1 tuple1, _Tuple2 tuple2, _Args && ...args)
-                -> decltype(tuple_transform_2_impl<_Tuple1, _Tuple2, _Length - 1, _Length - 1, _Idxs...>::template apply<_Func>(std::forward<_Tuple1>(tuple1), std::forward<_Tuple2>(tuple2), std::forward<_Args>(args)...))
             {
                 return tuple_transform_2_impl<_Tuple1, _Tuple2, _Length - 1, _Length - 1, _Idxs...>::template apply<_Func>(std::forward<_Tuple1>(tuple1), std::forward<_Tuple2>(tuple2), std::forward<_Args>(args)...);
             }
@@ -96,35 +72,13 @@ namespace yato
             using tuple1_pure_type = typename std::decay<_Tuple1>::type;
             using tuple2_pure_type = typename std::decay<_Tuple2>::type;
 
-#ifndef YATO_MSVC_2013
             template <template <typename, typename> class _Func, typename... _Args>
             YATO_CONSTEXPR_FUNC
             static auto apply(_Tuple1 tuple1, _Tuple2 tuple2, _Args && ...args)
-                -> std::tuple<decltype(_Func<typename std::tuple_element<_Idxs, tuple1_pure_type>::type, typename std::tuple_element<_Idxs, tuple2_pure_type>::type>{}(std::get<_Idxs>(tuple1), std::get<_Idxs>(tuple2), std::forward<_Args>(args)...))...>
             {
                 return std::tuple<decltype(_Func<typename std::tuple_element<_Idxs, tuple1_pure_type>::type, typename std::tuple_element<_Idxs, tuple2_pure_type>::type>{}(std::get<_Idxs>(tuple1), std::get<_Idxs>(tuple2), std::forward<_Args>(args)...))...>
                     (_Func<typename std::tuple_element<_Idxs, tuple1_pure_type>::type, typename std::tuple_element<_Idxs, tuple2_pure_type>::type>{}(std::get<_Idxs>(tuple1), std::get<_Idxs>(tuple2), std::forward<_Args>(args)...)...);
             }
-#else
-//Due to problems of MSVC 2013 with expansion two arguments packs there is implemented only versions for 0 or 1 arguments
-            template <template <typename, typename> class _Func>
-            YATO_CONSTEXPR_FUNC
-            static auto apply(_Tuple1 tuple1, _Tuple2 tuple2)
-                ->std::tuple < decltype(_Func < typename std::tuple_element<_Idxs, tuple1_pure_type>::type, typename std::tuple_element<_Idxs, tuple2_pure_type>::type > {}(std::get<_Idxs>(tuple1), std::get<_Idxs>(tuple2)))... >
-            {
-                return std::tuple<decltype(_Func < typename std::tuple_element<_Idxs, tuple1_pure_type>::type, typename std::tuple_element<_Idxs, tuple2_pure_type>::type > {}(std::get<_Idxs>(tuple1), std::get<_Idxs>(tuple2)))...>
-                    (_Func < typename std::tuple_element<_Idxs, tuple1_pure_type>::type, typename std::tuple_element<_Idxs, tuple2_pure_type>::type > {}(std::get<_Idxs>(tuple1), std::get<_Idxs>(tuple2))...);
-            }
-
-            template <template <typename, typename> class _Func, typename _Arg>
-            YATO_CONSTEXPR_FUNC
-            static auto apply(_Tuple1 tuple1, _Tuple2 tuple2, _Arg && arg)
-                ->std::tuple < decltype(_Func < typename std::tuple_element<_Idxs, tuple1_pure_type>::type, typename std::tuple_element<_Idxs, tuple2_pure_type>::type > {}(std::get<_Idxs>(tuple1), std::get<_Idxs>(tuple2), std::forward<_Arg>(arg)))... >
-            {
-                return std::tuple<decltype(_Func < typename std::tuple_element<_Idxs, tuple1_pure_type>::type, typename std::tuple_element<_Idxs, tuple2_pure_type>::type > {}(std::get<_Idxs>(tuple1), std::get<_Idxs>(tuple2), std::forward<_Arg>(arg)))...>
-                    (_Func < typename std::tuple_element<_Idxs, tuple1_pure_type>::type, typename std::tuple_element<_Idxs, tuple2_pure_type>::type > {}(std::get<_Idxs>(tuple1), std::get<_Idxs>(tuple2), std::forward<_Arg>(arg))...);
-            }
-#endif
         };
 
     }

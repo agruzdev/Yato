@@ -332,7 +332,6 @@ namespace yato
     \
     /* static reflection info */ \
     using _yato_reflected_##Var = yato::reflection::data_member_info<_yato_reflection_my_type, decltype(_yato_reflection_my_type::Var), _yato_reflected_idx_##Var>;\
-    template <typename _Yato_Typename_Dummy = void> /* template is necessary for using typename keyword (msvc 2013 complains)*/ \
     static auto _yato_data_members_list_getter(yato::meta::number<_yato_reflected_idx_##Var>) \
         -> typename yato::meta::list_push_back<decltype(_yato_data_members_list_getter(yato::meta::number<_yato_reflected_idx_##Var - 1>{})), _yato_reflected_##Var>::type; \
     \
@@ -369,7 +368,6 @@ namespace yato
     template <typename _Yato_Dummy_Argument = void>\
     using _yato_reflected_method_impl_##Method = yato::reflection::member_function_info<_yato_reflection_my_type, typename std::remove_pointer<decltype(&_yato_reflection_my_type::Method)>::type, _yato_reflected_fidx_##Method>;\
     using _yato_reflected_method_##Method = _yato_reflected_method_impl_##Method<void>;\
-    template <typename _Yato_Typename_Dummy = void> /* template is necessary for using typename keyword (msvc 2013 complains)*/ \
     static auto _yato_member_functions_list_getter(yato::meta::number<_yato_reflected_fidx_##Method>) \
         -> typename yato::meta::list_push_back<decltype(_yato_data_members_list_getter(yato::meta::number<_yato_reflected_fidx_##Method - 1>{})), _yato_reflected_method_##Method>::type; \
 

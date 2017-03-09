@@ -52,6 +52,7 @@ TEST(Yato_Reflection, commons)
     static_assert(typed_test_val_3 == 10, "Reflection fail");
 }
 
+
 namespace
 {
     class Bar { };
@@ -165,5 +166,4 @@ TEST(Yato_Reflection, data_members_2)
 //{
 //    using f_trait = typename yato::reflection::reflection_manager<Foo>::member_functions_list::head;
 //}
-
 

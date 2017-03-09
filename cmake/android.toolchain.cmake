@@ -15,7 +15,7 @@ endif()
 if(NOT ANDROID_TOOLCHAIN)
     message(FATAL_ERROR "Failed to find android toolchian. Please set variable ANDROID_TOOLCHAIN to correct toolchain path")
 endif()
-message(STATUS "ANDROID_TOOLCHAIN=$ANDROID_TOOLCHAIN}")
+message(STATUS "ANDROID_TOOLCHAIN=${ANDROID_TOOLCHAIN}")
 
 set(CMAKE_SYSTEM_NAME Generic)
 
