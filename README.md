@@ -22,14 +22,12 @@ The library consists of only headers, so it doesn't require build. The repositor
 
 Currently the library can be successfully built by the following compilers:
 
+* MSVC 2017
 * MSVC 2015
-* MSVC 2013 (with some limitations; support stopped at revision #61ba2a0)
 * MinGW 6.2
-* Clang 3.7 
-* GCC 5.3
-* Google Android NDK, GCC 4.9
-
-(Android CrystaX NDK support will be added in future)
+* Clang 3.9
+* GCC 6.2
+* Google Android NDK 13, llvm toolchain
 
 ## Description
 
