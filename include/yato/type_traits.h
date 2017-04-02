@@ -38,6 +38,37 @@ namespace yato
     };
 
     //----------------------------------------------------------
+    // General
+    //
+
+    template <typename Ty_>
+    struct is_integer
+        : public std::integral_constant<bool, 
+                std::is_integral<Ty_>::value && !std::is_same<Ty_, bool>::value
+            >
+    { };
+
+
+    /**
+     * Give next wider type
+     */
+    template <typename Ty_>
+    struct wider_type
+    { };
+
+    // ToDo (a.gruzdev) Add handling of CV-cvalifiers and signed/unsigned types
+    template <> struct wider_type<uint8_t>  { using type = uint16_t; };
+    template <> struct wider_type<uint16_t> { using type = uint32_t; };
+    template <> struct wider_type<uint32_t> { using type = uint64_t; };
+    template <> struct wider_type<uint64_t> { using type = uint64_t; };
+    template <> struct wider_type<int8_t>   { using type = int16_t; };
+    template <> struct wider_type<int16_t>  { using type = int32_t; };
+    template <> struct wider_type<int32_t>  { using type = int64_t; };
+    template <> struct wider_type<int64_t>  { using type = int64_t; };
+    template <> struct wider_type<float>    { using type = double; };
+    template <> struct wider_type<double>   { using type = long double; };
+
+    //----------------------------------------------------------
     // Smart pointer traits
     //
     namespace details

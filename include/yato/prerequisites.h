@@ -83,6 +83,10 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 #define YATO_CONSTEXPR_FUNC_EX inline
 #endif
 
+#if (defined(_MSC_VER) && (_MSC_VER >= 1900)) || (defined(__cplusplus) && (__cplusplus >= 201400L))
+# define YATO_HAS_LITERALS
+#endif
+
 // ToDo (a.gruzdev): The condition will be made more precise after releasing C++17
 #if defined(__cplusplus) && (__cplusplus >= 201700L)
 # define YATO_CXX17

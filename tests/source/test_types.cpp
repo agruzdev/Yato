@@ -68,7 +68,7 @@ TEST(Yato_Types, pointer_cast)
 # pragma clang diagnostic pop
 #endif
 
-#if defined(YATO_MSVC_2015) || (__cplusplus >= 201400L)
+#ifdef YATO_HAS_LITERALS
 TEST(Yato_Types, TestLiterals)
 {
     using namespace yato::literals;

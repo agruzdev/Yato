@@ -18,62 +18,30 @@ namespace yato
     //-------------------------------------------------------
     // Fixed size integer types
 
-#ifndef INT8_C
-    using int8_t = signed char;
-#else
+
     using int8_t = ::int8_t;
-#endif
     static_assert(sizeof(int8_t) == 1, "Wrong int8_t type!");
 
-#ifndef UINT8_C 
-    using uint8_t = unsigned char;
-#else
     using uint8_t = ::uint8_t;
-#endif
     static_assert(sizeof(uint8_t) == 1, "Wrong uint8_t type!");
 
-#ifndef INT16_C 
-    using int16_t = signed short;
-#else
     using int16_t = ::int16_t;
-#endif
     static_assert(sizeof(int16_t) == 2, "Wrong int16_t type!");
 
-#ifndef UINT16_C 
-    using uint16_t = unsigned short;
-#else
     using uint16_t = ::uint16_t;
-#endif
     static_assert(sizeof(uint16_t) == 2, "Wrong uint16_t type!");
 
-#ifndef INT32_C 
-    using int32_t = signed int;
-#else
     using int32_t = ::int32_t;
-#endif
     static_assert(sizeof(int32_t) == 4, "Wrong int32_t type!");
 
-#ifndef UINT32_C 
-    using uint32_t = unsigned int;
-#else
     using uint32_t = ::uint32_t;
-#endif
     static_assert(sizeof(uint32_t) == 4, "Wrong uint32_t type!");
 
-#ifndef INT64_C 
-    using int64_t = signed long long;
-#else
     using int64_t = ::int64_t;
-#endif
     static_assert(sizeof(int64_t) == 8, "Wrong int64_t type!");
 
-#ifndef UINT64_C 
-    using uint64_t = unsigned long long;
-#else
     using uint64_t = ::uint64_t;
-#endif
     static_assert(sizeof(uint64_t) == 8, "Wrong uint64_t type!");
-
 
 
     //-------------------------------------------------------
@@ -219,7 +187,8 @@ namespace yato
 
     namespace literals
     {
-#if defined(YATO_MSVC_2015) || (__cplusplus >= 201400L)
+#ifdef YATO_HAS_LITERALS
+
         YATO_CONSTEXPR_FUNC 
         int8_t operator"" _s8(unsigned long long number) YATO_NOEXCEPT_IN_RELEASE
         {
