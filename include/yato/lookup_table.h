@@ -94,9 +94,9 @@ namespace yato
             using value_type = ValTy_;
             using argument_type = ArgTy_;
             using index_type = int32_t;
-            using wide_index_type = typename yato::wider_type<index_type>::type;
-            using sample_type = typename lut_value_sample<ValTy_>;
-            using sample_creference = const typename lut_value_sample<ValTy_>&;
+            using wide_index_type = yato::wider_type<index_type>::type;
+            using sample_type = lut_value_sample<ValTy_>;
+            using sample_creference = const lut_value_sample<ValTy_>&;
             using alpha_type = lut_fxpoint_alpha;
             static constexpr size_t   table_size = Size_;
 
@@ -152,7 +152,7 @@ namespace yato
                 auto tmp = get_index_(meta::number<2>{}, x);
                 index_type idx = std::get<0>(tmp);
                 alpha->value = std::get<1>(tmp);
-                assert(idx < table_size - 1);
+                assert(static_cast<size_t>(idx) < table_size - 1);
                 return std::tie(m_samples[idx], m_samples[idx + 1]);
             }
 
