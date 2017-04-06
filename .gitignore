@@ -1,2 +1,4 @@
 /build/*
 /cmake_workspace/*
+cmake-*
+.idea/
