@@ -21,7 +21,9 @@ endif()
 #==========================================
 # Core sources
 
-file(GLOB_RECURSE yato_sources "${CMAKE_SOURCE_DIR}/include/*.h")
+set(YATO_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/include")
+
+file(GLOB_RECURSE yato_sources "${YATO_INCLUDE_DIRS}/*.h")
 
 #==========================================
 # Targets
@@ -30,6 +32,12 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
 message(STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
+
+option(YATO_BUILD_ACTORS "Build actors module" OFF)
+if(YATO_BUILD_ACTORS)
+    add_subdirectory(./actors)
+    list(APPEND YATO_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/actors")
+endif()
 
 option(YATO_BUILD_TESTS "Build unit tests" ON)
 if(YATO_BUILD_TESTS)

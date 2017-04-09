@@ -16,11 +16,17 @@ include(${TARGET_CONFIG_LISTS})
 # Sources
 
 include_directories(${GTEST_INCLUDE_DIR})
-include_directories("${CMAKE_SOURCE_DIR}/include")
+include_directories(${YATO_INCLUDE_DIRS})
 
-file(GLOB_RECURSE all_tests "source/*.cpp" "source/*.h")
+file(GLOB all_tests "source/*.cpp" "source/*.h")
 list(APPEND all_sources ${all_tests})
 list(APPEND all_sources ${yato_sources})
+
+if(YATO_BUILD_ACTORS)
+    file(GLOB actors_tests "source/actors/*.cpp" "source/actors/*.h")
+    list(APPEND all_sources ${actors_tests})
+endif()
+
 
 foreach(f ${all_sources})
     # Get the path of the file relative to ${CMAKE_HOME_DIRECTORY},
@@ -43,3 +49,7 @@ add_executable(YatoTests ${all_sources})
 
 target_link_libraries(YatoTests gtest)
 target_link_libraries(YatoTests gtest_main)
+
+if(YATO_BUILD_ACTORS)
+    target_link_libraries(YatoTests YatoActors)
+endif()
