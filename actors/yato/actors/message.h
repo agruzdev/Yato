@@ -10,8 +10,6 @@
 
 #include <yato/any.h>
 
-#include"actor.h"
-
 namespace yato
 {
 namespace actors

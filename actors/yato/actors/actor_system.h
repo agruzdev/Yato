@@ -22,13 +22,14 @@ namespace actors
     class pinned_thread_pool;
 
     struct actor_context;
+    class abstract_executor;
 
     class actor_system
     {
     private:
         std::string m_name;
         std::map<std::string, std::unique_ptr<actor_context>> m_contexts;
-        std::unique_ptr<pinned_thread_pool> m_pool;
+        std::unique_ptr<abstract_executor> m_executor;
         //-------------------------------------------------------
 
         actor_ref create_actor_impl(std::unique_ptr<actor_base> && a, const std::string & name);

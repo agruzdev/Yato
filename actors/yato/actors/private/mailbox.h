@@ -13,12 +13,21 @@
 #include <mutex>
 
 #include "../message.h"
-
+#include "../actor.h"
 
 namespace yato
 {
 namespace actors
 {
+
+#if 0
+    enum class mailbox_status
+    {
+        opened,     ///< Is to be passed to executor
+        closed,     ///< Will not get more messages. The rest should be processed
+        scheduled   ///< Is being executed
+    };
+#endif
 
     // ToDo (a.gruzdev): simplest implementation. Queue + mutex
     struct mailbox
@@ -26,6 +35,11 @@ namespace actors
         std::queue<std::unique_ptr<message>> queue;
         std::mutex mutex;
         std::condition_variable condition;
+
+        actor_base* owner = nullptr;
+        //mailbox_status status = mailbox_status::opened;
+        bool isOpen = true;
+        bool isScheduled = false;
     };
 
 } // namespace actors

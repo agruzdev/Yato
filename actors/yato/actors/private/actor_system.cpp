@@ -23,59 +23,25 @@ namespace actors
     {
         std::unique_ptr<actor_base> act;
         mailbox mbox;
-        bool active;
+        //bool active;
     };
-    //-------------------------------------------------------
-
-    static 
-    void pinned_thread_function(actor_context* context) noexcept
-    {
-        try {
-            for (;;) {
-                std::unique_ptr<message> msg = nullptr;
-                {
-                    std::unique_lock<std::mutex> lock(context->mbox.mutex);
-                    auto & mbox = context->mbox;
-                    
-                    while (context->active && mbox.queue.empty()) {
-                        mbox.condition.wait(lock);
-                    }
-
-                    if(mbox.queue.empty() && !context->active) {
-                        // Terminate thread
-                        break;
-                    }
-
-                    if (!mbox.queue.empty()) {
-                        msg = std::move(mbox.queue.front());
-                        mbox.queue.pop();
-                    }
-                }
-                if(msg) {
-                    context->act->receive_message(*msg);
-                }
-            }
-        } catch(...) {
-            // ToDo (a.gruzdev): Add logging
-            std::cout << "Exception!" << std::endl;
-        }
-    }
     //-------------------------------------------------------
 
     actor_system::actor_system(const std::string & name) 
         : m_name(name)
     {
-        m_pool = std::make_unique<pinned_thread_pool>();
+        m_executor = std::make_unique<pinned_thread_pool>();
     }
     //-------------------------------------------------------
 
     actor_system::~actor_system() 
     {
         for(auto & entry : m_contexts) {
-            entry.second->active = false;
+            std::unique_lock<std::mutex> lock(entry.second->mbox.mutex);
+            entry.second->mbox.isOpen = false;
             entry.second->mbox.condition.notify_one();
         }
-        m_pool.reset();
+        m_executor.reset();
     }
     //-------------------------------------------------------
 
@@ -89,15 +55,19 @@ namespace actors
         ref.name = name;
         ref.path = m_name + "/" + name;
 
-        auto ctx = std::make_unique<actor_context>();
-        ctx->act = std::move(a);
-        ctx->act->set_name(name);
-        ctx->active = true;
-        auto res = m_contexts.emplace(ref.path, std::move(ctx));
-        assert(res.second && "Failed to insert new actor context"); 
+        actor_context* context = nullptr;
+        {
+            auto ctx = std::make_unique<actor_context>();
+            ctx->act = std::move(a);
+            ctx->act->set_name(name);
+            ctx->mbox.owner = ctx->act.get();
+            auto res = m_contexts.emplace(ref.path, std::move(ctx));
+            assert(res.second && "Failed to insert new actor context"); 
 
-        actor_context* stableContextPtr = res.first->second.get();
-        m_pool->create_thread_for_task([stableContextPtr]() { pinned_thread_function(stableContextPtr); });
+            context = &(*res.first->second);
+        }
+
+        m_executor->execute(&context->mbox);
 
         return ref;
     }
@@ -117,7 +87,7 @@ namespace actors
 
         {
             std::unique_lock<std::mutex> lock(mbox.mutex);
-            if (it->second->active) {
+            if (it->second->mbox.isOpen) {
                 mbox.queue.push(std::move(msg));
                 mbox.condition.notify_one();
             }

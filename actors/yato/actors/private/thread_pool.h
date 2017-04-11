@@ -13,33 +13,31 @@
 #include <queue>
 #include <future>
 
+#include "abstract_executor.h"
+
 namespace yato
 {
 namespace actors
 {
 
+    /**
+     * Simplest thread pool.
+     * Creates a new thread for the each mailbox
+     */
     class pinned_thread_pool
+        : public abstract_executor
     {
     private:
         std::vector<std::thread> m_threads;
 
     public:
-        pinned_thread_pool() {
-        }
-
-        ~pinned_thread_pool() {
-            for(auto & t : m_threads) {
-                t.join();
-            }
-        }
+        pinned_thread_pool();
+        ~pinned_thread_pool();
 
         pinned_thread_pool(const pinned_thread_pool&) = delete;
         pinned_thread_pool& operator=(const pinned_thread_pool&) = delete;
 
-        template <typename Callable_>
-        void create_thread_for_task(Callable_ && task) {
-            m_threads.emplace_back([](Callable_ && t) { t(); }, std::move(task));
-        }
+        bool execute(mailbox* mbox) override;
     };
 
 } // namespace actors
