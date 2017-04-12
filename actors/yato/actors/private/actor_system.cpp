@@ -19,6 +19,14 @@ namespace yato
 namespace actors
 {
 
+    actor_ref::actor_ref(actor_system* system, const std::string & name)
+        : m_system(system), m_name(name)
+    {
+        assert(m_system != nullptr);
+        m_path = m_system->get_name() + ":" + m_name;
+    }
+    //-------------------------------------------------------
+
     struct actor_context
     {
         std::unique_ptr<actor_base> act;
@@ -51,9 +59,7 @@ namespace actors
             throw yato::runtime_error("Actor with the name " + name + " already exists!");
         }
 
-        actor_ref ref;
-        ref.name = name;
-        ref.path = m_name + "/" + name;
+        actor_ref ref{this, name};
 
         actor_context* context = nullptr;
         {
@@ -61,7 +67,7 @@ namespace actors
             ctx->act = std::move(a);
             ctx->act->set_name(name);
             ctx->mbox.owner = ctx->act.get();
-            auto res = m_contexts.emplace(ref.path, std::move(ctx));
+            auto res = m_contexts.emplace(ref.get_path(), std::move(ctx));
             assert(res.second && "Failed to insert new actor context"); 
 
             context = &(*res.first->second);
@@ -75,9 +81,9 @@ namespace actors
 
     void actor_system::tell_impl(const actor_ref & toActor, yato::any && userMessage)
     {
-        auto it = m_contexts.find(toActor.path);
+        auto it = m_contexts.find(toActor.get_path());
         if(it == m_contexts.end()) {
-            throw yato::runtime_error("Actor " + toActor.path + " is not found!");
+            throw yato::runtime_error("Actor " + toActor.get_path() + " is not found!");
         }
 
         auto & mbox = it->second->mbox;

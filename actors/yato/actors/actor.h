@@ -17,16 +17,6 @@ namespace yato
 namespace actors
 {
 
-    /**
-     * Unique handle of an actor
-     */
-    struct actor_ref
-    {
-        std::string name;
-        std::string path;
-    };
-    //-------------------------------------------------------
-
 
     /**
      * Helper structs to specify mailbox filter for the actor

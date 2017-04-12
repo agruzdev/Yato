@@ -23,8 +23,48 @@ namespace actors
 
     struct actor_context;
     class abstract_executor;
+    class actor_system;
 
-    class actor_system
+    /**
+     * Unique handle of an actor
+     */
+    class actor_ref final
+    {
+    private:
+        // Not owning pointer. Can copy
+        actor_system* m_system;
+
+        std::string m_name;
+        std::string m_path;
+
+        actor_ref(actor_system* system, const std::string & name);
+    public:
+
+        ~actor_ref() = default;
+
+        actor_ref(const actor_ref&) = default;
+        actor_ref(actor_ref&&) = default;
+
+        actor_ref& operator=(const actor_ref&) = default;
+        actor_ref& operator=(actor_ref&&) = default;
+
+        const std::string & get_name() const {
+            return m_name;
+        }
+
+        const std::string & get_path() const {
+            return m_path;
+        }
+
+        template <typename Ty_>
+        void tell(Ty_ && message);
+
+        friend class actor_system;
+    };
+    //-------------------------------------------------------
+
+
+    class actor_system final
     {
     private:
         std::string m_name;
@@ -51,7 +91,18 @@ namespace actors
         void tell(const actor_ref & toActor, Ty_ && message) {
             tell_impl(toActor, yato::any(message));
         }
+
+        const std::string & get_name() const {
+            return m_name;
+        }
     };
+
+
+    template <typename Ty_>
+    inline
+    void actor_ref::tell(Ty_ && message) {
+        m_system->tell(*this, message);
+    }
 
 
 }// namespace actors

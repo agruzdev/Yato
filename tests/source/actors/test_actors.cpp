@@ -25,6 +25,6 @@ TEST(Yato_Actors, common)
     yato::actors::actor_system system("default");
 
     auto actor = system.create_actor<EchoActor>("echo1");
-    system.tell(actor, std::string("Hello, Actor!"));
+    actor.tell(std::string("Hello, Actor!"));
 
 }
