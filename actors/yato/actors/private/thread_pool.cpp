@@ -5,8 +5,7 @@
 * Copyright (c) 2016 Alexey Gruzdev
 */
 
-#include <iostream>
-
+#include "../logger.h"
 #include "thread_pool.h"
 
 namespace yato
@@ -41,9 +40,11 @@ namespace actors
                 }
             }
         }
+        catch(std::exception & e) {
+            logger::instance().error("pinned_thread_pool[pinned_thread_function]: Thread failed with exception: %s", e.what());
+        }
         catch (...) {
-            // ToDo (a.gruzdev): Add logging
-            std::cout << "Exception!" << std::endl;
+            logger::instance().error("pinned_thread_pool[pinned_thread_function]: Thread failed with unknown exception!");
         }
     }
     //-------------------------------------------------------

@@ -2,16 +2,19 @@
 
 
 #include <yato/actors/actor_system.h>
+#include <yato/actors/logger.h>
 
 namespace
 {
     class EchoActor
         : public yato::actors::actor<>
     {
+        yato::actors::logger& log = yato::actors::logger::instance();
+
         void receive(const yato::any& message) override
         {
             try {
-                std::cout << yato::any_cast<std::string>(message) << std::endl;
+                log.info(yato::any_cast<std::string>(message));
             }
             catch(...)
             { }

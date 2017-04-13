@@ -5,10 +5,9 @@
 * Copyright (c) 2016 Alexey Gruzdev
 */
 
-#include <iostream>
-
 #include "../actor.h"
 #include "../message.h"
+#include "../logger.h"
 
 namespace yato
 {
@@ -21,9 +20,11 @@ namespace actors
         try {
             unwrap_message(message);
         }
+        catch(std::exception & e) {
+            logger::instance().error("actor_base[receive_message]: Unhandled exception: %s", e.what());
+        }
         catch (...) {
-            // ToDo (a.gruzdev): Add logging
-            std::cout << "Fail!" << std::endl;
+            logger::instance().error("actor_base[receive_message]: Unknown exception!");
         }
     }
     //-------------------------------------------------------
