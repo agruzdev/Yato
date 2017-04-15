@@ -8,12 +8,13 @@
 #ifndef _YATO_ACTOR_SYSTEM_H_
 #define _YATO_ACTOR_SYSTEM_H_
 
+#include <map>
 #include <memory>
 
 #include <yato/any.h>
 
 #include "actor.h"
-#include <map>
+#include "logger.h"
 
 namespace yato
 {
@@ -37,6 +38,8 @@ namespace actors
         std::string m_name;
         std::string m_path;
 
+        logger_ptr m_logger;
+
         actor_ref(actor_system* system, const std::string & name);
     public:
 
@@ -58,6 +61,10 @@ namespace actors
 
         template <typename Ty_>
         void tell(Ty_ && message);
+
+        const logger_ptr & logger() const {
+            return m_logger;
+        }
 
         friend class actor_system;
     };
@@ -96,7 +103,7 @@ namespace actors
             return m_name;
         }
     };
-
+    //-------------------------------------------------------
 
     template <typename Ty_>
     inline

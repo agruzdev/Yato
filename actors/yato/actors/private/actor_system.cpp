@@ -65,7 +65,7 @@ namespace actors
         {
             auto ctx = std::make_unique<actor_context>();
             ctx->act = std::move(a);
-            ctx->act->set_name(name);
+            ctx->act->init_base(name);
             ctx->mbox.owner = ctx->act.get();
             auto res = m_contexts.emplace(ref.get_path(), std::move(ctx));
             assert(res.second && "Failed to insert new actor context"); 

@@ -9,12 +9,12 @@ namespace
     class EchoActor
         : public yato::actors::actor<>
     {
-        yato::actors::logger& log = yato::actors::logger::instance();
+        yato::actors::logger_ptr m_log = yato::actors::logger_factory::create("Echo");
 
         void receive(const yato::any& message) override
         {
             try {
-                log.info(yato::any_cast<std::string>(message));
+                m_log->info(yato::any_cast<std::string>(message));
             }
             catch(...)
             { }

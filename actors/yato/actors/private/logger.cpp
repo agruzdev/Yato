@@ -16,7 +16,9 @@ namespace yato
 namespace actors
 {
 
-    logger::logger() {
+    logger::logger(const std::string & name)
+        : m_name(name) 
+    {
 #if YATO_DEBUG
         m_filter = log_level::debug;
 #else
@@ -29,20 +31,33 @@ namespace actors
         m_tags[static_cast<uint16_t>(log_level::debug)]   = "[DEBUG]   ";
         m_tags[static_cast<uint16_t>(log_level::verbose)] = "[VERBOSE] ";
     }
+    //-------------------------------------------------------
 
     logger::~logger() {
     }
+    //-------------------------------------------------------
 
-    logger & logger::instance() {
-        static logger instance;
-        return instance;
-    }
-
-    void logger::write_message(log_level level, const char* message) noexcept {
+    void logger::write_message(log_level level, const char* message) const noexcept {
         YATO_MAYBE_UNUSED(level);
         // Use std::cout providing threadsafe writing to console
         std::cout << message;
     }
+    //-------------------------------------------------------
+
+    void logger_deleter::operator()(logger* ptr) const noexcept {
+        logger_factory::destroy(ptr);
+    }
+    //-------------------------------------------------------
+
+    void logger_factory::destroy(logger* ptr) noexcept {
+        delete ptr;
+    }
+    //-------------------------------------------------------
+
+    logger_ptr logger_factory::create(const std::string& name) {
+        return logger_ptr(new logger{ name }, logger_deleter{});
+    }
+    //-------------------------------------------------------
 
 }// namespace actors
 

@@ -10,8 +10,6 @@
 
 #include <vector>
 #include <thread>
-#include <queue>
-#include <future>
 
 #include "abstract_executor.h"
 
@@ -29,6 +27,7 @@ namespace actors
     {
     private:
         std::vector<std::thread> m_threads;
+        logger_ptr m_logger;
 
     public:
         pinned_thread_pool();

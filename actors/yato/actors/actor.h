@@ -11,6 +11,7 @@
 #include <yato/any.h>
 #include <yato/variant.h>
 #include "message.h"
+#include "logger.h"
 
 namespace yato
 {
@@ -42,6 +43,7 @@ namespace actors
     {
     private:
         std::string m_name = "Unnamed";
+        logger_ptr m_log;
         //-------------------------------------------------------
 
     protected:
@@ -53,7 +55,6 @@ namespace actors
         //-------------------------------------------------------
 
     public:
-        actor_base() = default;
         virtual ~actor_base() = default;
 
         /**
@@ -62,9 +63,7 @@ namespace actors
         void receive_message(const message & message) noexcept;
 
 
-        void set_name(const std::string & name) {
-            m_name = name;
-        }
+        void init_base(const std::string & name);
     };
     //-------------------------------------------------------
 

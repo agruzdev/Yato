@@ -13,7 +13,7 @@ namespace yato
 namespace actors
 {
     static
-    void pinned_thread_function(mailbox* mbox) noexcept
+    void pinned_thread_function(const logger_ptr & log, mailbox* mbox) noexcept
     {
         try {
             for (;;) {
@@ -41,31 +41,34 @@ namespace actors
             }
         }
         catch(std::exception & e) {
-            logger::instance().error("pinned_thread_pool[pinned_thread_function]: Thread failed with exception: %s", e.what());
+            log->error("pinned_thread_pool[pinned_thread_function]: Thread failed with exception: %s", e.what());
         }
         catch (...) {
-            logger::instance().error("pinned_thread_pool[pinned_thread_function]: Thread failed with unknown exception!");
+            log->error("pinned_thread_pool[pinned_thread_function]: Thread failed with unknown exception!");
         }
     }
     //-------------------------------------------------------
 
-    pinned_thread_pool::pinned_thread_pool()
-    { }
+    pinned_thread_pool::pinned_thread_pool() {
+        m_logger = logger_factory::create("pinned_thread_pool");
+    }
+    //-------------------------------------------------------
 
     pinned_thread_pool::~pinned_thread_pool() {
         for(auto & t : m_threads) {
             t.join();
         }
     }
+    //-------------------------------------------------------
 
     bool pinned_thread_pool::execute(mailbox* mbox) {
         std::unique_lock<std::mutex> lock(mbox->mutex);
         if(!mbox->isScheduled) {
-            m_threads.emplace_back([mbox]{ pinned_thread_function(mbox); });
+            m_threads.emplace_back([this, mbox]{ pinned_thread_function(m_logger, mbox); });
         }
         return true;
     }
-    
+    //-------------------------------------------------------
 
 } // namespace actors
 
