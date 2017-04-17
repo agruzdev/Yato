@@ -10,14 +10,16 @@
 
 #include <yato/any.h>
 #include <yato/variant.h>
-#include "message.h"
 #include "logger.h"
+#include "actor_ref.h"
+
+// ToDo (a.gruzdev): Remove private includes from the public interface
+#include "private/message.h"
 
 namespace yato
 {
 namespace actors
 {
-
 
     /**
      * Helper structs to specify mailbox filter for the actor
@@ -34,6 +36,7 @@ namespace actors
     };
     //-------------------------------------------------------
 
+    struct actor_context;
 
     /**
      * Base class for actor
@@ -42,8 +45,8 @@ namespace actors
     class actor_base
     {
     private:
-        std::string m_name = "Unnamed";
-        logger_ptr m_log;
+        //std::unique_ptr<actor_context> m_context;
+        actor_context* m_context;
         //-------------------------------------------------------
 
     protected:
@@ -54,16 +57,20 @@ namespace actors
         virtual void unwrap_message(const message & message) = 0;
         //-------------------------------------------------------
 
-    public:
-        virtual ~actor_base() = default;
+        const actor_ref & self() const;
 
+    public:
+        virtual ~actor_base();
+        
         /**
          * Handle message
          */
         void receive_message(const message & message) noexcept;
 
-
-        void init_base(const std::string & name);
+        /**
+         * Used by actor system to initialize the actor
+         */
+        void init_base(const actor_ref & ref);
     };
     //-------------------------------------------------------
 
@@ -81,7 +88,8 @@ namespace actors
         //-------------------------------------------------------
 
     private:
-
+        const actor_ref* m_sender;
+        //-------------------------------------------------------
 
         void unwrap_message_impl(mailbox_no_filter, const message & message) 
         {
@@ -101,21 +109,25 @@ namespace actors
          */
         void unwrap_message(const message & message) override
         {
+            m_sender = &message.sender;
             unwrap_message_impl(filter_type{}, message);
+            // ToDo (a.gruzdev): Use finally
+            m_sender = nullptr; 
         }
     protected:
 
         virtual void receive(const received_type & message) = 0;
         //-------------------------------------------------------
 
-    public:
-        actor() = default;
-        //explicit
-        //actor(const std::string & name) 
-        //    : m_name(name)
-        //{ }
+        const actor_ref & sender() const {
+            assert(m_sender != nullptr);
+            return *m_sender;
+        }
+
         //-------------------------------------------------------
 
+    public:
+        actor() = default;
         ~actor() = default;
         //-------------------------------------------------------
 

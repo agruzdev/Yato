@@ -13,21 +13,18 @@
 #include "mailbox.h"
 #include "thread_pool.h"
 
+namespace
+{
+    static std::string DEAD_LETTERS = "_dead_";
+}
 
 namespace yato
 {
 namespace actors
 {
 
-    actor_ref::actor_ref(actor_system* system, const std::string & name)
-        : m_system(system), m_name(name)
-    {
-        assert(m_system != nullptr);
-        m_path = m_system->get_name() + ":" + m_name;
-    }
-    //-------------------------------------------------------
 
-    struct actor_context
+    struct actor_cell
     {
         std::unique_ptr<actor_base> act;
         mailbox mbox;
@@ -35,9 +32,14 @@ namespace actors
     };
     //-------------------------------------------------------
 
-    actor_system::actor_system(const std::string & name) 
+    actor_system::actor_system(const std::string & name)
         : m_name(name)
+        , m_dead_letters(this, "")
     {
+        if(name.empty()) {
+            throw yato::argument_error("System name can't be empty");
+        }
+        m_logger   = logger_factory::create(m_name);
         m_executor = std::make_unique<pinned_thread_pool>();
     }
     //-------------------------------------------------------
@@ -55,17 +57,23 @@ namespace actors
 
     actor_ref actor_system::create_actor_impl(std::unique_ptr<actor_base> && a, const std::string & name)
     {
+        if(name.empty()) {
+            throw yato::argument_error("Actor name can't be empty!");
+        }
+        if(name == DEAD_LETTERS) {
+            throw yato::argument_error("Actor name " + DEAD_LETTERS + "is reserved!");
+        }
         if(m_contexts.find(name) != m_contexts.cend()) {
-            throw yato::runtime_error("Actor with the name " + name + " already exists!");
+            throw yato::argument_error("Actor with the name " + name + " already exists!");
         }
 
         actor_ref ref{this, name};
 
-        actor_context* context = nullptr;
+        actor_cell* context = nullptr;
         {
-            auto ctx = std::make_unique<actor_context>();
+            auto ctx = std::make_unique<actor_cell>();
             ctx->act = std::move(a);
-            ctx->act->init_base(name);
+            ctx->act->init_base(ref);
             ctx->mbox.owner = ctx->act.get();
             auto res = m_contexts.emplace(ref.get_path(), std::move(ctx));
             assert(res.second && "Failed to insert new actor context"); 
@@ -79,8 +87,12 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    void actor_system::tell_impl(const actor_ref & toActor, yato::any && userMessage)
+    void actor_system::send_impl(const actor_ref & toActor, const actor_ref & fromActor, yato::any && userMessage)
     {
+        if(toActor.get_name() == DEAD_LETTERS) {
+            m_logger->verbose("A message was delivered to deadLetters.");
+            return;
+        }
         auto it = m_contexts.find(toActor.get_path());
         if(it == m_contexts.end()) {
             throw yato::runtime_error("Actor " + toActor.get_path() + " is not found!");
@@ -88,9 +100,7 @@ namespace actors
 
         auto & mbox = it->second->mbox;
 
-        auto msg = std::make_unique<message>();
-        msg->payload = std::move(userMessage);
-
+        auto msg = std::make_unique<message>(std::move(userMessage), fromActor);
         {
             std::unique_lock<std::mutex> lock(mbox.mutex);
             if (it->second->mbox.isOpen) {
@@ -100,6 +110,7 @@ namespace actors
         }
     }
     //-------------------------------------------------------
+
 
 } // namespace actors
 

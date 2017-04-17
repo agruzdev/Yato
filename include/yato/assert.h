@@ -16,22 +16,8 @@
 namespace yato
 {
 
-    class assertion_error : public std::runtime_error
-    {
-    public:
-        assertion_error(const std::string & message) 
-            : std::runtime_error(message)
-        { }
-
-        assertion_error(const char* message) 
-            : std::runtime_error(message)
-        { }
-
-        ~assertion_error()
-        { }
-    };
-
-    class runtime_error: public std::runtime_error
+    class runtime_error
+    : public std::runtime_error
     {
     public:
         runtime_error(const std::string & message)
@@ -46,21 +32,71 @@ namespace yato
         { }
     };
 
-    class out_of_range_error : public std::runtime_error
+    class assertion_error 
+        : public yato::runtime_error
+    {
+    public:
+        assertion_error(const std::string & message)
+            : yato::runtime_error(message)
+        { }
+
+        assertion_error(const char* message)
+            : yato::runtime_error(message)
+        { }
+
+        ~assertion_error()
+        { }
+    };
+
+
+    class out_of_range_error 
+        : public yato::runtime_error
     {
     public:
         out_of_range_error(const std::string & message)
-            : std::runtime_error(message)
+            : yato::runtime_error(message)
         { }
 
         out_of_range_error(const char* message)
-            : std::runtime_error(message)
+            : yato::runtime_error(message)
         { }
 
         ~out_of_range_error()
         { }
     };
 
+    class argument_error 
+        : public yato::runtime_error
+    {
+    public:
+        argument_error(const std::string & message)
+            : yato::runtime_error(message)
+        { }
+
+        argument_error(const char* message)
+            : yato::runtime_error(message)
+        { }
+
+        ~argument_error()
+        { }
+    };
+
+
+    class bad_state_error 
+        : public yato::runtime_error
+    {
+    public:
+        bad_state_error(const std::string & message)
+            : yato::runtime_error(message)
+        { }
+
+        bad_state_error(const char* message)
+            : yato::runtime_error(message)
+        { }
+
+        ~bad_state_error()
+        { }
+    };
 }
 
 #define YATO_THROW_ASSERT_EXCEPT(Message) throw yato::assertion_error(YATO_GET_FILE_LINE " " Message)

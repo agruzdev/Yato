@@ -12,8 +12,8 @@
 #include <queue>
 #include <mutex>
 
-#include "../message.h"
 #include "../actor.h"
+#include "message.h"
 
 namespace yato
 {

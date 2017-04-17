@@ -14,7 +14,6 @@
 #include <yato/any.h>
 
 #include "actor.h"
-#include "logger.h"
 
 namespace yato
 {
@@ -22,65 +21,24 @@ namespace actors
 {
     class pinned_thread_pool;
 
-    struct actor_context;
+    struct actor_cell;
     class abstract_executor;
     class actor_system;
-
-    /**
-     * Unique handle of an actor
-     */
-    class actor_ref final
-    {
-    private:
-        // Not owning pointer. Can copy
-        actor_system* m_system;
-
-        std::string m_name;
-        std::string m_path;
-
-        logger_ptr m_logger;
-
-        actor_ref(actor_system* system, const std::string & name);
-    public:
-
-        ~actor_ref() = default;
-
-        actor_ref(const actor_ref&) = default;
-        actor_ref(actor_ref&&) = default;
-
-        actor_ref& operator=(const actor_ref&) = default;
-        actor_ref& operator=(actor_ref&&) = default;
-
-        const std::string & get_name() const {
-            return m_name;
-        }
-
-        const std::string & get_path() const {
-            return m_path;
-        }
-
-        template <typename Ty_>
-        void tell(Ty_ && message);
-
-        const logger_ptr & logger() const {
-            return m_logger;
-        }
-
-        friend class actor_system;
-    };
-    //-------------------------------------------------------
-
 
     class actor_system final
     {
     private:
         std::string m_name;
-        std::map<std::string, std::unique_ptr<actor_context>> m_contexts;
+        logger_ptr m_logger;
+        std::map<std::string, std::unique_ptr<actor_cell>> m_contexts;
         std::unique_ptr<abstract_executor> m_executor;
+
+        actor_ref m_dead_letters;
+
         //-------------------------------------------------------
 
         actor_ref create_actor_impl(std::unique_ptr<actor_base> && a, const std::string & name);
-        void tell_impl(const actor_ref & toActor, yato::any && message);
+        void send_impl(const actor_ref & toActor, const actor_ref & fromActor, yato::any && message);
         //-------------------------------------------------------
 
     public:
@@ -95,21 +53,42 @@ namespace actors
         }
 
         template <typename Ty_>
-        void tell(const actor_ref & toActor, Ty_ && message) {
-            tell_impl(toActor, yato::any(message));
+        void send_message(const actor_ref & addressee, Ty_ && message) {
+            send_impl(addressee, dead_letters(), yato::any(message));
         }
 
-        const std::string & get_name() const {
+        template <typename Ty_>
+        void send_message(const actor_ref & addressee, Ty_ && message, const actor_ref & sender) {
+            send_impl(addressee, sender, yato::any(message));
+        }
+
+        const std::string & name() const {
             return m_name;
         }
+
+        const logger_ptr & logger() const {
+            return m_logger;
+        }
+
+        const actor_ref & dead_letters() const {
+            return m_dead_letters;
+        }
+
     };
     //-------------------------------------------------------
 
     template <typename Ty_>
     inline
-    void actor_ref::tell(Ty_ && message) {
-        m_system->tell(*this, message);
+    void actor_ref::tell(Ty_ && message) const {
+        m_system->send_message(*this, message);
     }
+
+    template <typename Ty_>
+    inline
+    void actor_ref::tell(Ty_ && message, const actor_ref & sender) const {
+        m_system->send_message(*this, sender, message);
+    }
+    
 
 
 }// namespace actors

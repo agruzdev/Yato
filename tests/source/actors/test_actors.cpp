@@ -15,6 +15,7 @@ namespace
         {
             try {
                 m_log->info(yato::any_cast<std::string>(message));
+                sender().tell("Nobody will hear me");
             }
             catch(...)
             { }
@@ -31,3 +32,6 @@ TEST(Yato_Actors, common)
     actor.tell(std::string("Hello, Actor!"));
 
 }
+
+
+
