@@ -11,7 +11,8 @@
 #include "../actor_system.h"
 
 #include "mailbox.h"
-#include "thread_pool.h"
+#include "pinned_executor.h"
+#include "dynamic_executor.h"
 
 namespace
 {
@@ -40,7 +41,8 @@ namespace actors
             throw yato::argument_error("System name can't be empty");
         }
         m_logger   = logger_factory::create(m_name);
-        m_executor = std::make_unique<pinned_thread_pool>();
+        //m_executor = std::make_unique<pinned_executor>();
+        m_executor = std::make_unique<dynamic_executor>(4, 5);
     }
     //-------------------------------------------------------
 
@@ -75,13 +77,12 @@ namespace actors
             ctx->act = std::move(a);
             ctx->act->init_base(ref);
             ctx->mbox.owner = ctx->act.get();
+            ctx->mbox.isOpen = true; // ToDo (a.gruzdev): Temporal solution.
             auto res = m_contexts.emplace(ref.get_path(), std::move(ctx));
             assert(res.second && "Failed to insert new actor context"); 
 
             context = &(*res.first->second);
         }
-
-        m_executor->execute(&context->mbox);
 
         return ref;
     }
@@ -108,6 +109,7 @@ namespace actors
                 mbox.condition.notify_one();
             }
         }
+        m_executor->execute(&mbox);
     }
     //-------------------------------------------------------
 

@@ -19,7 +19,7 @@ namespace yato
 {
 namespace actors
 {
-    class pinned_thread_pool;
+    class pinned_executor;
 
     struct actor_cell;
     class abstract_executor;

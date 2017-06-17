@@ -5,8 +5,10 @@
 * Copyright (c) 2016 Alexey Gruzdev
 */
 
+#include <future>
+
 #include "../logger.h"
-#include "thread_pool.h"
+#include "pinned_executor.h"
 
 namespace yato
 {
@@ -25,8 +27,9 @@ namespace actors
                         mbox->condition.wait(lock);
                     }
 
-                    if (mbox->queue.empty() && (!mbox->isOpen)) {
-                        // Terminate thread
+                    if ((mbox->queue.empty() && (!mbox->isOpen))) {
+                        // Terminate task
+                        mbox->isScheduled = false;
                         break;
                     }
 
@@ -41,34 +44,39 @@ namespace actors
             }
         }
         catch(std::exception & e) {
-            log->error("pinned_thread_pool[pinned_thread_function]: Thread failed with exception: %s", e.what());
+            log->error("pinned_executor[pinned_thread_function]: Thread failed with exception: %s", e.what());
         }
         catch (...) {
-            log->error("pinned_thread_pool[pinned_thread_function]: Thread failed with unknown exception!");
+            log->error("pinned_executor[pinned_thread_function]: Thread failed with unknown exception!");
         }
     }
     //-------------------------------------------------------
 
-    pinned_thread_pool::pinned_thread_pool() {
-        m_logger = logger_factory::create("pinned_thread_pool");
+    pinned_executor::pinned_executor() {
+        m_logger = logger_factory::create("pinned_executor");
     }
     //-------------------------------------------------------
 
-    pinned_thread_pool::~pinned_thread_pool() {
+    pinned_executor::~pinned_executor() {
         for(auto & t : m_threads) {
             t.join();
         }
     }
     //-------------------------------------------------------
 
-    bool pinned_thread_pool::execute(mailbox* mbox) {
+    bool pinned_executor::execute(mailbox* mbox) {
         std::unique_lock<std::mutex> lock(mbox->mutex);
         if(!mbox->isScheduled) {
+            mbox->isScheduled = true;
             m_threads.emplace_back([this, mbox]{ pinned_thread_function(m_logger, mbox); });
         }
         return true;
     }
     //-------------------------------------------------------
+
+
+
+
 
 } // namespace actors
 

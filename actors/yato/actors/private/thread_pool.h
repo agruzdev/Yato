@@ -5,13 +5,15 @@
 * Copyright (c) 2016 Alexey Gruzdev
 */
 
-#ifndef _YATO_ACTORS_THREADPOOL_H_
-#define _YATO_ACTORS_THREADPOOL_H_
+#ifndef _YATO_ACTORS_THREAD_POOL_H_
+#define _YATO_ACTORS_THREAD_POOL_H_
 
 #include <vector>
 #include <thread>
+#include <queue>
+#include <future>
 
-#include "abstract_executor.h"
+#include "../logger.h"
 
 namespace yato
 {
@@ -20,27 +22,87 @@ namespace actors
 
     /**
      * Simplest thread pool.
-     * Creates a new thread for the each mailbox
      */
-    class pinned_thread_pool
-        : public abstract_executor
+    class thread_pool
+        final
     {
-    private:
+        using task_type = std::function<void()>;
+
         std::vector<std::thread> m_threads;
-        logger_ptr m_logger;
+        std::queue<task_type> m_tasks;
+
+        std::mutex m_mutex;
+        std::condition_variable m_cvar;
+
+        bool m_stop = false;
+
+        logger_ptr m_log;
 
     public:
-        pinned_thread_pool();
-        ~pinned_thread_pool();
+        thread_pool(size_t threads_num) {
+            auto thread_function = [this] {
+                for (;;) {
+                    task_type task;
+                    {
+                        std::unique_lock<std::mutex> lock(m_mutex);
+                        m_cvar.wait(lock, [this] { return m_stop || !m_tasks.empty(); });
+                        if (m_stop && m_tasks.empty()) {
+                            break;
+                        }
+                        if (!m_tasks.empty()) {
+                            task = std::move(m_tasks.front());
+                            m_tasks.pop();
+                        }
+                    }
+                    // Execute
+                    if (task) {
+                        try {
+                            task();
+                        }
+                        catch (std::exception & e) {
+                            m_log->error("yato::actors::thread_pool[thread_function]: Unhandled exception: %s", e.what());
+                        }
+                        catch (...) {
+                            m_log->error("yato::actors::thread_pool[thread_function]: Unhandled exception.");
+                        }
+                    }
+                }
+            };
 
-        pinned_thread_pool(const pinned_thread_pool&) = delete;
-        pinned_thread_pool& operator=(const pinned_thread_pool&) = delete;
+            for(size_t i = 0; i < threads_num; ++i) {
+                m_threads.emplace_back(thread_function);
+            }
+        }
 
-        bool execute(mailbox* mbox) override;
+        ~thread_pool() {
+            {
+                std::unique_lock<std::mutex> lock(m_mutex);
+                m_stop = true;
+                m_cvar.notify_all();
+            }
+            for(auto & thread : m_threads) {
+                thread.join();
+            }
+        }
+
+        thread_pool(const thread_pool&) = delete;
+        thread_pool& operator=(const thread_pool&) = delete;
+
+        // Add task
+        template <typename FunTy_, typename ... Args_>
+        void enqueue(FunTy_ && function, Args_ && ... args) {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            if(!m_stop) {
+                m_tasks.emplace(std::bind(std::forward<FunTy_>(function), std::forward<Args_>(args)...));
+            } else {
+                m_log->warning("yato::actor::thread_pool[enqueue]: Failed to enqueue a new task. Pool is already stopped.");
+            }
+            m_cvar.notify_one();
+        }
     };
 
 } // namespace actors
 
 } // namespace yato
 
-#endif //_YATO_ACTORS_THREADPOOL_H_
+#endif //_YATO_ACTORS_THREAD_POOL_H_

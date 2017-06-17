@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 
-#include <yato/actors/private/thread_pool2.h>
+#include <yato/actors/private/thread_pool.h>
 
 TEST(Yato_Actors, thread_pool_1)
 {
