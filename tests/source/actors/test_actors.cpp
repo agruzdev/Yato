@@ -9,17 +9,15 @@ namespace
     class EchoActor
         : public yato::actors::actor<>
     {
-        yato::actors::logger_ptr m_log = yato::actors::logger_factory::create("Echo");
-
         void pre_start() override 
         {
-            m_log->info("pre_start() is called!");
+            log().info("pre_start() is called!");
         }
 
         void receive(const yato::any& message) override
         {
             try {
-                m_log->info(yato::any_cast<std::string>(message));
+                log().info(yato::any_cast<std::string>(message));
                 sender().tell("Nobody will hear me");
             }
             catch(...)
@@ -28,7 +26,7 @@ namespace
 
         void post_stop() override
         {
-            m_log->info("post_stop() is called!");
+            log().info("post_stop() is called!");
         }
     };
 }

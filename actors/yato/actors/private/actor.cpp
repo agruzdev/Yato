@@ -14,14 +14,18 @@ namespace yato
 {
 namespace actors
 {
+
+    actor_base::actor_base()
+    { }
+    //-------------------------------------------------------
+
     actor_base::~actor_base()
     { }
     //-------------------------------------------------------
 
     void actor_base::init_base(const actor_ref & ref) 
     {
-        //m_context = std::make_unique<actor_context>(ref);
-        m_context = new actor_context{ ref };
+        m_context = std::make_unique<actor_context>(ref);
     }
     //-------------------------------------------------------
 
@@ -34,33 +38,27 @@ namespace actors
     }
     //-------------------------------------------------------
 
+    const logger & actor_base::log() const
+    {
+        if (m_context == nullptr) {
+            throw yato::bad_state_error("Actor is not initialized yet");
+        }
+        assert(m_context->log != nullptr);
+        return *m_context->log;
+    }
+    //-------------------------------------------------------
+
     void actor_base::receive_message(const message & message) noexcept
     {
         assert(m_context != nullptr);
-        try {
-            do_unwrap_message(message);
-        }
-        catch(std::exception & e) {
-            m_context->log->error("actor_base[receive_message]: Unhandled exception: %s", e.what());
-        }
-        catch (...) {
-            m_context->log->error("actor_base[receive_message]: Unknown exception!");
-        }
+        do_unwrap_message(message);
     }
     //-------------------------------------------------------
 
     void actor_base::recieve_system_message(const system_signal& signal) noexcept
     {
         assert(m_context != nullptr);
-        try {
-            do_process_system_message(signal);
-        }
-        catch (std::exception & e) {
-            m_context->log->error("actor_base[receive_message]: Unhandled exception: %s", e.what());
-        }
-        catch (...) {
-            m_context->log->error("actor_base[receive_message]: Unknown exception!");
-        }
+        do_process_system_message(signal);
     }
     //-------------------------------------------------------
 

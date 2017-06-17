@@ -30,7 +30,7 @@ namespace actors
         actor_context(const actor_ref & ref)
             : self(ref) 
         {
-            log = logger_factory::create(ref.get_name());
+            log = logger_factory::create(std::string("Actor[") + ref.get_name() + "]");
         }
     };
 

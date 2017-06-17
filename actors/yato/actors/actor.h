@@ -47,8 +47,7 @@ namespace actors
     class actor_base
     {
     private:
-        //std::unique_ptr<actor_context> m_context;
-        actor_context* m_context;
+        std::unique_ptr<actor_context> m_context;
         //-------------------------------------------------------
 
     protected:
@@ -65,9 +64,20 @@ namespace actors
 
         //-------------------------------------------------------
 
+        /**
+         * Get self reference
+         */
         const actor_ref & self() const;
 
+        /**
+         * Get actor logger
+         */
+        const logger & log() const;
+        //-------------------------------------------------------
+
     public:
+        actor_base();
+
         virtual ~actor_base();
         
         /**
@@ -106,7 +116,15 @@ namespace actors
 
         void unwrap_message_impl(mailbox_no_filter, const message & message) 
         {
-            receive(message.payload);
+            try {
+                receive(message.payload);
+            }
+            catch(std::exception & e) {
+                log().error("actor[receive]: Unhandled exception: %s", e.what());
+            }
+            catch (...) {
+                log().error("actor[receive]: Unknown exception!");
+            }
         }
 
         template <typename... Alternatives_>
@@ -114,13 +132,14 @@ namespace actors
         {
             (void)message;
             //ToDo (a.gruzdev): To be implemetned
+            throw std::logic_error("Filtered receive is not implemented");
         }
 
         /**
          * Unwrap message and check dynamic type of the payload
          * Apply filter if specified and invoke receive()
          */
-        void do_unwrap_message(const message & message) override
+        void do_unwrap_message(const message & message) override final
         {
             m_sender = &message.sender;
             unwrap_message_impl(filter_type{}, message);
@@ -128,19 +147,27 @@ namespace actors
             m_sender = nullptr; 
         }
 
-        void do_process_system_message(const system_signal& signal) override 
+        void do_process_system_message(const system_signal& signal) override final
         {
-            switch (signal)
-            {
-            case yato::actors::system_signal::start:
-                pre_start();
-                break;
-            case yato::actors::system_signal::stop:
-                post_stop();
-                break;
-            default:
-                assert(false);
-                break;
+            try {
+                switch (signal)
+                {
+                case yato::actors::system_signal::start:
+                    pre_start();
+                    break;
+                case yato::actors::system_signal::stop:
+                    post_stop();
+                    break;
+                default:
+                    assert(false);
+                    break;
+                }
+            }
+            catch (std::exception & e) {
+                log().error("actor[system_signal]: Unhandled exception: %s", e.what());
+            }
+            catch (...) {
+                log().error("actor[system_signal]: Unknown exception!");
             }
         }
 

@@ -17,7 +17,7 @@ namespace yato
 {
 
     class runtime_error
-    : public std::runtime_error
+        : public std::runtime_error
     {
     public:
         runtime_error(const std::string & message)
