@@ -11,6 +11,11 @@ namespace
     {
         yato::actors::logger_ptr m_log = yato::actors::logger_factory::create("Echo");
 
+        void pre_start() override 
+        {
+            m_log->info("pre_start() is called!");
+        }
+
         void receive(const yato::any& message) override
         {
             try {
@@ -19,6 +24,11 @@ namespace
             }
             catch(...)
             { }
+        }
+
+        void post_stop() override
+        {
+            m_log->info("post_stop() is called!");
         }
     };
 }

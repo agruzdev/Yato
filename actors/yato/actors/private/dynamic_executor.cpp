@@ -17,11 +17,13 @@ namespace actors
     void mailbox_function(dynamic_executor* executor, mailbox* mbox, uint32_t throughput)
     {
         for(uint32_t count = 0; count < throughput; ++count) {
+            process_all_system_messages(mbox);
+
             std::unique_ptr<message> msg = nullptr;
             {
                 std::unique_lock<std::mutex> lock(mbox->mutex);
 
-                //if (mbox->queue.empty() || !mbox->isOpen) {
+                //if (mbox->queue.empty() || !mbox->is_open) {
                 if (mbox->queue.empty()) {
                     // Terminate task
                     break;
@@ -37,7 +39,7 @@ namespace actors
         // Schedule again, moving to the end of the queue
         {
             std::unique_lock<std::mutex> lock(mbox->mutex);
-            mbox->isScheduled = false;
+            mbox->is_scheduled = false;
         }
         executor->execute(mbox);
     }
@@ -61,7 +63,7 @@ namespace actors
         assert(mbox != nullptr);
         {
             std::unique_lock<std::mutex> lock(mbox->mutex);
-            if (!mbox->isScheduled && !mbox->queue.empty() && mbox->isOpen) {
+            if (!mbox->is_scheduled && !mbox->queue.empty() && mbox->is_open) {
                 m_tpool->enqueue(mailbox_function, this, mbox, m_throughput);
             }
         }

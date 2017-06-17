@@ -50,10 +50,21 @@ namespace actors
     {
         for(auto & entry : m_contexts) {
             std::unique_lock<std::mutex> lock(entry.second->mbox.mutex);
-            entry.second->mbox.isOpen = false;
+            entry.second->mbox.is_open = false;
             entry.second->mbox.condition.notify_one();
         }
         m_executor.reset();
+    }
+    //-------------------------------------------------------
+
+    void actor_system::enqueue_system_signal(mailbox* mbox, const system_signal & signal)
+    {
+        assert(mbox != nullptr);
+
+        std::unique_lock<std::mutex> lock(mbox->mutex);
+
+        mbox->sys_queue.push(signal);
+        mbox->condition.notify_one();
     }
     //-------------------------------------------------------
 
@@ -77,12 +88,15 @@ namespace actors
             ctx->act = std::move(a);
             ctx->act->init_base(ref);
             ctx->mbox.owner = ctx->act.get();
-            ctx->mbox.isOpen = true; // ToDo (a.gruzdev): Temporal solution.
+            ctx->mbox.is_open = true; // ToDo (a.gruzdev): Temporal solution.
             auto res = m_contexts.emplace(ref.get_path(), std::move(ctx));
             assert(res.second && "Failed to insert new actor context"); 
 
             context = &(*res.first->second);
         }
+
+        enqueue_system_signal(&context->mbox, system_signal::start);
+        m_executor->execute(&context->mbox);
 
         return ref;
     }
@@ -104,7 +118,7 @@ namespace actors
         auto msg = std::make_unique<message>(std::move(userMessage), fromActor);
         {
             std::unique_lock<std::mutex> lock(mbox.mutex);
-            if (it->second->mbox.isOpen) {
+            if (it->second->mbox.is_open) {
                 mbox.queue.push(std::move(msg));
                 mbox.condition.notify_one();
             }

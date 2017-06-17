@@ -18,13 +18,15 @@ namespace actors
     { }
     //-------------------------------------------------------
 
-    void actor_base::init_base(const actor_ref & ref) {
+    void actor_base::init_base(const actor_ref & ref) 
+    {
         //m_context = std::make_unique<actor_context>(ref);
         m_context = new actor_context{ ref };
     }
     //-------------------------------------------------------
 
-    const actor_ref & actor_base::self() const {
+    const actor_ref & actor_base::self() const 
+    {
         if(m_context == nullptr) {
             throw yato::bad_state_error("Actor is not initialized yet");
         }
@@ -36,7 +38,7 @@ namespace actors
     {
         assert(m_context != nullptr);
         try {
-            unwrap_message(message);
+            do_unwrap_message(message);
         }
         catch(std::exception & e) {
             m_context->log->error("actor_base[receive_message]: Unhandled exception: %s", e.what());
@@ -47,6 +49,20 @@ namespace actors
     }
     //-------------------------------------------------------
 
+    void actor_base::recieve_system_message(const system_signal& signal) noexcept
+    {
+        assert(m_context != nullptr);
+        try {
+            do_process_system_message(signal);
+        }
+        catch (std::exception & e) {
+            m_context->log->error("actor_base[receive_message]: Unhandled exception: %s", e.what());
+        }
+        catch (...) {
+            m_context->log->error("actor_base[receive_message]: Unknown exception!");
+        }
+    }
+    //-------------------------------------------------------
 
 } // namespace actors
 

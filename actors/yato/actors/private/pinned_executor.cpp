@@ -19,17 +19,19 @@ namespace actors
     {
         try {
             for (;;) {
+                process_all_system_messages(mbox);
+
                 std::unique_ptr<message> msg = nullptr;
                 {
                     std::unique_lock<std::mutex> lock(mbox->mutex);
 
-                    while (mbox->queue.empty() && mbox->isOpen) {
+                    while (mbox->queue.empty() && mbox->is_open) {
                         mbox->condition.wait(lock);
                     }
 
-                    if ((mbox->queue.empty() && (!mbox->isOpen))) {
+                    if ((mbox->queue.empty() && (!mbox->is_open))) {
                         // Terminate task
-                        mbox->isScheduled = false;
+                        mbox->is_scheduled = false;
                         break;
                     }
 
@@ -66,8 +68,8 @@ namespace actors
 
     bool pinned_executor::execute(mailbox* mbox) {
         std::unique_lock<std::mutex> lock(mbox->mutex);
-        if(!mbox->isScheduled) {
-            mbox->isScheduled = true;
+        if(!mbox->is_scheduled) {
+            mbox->is_scheduled = true;
             m_threads.emplace_back([this, mbox]{ pinned_thread_function(m_logger, mbox); });
         }
         return true;

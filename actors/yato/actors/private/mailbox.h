@@ -33,13 +33,14 @@ namespace actors
     struct mailbox
     {
         std::queue<std::unique_ptr<message>> queue;
+        std::queue<system_signal> sys_queue;
         std::mutex mutex;
         std::condition_variable condition;
 
         actor_base* owner = nullptr;
         //mailbox_status status = mailbox_status::opened;
-        bool isOpen = true;
-        bool isScheduled = false;
+        bool is_open = true;
+        bool is_scheduled = false;
     };
 
 } // namespace actors

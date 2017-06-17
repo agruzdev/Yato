@@ -19,9 +19,10 @@ namespace yato
 {
 namespace actors
 {
-    class pinned_executor;
 
     struct actor_cell;
+    struct mailbox;
+
     class abstract_executor;
     class actor_system;
 
@@ -36,6 +37,7 @@ namespace actors
         actor_ref m_dead_letters;
 
         //-------------------------------------------------------
+        static void enqueue_system_signal(mailbox* mbox, const system_signal & signal);
 
         actor_ref create_actor_impl(std::unique_ptr<actor_base> && a, const std::string & name);
         void send_impl(const actor_ref & toActor, const actor_ref & fromActor, yato::any && message);

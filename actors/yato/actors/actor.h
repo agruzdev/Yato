@@ -21,6 +21,8 @@ namespace yato
 namespace actors
 {
 
+    enum class system_signal;
+
     /**
      * Helper structs to specify mailbox filter for the actor
      */
@@ -54,7 +56,13 @@ namespace actors
          * Unwrap message and check dynamic type of the payload
          * Apply filter if specified and invoke receive() 
          */
-        virtual void unwrap_message(const message & message) = 0;
+        virtual void do_unwrap_message(const message & message) = 0;
+
+        /**
+         * Process system message in the derived actor
+         */
+        virtual void do_process_system_message(const system_signal& signal) = 0;
+
         //-------------------------------------------------------
 
         const actor_ref & self() const;
@@ -66,6 +74,11 @@ namespace actors
          * Handle message
          */
         void receive_message(const message & message) noexcept;
+
+        /**
+         * Handle system message
+         */
+        void recieve_system_message(const system_signal& signal) noexcept;
 
         /**
          * Used by actor system to initialize the actor
@@ -107,16 +120,52 @@ namespace actors
          * Unwrap message and check dynamic type of the payload
          * Apply filter if specified and invoke receive()
          */
-        void unwrap_message(const message & message) override
+        void do_unwrap_message(const message & message) override
         {
             m_sender = &message.sender;
             unwrap_message_impl(filter_type{}, message);
             // ToDo (a.gruzdev): Use finally
             m_sender = nullptr; 
         }
+
+        void do_process_system_message(const system_signal& signal) override 
+        {
+            switch (signal)
+            {
+            case yato::actors::system_signal::start:
+                pre_start();
+                break;
+            case yato::actors::system_signal::stop:
+                post_stop();
+                break;
+            default:
+                assert(false);
+                break;
+            }
+        }
+
     protected:
 
+        /**
+         * Main method for processing all incoming messages
+         */
         virtual void receive(const received_type & message) = 0;
+
+        //-------------------------------------------------------
+
+        /**
+         * Optional pre-start hook
+         * Is called before first message
+         */
+        virtual void pre_start() { }
+
+        /**
+         * Optional post-stop hook
+         * Is called after the last message
+         */
+        virtual void post_stop() { }
+
+
         //-------------------------------------------------------
 
         const actor_ref & sender() const {

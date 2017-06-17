@@ -19,6 +19,14 @@ namespace yato
 namespace actors
 {
 
+    enum class system_signal
+    {
+        none,
+        start,
+        stop
+    };
+
+
     struct message
     {
         yato::any payload;
