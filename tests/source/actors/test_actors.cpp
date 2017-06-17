@@ -18,10 +18,11 @@ namespace
         {
             try {
                 log().info(yato::any_cast<std::string>(message));
-                sender().tell("Nobody will hear me");
             }
-            catch(...)
-            { }
+            catch(...) {
+                log().error("Bad any_cast!");
+            }
+            sender().tell("Nobody will hear me");
         }
 
         void post_stop() override

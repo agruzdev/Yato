@@ -28,7 +28,7 @@ TEST(Yato_Actors, thread_pool_3)
 {
     constexpr uint32_t N = 4096;
 
-    std::atomic_uint32_t counter = 0;
+    std::atomic<uint32_t> counter{ 0 };
 
     {
         yato::actors::thread_pool tpool(8);

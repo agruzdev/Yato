@@ -35,12 +35,13 @@ namespace actors
 
     actor_system::actor_system(const std::string & name)
         : m_name(name)
-        , m_dead_letters(this, "")
+        , m_dead_letters(this, DEAD_LETTERS)
     {
         if(name.empty()) {
             throw yato::argument_error("System name can't be empty");
         }
-        m_logger   = logger_factory::create(m_name);
+        m_logger = logger_factory::create(std::string("ActorSystem[") + m_name + "]");
+        m_logger->set_filter(log_level::verbose);
         //m_executor = std::make_unique<pinned_executor>();
         m_executor = std::make_unique<dynamic_executor>(4, 5);
     }
@@ -105,7 +106,7 @@ namespace actors
     void actor_system::send_impl(const actor_ref & toActor, const actor_ref & fromActor, yato::any && userMessage)
     {
         if(toActor.get_name() == DEAD_LETTERS) {
-            m_logger->verbose("A message was delivered to deadLetters.");
+            m_logger->verbose("A message was delivered to DeadLetters.");
             return;
         }
         auto it = m_contexts.find(toActor.get_path());

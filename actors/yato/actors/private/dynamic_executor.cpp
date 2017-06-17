@@ -63,7 +63,8 @@ namespace actors
         assert(mbox != nullptr);
         {
             std::unique_lock<std::mutex> lock(mbox->mutex);
-            if (!mbox->is_scheduled && !mbox->queue.empty() && mbox->is_open) {
+            if (!mbox->is_scheduled && (!mbox->queue.empty() || !mbox->sys_queue.empty()) && mbox->is_open) {
+                mbox->is_scheduled = true;
                 m_tpool->enqueue(mailbox_function, this, mbox, m_throughput);
             }
         }

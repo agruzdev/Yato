@@ -18,7 +18,6 @@ namespace actors
     class abstract_executor
     {
     public:
-        static constexpr uint32_t DEFAULT_SYSTEM_THROUGHPUT = 10;
 
         virtual ~abstract_executor() = default;
 
@@ -30,8 +29,8 @@ namespace actors
 
 
     inline 
-    void process_all_system_messages(mailbox* mbox, uint32_t throughput = abstract_executor::DEFAULT_SYSTEM_THROUGHPUT) {
-        while(throughput--) {
+    void process_all_system_messages(mailbox* mbox) {
+        for(;;) {
             system_signal signal = system_signal::none;
             {
                 std::unique_lock<std::mutex> lock(mbox->mutex);

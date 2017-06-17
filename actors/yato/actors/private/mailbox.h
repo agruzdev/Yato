@@ -11,6 +11,7 @@
 
 #include <queue>
 #include <mutex>
+#include <condition_variable>
 
 #include "../actor.h"
 #include "message.h"
