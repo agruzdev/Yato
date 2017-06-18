@@ -17,6 +17,7 @@
 namespace
 {
     static std::string DEAD_LETTERS = "_dead_";
+    static std::string POISON_PILL  = "_poison_";
 }
 
 namespace yato
@@ -29,12 +30,12 @@ namespace actors
     {
         std::unique_ptr<actor_base> act;
         mailbox mbox;
-        //bool active;
     };
     //-------------------------------------------------------
 
     actor_system::actor_system(const std::string & name)
         : m_name(name)
+        , m_actors_num(0)
         , m_dead_letters(this, DEAD_LETTERS)
     {
         if(name.empty()) {
@@ -49,10 +50,9 @@ namespace actors
 
     actor_system::~actor_system() 
     {
-        for(auto & entry : m_contexts) {
-            std::unique_lock<std::mutex> lock(entry.second->mbox.mutex);
-            entry.second->mbox.is_open = false;
-            entry.second->mbox.condition.notify_one();
+        {
+            std::unique_lock<std::mutex> lock(m_actors_mutex);
+            m_actors_cv.wait(lock, [this]() { return m_actors_num == 0; });
         }
         m_executor.reset();
     }
@@ -87,13 +87,17 @@ namespace actors
         {
             auto ctx = std::make_unique<actor_cell>();
             ctx->act = std::move(a);
-            ctx->act->init_base(ref);
+            ctx->act->init_base_(this, ref);
             ctx->mbox.owner = ctx->act.get();
             ctx->mbox.is_open = true; // ToDo (a.gruzdev): Temporal solution.
             auto res = m_contexts.emplace(ref.get_path(), std::move(ctx));
             assert(res.second && "Failed to insert new actor context"); 
 
             context = &(*res.first->second);
+        }
+        {
+            std::unique_lock<std::mutex> lock(m_actors_mutex);
+            ++m_actors_num;
         }
 
         enqueue_system_signal(&context->mbox, system_signal::start);
@@ -103,15 +107,15 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    void actor_system::send_impl(const actor_ref & toActor, const actor_ref & fromActor, yato::any && userMessage)
+    void actor_system::send_impl(const actor_ref & to_actor, const actor_ref & fromActor, yato::any && userMessage)
     {
-        if(toActor.get_name() == DEAD_LETTERS) {
+        if(to_actor == dead_letters()) {
             m_logger->verbose("A message was delivered to DeadLetters.");
             return;
         }
-        auto it = m_contexts.find(toActor.get_path());
+        auto it = m_contexts.find(to_actor.get_path());
         if(it == m_contexts.end()) {
-            throw yato::runtime_error("Actor " + toActor.get_path() + " is not found!");
+            throw yato::runtime_error("Actor " + to_actor.get_path() + " is not found!");
         }
 
         auto & mbox = it->second->mbox;
@@ -119,7 +123,7 @@ namespace actors
         auto msg = std::make_unique<message>(std::move(userMessage), fromActor);
         {
             std::unique_lock<std::mutex> lock(mbox.mutex);
-            if (it->second->mbox.is_open) {
+            if (mbox.is_open) {
                 mbox.queue.push(std::move(msg));
                 mbox.condition.notify_one();
             }
@@ -127,6 +131,53 @@ namespace actors
         m_executor->execute(&mbox);
     }
     //-------------------------------------------------------
+
+    void actor_system::stop_impl_(actor_cell* act)
+    {
+        assert(act != nullptr);
+        bool execute = false;
+        {
+            std::unique_lock<std::mutex> lock(act->mbox.mutex);
+            if (act->mbox.is_open) {
+                act->mbox.is_open = false;
+                act->mbox.sys_queue.push(system_signal::stop);
+                execute = true;
+            }
+        }
+        if (execute) {
+            m_executor->execute(&act->mbox);
+        }
+    }
+    //-------------------------------------------------------
+
+    void actor_system::stop(const actor_ref & addressee) 
+    {
+        auto it = m_contexts.find(addressee.get_path());
+        if (it == m_contexts.end()) {
+            throw yato::runtime_error("Actor " + addressee.get_path() + " is not found!");
+        }
+        stop_impl_(it->second.get());
+    }
+    //--------------------------------------------------------
+
+    void actor_system::stop_all()
+    {
+        std::for_each(m_contexts.begin(), m_contexts.end(), [this](decltype(m_contexts)::value_type & entry) {
+            stop_impl_(entry.second.get());
+        });
+    }
+    //--------------------------------------------------------
+
+    void actor_system::notify_on_stop_() 
+    {
+        {
+            std::unique_lock<std::mutex> lock(m_actors_mutex);
+            assert(m_actors_num > 0);
+            if(--m_actors_num == 0) {
+                m_actors_cv.notify_one();
+            }
+        }
+    }
 
 
 } // namespace actors

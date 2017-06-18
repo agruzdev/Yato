@@ -16,21 +16,25 @@ namespace actors
     static
     void mailbox_function(dynamic_executor* executor, mailbox* mbox, uint32_t throughput)
     {
-        for(uint32_t count = 0; count < throughput; ++count) {
+        for(uint32_t count = 0; count < throughput;) {
             process_all_system_messages(mbox);
 
             std::unique_ptr<message> msg = nullptr;
             {
                 std::unique_lock<std::mutex> lock(mbox->mutex);
 
-                //if (mbox->queue.empty() || !mbox->is_open) {
-                if (mbox->queue.empty()) {
+                if(!mbox->sys_queue.empty()) {
+                    continue;
+                }
+
+                if (mbox->queue.empty() || !mbox->is_open) {
                     // Terminate task
                     break;
                 }
 
                 msg = std::move(mbox->queue.front());
                 mbox->queue.pop();
+                ++count;
             }
             if (msg) {
                 mbox->owner->receive_message(*msg);
@@ -63,9 +67,11 @@ namespace actors
         assert(mbox != nullptr);
         {
             std::unique_lock<std::mutex> lock(mbox->mutex);
-            if (!mbox->is_scheduled && (!mbox->queue.empty() || !mbox->sys_queue.empty()) && mbox->is_open) {
-                mbox->is_scheduled = true;
-                m_tpool->enqueue(mailbox_function, this, mbox, m_throughput);
+            if (!mbox->is_scheduled) {
+                if ((!mbox->queue.empty() && mbox->is_open) || (!mbox->sys_queue.empty())) {
+                    mbox->is_scheduled = true;
+                    m_tpool->enqueue(mailbox_function, this, mbox, m_throughput);
+                }
             }
         }
         return true;

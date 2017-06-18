@@ -19,16 +19,18 @@ namespace yato
 {
 namespace actors
 {
+    class actor_system;
 
     struct actor_context
     {
-        logger_ptr log;
+        actor_system* system;
         actor_ref self;
+        logger_ptr log;
 
         //-------------------------------------------------------
         explicit
-        actor_context(const actor_ref & ref)
-            : self(ref) 
+        actor_context(actor_system* system, const actor_ref & ref)
+            : system(system), self(ref)
         {
             log = logger_factory::create(std::string("Actor[") + ref.get_name() + "]");
         }

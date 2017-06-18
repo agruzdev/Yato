@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 
+#include <thread>
 
 #include <yato/actors/actor_system.h>
 #include <yato/actors/logger.h>
@@ -40,6 +41,8 @@ TEST(Yato_Actors, common)
     auto actor = system.create_actor<EchoActor>("echo1");
     actor.tell(std::string("Hello, Actor!"));
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    system.stop(actor);
 }
 
 

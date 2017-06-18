@@ -39,11 +39,13 @@ namespace actors
         actor_ref& operator=(const actor_ref&) = default;
         actor_ref& operator=(actor_ref&&) = default;
 
-        const std::string & get_name() const {
+        const std::string & get_name() const 
+        {
             return m_name;
         }
 
-        const std::string & get_path() const {
+        const std::string & get_path() const 
+        {
             return m_path;
         }
 
@@ -52,6 +54,11 @@ namespace actors
 
         template <typename Ty_>
         void tell(Ty_ && message, const actor_ref & sender) const;
+
+        bool operator == (const actor_ref & other) const 
+        {
+            return m_path == other.m_path;
+        }
 
         friend class actor_system;
     };

@@ -7,6 +7,7 @@
 
 #include "../actor.h"
 
+#include "../actor_system.h"
 #include "actor_context.h"
 #include "message.h"
 
@@ -23,9 +24,9 @@ namespace actors
     { }
     //-------------------------------------------------------
 
-    void actor_base::init_base(const actor_ref & ref) 
+    void actor_base::init_base_(actor_system* system, const actor_ref & ref) 
     {
-        m_context = std::make_unique<actor_context>(ref);
+        m_context = std::make_unique<actor_context>(system, ref);
     }
     //-------------------------------------------------------
 
@@ -58,7 +59,36 @@ namespace actors
     void actor_base::recieve_system_message(const system_signal& signal) noexcept
     {
         assert(m_context != nullptr);
-        do_process_system_message(signal);
+        
+        switch (signal)
+        {
+        case yato::actors::system_signal::start:
+            try {
+                pre_start();
+            }
+            catch (std::exception & e) {
+                log().error("actor[system_signal]: Unhandled exception: %s", e.what());
+            }
+            catch (...) {
+                log().error("actor[system_signal]: Unknown exception!");
+            }
+            break;
+        case yato::actors::system_signal::stop:
+            try {
+                post_stop();
+            }
+            catch (std::exception & e) {
+                log().error("actor[system_signal]: Unhandled exception: %s", e.what());
+            }
+            catch (...) {
+                log().error("actor[system_signal]: Unknown exception!");
+            }
+            m_context->system->notify_on_stop_();
+            break;
+        default:
+            assert(false);
+            break;
+        }
     }
     //-------------------------------------------------------
 

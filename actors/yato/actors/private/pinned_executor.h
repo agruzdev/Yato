@@ -19,6 +19,8 @@ namespace yato
 namespace actors
 {
 
+    struct thread_context;
+
     /**
      * Simplest thread pool.
      * Creates a new thread for the each mailbox

@@ -14,6 +14,7 @@ namespace yato
 {
 namespace actors
 {
+
     static
     void pinned_thread_function(const logger_ptr & log, mailbox* mbox) noexcept
     {
@@ -29,9 +30,12 @@ namespace actors
                         mbox->condition.wait(lock);
                     }
 
-                    if ((mbox->queue.empty() && (!mbox->is_open))) {
-                        // Terminate task
-                        mbox->is_scheduled = false;
+                    if(!mbox->sys_queue.empty()) {
+                        continue;
+                    }
+
+                    if(!mbox->is_open) {
+                        // Terminate thread
                         break;
                     }
 
@@ -72,6 +76,7 @@ namespace actors
             mbox->is_scheduled = true;
             m_threads.emplace_back([this, mbox]{ pinned_thread_function(m_logger, mbox); });
         }
+        mbox->condition.notify_one();
         return true;
     }
     //-------------------------------------------------------

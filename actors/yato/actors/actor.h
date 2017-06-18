@@ -57,12 +57,19 @@ namespace actors
          */
         virtual void do_unwrap_message(const message & message) = 0;
 
-        /**
-         * Process system message in the derived actor
-         */
-        virtual void do_process_system_message(const system_signal& signal) = 0;
-
         //-------------------------------------------------------
+
+        /**
+        * Optional pre-start hook
+        * Is called before first message
+        */
+        virtual void pre_start() = 0;
+
+        /**
+        * Optional post-stop hook
+        * Is called after the last message
+        */
+        virtual void post_stop() = 0;
 
         /**
          * Get self reference
@@ -93,7 +100,7 @@ namespace actors
         /**
          * Used by actor system to initialize the actor
          */
-        void init_base(const actor_ref & ref);
+        void init_base_(actor_system* system, const actor_ref & ref);
     };
     //-------------------------------------------------------
 
@@ -147,30 +154,6 @@ namespace actors
             m_sender = nullptr; 
         }
 
-        void do_process_system_message(const system_signal& signal) override final
-        {
-            try {
-                switch (signal)
-                {
-                case yato::actors::system_signal::start:
-                    pre_start();
-                    break;
-                case yato::actors::system_signal::stop:
-                    post_stop();
-                    break;
-                default:
-                    assert(false);
-                    break;
-                }
-            }
-            catch (std::exception & e) {
-                log().error("actor[system_signal]: Unhandled exception: %s", e.what());
-            }
-            catch (...) {
-                log().error("actor[system_signal]: Unknown exception!");
-            }
-        }
-
     protected:
 
         /**
@@ -184,13 +167,13 @@ namespace actors
          * Optional pre-start hook
          * Is called before first message
          */
-        virtual void pre_start() { }
+        virtual void pre_start() override { }
 
         /**
          * Optional post-stop hook
          * Is called after the last message
          */
-        virtual void post_stop() { }
+        virtual void post_stop() override { }
 
 
         //-------------------------------------------------------
