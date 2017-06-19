@@ -338,3 +338,30 @@ TEST(Yato_TypeTraits, take_const_from)
         static_assert(std::is_volatile<t4>::value, "yato::take_const_from failed");
     }
 }
+
+
+namespace
+{
+    int inv_foo(double) { return 42; }
+    int inv_bar() { return 24; }
+}
+
+TEST(Yato_TypeTraits, is_invokable) 
+{
+    YATO_MAYBE_UNUSED(&inv_foo);
+    YATO_MAYBE_UNUSED(&inv_bar);
+
+    static_assert( yato::is_invocable<decltype(&inv_foo), double>::value, "yato::is_invokable failed");
+    static_assert( yato::is_invocable<decltype(&inv_foo), float>::value, "yato::is_invokable failed");
+    static_assert(!yato::is_invocable<decltype(&inv_foo), int*>::value, "yato::is_invokable failed");
+    static_assert(!yato::is_invocable<decltype(&inv_foo), void>::value, "yato::is_invokable failed");
+    static_assert(!yato::is_invocable<decltype(&inv_foo)>::value, "yato::is_invokable failed");
+    static_assert(!yato::is_invocable<decltype(&inv_foo), double, int>::value, "yato::is_invokable failed");
+    static_assert(!yato::is_invocable<decltype(&inv_foo), double, void>::value, "yato::is_invokable failed");
+
+    static_assert( yato::is_invocable_v<decltype(&inv_bar)>, "yato::is_invokable failed");
+    static_assert(!yato::is_invocable_v<decltype(&inv_bar), void>, "yato::is_invokable failed");
+    static_assert(!yato::is_invocable_v<decltype(&inv_bar), void*>, "yato::is_invokable failed");
+    static_assert(!yato::is_invocable_v<decltype(&inv_bar), float, int>, "yato::is_invokable failed");
+}
+

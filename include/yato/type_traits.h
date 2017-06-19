@@ -512,6 +512,43 @@ namespace yato
     {
         using type = typename take_const_from<TypeFrom_, typename take_volatile_from<TypeFrom_, TypeTo_>::type>::type;
     };
+
+
+    namespace details
+    {
+        template <typename Callable_, typename... Args_>
+        auto result_invoke_list_impl(yato::meta::list<Args_...>)
+            -> decltype((std::declval<Callable_>())(std::declval<Args_>()...));
+
+        template <typename Callable_>
+        auto result_invoke_list_impl(yato::meta::null_list)
+            -> decltype((std::declval<Callable_>())());
+
+        template <typename Callable_, typename ArgsList_>
+        using result_invoke_list = decltype(result_invoke_list_impl<Callable_>(std::declval<ArgsList_>()));
+
+        template <typename Callable_, typename ArgsList_, typename = void>
+        struct is_invocable_impl
+            : public std::false_type
+        { };
+
+        template <typename Callable_, typename ArgsList_>
+        struct is_invocable_impl <Callable_, ArgsList_,
+            typename yato::enable<result_invoke_list<Callable_, ArgsList_>>::type
+        >
+            : public std::true_type
+        { };
+    }
+
+    /**
+     * Determines whether Callable_ can be invoked with the arguments Args_
+     */
+    template <typename Callable_, typename... Args_>
+    using is_invocable = details::is_invocable_impl<Callable_, typename yato::meta::make_list<Args_...>::type>;
+
+    template <typename Callable_, typename... Args_>
+    YATO_INLINE_VARIABLE constexpr bool is_invocable_v = yato::is_invocable<Callable_, Args_...>::value;
+
 }
 
 #endif
