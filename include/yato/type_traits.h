@@ -72,6 +72,8 @@ namespace yato
         using type = typename Ty_::type;
     };
 
+    template <typename Ty_>
+    using get_type_t = typename get_type<Ty_>::type;
 
     //----------------------------------------------------------
     // General

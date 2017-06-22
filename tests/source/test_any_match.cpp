@@ -65,15 +65,18 @@ TEST(Yato_AnyMatch, exception)
 
     auto matcher = yato::any_match(
         [](int) {
-            return;
+            return 10;
         },
         [](yato::match_empty_t) {
-            return;
+            return 20;
         }
     );
 
-    EXPECT_NO_THROW(matcher(xi));
-    EXPECT_THROW(matcher(xf), yato::bad_match_error);
+    int r = -1;
+    EXPECT_NO_THROW(r = matcher(xi));
+    EXPECT_EQ(10, r);
+    EXPECT_THROW(r = matcher(xf), yato::bad_match_error);
+    EXPECT_EQ(10, r);
 }
 
 TEST(Yato_VariantMatch, common)

@@ -9,7 +9,6 @@
 #define _YATO_CASE_DISPATCHER_H_
 
 #include <typeindex>
-#include "assert.h"
 #include "type_traits.h"
 
 namespace yato
@@ -50,9 +49,9 @@ namespace yato
         template <typename Ty_, typename CasesTuple_, size_t Len_ = std::tuple_size<CasesTuple_>::value>
         struct find_match_case
         {
-            using callable_type  = typename std::decay<typename std::tuple_element<Len_ - 1, CasesTuple_>::type>::type;
+            using callable_type  = std::decay_t<std::tuple_element_t<Len_ - 1, CasesTuple_>>;
             using arg_type       = typename yato::callable_trait<callable_type>::template arg<0>::type;
-            using arg_decay_type = typename std::decay<arg_type>::type;
+            using arg_decay_type = std::decay_t<arg_type>;
 
             static constexpr size_t value = std::is_same<arg_decay_type, Ty_>::value
                 ? Len_ - 1
@@ -66,6 +65,16 @@ namespace yato
         };
 
 
+        template <typename... Cases_>
+        auto match_result_type_impl(const std::tuple<Cases_...>&)
+            -> get_type_t<std::common_type<
+                    typename callable_trait<std::decay_t<Cases_>>::result_type...
+                >>;
+
+        template <typename CasesTuple_>
+        using match_result_type = decltype(match_result_type_impl(std::declval<CasesTuple_>()));
+
+
         template <typename AnyTy_, typename CasesTuple_, typename OnDefault_, size_t Len_ = std::tuple_size<CasesTuple_>::value>
         struct match_dispatcher_impl
             : public match_dispatcher_impl<AnyTy_, CasesTuple_, OnDefault_, Len_ - 1>
@@ -74,9 +83,9 @@ namespace yato
             static constexpr size_t case_index = std::tuple_size<CasesTuple_>::value - Len_;
 
             using next_dispatcher = match_dispatcher_impl<AnyTy_, CasesTuple_, OnDefault_, Len_ - 1>;
-            using callable_type   = typename std::decay<typename std::tuple_element<case_index, CasesTuple_>::type>::type;
+            using callable_type   = std::decay_t<std::tuple_element_t<case_index, CasesTuple_>>;
             using arg_type        = typename yato::callable_trait<callable_type>::template arg<0>::type;
-            using arg_decay_type  = typename std::decay<arg_type>::type;
+            using arg_decay_type  = std::decay_t<arg_type>;
             //-------------------------------------------------------
 
             static
@@ -159,6 +168,8 @@ namespace yato
             using has_empty_case   = std::integral_constant<bool, (empty_index != match_case_npos)>;
             using has_default_case = std::integral_constant<bool, (default_index != match_case_npos)>;
 
+            using result_type = match_result_type<CasesTuple_>;
+
             static
             decltype(auto) on_default_impl_(std::true_type /*default case*/, const CasesTuple_ & cases)
             {
@@ -166,7 +177,7 @@ namespace yato
             }
 
             static
-            decltype(auto) on_default_impl_(std::false_type /*default case*/, const CasesTuple_ & /*cases*/)
+            result_type on_default_impl_(std::false_type /*default case*/, const CasesTuple_ & /*cases*/)
             {
                 throw yato::bad_match_error{};
             }
