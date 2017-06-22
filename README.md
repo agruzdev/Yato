@@ -116,6 +116,12 @@ Yato library provides few compile time algorithms on tuples
 * **yato::any_ptr** type safe wrapper for any pointer (i.e. `void*`)
 * **yato::variant** type safe wrapper for a specified alternativies. Similar to std::variant but can't have empty state. If empty state is necessary, then `void` should be in alternatives list
 
+There provided effective matchers for `yato::any` and `yato::variant` allowing to handle stored value in `swicth` style. 
+If no match is found then default case is called (`yato::match_default_t`) if defined, otherwise the exception `yato::bad_match_error` is thrown.
+
+* **yato::any_match** matches stored value of `yato::any`
+* **yato::variant_match** matches stored value of `yato::variant`
+
 ### Attributes interface
 
 **yato::attributes_interface** is interface class allowing to add arbitrary attributes to a class instance (as key-value pair). Attributes are completely generic and are passed as **yato::any**. 

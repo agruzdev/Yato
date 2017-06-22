@@ -22,20 +22,56 @@
 namespace yato
 {
     //----------------------------------------------------------
-    // Helper class for SFINAE; Unconditional version of std::enable_if
+    // Helper classes for SFINAE
     //
+
     template <typename T, typename U = void>
     struct enable 
     {
         using type = U;
     };
 
-
     template <typename...>
     struct test_type
     {
         using type = void;
     };
+
+    template <typename Ty_>
+    using void_t = void;
+
+
+    // Check that Ty_ has typedef `type`
+    template <typename Ty_, typename = void>
+    struct has_type
+        : std::false_type
+    { };
+
+    template <typename Ty_>
+    struct has_type <
+        Ty_,
+        void_t<typename Ty_::type>
+    >
+        : std::true_type
+    { };
+
+
+    // Get Ty_::type if exists, otherwise void
+    template <typename Ty_, typename = void>
+    struct get_type
+    {
+        using type = void;
+    };
+
+    template <typename Ty_>
+    struct get_type <
+        Ty_,
+        void_t<typename Ty_::type>
+    >
+    {
+        using type = typename Ty_::type;
+    };
+
 
     //----------------------------------------------------------
     // General

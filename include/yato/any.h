@@ -194,10 +194,11 @@ namespace yato
         //------------------------------------------------
 
     public:
-        YATO_CONSTEXPR_FUNC
+        constexpr explicit
         any() = default;
 
         template <typename ValueType>
+        explicit
         any(ValueType && value)
             : m_content(std::make_unique<details::any_holder<typename std::decay<ValueType>::type>>(
                 std::forward<ValueType>(value)))
@@ -210,11 +211,12 @@ namespace yato
         { }
 
         template <typename Ty, typename ... Args>
+        explicit
         any(yato::in_place_type_t<Ty>, Args && ... args)
             : m_content(std::make_unique<details::any_holder<Ty>>(yato::in_place_t(), std::forward<Args>(args)...))
         { }
 
-        YATO_CONSTEXPR_VAR
+        constexpr
         any(nullany_t)
             : m_content(nullptr)
         { }
@@ -320,6 +322,28 @@ namespace yato
                 }
             }
             return default_value;
+        }
+
+        /**
+         * Get value without check
+         * Use only if you are sure what is stored type
+         */
+        template <typename Ty>
+        Ty & get_as_unsafe()
+        {
+            assert(m_content != nullptr);
+            return static_cast<details::any_holder<Ty>*>(m_content.get())->m_payload;
+        }
+
+        /**
+         * Get value without check
+         * Use only if you are sure what is stored type
+         */
+        template <typename Ty>
+        const Ty & get_as_unsafe() const
+        {
+            assert(m_content != nullptr);
+            return static_cast<details::any_holder<Ty>*>(m_content.get())->m_payload;
         }
     };
 

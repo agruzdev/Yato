@@ -472,7 +472,7 @@ namespace yato
          *  Get typeid of the currently stored type
          *  Returns typeid(void) if variant is empty
          */
-        const std::type_info & type() YATO_NOEXCEPT_KEYWORD
+        const std::type_info & type() const noexcept
         {
             return details::variant_dispatcher<alternativies_list>().get_type(m_type_idx);
         }
@@ -480,7 +480,7 @@ namespace yato
         /**
          * Get stored type index
          */
-        const size_t & type_index() const YATO_NOEXCEPT_KEYWORD
+        const size_t & type_index() const noexcept
         {
             return m_type_idx;
         }
@@ -583,6 +583,28 @@ namespace yato
         {
             return get<yato::meta::list_find<alternativies_list, Ty>::value>(default_value);
         }
+
+
+        /**
+         *  Get value without check
+         *  Use only if you are sure what is stored type
+         */
+        template <typename Ty>
+        Ty & get_as_unsafe()
+        {
+            return *yato::pointer_cast<Ty*>(&m_storage);
+        }
+
+        /**
+         *  Get value without check
+         *  Use only if you are sure what is stored type
+         */
+        template <typename Ty>
+        const Ty & get_as_unsafe() const
+        {
+            return *yato::pointer_cast<const Ty*>(&m_storage);
+        }
+
     };
 
 }
