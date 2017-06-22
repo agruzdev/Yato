@@ -357,8 +357,8 @@ namespace yato
         template <typename Types = alternativies_list>
         explicit
         variant(typename std::enable_if<
-            yato::meta::list_find<Types, void>::value != yato::meta::list_npos,
-        details::construct_empty_t>::type = details::construct_empty_t()) YATO_NOEXCEPT_KEYWORD
+                meta::list_find<Types, void>::value != yato::meta::list_npos,
+            details::construct_empty_t>::type = details::construct_empty_t()) YATO_NOEXCEPT_KEYWORD
             : m_type_idx(yato::meta::list_npos)
         { }
 
@@ -391,7 +391,7 @@ namespace yato
         explicit
         variant(yato::in_place_index_t<Idx>, Args && ... args)
         {
-            create_<typename yato::meta::list_at<alternativies_list, Idx>::type>(std::forward<Args>(args)...);
+            create_<meta::list_at_t<alternativies_list, Idx>>(std::forward<Args>(args)...);
         }
 
         ~variant()
@@ -491,10 +491,10 @@ namespace yato
          */
         template <size_t Idx>
         auto get()
-            -> typename yato::meta::list_at<alternativies_list, Idx>::type &
+            -> meta::list_at_t<alternativies_list, Idx>&
         {
             if (m_type_idx == Idx) {
-                return *yato::pointer_cast<typename yato::meta::list_at<alternativies_list, Idx>::type*>(&m_storage);
+                return *yato::pointer_cast<meta::list_at_t<alternativies_list, Idx>*>(&m_storage);
             }
             else {
                 throw bad_variant_access("yato::variant_bad_access: Stored type differs from the type by given index");
@@ -507,7 +507,7 @@ namespace yato
          */
         template <size_t Idx>
         auto get() const
-            -> const typename yato::meta::list_at<alternativies_list, Idx>::type &
+            -> const meta::list_at_t<alternativies_list, Idx>&
         {
             return const_cast<this_type*>(this)->get<Idx>();
         }
@@ -517,8 +517,7 @@ namespace yato
          *  On error returns default value
          */
         template <size_t Idx>
-        auto get(typename yato::meta::list_at<alternativies_list, Idx>::type & default_value) YATO_NOEXCEPT_KEYWORD
-            -> typename yato::meta::list_at<alternativies_list, Idx>::type &
+        decltype(auto) get(meta::list_at_t<alternativies_list, Idx> & default_value) noexcept
         {
             if (m_type_idx == Idx) {
                 return *yato::pointer_cast<typename yato::meta::list_at<alternativies_list, Idx>::type*>(&m_storage);
@@ -533,11 +532,10 @@ namespace yato
          *  On error returns default value
          */
         template <size_t Idx>
-        auto get(const typename yato::meta::list_at<alternativies_list, Idx>::type & default_value) const YATO_NOEXCEPT_KEYWORD
-            -> const typename yato::meta::list_at<alternativies_list, Idx>::type &
+        decltype(auto) get(const meta::list_at_t<alternativies_list, Idx> & default_value) const noexcept
         {
             if (m_type_idx == Idx) {
-                return *yato::pointer_cast<const typename yato::meta::list_at<alternativies_list, Idx>::type*>(&m_storage);
+                return *yato::pointer_cast<const meta::list_at_t<alternativies_list, Idx>*>(&m_storage);
             }
             else {
                 return default_value;
@@ -551,7 +549,7 @@ namespace yato
         template <typename Ty>
         Ty & get_as()
         {
-            return get<yato::meta::list_find<alternativies_list, Ty>::value>();
+            return get<meta::list_find<alternativies_list, Ty>::value>();
         }
 
         /**
@@ -561,7 +559,7 @@ namespace yato
         template <typename Ty>
         const Ty & get_as() const
         {
-            return get<yato::meta::list_find<alternativies_list, Ty>::value>();
+            return get<meta::list_find<alternativies_list, Ty>::value>();
         }
 
         /**
@@ -571,7 +569,7 @@ namespace yato
         template <typename Ty>
         Ty & get_as(Ty & default_value) YATO_NOEXCEPT_KEYWORD
         {
-            return get<yato::meta::list_find<alternativies_list, Ty>::value>(default_value);
+            return get<meta::list_find<alternativies_list, Ty>::value>(default_value);
         }
 
         /**
@@ -581,7 +579,7 @@ namespace yato
         template <typename Ty>
         const Ty & get_as(const Ty & default_value) const YATO_NOEXCEPT_KEYWORD
         {
-            return get<yato::meta::list_find<alternativies_list, Ty>::value>(default_value);
+            return get<meta::list_find<alternativies_list, Ty>::value>(default_value);
         }
 
 
