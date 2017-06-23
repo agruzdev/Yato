@@ -72,11 +72,8 @@ namespace yato
         /**
          *  Non-position value of index in the list
          */
-#ifndef YATO_MSVC_2013
-        constexpr size_t list_npos = std::numeric_limits<size_t>::max();
-#else
-        static YATO_CONSTEXPR_VAR size_t list_npos = static_cast<size_t>(-1);
-#endif
+        YATO_INLINE_VARIABLE constexpr 
+        size_t list_npos = std::numeric_limits<size_t>::max();
 
         /**
          *  List for aggregating a sequence of types
@@ -106,7 +103,7 @@ namespace yato
         {
             using type = list<_Elems...>;
         };
-        
+
         /**
          *  make empty list
          */
@@ -115,6 +112,9 @@ namespace yato
         {
             using type = null_list;
         };
+
+        template <typename... Elems_>
+        using make_list_t = typename make_list<Elems_...>::type;
 
         /**
          *  Reverse list
@@ -197,6 +197,9 @@ namespace yato
             using type = typename _List::head;
         };
 
+        template <typename List_, size_t Idx_>
+        using list_at_t = typename list_at<List_, Idx_>::type;
+
         /**
          *  Convert list to std::tuple
          */
@@ -256,7 +259,7 @@ namespace yato
         template <typename List_, typename... Elems_>
         struct list_split<List_, 0, Elems_...>
         {
-            using type = meta::pair<typename meta::make_list<Elems_...>::type, List_>;
+            using type = meta::pair<meta::make_list_t<Elems_...>, List_>;
         };
 
         /**
@@ -312,7 +315,7 @@ namespace yato
         template <typename List_, typename... Elems_>
         struct list_unique
         {
-            using type = typename std::conditional<(meta::list_find<typename meta::make_list<Elems_...>::type, typename List_::head>::value != meta::list_npos),
+            using type = typename std::conditional<(meta::list_find<meta::make_list_t<Elems_...>, typename List_::head>::value != meta::list_npos),
                 typename list_unique<typename List_::tail, Elems_...>::type,
                 typename list_unique<typename List_::tail, Elems_..., typename List_::head>::type
             >::type;
@@ -321,7 +324,7 @@ namespace yato
         template <typename... Elems_>
         struct list_unique<meta::null_list, Elems_...>
         {
-            using type = typename meta::make_list<Elems_...>::type;
+            using type = meta::make_list_t<Elems_...>;
         };
 
 

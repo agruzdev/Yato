@@ -22,20 +22,58 @@
 namespace yato
 {
     //----------------------------------------------------------
-    // Helper class for SFINAE; Unconditional version of std::enable_if
+    // Helper classes for SFINAE
     //
+
     template <typename T, typename U = void>
     struct enable 
     {
         using type = U;
     };
 
-
     template <typename...>
     struct test_type
     {
         using type = void;
     };
+
+    template <typename Ty_>
+    using void_t = void;
+
+
+    // Check that Ty_ has typedef `type`
+    template <typename Ty_, typename = void>
+    struct has_type
+        : std::false_type
+    { };
+
+    template <typename Ty_>
+    struct has_type <
+        Ty_,
+        void_t<typename Ty_::type>
+    >
+        : std::true_type
+    { };
+
+
+    // Get Ty_::type if exists, otherwise void
+    template <typename Ty_, typename = void>
+    struct get_type
+    {
+        using type = void;
+    };
+
+    template <typename Ty_>
+    struct get_type <
+        Ty_,
+        void_t<typename Ty_::type>
+    >
+    {
+        using type = typename Ty_::type;
+    };
+
+    template <typename Ty_>
+    using get_type_t = typename get_type<Ty_>::type;
 
     //----------------------------------------------------------
     // General
@@ -512,6 +550,43 @@ namespace yato
     {
         using type = typename take_const_from<TypeFrom_, typename take_volatile_from<TypeFrom_, TypeTo_>::type>::type;
     };
+
+
+    namespace details
+    {
+        template <typename Callable_, typename... Args_>
+        auto result_invoke_list_impl(yato::meta::list<Args_...>)
+            -> decltype((std::declval<Callable_>())(std::declval<Args_>()...));
+
+        template <typename Callable_>
+        auto result_invoke_list_impl(yato::meta::null_list)
+            -> decltype((std::declval<Callable_>())());
+
+        template <typename Callable_, typename ArgsList_>
+        using result_invoke_list = decltype(result_invoke_list_impl<Callable_>(std::declval<ArgsList_>()));
+
+        template <typename Callable_, typename ArgsList_, typename = void>
+        struct is_invocable_impl
+            : public std::false_type
+        { };
+
+        template <typename Callable_, typename ArgsList_>
+        struct is_invocable_impl <Callable_, ArgsList_,
+            typename yato::enable<result_invoke_list<Callable_, ArgsList_>>::type
+        >
+            : public std::true_type
+        { };
+    }
+
+    /**
+     * Determines whether Callable_ can be invoked with the arguments Args_
+     */
+    template <typename Callable_, typename... Args_>
+    using is_invocable = details::is_invocable_impl<Callable_, typename yato::meta::make_list<Args_...>::type>;
+
+    template <typename Callable_, typename... Args_>
+    YATO_INLINE_VARIABLE constexpr bool is_invocable_v = yato::is_invocable<Callable_, Args_...>::value;
+
 }
 
 #endif

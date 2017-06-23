@@ -24,7 +24,7 @@ Currently the library can be successfully built by the following compilers:
 
 * MSVC 2017
 * MSVC 2015
-* MinGW 6.2
+* MinGW 7.1
 * Clang 4.0
 * GCC 6.2
 * Google Android NDK 13, llvm toolchain
@@ -115,6 +115,12 @@ Yato library provides few compile time algorithms on tuples
 * **yato::any** type safe wrapper for any type. Is similar to std::any or [boost::any](http://www.boost.org/doc/libs/1_61_0/doc/html/any.html), but this implementation supports non-copyable and non-movable types as well
 * **yato::any_ptr** type safe wrapper for any pointer (i.e. `void*`)
 * **yato::variant** type safe wrapper for a specified alternativies. Similar to std::variant but can't have empty state. If empty state is necessary, then `void` should be in alternatives list
+
+There provided effective matchers for `yato::any` and `yato::variant` allowing to handle stored value in `swicth` style. 
+If no match is found then default case is called (`yato::match_default_t`) if defined, otherwise the exception `yato::bad_match_error` is thrown.
+
+* **yato::any_match** matches stored value of `yato::any`
+* **yato::variant_match** matches stored value of `yato::variant`
 
 ### Attributes interface
 
