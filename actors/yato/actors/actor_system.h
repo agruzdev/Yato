@@ -118,7 +118,7 @@ namespace actors
     template <typename Ty_>
     inline
     void actor_ref::tell(Ty_ && message, const actor_ref & sender) const {
-        m_system->send_message(*this, sender, message);
+        m_system->send_message(*this, message, sender);
     }
 
     inline
