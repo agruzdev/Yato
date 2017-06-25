@@ -4,6 +4,7 @@
 
 #include <yato/actors/actor_system.h>
 #include <yato/actors/logger.h>
+#include <yato/any_match.h>
 
 namespace
 {
@@ -17,12 +18,14 @@ namespace
 
         void receive(const yato::any& message) override
         {
-            try {
-                log().info(yato::any_cast<std::string>(message));
-            }
-            catch(...) {
-                log().error("Bad any_cast!");
-            }
+            yato::any_match(
+                [this](const std::string & str) {
+                    log().info(str);
+                },
+                [this](yato::match_default_t) {
+                    log().error("Unknown message!");
+                }
+            )(message);
             sender().tell("Nobody will hear me");
         }
 
@@ -41,8 +44,7 @@ TEST(Yato_Actors, common)
     auto actor = system.create_actor<EchoActor>("echo1");
     actor.tell(std::string("Hello, Actor!"));
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    system.stop(actor);
+    actor.tell(yato::actors::poison_pill);
 }
 
 

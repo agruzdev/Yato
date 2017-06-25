@@ -52,6 +52,10 @@ namespace actors
     void actor_base::receive_message(const message & message) noexcept
     {
         assert(m_context != nullptr);
+        if (message.payload.type() == typeid(poison_pill_t)) {
+            m_context->self.stop();
+            return;
+        }
         do_unwrap_message(message);
     }
     //-------------------------------------------------------

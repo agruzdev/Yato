@@ -10,11 +10,23 @@
 
 #include <string>
 
+#include "yato/prerequisites.h"
+
 namespace yato
 {
 namespace actors
 {
     class actor_system;
+
+    /**
+     * Special message type for graceful stopping of actor
+     * Actor will be stopped after processing all messages in queue before the poison_pill.
+     */
+    struct poison_pill_t {};
+
+    YATO_INLINE_VARIABLE constexpr 
+    poison_pill_t poison_pill;
+
 
     /**
      * Unique handle of an actor
@@ -49,11 +61,20 @@ namespace actors
             return m_path;
         }
 
+        /**
+         * Send message to the actor
+         */
         template <typename Ty_>
         void tell(Ty_ && message) const;
 
         template <typename Ty_>
         void tell(Ty_ && message, const actor_ref & sender) const;
+
+        /**
+         * Stop actor immediately.
+         * Right after processing the current message.
+         */
+        void stop() const;
 
         bool operator == (const actor_ref & other) const 
         {

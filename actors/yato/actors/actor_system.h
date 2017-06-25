@@ -120,8 +120,11 @@ namespace actors
     void actor_ref::tell(Ty_ && message, const actor_ref & sender) const {
         m_system->send_message(*this, sender, message);
     }
-    
 
+    inline
+    void actor_ref::stop() const {
+        m_system->stop(*this);
+    }
 
 }// namespace actors
 
