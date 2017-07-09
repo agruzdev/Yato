@@ -60,7 +60,7 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    void actor_base::recieve_system_message(const system_signal& signal) noexcept
+    bool actor_base::recieve_system_message(const system_signal& signal) noexcept
     {
         assert(m_context != nullptr);
         
@@ -88,11 +88,12 @@ namespace actors
                 log().error("actor[system_signal]: Unknown exception!");
             }
             m_context->system->notify_on_stop_();
-            break;
+            return true;
         default:
             assert(false);
             break;
         }
+        return false;
     }
     //-------------------------------------------------------
 

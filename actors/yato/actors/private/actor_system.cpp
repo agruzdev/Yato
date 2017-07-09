@@ -35,7 +35,6 @@ namespace actors
 
     actor_system::actor_system(const std::string & name)
         : m_name(name)
-        , m_actors_num(0)
         , m_dead_letters(this, DEAD_LETTERS)
     {
         if(name.empty()) {
@@ -50,10 +49,17 @@ namespace actors
 
     actor_system::~actor_system() 
     {
-        {
-            std::unique_lock<std::mutex> lock(m_actors_mutex);
-            m_actors_cv.wait(lock, [this]() { return m_actors_num == 0; });
-        }
+        // Wait all actors to stop (all mailboxes are closed)
+        std::for_each(m_contexts.begin(), m_contexts.end(), [](auto & entry) {
+            mailbox* mbox = entry.second->mbox.get();
+            std::unique_lock<std::mutex> lock(mbox->mutex);
+            while(mbox->is_open || mbox->is_scheduled) {
+                mbox->shutdown_condition.wait(lock);
+            }
+        });
+        m_contexts.clear();
+
+        // Now all actors are stopped
         m_executor.reset();
     }
     //-------------------------------------------------------
@@ -90,7 +96,6 @@ namespace actors
             // setup mailbox
             ctx->mbox = std::make_shared<mailbox>();
             ctx->mbox->owner = a.get();
-            ctx->mbox->is_open = true; // ToDo (a.gruzdev): Temporal solution.
             ref.set_mailbox(ctx->mbox);
 
             // setup actor
@@ -101,10 +106,6 @@ namespace actors
             assert(res.second && "Failed to insert new actor context"); 
 
             context = &(*res.first->second);
-        }
-        {
-            std::unique_lock<std::mutex> lock(m_actors_mutex);
-            ++m_actors_num;
         }
 
         enqueue_system_signal(context->mbox.get(), system_signal::start);
@@ -178,13 +179,7 @@ namespace actors
 
     void actor_system::notify_on_stop_() 
     {
-        {
-            std::unique_lock<std::mutex> lock(m_actors_mutex);
-            assert(m_actors_num > 0);
-            if(--m_actors_num == 0) {
-                m_actors_cv.notify_one();
-            }
-        }
+
     }
 
 

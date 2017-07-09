@@ -20,7 +20,14 @@ namespace actors
     {
         try {
             for (;;) {
-                process_all_system_messages(mbox);
+                if(process_all_system_messages(mbox)) {
+                    // Terminate actor
+                    std::unique_lock<std::mutex> lock(mbox->mutex);
+                    mbox->is_open = false;
+                    mbox->is_scheduled = false;
+                    mbox->shutdown_condition.notify_one();
+                    return;
+                }
 
                 std::unique_ptr<message> msg = nullptr;
                 {
@@ -32,11 +39,6 @@ namespace actors
 
                     if(!mbox->sys_queue.empty()) {
                         continue;
-                    }
-
-                    if(!mbox->is_open) {
-                        // Terminate thread
-                        break;
                     }
 
                     if (!mbox->queue.empty()) {

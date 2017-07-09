@@ -29,7 +29,7 @@ namespace actors
 
 
     inline 
-    void process_all_system_messages(mailbox* mbox) {
+    bool process_all_system_messages(mailbox* mbox) {
         for(;;) {
             system_signal signal = system_signal::none;
             {
@@ -41,9 +41,12 @@ namespace actors
                 mbox->sys_queue.pop();
             }
             if (signal != system_signal::none) {
-                mbox->owner->recieve_system_message(signal);
+                if(mbox->owner->recieve_system_message(signal)) {
+                    return true;
+                }
             }
         }
+        return false;
     }
 
 }// namespace actors

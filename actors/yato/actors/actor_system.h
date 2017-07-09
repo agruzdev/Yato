@@ -36,10 +36,6 @@ namespace actors
         std::map<std::string, std::unique_ptr<actor_cell>> m_contexts; // used only from user thread
         std::unique_ptr<abstract_executor> m_executor;
 
-        uint32_t m_actors_num;
-        std::mutex m_actors_mutex;
-        std::condition_variable m_actors_cv;
-
         const actor_ref m_dead_letters;
 
         //-------------------------------------------------------

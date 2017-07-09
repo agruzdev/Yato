@@ -95,7 +95,7 @@ namespace actors
         /**
          * Handle system message
          */
-        void recieve_system_message(const system_signal& signal) noexcept;
+        bool recieve_system_message(const system_signal& signal) noexcept;
 
         /**
          * Used by actor system to initialize the actor
