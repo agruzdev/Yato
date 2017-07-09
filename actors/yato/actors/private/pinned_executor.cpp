@@ -7,6 +7,7 @@
 
 #include <future>
 
+#include "../actor_system.h"
 #include "../logger.h"
 #include "pinned_executor.h"
 
@@ -15,17 +16,18 @@ namespace yato
 namespace actors
 {
 
-    static
-    void pinned_thread_function(const logger_ptr & log, mailbox* mbox) noexcept
+    void pinned_executor::pinned_thread_function(pinned_executor* executor, mailbox* mbox) noexcept
     {
         try {
             for (;;) {
                 if(process_all_system_messages(mbox)) {
                     // Terminate actor
-                    std::unique_lock<std::mutex> lock(mbox->mutex);
-                    mbox->is_open = false;
-                    mbox->is_scheduled = false;
-                    mbox->shutdown_condition.notify_one();
+                    {
+                        std::unique_lock<std::mutex> lock(mbox->mutex);
+                        mbox->is_open = false;
+                        mbox->is_scheduled = false;
+                    }
+                    executor->m_system->notify_on_stop_(mbox->owner->self());
                     return;
                 }
 
@@ -33,7 +35,7 @@ namespace actors
                 {
                     std::unique_lock<std::mutex> lock(mbox->mutex);
 
-                    while (mbox->queue.empty() && mbox->is_open) {
+                    while (mbox->queue.empty() && mbox->sys_queue.empty()) {
                         mbox->condition.wait(lock);
                     }
 
@@ -52,15 +54,17 @@ namespace actors
             }
         }
         catch(std::exception & e) {
-            log->error("pinned_executor[pinned_thread_function]: Thread failed with exception: %s", e.what());
+            executor->m_logger->error("pinned_executor[pinned_thread_function]: Thread failed with exception: %s", e.what());
         }
         catch (...) {
-            log->error("pinned_executor[pinned_thread_function]: Thread failed with unknown exception!");
+            executor->m_logger->error("pinned_executor[pinned_thread_function]: Thread failed with unknown exception!");
         }
     }
     //-------------------------------------------------------
 
-    pinned_executor::pinned_executor() {
+    pinned_executor::pinned_executor(actor_system* system)
+        : m_system(system)
+    {
         m_logger = logger_factory::create("pinned_executor");
     }
     //-------------------------------------------------------
@@ -76,7 +80,7 @@ namespace actors
         std::unique_lock<std::mutex> lock(mbox->mutex);
         if(!mbox->is_scheduled) {
             mbox->is_scheduled = true;
-            m_threads.emplace_back([this, mbox]{ pinned_thread_function(m_logger, mbox); });
+            m_threads.emplace_back(&pinned_thread_function, this, mbox);
         }
         mbox->condition.notify_one();
         return true;

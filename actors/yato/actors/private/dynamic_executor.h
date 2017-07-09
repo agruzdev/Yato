@@ -24,11 +24,14 @@ namespace actors
         : public abstract_executor
     {
     private:
+        actor_system* m_system;
         std::unique_ptr<thread_pool> m_tpool;
         uint32_t m_throughput;
 
+        static void mailbox_function(dynamic_executor* executor, mailbox* mbox, uint32_t throughput);
+
     public:
-        dynamic_executor(uint32_t threads_num, uint32_t throughput);
+        dynamic_executor(actor_system* system, uint32_t threads_num, uint32_t throughput);
         ~dynamic_executor();
 
         dynamic_executor(const dynamic_executor&) = delete;

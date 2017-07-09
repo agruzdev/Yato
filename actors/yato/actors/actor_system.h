@@ -33,7 +33,11 @@ namespace actors
     private:
         std::string m_name;
         logger_ptr m_logger;
-        std::map<std::string, std::unique_ptr<actor_cell>> m_contexts; // used only from user thread
+
+        std::condition_variable m_cells_condition;
+        std::mutex m_cells_mutex;
+        std::map<std::string, std::unique_ptr<actor_cell>> m_actors;
+
         std::unique_ptr<abstract_executor> m_executor;
 
         const actor_ref m_dead_letters;
@@ -101,7 +105,7 @@ namespace actors
         /**
          * Internal method
          */
-        void notify_on_stop_();
+        void notify_on_stop_(const actor_ref & ref);
     };
     //-------------------------------------------------------
 

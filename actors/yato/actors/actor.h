@@ -72,11 +72,6 @@ namespace actors
         virtual void post_stop() = 0;
 
         /**
-         * Get self reference
-         */
-        const actor_ref & self() const;
-
-        /**
          * Get actor logger
          */
         const logger & log() const;
@@ -86,7 +81,12 @@ namespace actors
         actor_base();
 
         virtual ~actor_base();
-        
+
+        /**
+         * Get self reference
+         */
+        const actor_ref & self() const;
+
         /**
          * Handle message
          */

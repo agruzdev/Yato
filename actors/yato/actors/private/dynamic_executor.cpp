@@ -5,6 +5,7 @@
 * Copyright (c) 2016 Alexey Gruzdev
 */
 
+#include "../actor_system.h"
 #include "thread_pool.h"
 #include "dynamic_executor.h"
 
@@ -13,16 +14,17 @@ namespace yato
 namespace actors
 {
 
-    static
-    void mailbox_function(dynamic_executor* executor, mailbox* mbox, uint32_t throughput)
+    void dynamic_executor::mailbox_function(dynamic_executor* executor, mailbox* mbox, uint32_t throughput)
     {
         for(uint32_t count = 0;;) {
             if(process_all_system_messages(mbox)) {
                 // Terminate actor
-                std::unique_lock<std::mutex> lock(mbox->mutex);
-                mbox->is_open = false;
-                mbox->is_scheduled = false;
-                mbox->shutdown_condition.notify_one();
+                {
+                    std::unique_lock<std::mutex> lock(mbox->mutex);
+                    mbox->is_open = false;
+                    mbox->is_scheduled = false;
+                }
+                executor->m_system->notify_on_stop_(mbox->owner->self());
                 return;
             }
 
@@ -55,8 +57,8 @@ namespace actors
 
 
 
-    dynamic_executor::dynamic_executor(uint32_t threads_num, uint32_t throughput)
-        : m_throughput(throughput)
+    dynamic_executor::dynamic_executor(actor_system* system, uint32_t threads_num, uint32_t throughput)
+        : m_system(system), m_throughput(throughput)
     {
         m_tpool = std::make_unique<thread_pool>(threads_num);
     }

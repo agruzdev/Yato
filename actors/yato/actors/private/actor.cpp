@@ -87,7 +87,6 @@ namespace actors
             catch (...) {
                 log().error("actor[system_signal]: Unknown exception!");
             }
-            m_context->system->notify_on_stop_();
             return true;
         default:
             assert(false);

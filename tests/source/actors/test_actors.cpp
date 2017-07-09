@@ -93,14 +93,14 @@ namespace
         {
             yato::any_match(
                 [this](int count) {
-                sender().tell(count + 1, self());
-                if (count >= 10) {
-                    self().stop();
+                    sender().tell(count + 1, self());
+                    if (count >= 10) {
+                        self().stop();
+                    }
+                    else {
+                        log().info("Pong " + std::to_string(count));
+                    }
                 }
-                else {
-                    log().info("Pong " + std::to_string(count));
-                }
-            }
             )(message);
         }
     };

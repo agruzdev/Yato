@@ -29,11 +29,14 @@ namespace actors
         : public abstract_executor
     {
     private:
+        actor_system* m_system;
         std::vector<std::thread> m_threads;
         logger_ptr m_logger;
 
+        static void pinned_thread_function(pinned_executor* executor, mailbox* mbox) noexcept;
+
     public:
-        pinned_executor();
+        pinned_executor(actor_system* system);
         ~pinned_executor();
 
         pinned_executor(const pinned_executor&) = delete;

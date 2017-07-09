@@ -16,8 +16,8 @@
 
 namespace
 {
-    static std::string DEAD_LETTERS = "_dead_";
-    static std::string POISON_PILL  = "_poison_";
+    const std::string DEAD_LETTERS = "_dead_";
+    const std::string POISON_PILL  = "_poison_";
 }
 
 namespace yato
@@ -42,24 +42,22 @@ namespace actors
         }
         m_logger = logger_factory::create(std::string("ActorSystem[") + m_name + "]");
         m_logger->set_filter(log_level::verbose);
-        //m_executor = std::make_unique<pinned_executor>();
-        m_executor = std::make_unique<dynamic_executor>(4, 5);
+
+        //m_executor = std::make_unique<pinned_executor>(this);
+        m_executor = std::make_unique<dynamic_executor>(this, 4, 5);
     }
     //-------------------------------------------------------
 
     actor_system::~actor_system() 
     {
-        // Wait all actors to stop (all mailboxes are closed)
-        std::for_each(m_contexts.begin(), m_contexts.end(), [](auto & entry) {
-            mailbox* mbox = entry.second->mbox.get();
-            std::unique_lock<std::mutex> lock(mbox->mutex);
-            while(mbox->is_open || mbox->is_scheduled) {
-                mbox->shutdown_condition.wait(lock);
+        {
+            std::unique_lock<std::mutex> lock(m_cells_mutex);
+            while(!m_actors.empty()) {
+                m_cells_condition.wait(lock);
             }
-        });
-        m_contexts.clear();
-
+        }
         // Now all actors are stopped
+
         m_executor.reset();
     }
     //-------------------------------------------------------
@@ -83,33 +81,33 @@ namespace actors
         if(name == DEAD_LETTERS) {
             throw yato::argument_error("Actor name " + DEAD_LETTERS + "is reserved!");
         }
-        if(m_contexts.find(name) != m_contexts.cend()) {
-            throw yato::argument_error("Actor with the name " + name + " already exists!");
-        }
 
+        // create mailbox
+        auto mbox = std::make_shared<mailbox>();
+        mbox->owner = a.get();
+
+        // create ref
         actor_ref ref{this, name};
+        ref.set_mailbox(mbox);
 
-        actor_cell* context = nullptr;
+        // setup actor
+        a->init_base_(this, ref);
+
+        auto cell = std::make_unique<actor_cell>();
+        cell->act = std::move(a);
+        cell->mbox = mbox;
+
         {
-            auto ctx = std::make_unique<actor_cell>();
-
-            // setup mailbox
-            ctx->mbox = std::make_shared<mailbox>();
-            ctx->mbox->owner = a.get();
-            ref.set_mailbox(ctx->mbox);
-
-            // setup actor
-            a->init_base_(this, ref);
-            ctx->act = std::move(a);
-
-            auto res = m_contexts.emplace(ref.get_path(), std::move(ctx));
-            assert(res.second && "Failed to insert new actor context"); 
-
-            context = &(*res.first->second);
+            std::unique_lock<std::mutex> lock(m_cells_mutex);
+            auto pos = m_actors.find(ref.get_path());
+            if(pos != m_actors.end()) {
+                throw yato::argument_error("Actor with the name " + name + " already exists!");
+            }
+            m_actors.emplace_hint(pos, ref.get_path(), std::move(cell));
         }
 
-        enqueue_system_signal(context->mbox.get(), system_signal::start);
-        m_executor->execute(context->mbox.get());
+        enqueue_system_signal(mbox.get(), system_signal::start);
+        m_executor->execute(mbox.get());
 
         return ref;
     }
@@ -124,7 +122,7 @@ namespace actors
 
         std::shared_ptr<mailbox> mbox = to_actor.get_mailbox().lock();
         if(mbox == nullptr) {
-            m_logger->verbose("Actor " + to_actor.get_path() + " is not found!");
+            m_logger->verbose("Failed to send a message. Actor " + to_actor.get_path() + " is not found!");
             return;
         }
 
@@ -147,8 +145,8 @@ namespace actors
         {
             std::unique_lock<std::mutex> lock(mbox->mutex);
             if (mbox->is_open) {
-                mbox->is_open = false;
                 mbox->sys_queue.push(system_signal::stop);
+                mbox->condition.notify_one();
                 execute = true;
             }
         }
@@ -162,7 +160,7 @@ namespace actors
     {
         std::shared_ptr<mailbox> mbox = addressee.get_mailbox().lock();
         if (mbox == nullptr) {
-            m_logger->verbose("Actor " + addressee.get_path() + " is not found!");
+            m_logger->verbose("Failed to stop actor. Actor " + addressee.get_path() + " is not found!");
             return;
         }
         stop_impl_(mbox.get());
@@ -171,16 +169,23 @@ namespace actors
 
     void actor_system::stop_all()
     {
-        std::for_each(m_contexts.begin(), m_contexts.end(), [this](decltype(m_contexts)::value_type & entry) {
+        std::unique_lock<std::mutex> lock(m_cells_mutex);
+        std::for_each(m_actors.begin(), m_actors.end(), [this](decltype(m_actors)::value_type & entry) {
             stop_impl_(entry.second->mbox.get());
         });
     }
     //--------------------------------------------------------
 
-    void actor_system::notify_on_stop_() 
+    void actor_system::notify_on_stop_(const actor_ref & ref)
     {
-
+        std::unique_lock<std::mutex> lock(m_cells_mutex);
+        auto it = m_actors.find(ref.get_path());
+        if(it != m_actors.end()) {
+            m_actors.erase(it);
+        }
+        m_cells_condition.notify_one();
     }
+    //--------------------------------------------------------
 
 
 } // namespace actors

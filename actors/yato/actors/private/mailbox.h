@@ -42,8 +42,6 @@ namespace actors
         //mailbox_status status = mailbox_status::opened;
         bool is_open = true;
         bool is_scheduled = false;
-
-        std::condition_variable shutdown_condition; // open = fasle && scheduled = false
     };
 
 } // namespace actors
