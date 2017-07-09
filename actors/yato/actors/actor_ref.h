@@ -9,6 +9,7 @@
 #define _YATO_ACTOR_REF_H_
 
 #include <string>
+#include <memory>
 
 #include "yato/prerequisites.h"
 
@@ -17,6 +18,7 @@ namespace yato
 namespace actors
 {
     class actor_system;
+    struct mailbox;
 
     /**
      * Special message type for graceful stopping of actor
@@ -34,16 +36,24 @@ namespace actors
     class actor_ref final
     {
     private:
-        // Not owning pointer. Can copy
-        actor_system* m_system;
+        actor_system* m_system; // Not owning pointer. Can copy
+        std::weak_ptr<mailbox> m_mailbox;
 
         std::string m_name;
         std::string m_path;
 
-        actor_ref(actor_system* system, const std::string & name);
-    public:
+        // Interface for actor_system
 
-        ~actor_ref() = default;
+        actor_ref(actor_system* system, const std::string & name);
+
+        void set_mailbox(const std::shared_ptr<mailbox> & ptr);
+
+        const std::weak_ptr<mailbox> & get_mailbox() const {
+            return m_mailbox;
+        }
+
+    public:
+        ~actor_ref();
 
         actor_ref(const actor_ref&) = default;
         actor_ref(actor_ref&&) = default;

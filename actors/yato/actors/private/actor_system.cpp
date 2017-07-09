@@ -29,7 +29,7 @@ namespace actors
     struct actor_cell
     {
         std::unique_ptr<actor_base> act;
-        mailbox mbox;
+        std::shared_ptr<mailbox> mbox;
     };
     //-------------------------------------------------------
 
@@ -86,10 +86,17 @@ namespace actors
         actor_cell* context = nullptr;
         {
             auto ctx = std::make_unique<actor_cell>();
+
+            // setup mailbox
+            ctx->mbox = std::make_shared<mailbox>();
+            ctx->mbox->owner = a.get();
+            ctx->mbox->is_open = true; // ToDo (a.gruzdev): Temporal solution.
+            ref.set_mailbox(ctx->mbox);
+
+            // setup actor
+            a->init_base_(this, ref);
             ctx->act = std::move(a);
-            ctx->act->init_base_(this, ref);
-            ctx->mbox.owner = ctx->act.get();
-            ctx->mbox.is_open = true; // ToDo (a.gruzdev): Temporal solution.
+
             auto res = m_contexts.emplace(ref.get_path(), std::move(ctx));
             assert(res.second && "Failed to insert new actor context"); 
 
@@ -100,70 +107,71 @@ namespace actors
             ++m_actors_num;
         }
 
-        enqueue_system_signal(&context->mbox, system_signal::start);
-        m_executor->execute(&context->mbox);
+        enqueue_system_signal(context->mbox.get(), system_signal::start);
+        m_executor->execute(context->mbox.get());
 
         return ref;
     }
     //-------------------------------------------------------
 
-    void actor_system::send_impl(const actor_ref & to_actor, const actor_ref & fromActor, yato::any && userMessage)
+    void actor_system::send_impl(const actor_ref & to_actor, const actor_ref & fromActor, yato::any && userMessage) const 
     {
         if(to_actor == dead_letters()) {
             m_logger->verbose("A message was delivered to DeadLetters.");
             return;
         }
-        auto it = m_contexts.find(to_actor.get_path());
-        if(it == m_contexts.end()) {
-            throw yato::runtime_error("Actor " + to_actor.get_path() + " is not found!");
-        }
 
-        auto & mbox = it->second->mbox;
+        std::shared_ptr<mailbox> mbox = to_actor.get_mailbox().lock();
+        if(mbox == nullptr) {
+            m_logger->verbose("Actor " + to_actor.get_path() + " is not found!");
+            return;
+        }
 
         auto msg = std::make_unique<message>(std::move(userMessage), fromActor);
         {
-            std::unique_lock<std::mutex> lock(mbox.mutex);
-            if (mbox.is_open) {
-                mbox.queue.push(std::move(msg));
-                mbox.condition.notify_one();
+            std::unique_lock<std::mutex> lock(mbox->mutex);
+            if (mbox->is_open) {
+                mbox->queue.push(std::move(msg));
+                mbox->condition.notify_one();
             }
         }
-        m_executor->execute(&mbox);
+        m_executor->execute(mbox.get());
     }
     //-------------------------------------------------------
 
-    void actor_system::stop_impl_(actor_cell* act)
+    void actor_system::stop_impl_(mailbox* mbox) const 
     {
-        assert(act != nullptr);
+        assert(mbox != nullptr);
         bool execute = false;
         {
-            std::unique_lock<std::mutex> lock(act->mbox.mutex);
-            if (act->mbox.is_open) {
-                act->mbox.is_open = false;
-                act->mbox.sys_queue.push(system_signal::stop);
+            std::unique_lock<std::mutex> lock(mbox->mutex);
+            if (mbox->is_open) {
+                mbox->is_open = false;
+                mbox->sys_queue.push(system_signal::stop);
                 execute = true;
             }
         }
         if (execute) {
-            m_executor->execute(&act->mbox);
+            m_executor->execute(mbox);
         }
     }
     //-------------------------------------------------------
 
-    void actor_system::stop(const actor_ref & addressee) 
+    void actor_system::stop(const actor_ref & addressee) const 
     {
-        auto it = m_contexts.find(addressee.get_path());
-        if (it == m_contexts.end()) {
-            throw yato::runtime_error("Actor " + addressee.get_path() + " is not found!");
+        std::shared_ptr<mailbox> mbox = addressee.get_mailbox().lock();
+        if (mbox == nullptr) {
+            m_logger->verbose("Actor " + addressee.get_path() + " is not found!");
+            return;
         }
-        stop_impl_(it->second.get());
+        stop_impl_(mbox.get());
     }
     //--------------------------------------------------------
 
     void actor_system::stop_all()
     {
         std::for_each(m_contexts.begin(), m_contexts.end(), [this](decltype(m_contexts)::value_type & entry) {
-            stop_impl_(entry.second.get());
+            stop_impl_(entry.second->mbox.get());
         });
     }
     //--------------------------------------------------------

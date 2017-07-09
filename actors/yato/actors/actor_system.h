@@ -33,7 +33,7 @@ namespace actors
     private:
         std::string m_name;
         logger_ptr m_logger;
-        std::map<std::string, std::unique_ptr<actor_cell>> m_contexts;
+        std::map<std::string, std::unique_ptr<actor_cell>> m_contexts; // used only from user thread
         std::unique_ptr<abstract_executor> m_executor;
 
         uint32_t m_actors_num;
@@ -44,10 +44,10 @@ namespace actors
 
         //-------------------------------------------------------
         static void enqueue_system_signal(mailbox* mbox, const system_signal & signal);
-        void stop_impl_(actor_cell* act);
+        void stop_impl_(mailbox* mbox) const;
 
         actor_ref create_actor_impl(std::unique_ptr<actor_base> && a, const std::string & name);
-        void send_impl(const actor_ref & toActor, const actor_ref & fromActor, yato::any && message);
+        void send_impl(const actor_ref & toActor, const actor_ref & fromActor, yato::any && message) const;
 
 
         //-------------------------------------------------------
@@ -94,7 +94,7 @@ namespace actors
         /**
          * Send stop signal to actor and terminate it right after the current message
          */
-        void stop(const actor_ref & addressee);
+        void stop(const actor_ref & addressee) const;
 
         /**
          * Stop all actors

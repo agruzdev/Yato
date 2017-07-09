@@ -9,6 +9,7 @@
 
 #include "../actor_ref.h"
 #include "../actor_system.h"
+#include "mailbox.h"
 
 namespace yato
 {
@@ -26,6 +27,14 @@ namespace actors
     }
     //-------------------------------------------------------
 
+    actor_ref::~actor_ref()
+    { }
+    //-------------------------------------------------------
+
+    void actor_ref::set_mailbox(const std::shared_ptr<mailbox> & ptr) {
+        m_mailbox = std::weak_ptr<mailbox>(ptr);
+    }
+    //-------------------------------------------------------
 
 } // namespace actors
 
