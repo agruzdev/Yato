@@ -105,6 +105,7 @@ namespace actors
             }
             m_actors.emplace_hint(pos, ref.get_path(), std::move(cell));
         }
+        m_logger->verbose("Actor %s is started!", ref.get_path().c_str());
 
         enqueue_system_signal(mbox.get(), system_signal::start);
         m_executor->execute(mbox.get());
@@ -122,7 +123,7 @@ namespace actors
 
         std::shared_ptr<mailbox> mbox = to_actor.get_mailbox().lock();
         if(mbox == nullptr) {
-            m_logger->verbose("Failed to send a message. Actor " + to_actor.get_path() + " is not found!");
+            m_logger->verbose("Failed to send a message. Actor %s is not found!", to_actor.get_path().c_str());
             return;
         }
 
@@ -160,7 +161,7 @@ namespace actors
     {
         std::shared_ptr<mailbox> mbox = addressee.get_mailbox().lock();
         if (mbox == nullptr) {
-            m_logger->verbose("Failed to stop actor. Actor " + addressee.get_path() + " is not found!");
+            m_logger->verbose("Failed to stop actor. Actor %s is not found!", addressee.get_path().c_str());
             return;
         }
         stop_impl_(mbox.get());
@@ -178,12 +179,15 @@ namespace actors
 
     void actor_system::notify_on_stop_(const actor_ref & ref)
     {
-        std::unique_lock<std::mutex> lock(m_cells_mutex);
-        auto it = m_actors.find(ref.get_path());
-        if(it != m_actors.end()) {
-            m_actors.erase(it);
+        {
+            std::unique_lock<std::mutex> lock(m_cells_mutex);
+            auto it = m_actors.find(ref.get_path());
+            if (it != m_actors.end()) {
+                m_actors.erase(it);
+            }
+            m_cells_condition.notify_one();
         }
-        m_cells_condition.notify_one();
+        m_logger->verbose("Actor %s is stopped.", ref.get_path().c_str());
     }
     //--------------------------------------------------------
 

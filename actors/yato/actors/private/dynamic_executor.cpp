@@ -24,7 +24,8 @@ namespace actors
                     mbox->is_open = false;
                     mbox->is_scheduled = false;
                 }
-                executor->m_system->notify_on_stop_(mbox->owner->self());
+                actor_ref ref = mbox->owner->self();
+                executor->m_system->notify_on_stop_(ref);
                 return;
             }
 

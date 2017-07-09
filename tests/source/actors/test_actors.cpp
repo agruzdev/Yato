@@ -51,6 +51,9 @@ TEST(Yato_Actors, common)
 
 namespace
 {
+    const int PING_LIMIT = 100000;
+    const int PING_TICK  = PING_LIMIT / 10;
+
     class PingActor
         : public yato::actors::actor<>
     {
@@ -66,11 +69,13 @@ namespace
             yato::any_match(
                 [this](int count) {
                     sender().tell(count + 1, self());
-                    if(count >= 10) {
+                    if(count >= PING_LIMIT) {
                         self().stop();
                     }
                     else {
-                        log().info("Ping " + std::to_string(count));
+                        if (count % PING_TICK == 0) {
+                            log().info("Ping " + std::to_string(count));
+                        }
                     }
                 }
             )(message);
@@ -94,11 +99,13 @@ namespace
             yato::any_match(
                 [this](int count) {
                     sender().tell(count + 1, self());
-                    if (count >= 10) {
+                    if (count >= PING_LIMIT) {
                         self().stop();
                     }
                     else {
-                        log().info("Pong " + std::to_string(count));
+                        if (count % PING_TICK == 1) {
+                            log().info("Pong " + std::to_string(count));
+                        }
                     }
                 }
             )(message);
