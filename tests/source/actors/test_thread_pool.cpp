@@ -1,5 +1,7 @@
 #include "gtest/gtest.h"
 
+#include <atomic>
+
 #include <yato/actors/private/thread_pool.h>
 
 TEST(Yato_Actors, thread_pool_1)

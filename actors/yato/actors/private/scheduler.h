@@ -8,12 +8,13 @@
 #ifndef _YATO_ACTORS_SCHEDULER_H_
 #define _YATO_ACTORS_SCHEDULER_H_
 
-#include <cassert>
 #include <chrono>
+#include <functional>
 #include <future>
 #include <mutex>
 #include <vector>
 
+#include "functor.h"
 #include "../logger.h"
 
 namespace yato
@@ -23,11 +24,15 @@ namespace actors
 
     class scheduler
     {
+    public:
+        using clock_type      = std::chrono::high_resolution_clock;
         using time_point_type = std::chrono::high_resolution_clock::time_point;
+
+    private:
         struct event
         {
             time_point_type time;
-            std::packaged_task<void()> task;
+            std::unique_ptr<void_functor> task;
         };
 
         std::vector<event> m_events;
@@ -43,17 +48,20 @@ namespace actors
         static
         void thread_function(scheduler* self) noexcept
         {
-            while(!self->m_force_stop) {
+            for (;;) {
                 event evt;
                 {
                     std::unique_lock<std::mutex> lock(self->m_mutex);
-                    if(self->m_soft_stop && self->m_events.empty()) {
-                        break;
+                    if (self->m_force_stop) {
+                        return;
                     }
                     while (self->m_events.empty()) {
+                        if(self->m_soft_stop) {
+                            return;
+                        }
                         self->m_condition.wait(lock);
                         if(self->m_force_stop) {
-                            break;
+                            return;
                         }
                     }
                     event* earliest = &self->m_events.back();
@@ -61,16 +69,16 @@ namespace actors
                         auto time = earliest->time; // local copy
                         self->m_condition.wait_until(lock, time);
                         if (self->m_force_stop) {
-                            break;
+                            return;
                         }
                         earliest = &self->m_events.back();
                     }
                     evt = std::move(*earliest);
                     self->m_events.pop_back();
                 }
-                if(evt.task.valid()) {
+                if(evt.task) {
                     try {
-                        evt.task();
+                        (*evt.task)();
                     }
                     catch(std::runtime_error & ex) {
                         self->m_log->error(ex.what());
@@ -115,16 +123,23 @@ namespace actors
          * Enqueue a task which should be executed at specific time point
          */
         template <typename Fn_, typename... Args_>
-        void enqueue(const time_point_type& when, Fn_ && function, Args_ && ... args) {
+        auto enqueue(const time_point_type & when, Fn_ && function, Args_ && ... args)
+            -> std::future<std::result_of_t<Fn_(Args_...)>>
+        {
+            auto task = std::packaged_task<std::result_of_t<Fn_(Args_...)>()>(std::bind(std::forward<Fn_>(function), std::forward<Args_>(args)...));
+            auto result = task.get_future();
+
             event evt;
             evt.time = when;
-            evt.task = std::packaged_task<void()>(std::bind(std::forward<Fn_>(function), std::forward<Args_>(args)...));
+            evt.task = make_functor_ptr(std::move(task));
             {
                 std::unique_lock<std::mutex> lock(m_mutex);
                 auto pos = std::upper_bound(m_events.begin(), m_events.end(), evt, [](const event& e1, const event& e2) { return e1.time > e2.time; });
                 m_events.insert(pos, std::move(evt));
             }
             m_condition.notify_one();
+
+            return result;
         }
     };
 

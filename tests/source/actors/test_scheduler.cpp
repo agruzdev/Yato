@@ -47,16 +47,28 @@ TEST(Yato_Actors, scheduler_4)
 
     {
         yato::actors::scheduler scheduler;
+        auto now = std::chrono::high_resolution_clock::now();
         for (uint32_t i = 0; i < N; ++i) {
             int timeout = std::rand() % 100 + 1000;
-            scheduler.enqueue(std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(timeout), [timeout, &markers, &mutex]{
+            scheduler.enqueue(now + std::chrono::milliseconds(timeout), [timeout, &markers, &mutex]{
                 std::unique_lock<std::mutex> lock(mutex);
                 markers.push_back(timeout);
             });
         }
     }
-    for (int i = 1; i < markers.size(); ++i) {
+    
+    for (size_t i = 1; i < markers.size(); ++i) {
         ASSERT_GE(markers[i], markers[i - 1]);
     }
+}
+
+TEST(Yato_Actors, scheduler_5)
+{
+    yato::actors::scheduler scheduler;
+    std::future<int> r = scheduler.enqueue(std::chrono::high_resolution_clock::now(), [] {
+        return 42; 
+    });
+    ASSERT_TRUE(r.valid());
+    ASSERT_EQ(42, r.get());
 }
 
