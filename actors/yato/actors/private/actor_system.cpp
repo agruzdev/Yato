@@ -10,9 +10,12 @@
 #include "../actor.h"
 #include "../actor_system.h"
 
+#include "asking_actor.h"
 #include "mailbox.h"
 #include "pinned_executor.h"
 #include "dynamic_executor.h"
+#include "scheduler.h"
+#include "name_generator.h"
 
 namespace
 {
@@ -45,6 +48,9 @@ namespace actors
 
         //m_executor = std::make_unique<pinned_executor>(this);
         m_executor = std::make_unique<dynamic_executor>(this, 4, 5);
+
+        m_scheduler = std::make_unique<scheduler>();
+        m_name_generator = std::make_unique<name_generator>();
     }
     //-------------------------------------------------------
 
@@ -58,7 +64,7 @@ namespace actors
         }
         // Now all actors are stopped
 
-        m_executor.reset();
+        m_scheduler->stop();
     }
     //-------------------------------------------------------
 
@@ -78,16 +84,13 @@ namespace actors
         if(name.empty()) {
             throw yato::argument_error("Actor name can't be empty!");
         }
-        if(name == DEAD_LETTERS) {
-            throw yato::argument_error("Actor name " + DEAD_LETTERS + "is reserved!");
-        }
 
         // create mailbox
         auto mbox = std::make_shared<mailbox>();
         mbox->owner = a.get();
 
         // create ref
-        actor_ref ref{this, name};
+        actor_ref ref{ this, name };
         ref.set_mailbox(mbox);
 
         // setup actor
@@ -136,6 +139,20 @@ namespace actors
             }
         }
         m_executor->execute(mbox.get());
+    }
+    //-------------------------------------------------------
+
+    std::future<yato::any> actor_system::ask_impl_(const actor_ref & addressee, yato::any && message, const timeout_type & timeout) const
+    {
+        std::promise<yato::any> response;
+        auto result = response.get_future();
+
+        auto ask_actor = const_cast<actor_system*>(this)->create_actor_impl(std::make_unique<asking_actor>(std::move(response)), m_name_generator->next_indexed("temp/ask"));
+        send_impl(addressee, ask_actor, std::move(message));
+
+        m_scheduler->enqueue(std::chrono::high_resolution_clock::now() + timeout, [ask_actor]{ ask_actor.stop(); });
+
+        return result;
     }
     //-------------------------------------------------------
 

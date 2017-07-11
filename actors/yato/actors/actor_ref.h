@@ -8,10 +8,12 @@
 #ifndef _YATO_ACTOR_REF_H_
 #define _YATO_ACTOR_REF_H_
 
-#include <string>
+#include <future>
 #include <memory>
+#include <string>
 
-#include "yato/prerequisites.h"
+#include <yato/prerequisites.h>
+#include <yato/any.h>
 
 namespace yato
 {
@@ -79,6 +81,12 @@ namespace actors
 
         template <typename Ty_>
         void tell(Ty_ && message, const actor_ref & sender) const;
+
+        /**
+         * Send message for response
+         */
+        template <typename Ty_, typename Rep_, typename Period_>
+        std::future<yato::any> ask(Ty_ && message, const std::chrono::duration<Rep_, Period_> & timeout) const;
 
         /**
          * Stop actor immediately.

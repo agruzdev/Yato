@@ -8,7 +8,9 @@
 #ifndef _YATO_ACTOR_SYSTEM_H_
 #define _YATO_ACTOR_SYSTEM_H_
 
+#include <chrono>
 #include <condition_variable>
+#include <future>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -27,10 +29,14 @@ namespace actors
 
     class abstract_executor;
     class actor_system;
+    class scheduler;
+    class name_generator;
 
     class actor_system final
     {
     private:
+        using timeout_type = std::chrono::microseconds;
+
         std::string m_name;
         logger_ptr m_logger;
 
@@ -39,6 +45,9 @@ namespace actors
         std::map<std::string, std::unique_ptr<actor_cell>> m_actors;
 
         std::unique_ptr<abstract_executor> m_executor;
+
+        std::unique_ptr<scheduler> m_scheduler;
+        std::unique_ptr<name_generator> m_name_generator;
 
         const actor_ref m_dead_letters;
 
@@ -49,6 +58,7 @@ namespace actors
         actor_ref create_actor_impl(std::unique_ptr<actor_base> && a, const std::string & name);
         void send_impl(const actor_ref & toActor, const actor_ref & fromActor, yato::any && message) const;
 
+        std::future<yato::any> ask_impl_(const actor_ref & addressee, yato::any && message, const timeout_type & timeout) const;
 
         //-------------------------------------------------------
 
@@ -65,17 +75,22 @@ namespace actors
 
         template <typename ActorType_, typename ... Args_>
         actor_ref create_actor(const std::string & name, Args_ && ... args) {
-            return create_actor_impl(std::make_unique<ActorType_>(std::forward<Args_>(args)...), name);
+            return create_actor_impl(std::make_unique<ActorType_>(std::forward<Args_>(args)...), "user/" + name);
         }
 
         template <typename Ty_>
-        void send_message(const actor_ref & addressee, Ty_ && message) {
+        void send_message(const actor_ref & addressee, Ty_ && message) const {
             send_impl(addressee, dead_letters(), yato::any(message));
         }
 
         template <typename Ty_>
-        void send_message(const actor_ref & addressee, Ty_ && message, const actor_ref & sender) {
+        void send_message(const actor_ref & addressee, Ty_ && message, const actor_ref & sender) const {
             send_impl(addressee, sender, yato::any(message));
+        }
+
+        template <typename Ty_, typename Rep_, typename Period_>
+        std::future<yato::any> ask(const actor_ref & addressee, Ty_ && message, const std::chrono::duration<Rep_, Period_> & timeout) const {
+            return ask_impl_(addressee, yato::any(message), std::chrono::duration_cast<timeout_type>(timeout));
         }
 
         const std::string & name() const {
@@ -112,13 +127,19 @@ namespace actors
     template <typename Ty_>
     inline
     void actor_ref::tell(Ty_ && message) const {
-        m_system->send_message(*this, message);
+        m_system->send_message(*this, std::forward<Ty_>(message));
     }
 
     template <typename Ty_>
     inline
     void actor_ref::tell(Ty_ && message, const actor_ref & sender) const {
-        m_system->send_message(*this, message, sender);
+        m_system->send_message(*this, std::forward<Ty_>(message), sender);
+    }
+
+    template <typename Ty_, typename Rep_, typename Period_>
+    inline
+    std::future<yato::any> actor_ref::ask(Ty_ && message, const std::chrono::duration<Rep_, Period_> & timeout) const {
+        return m_system->ask(*this, std::forward<Ty_>(message), timeout);
     }
 
     inline
