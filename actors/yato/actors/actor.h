@@ -88,6 +88,11 @@ namespace actors
         const actor_ref & self() const;
 
         /**
+         * Get parent actor system
+         */
+        const actor_system & system() const;
+
+        /**
          * Handle message
          */
         void receive_message(const message & message) noexcept;

@@ -15,6 +15,8 @@
 #include <yato/prerequisites.h>
 #include <yato/any.h>
 
+#include "actor_path.h"
+
 namespace yato
 {
 namespace actors
@@ -41,12 +43,11 @@ namespace actors
         actor_system* m_system; // Not owning pointer. Can copy
         std::weak_ptr<mailbox> m_mailbox;
 
-        std::string m_name;
-        std::string m_path;
+        actor_path m_path;
 
         // Interface for actor_system
 
-        actor_ref(actor_system* system, const std::string & name);
+        actor_ref(actor_system* system, const actor_path & path);
 
         void set_mailbox(const std::shared_ptr<mailbox> & ptr);
 
@@ -63,12 +64,12 @@ namespace actors
         actor_ref& operator=(const actor_ref&) = default;
         actor_ref& operator=(actor_ref&&) = default;
 
-        const std::string & get_name() const 
+        std::string get_name() const 
         {
-            return m_name;
+            return m_path.get_name();
         }
 
-        const std::string & get_path() const 
+        const actor_path & get_path() const 
         {
             return m_path;
         }
@@ -94,9 +95,10 @@ namespace actors
          */
         void stop() const;
 
-        bool operator == (const actor_ref & other) const 
+        friend
+        bool operator == (const actor_ref & one, const actor_ref & another)
         {
-            return m_path == other.m_path;
+            return one.m_path == another.m_path;
         }
 
         friend class actor_system;

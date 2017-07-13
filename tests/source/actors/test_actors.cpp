@@ -57,11 +57,9 @@ namespace
     class PingActor
         : public yato::actors::actor<>
     {
-        yato::actors::actor_ref m_other;
         void pre_start() override
         {
-            log().info("Ping 0");
-            m_other.tell(1, self());
+            system().select("PongActor").tell(1, self());
         }
 
         void receive(const yato::any& message) override
@@ -80,20 +78,12 @@ namespace
                 }
             )(message);
         }
-
-    public:
-        explicit
-        PingActor(const yato::actors::actor_ref & other)
-            : m_other(other)
-        { }
-
     };
 
 
     class PongActor
         : public yato::actors::actor<>
     {
-
         void receive(const yato::any& message) override
         {
             yato::any_match(
@@ -117,7 +107,7 @@ TEST(Yato_Actors, ping_pong)
 {
     yato::actors::actor_system system("default");
 
-    auto actor1 = system.create_actor<PongActor>("Actor1");
-    auto actor2 = system.create_actor<PingActor>("Actor2", actor1);
+    auto actor1 = system.create_actor<PongActor>("PongActor");
+    auto actor2 = system.create_actor<PingActor>("PingActor");
 }
 

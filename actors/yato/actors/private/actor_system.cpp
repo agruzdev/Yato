@@ -38,11 +38,12 @@ namespace actors
 
     actor_system::actor_system(const std::string & name)
         : m_name(name)
-        , m_dead_letters(this, DEAD_LETTERS)
     {
-        if(name.empty()) {
-            throw yato::argument_error("System name can't be empty");
+        if(!actor_path::is_valid_system_name(m_name)) {
+            throw yato::argument_error("actor_system[actor_system]: Invalid name!");
         }
+        m_dead_letters.reset(new actor_ref(this, actor_path(this, actor_scope::dead, DEAD_LETTERS)));
+
         m_logger = logger_factory::create(std::string("ActorSystem[") + m_name + "]");
         m_logger->set_filter(log_level::verbose);
 
@@ -79,18 +80,14 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    actor_ref actor_system::create_actor_impl(std::unique_ptr<actor_base> && a, const std::string & name)
+    actor_ref actor_system::create_actor_impl(std::unique_ptr<actor_base> && a, const actor_path & path)
     {
-        if(name.empty()) {
-            throw yato::argument_error("Actor name can't be empty!");
-        }
-
         // create mailbox
         auto mbox = std::make_shared<mailbox>();
         mbox->owner = a.get();
 
         // create ref
-        actor_ref ref{ this, name };
+        actor_ref ref{ this, path };
         ref.set_mailbox(mbox);
 
         // setup actor
@@ -104,7 +101,7 @@ namespace actors
             std::unique_lock<std::mutex> lock(m_cells_mutex);
             auto pos = m_actors.find(ref.get_path());
             if(pos != m_actors.end()) {
-                throw yato::argument_error("Actor with the name " + name + " already exists!");
+                throw yato::argument_error("Actor with the name " + path.to_string() + " already exists!");
             }
             m_actors.emplace_hint(pos, ref.get_path(), std::move(cell));
         }
@@ -117,20 +114,20 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    void actor_system::send_impl(const actor_ref & to_actor, const actor_ref & fromActor, yato::any && userMessage) const 
+    void actor_system::send_impl(const actor_ref & addressee, const actor_ref & sender, yato::any && userMessage) const
     {
-        if(to_actor == dead_letters()) {
+        if(addressee == dead_letters()) {
             m_logger->verbose("A message was delivered to DeadLetters.");
             return;
         }
 
-        std::shared_ptr<mailbox> mbox = to_actor.get_mailbox().lock();
+        std::shared_ptr<mailbox> mbox = addressee.get_mailbox().lock();
         if(mbox == nullptr) {
-            m_logger->verbose("Failed to send a message. Actor %s is not found!", to_actor.get_path().c_str());
+            m_logger->verbose("Failed to send a message. Actor %s is not found!", addressee.get_path().c_str());
             return;
         }
 
-        auto msg = std::make_unique<message>(std::move(userMessage), fromActor);
+        auto msg = std::make_unique<message>(std::move(userMessage), sender);
         {
             std::unique_lock<std::mutex> lock(mbox->mutex);
             if (mbox->is_open) {
@@ -147,7 +144,8 @@ namespace actors
         std::promise<yato::any> response;
         auto result = response.get_future();
 
-        auto ask_actor = const_cast<actor_system*>(this)->create_actor_impl(std::make_unique<asking_actor>(std::move(response)), m_name_generator->next_indexed("temp/ask"));
+        auto ask_actor_path = actor_path(this, actor_scope::temp, m_name_generator->next_indexed("ask"));
+        auto ask_actor = const_cast<actor_system*>(this)->create_actor_impl(std::make_unique<asking_actor>(std::move(response)), ask_actor_path);
         send_impl(addressee, ask_actor, std::move(message));
 
         m_scheduler->enqueue(std::chrono::high_resolution_clock::now() + timeout, [ask_actor]{ ask_actor.stop(); });
@@ -192,6 +190,18 @@ namespace actors
             stop_impl_(entry.second->mbox.get());
         });
     }
+    //--------------------------------------------------------
+
+    actor_ref actor_system::select(const actor_path & path) const
+    {
+        std::unique_lock<std::mutex> lock(m_cells_mutex);
+        auto it = m_actors.find(path);
+        if(it != m_actors.cend()) {
+            return (*it).second->act->self();
+        }
+        return dead_letters();
+    }
+
     //--------------------------------------------------------
 
     void actor_system::notify_on_stop_(const actor_ref & ref)

@@ -40,22 +40,22 @@ namespace actors
         std::string m_name;
         logger_ptr m_logger;
 
+        mutable std::mutex m_cells_mutex;
         std::condition_variable m_cells_condition;
-        std::mutex m_cells_mutex;
-        std::map<std::string, std::unique_ptr<actor_cell>> m_actors;
+        std::map<actor_path, std::unique_ptr<actor_cell>> m_actors;
 
         std::unique_ptr<abstract_executor> m_executor;
 
         std::unique_ptr<scheduler> m_scheduler;
         std::unique_ptr<name_generator> m_name_generator;
 
-        const actor_ref m_dead_letters;
+        std::unique_ptr<actor_ref> m_dead_letters;
 
         //-------------------------------------------------------
         static void enqueue_system_signal(mailbox* mbox, const system_signal & signal);
         void stop_impl_(mailbox* mbox) const;
 
-        actor_ref create_actor_impl(std::unique_ptr<actor_base> && a, const std::string & name);
+        actor_ref create_actor_impl(std::unique_ptr<actor_base> && a, const actor_path & name);
         void send_impl(const actor_ref & toActor, const actor_ref & fromActor, yato::any && message) const;
 
         std::future<yato::any> ask_impl_(const actor_ref & addressee, yato::any && message, const timeout_type & timeout) const;
@@ -75,7 +75,7 @@ namespace actors
 
         template <typename ActorType_, typename ... Args_>
         actor_ref create_actor(const std::string & name, Args_ && ... args) {
-            return create_actor_impl(std::make_unique<ActorType_>(std::forward<Args_>(args)...), "user/" + name);
+            return create_actor_impl(std::make_unique<ActorType_>(std::forward<Args_>(args)...), actor_path(this, actor_scope::user, name));
         }
 
         template <typename Ty_>
@@ -101,9 +101,9 @@ namespace actors
             return m_logger;
         }
 
-
         const actor_ref & dead_letters() const {
-            return m_dead_letters;
+            assert(m_dead_letters != nullptr);
+            return *m_dead_letters;
         }
 
         /**
@@ -116,6 +116,18 @@ namespace actors
          * Sends stop() to all created actors
          */
         void stop_all();
+
+        /**
+         * Find actor by name and get reference to it
+         */
+        actor_ref select(const actor_path & path) const;
+
+        /**
+         * Find actor in user scope of the system
+         */
+        actor_ref select(const std::string & name) const {
+            return select(actor_path(this, actor_scope::user, name));
+        }
 
         /**
          * Internal method
