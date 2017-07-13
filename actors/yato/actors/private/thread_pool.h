@@ -15,7 +15,6 @@
 #include <thread>
 #include <vector>
 
-#include "functor.h"
 #include "../logger.h"
 
 namespace yato
@@ -29,7 +28,7 @@ namespace actors
     class thread_pool
     {
         std::vector<std::thread> m_threads;
-        std::queue<std::unique_ptr<void_functor>> m_tasks;
+        std::queue<std::function<void()>> m_tasks;
 
         std::mutex m_mutex;
         std::condition_variable m_cvar;
@@ -42,7 +41,7 @@ namespace actors
         thread_pool(size_t threads_num) {
             auto thread_function = [this] {
                 for (;;) {
-                    std::unique_ptr<void_functor> task;
+                    std::function<void()> task;
                     {
                         std::unique_lock<std::mutex> lock(m_mutex);
                         m_cvar.wait(lock, [this] { return m_stop || !m_tasks.empty(); });
@@ -57,7 +56,7 @@ namespace actors
                     // Execute
                     if (task) {
                         try {
-                            (*task)();
+                            task();
                         }
                         catch (std::exception & e) {
                             m_log->error("yato::actors::thread_pool[thread_function]: Unhandled exception: %s", e.what());
@@ -93,7 +92,7 @@ namespace actors
         void enqueue(FunTy_ && function, Args_ && ... args) {
             std::unique_lock<std::mutex> lock(m_mutex);
             if(!m_stop) {
-                m_tasks.push(make_functor_ptr(std::bind(std::forward<FunTy_>(function), std::forward<Args_>(args)...)));
+                m_tasks.emplace(std::bind(std::forward<FunTy_>(function), std::forward<Args_>(args)...));
             } else {
                 m_log->warning("yato::actor::thread_pool[enqueue]: Failed to enqueue a new task. Pool is already stopped.");
             }
