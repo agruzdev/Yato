@@ -93,6 +93,11 @@ namespace actors
         const actor_system & system() const;
 
         /**
+         * Get parent actor system
+         */
+        actor_system & system();
+
+        /**
          * Handle message
          */
         void receive_message(const message & message) noexcept;

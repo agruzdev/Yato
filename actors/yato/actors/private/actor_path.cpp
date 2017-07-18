@@ -52,7 +52,8 @@ namespace actors
     inline
     bool is_valid_path(const char & c)
     {
-        return std::isalnum(c, actor_path::locale()) || (c == '_') || (c == '/');
+        //return std::isalnum(c, actor_path::locale()) || (c == '_') || (c == '/');
+        return std::isgraph(c, actor_path::locale());
     }
     //---------------------------------------------------
 
@@ -80,12 +81,20 @@ namespace actors
     }
     //---------------------------------------------------
 
-    actor_path::actor_path(const actor_system* system, const actor_scope & scope, const std::string & actor_name)
+    actor_path::actor_path(const actor_system & system, const actor_scope & scope, const std::string & actor_name)
     {
         if (!is_valid_actor_name(actor_name)) {
             throw yato::argument_error("actor_path[actor_path]: Invalid actor name!");
         }
-        m_path = actor_path::path_root + system->name() + "/" + get_scope_name(scope) + "/" + actor_name;
+        m_path = actor_path::path_root + system.name() + "/" + get_scope_name(scope) + "/" + actor_name;
+    }
+    //---------------------------------------------------
+
+    bool actor_path::is_system_scope() const 
+    {
+        const char* scope_name = get_scope_name(actor_scope::system);
+        auto pos = std::find(std::next(m_path.cbegin(), actor_path::path_root.size()), m_path.cend(), '/');
+        return std::equal(scope_name, scope_name + std::strlen(scope_name), std::next(pos));
     }
 
 }// namespace actors

@@ -63,6 +63,7 @@ TEST(Yato_Actors, highload_spawn)
 {
 
     yato::actors::actor_system system("default");
+    system.logger()->set_filter(yato::actors::log_level::verbose);
 
     auto echoActor = system.create_actor<EchoActor>("Echo");
 

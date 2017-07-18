@@ -25,6 +25,11 @@ list(APPEND all_sources ${yato_sources})
 if(YATO_BUILD_ACTORS)
     file(GLOB actors_tests "source/actors/*.cpp" "source/actors/*.h")
     list(APPEND all_sources ${actors_tests})
+
+    if(YATO_ACTORS_WITH_IO)
+        file(GLOB actors_io_tests "source/actors/io/*.cpp" "source/actors/io/*.h")
+        list(APPEND all_sources ${actors_io_tests})
+    endif()
 endif()
 
 

@@ -34,7 +34,7 @@ namespace actors
     struct mailbox
     {
         std::queue<std::unique_ptr<message>> queue;
-        std::queue<system_signal> sys_queue;
+        std::queue<system_message> sys_queue;
         std::mutex mutex;
         std::condition_variable condition;
 

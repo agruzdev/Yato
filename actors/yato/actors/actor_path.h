@@ -59,7 +59,7 @@ namespace actors
 
         actor_path(const std::string & system_name, const actor_scope & scope, const std::string & actor_name);
 
-        actor_path(const actor_system* system, const actor_scope & scope, const std::string & actor_name);
+        actor_path(const actor_system & system, const actor_scope & scope, const std::string & actor_name);
 
         ~actor_path() = default;
 
@@ -87,10 +87,21 @@ namespace actors
             return m_path.substr(pos + 1 - m_path.begin());
         }
 
+        /**
+         * Check if this path represents actor in system scope
+         */
+        bool is_system_scope() const;
+
         friend
         bool operator == (const actor_path & one, const actor_path & another)
         {
             return one.m_path == another.m_path;
+        }
+
+        friend
+        bool operator != (const actor_path & one, const actor_path & another)
+        {
+            return one.m_path != another.m_path;
         }
 
         friend 

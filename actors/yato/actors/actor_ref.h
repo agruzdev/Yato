@@ -101,6 +101,12 @@ namespace actors
             return one.m_path == another.m_path;
         }
 
+        friend
+        bool operator != (const actor_ref & one, const actor_ref & another)
+        {
+            return one.m_path != another.m_path;
+        }
+
         friend class actor_system;
     };
     //-------------------------------------------------------

@@ -38,8 +38,10 @@ namespace
 
 TEST(Yato_Actors, common)
 {
+    auto conf = yato::actors::config::defaults();
+    conf.log_filter = yato::actors::log_level::verbose;
 
-    yato::actors::actor_system system("default");
+    yato::actors::actor_system system("default", conf);
 
     auto actor = system.create_actor<EchoActor>("echo1");
     actor.tell(std::string("Hello, Actor!"));
@@ -105,7 +107,10 @@ namespace
 
 TEST(Yato_Actors, ping_pong) 
 {
-    yato::actors::actor_system system("default");
+    auto conf = yato::actors::config::defaults();
+    conf.log_filter = yato::actors::log_level::verbose;
+
+    yato::actors::actor_system system("default", conf);
 
     auto actor1 = system.create_actor<PongActor>("PongActor");
     auto actor2 = system.create_actor<PingActor>("PingActor");

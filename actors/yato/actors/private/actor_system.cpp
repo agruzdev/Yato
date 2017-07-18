@@ -5,7 +5,10 @@
 * Copyright (c) 2016 Alexey Gruzdev
 */
 
+#include <atomic>
 #include <iostream>
+
+#include <yato/assert.h>
 
 #include "../actor.h"
 #include "../actor_system.h"
@@ -16,6 +19,10 @@
 #include "dynamic_executor.h"
 #include "scheduler.h"
 #include "name_generator.h"
+
+#ifdef YATO_ACTORS_WITH_IO
+#include "../io/tcp.h"
+#endif
 
 namespace
 {
@@ -36,29 +43,51 @@ namespace actors
     };
     //-------------------------------------------------------
 
-    actor_system::actor_system(const std::string & name)
+    actor_system::actor_system(const std::string & name, const config & conf)
         : m_name(name)
     {
         if(!actor_path::is_valid_system_name(m_name)) {
             throw yato::argument_error("actor_system[actor_system]: Invalid name!");
         }
-        m_dead_letters.reset(new actor_ref(this, actor_path(this, actor_scope::dead, DEAD_LETTERS)));
+        m_dead_letters.reset(new actor_ref(this, actor_path(m_name, actor_scope::dead, DEAD_LETTERS)));
 
         m_logger = logger_factory::create(std::string("ActorSystem[") + m_name + "]");
-        m_logger->set_filter(log_level::verbose);
+        m_logger->set_filter(conf.log_filter);
 
         //m_executor = std::make_unique<pinned_executor>(this);
         m_executor = std::make_unique<dynamic_executor>(this, 4, 5);
 
         m_scheduler = std::make_unique<scheduler>();
         m_name_generator = std::make_unique<name_generator>();
+
+        m_user_priority_actors_num = 0;
+
+        // System actors
+        if(conf.enable_io) {
+#ifdef YATO_ACTORS_WITH_IO
+            create_actor_impl_(make_builder<io::tcp_manager>(), actor_path(m_name, actor_scope::system, io::tcp_manager::actor_name()));
+#else
+            throw yato::argument_error("actor_system[actor_system]: IO can't be enabled. Build with flag YATO_ACTORS_WITH_IO");
+#endif
+        }
     }
     //-------------------------------------------------------
 
-    actor_system::~actor_system() 
+    actor_system::actor_system(const std::string & name)
+        : actor_system(name, config::defaults())
+    { }
+    //-------------------------------------------------------
+
+    actor_system::~actor_system()
     {
         {
             std::unique_lock<std::mutex> lock(m_cells_mutex);
+            while(m_user_priority_actors_num != 0) {
+                m_cells_condition.wait(lock);
+            }
+            std::for_each(m_actors.begin(), m_actors.end(), [this](decltype(m_actors)::value_type & entry) {
+                stop_impl_(entry.second->mbox.get());
+            });
             while(!m_actors.empty()) {
                 m_cells_condition.wait(lock);
             }
@@ -80,8 +109,10 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    actor_ref actor_system::create_actor_impl(std::unique_ptr<actor_base> && a, const actor_path & path)
+    actor_ref actor_system::init_cell_(actor_cell* cell, const actor_builder & builder, const actor_path & path)
     {
+        auto a = builder();
+
         // create mailbox
         auto mbox = std::make_shared<mailbox>();
         mbox->owner = a.get();
@@ -93,28 +124,42 @@ namespace actors
         // setup actor
         a->init_base_(this, ref);
 
-        auto cell = std::make_unique<actor_cell>();
         cell->act = std::move(a);
         cell->mbox = mbox;
 
+        return ref;
+    }
+
+    //-------------------------------------------------------
+
+    actor_ref actor_system::create_actor_impl_(const actor_builder & builder, const actor_path & path)
+    {
+        auto cell = std::make_unique<actor_cell>();
+        actor_cell* pcell = cell.get();
+
+        auto ref = init_cell_(pcell, builder, path);
+
         {
             std::unique_lock<std::mutex> lock(m_cells_mutex);
-            auto pos = m_actors.find(ref.get_path());
+            auto pos = m_actors.find(path);
             if(pos != m_actors.end()) {
                 throw yato::argument_error("Actor with the name " + path.to_string() + " already exists!");
             }
-            m_actors.emplace_hint(pos, ref.get_path(), std::move(cell));
+            m_actors.emplace_hint(pos, path, std::move(cell));
+            if(!path.is_system_scope()) {
+                ++m_user_priority_actors_num;
+            }
         }
-        m_logger->verbose("Actor %s is started!", ref.get_path().c_str());
+        m_logger->verbose("Actor %s is started!", path.c_str());
 
-        enqueue_system_signal(mbox.get(), system_signal::start);
-        m_executor->execute(mbox.get());
+        enqueue_system_signal(pcell->mbox.get(), system_signal::start);
+        m_executor->execute(pcell->mbox.get());
 
         return ref;
     }
     //-------------------------------------------------------
 
-    void actor_system::send_impl(const actor_ref & addressee, const actor_ref & sender, yato::any && userMessage) const
+    void actor_system::send_impl_(const actor_ref & addressee, const actor_ref & sender, yato::any && userMessage) const
     {
         if(addressee == dead_letters()) {
             m_logger->verbose("A message was delivered to DeadLetters.");
@@ -144,9 +189,9 @@ namespace actors
         std::promise<yato::any> response;
         auto result = response.get_future();
 
-        auto ask_actor_path = actor_path(this, actor_scope::temp, m_name_generator->next_indexed("ask"));
-        auto ask_actor = const_cast<actor_system*>(this)->create_actor_impl(std::make_unique<asking_actor>(std::move(response)), ask_actor_path);
-        send_impl(addressee, ask_actor, std::move(message));
+        auto ask_actor_path = actor_path(*this, actor_scope::temp, m_name_generator->next_indexed("ask"));
+        auto ask_actor = const_cast<actor_system*>(this)->create_actor_impl_(make_builder<asking_actor>(std::move(response)), ask_actor_path);
+        send_impl_(addressee, ask_actor, std::move(message));
 
         m_scheduler->enqueue(std::chrono::high_resolution_clock::now() + timeout, [ask_actor]{ ask_actor.stop(); });
 
@@ -212,8 +257,11 @@ namespace actors
             if (it != m_actors.end()) {
                 m_actors.erase(it);
             }
-            m_cells_condition.notify_one();
+            if(!ref.get_path().is_system_scope()) {
+                --m_user_priority_actors_num;
+            }
         }
+        m_cells_condition.notify_one();
         m_logger->verbose("Actor %s is stopped.", ref.get_path().c_str());
     }
     //--------------------------------------------------------

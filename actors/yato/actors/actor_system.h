@@ -18,6 +18,7 @@
 #include <yato/any.h>
 
 #include "actor.h"
+#include "config.h"
 
 namespace yato
 {
@@ -36,6 +37,7 @@ namespace actors
     {
     private:
         using timeout_type = std::chrono::microseconds;
+        using actor_builder = std::function<std::unique_ptr<actor_base>()>;
 
         std::string m_name;
         logger_ptr m_logger;
@@ -43,6 +45,7 @@ namespace actors
         mutable std::mutex m_cells_mutex;
         std::condition_variable m_cells_condition;
         std::map<actor_path, std::unique_ptr<actor_cell>> m_actors;
+        size_t m_user_priority_actors_num;
 
         std::unique_ptr<abstract_executor> m_executor;
 
@@ -53,16 +56,40 @@ namespace actors
 
         //-------------------------------------------------------
         static void enqueue_system_signal(mailbox* mbox, const system_signal & signal);
-        void stop_impl_(mailbox* mbox) const;
 
-        actor_ref create_actor_impl(std::unique_ptr<actor_base> && a, const actor_path & name);
-        void send_impl(const actor_ref & toActor, const actor_ref & fromActor, yato::any && message) const;
+        template<typename Ty_, typename... Args_>
+        static
+        actor_builder make_builder(Args_ && ... args) {
+            //return [&] { return std::make_unique<Ty_>(std::forward<Args_>(args)...); };
+            return [&] { return std::unique_ptr<Ty_>(new Ty_(std::forward<Args_>(args)...)); };
+        }
+
+        actor_ref init_cell_(actor_cell* cell, const actor_builder & builder, const actor_path & path);
+        actor_ref create_actor_impl_(const actor_builder & builder, const actor_path & name);
+        void send_impl_(const actor_ref & toActor, const actor_ref & fromActor, yato::any && message) const;
+        void stop_impl_(mailbox* mbox) const;
 
         std::future<yato::any> ask_impl_(const actor_ref & addressee, yato::any && message, const timeout_type & timeout) const;
 
         //-------------------------------------------------------
 
+    private: // Extended inferface for internal usage
+        /**
+         * Create actor in specified scope
+         */
+        template <typename ActorType_, typename ... Args_>
+        actor_ref create_actor_(const actor_scope & scope, const std::string & name, Args_ && ... args) {
+            return create_actor_impl_(make_builder<ActorType_>(std::forward<Args_>(args)...), actor_path(*this, scope, name));
+        }
+
+        /**
+         * Notify system that actor is topped and can be destroyed
+         */
+        void notify_on_stop_(const actor_ref & ref);
+
     public:
+        actor_system(const std::string & name, const config & conf);
+
         explicit
         actor_system(const std::string & name);
 
@@ -75,17 +102,17 @@ namespace actors
 
         template <typename ActorType_, typename ... Args_>
         actor_ref create_actor(const std::string & name, Args_ && ... args) {
-            return create_actor_impl(std::make_unique<ActorType_>(std::forward<Args_>(args)...), actor_path(this, actor_scope::user, name));
+            return create_actor_impl_(make_builder<ActorType_>(std::forward<Args_>(args)...), actor_path(*this, actor_scope::user, name));
         }
 
         template <typename Ty_>
         void send_message(const actor_ref & addressee, Ty_ && message) const {
-            send_impl(addressee, dead_letters(), yato::any(message));
+            send_impl_(addressee, dead_letters(), yato::any(message));
         }
 
         template <typename Ty_>
         void send_message(const actor_ref & addressee, Ty_ && message, const actor_ref & sender) const {
-            send_impl(addressee, sender, yato::any(message));
+            send_impl_(addressee, sender, yato::any(message));
         }
 
         template <typename Ty_, typename Rep_, typename Period_>
@@ -126,13 +153,13 @@ namespace actors
          * Find actor in user scope of the system
          */
         actor_ref select(const std::string & name) const {
-            return select(actor_path(this, actor_scope::user, name));
+            return select(actor_path(*this, actor_scope::user, name));
         }
 
         /**
-         * Internal method
+         * Attorney class for accessing extended interface
          */
-        void notify_on_stop_(const actor_ref & ref);
+        friend class actor_system_ex;
     };
     //-------------------------------------------------------
 

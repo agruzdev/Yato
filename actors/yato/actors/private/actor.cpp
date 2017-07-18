@@ -39,13 +39,19 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    const actor_system & actor_base::system() const
+    actor_system & actor_base::system()
     {
         if (m_context == nullptr) {
             throw yato::bad_state_error("Actor is not initialized yet");
         }
         assert(m_context->system != nullptr); // Actor can't live longer than system
         return *m_context->system;
+    }
+    //-------------------------------------------------------
+
+    const actor_system & actor_base::system() const
+    {
+        return const_cast<actor_base*>(this)->system();
     }
     //-------------------------------------------------------
 

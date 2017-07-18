@@ -6,6 +6,7 @@
 */
 
 #include "../actor_system.h"
+#include "actor_system_ex.h"
 #include "thread_pool.h"
 #include "dynamic_executor.h"
 
@@ -25,7 +26,7 @@ namespace actors
                     mbox->is_scheduled = false;
                 }
                 actor_ref ref = mbox->owner->self();
-                executor->m_system->notify_on_stop_(ref);
+                actor_system_ex::notify_on_stop(*executor->m_system, ref);
                 return;
             }
 

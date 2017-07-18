@@ -35,6 +35,8 @@ message(STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
 
 option(YATO_BUILD_ACTORS "Build actors module" OFF)
 if(YATO_BUILD_ACTORS)
+    option(YATO_ACTORS_WITH_IO "Enable networking component" OFF)
+
     add_subdirectory(./actors)
     list(APPEND YATO_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/actors")
 endif()

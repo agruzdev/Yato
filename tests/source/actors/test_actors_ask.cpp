@@ -29,6 +29,7 @@ TEST(Yato_Actors, ask)
 {
 
     yato::actors::actor_system system("default");
+    system.logger()->set_filter(yato::actors::log_level::verbose);
 
     auto actor = system.create_actor<TestActor>("increment");
 

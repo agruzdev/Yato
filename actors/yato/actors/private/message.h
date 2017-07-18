@@ -26,7 +26,6 @@ namespace actors
         stop
     };
 
-
     struct message
     {
         yato::any payload;
