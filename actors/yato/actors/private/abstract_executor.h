@@ -31,17 +31,17 @@ namespace actors
     inline 
     bool process_all_system_messages(mailbox* mbox) {
         for(;;) {
-            system_signal signal = system_signal::none;
+            std::unique_ptr<message> sys_msg = nullptr;
             {
                 std::unique_lock<std::mutex> lock(mbox->mutex);
                 if (mbox->sys_queue.empty()) {
                     break;
                 }
-                signal = mbox->sys_queue.front();
+                sys_msg = std::move(mbox->sys_queue.front());
                 mbox->sys_queue.pop();
             }
-            if (signal != system_signal::none) {
-                if(mbox->owner->recieve_system_message(signal)) {
+            if (sys_msg) {
+                if(mbox->owner->recieve_system_message(*sys_msg)) {
                     return true;
                 }
             }

@@ -53,9 +53,7 @@ namespace actors
         std::unique_ptr<name_generator> m_name_generator;
 
         std::unique_ptr<actor_ref> m_dead_letters;
-
         //-------------------------------------------------------
-        static void enqueue_system_signal(mailbox* mbox, const system_signal & signal);
 
         template<typename Ty_, typename... Args_>
         static
@@ -155,6 +153,16 @@ namespace actors
         actor_ref select(const std::string & name) const {
             return select(actor_path(*this, actor_scope::user, name));
         }
+
+        /**
+         * Start watch of an actor
+         */
+        void watch(const actor_ref & watchee, const actor_ref & watcher) const;
+
+        /**
+         * Stop watch of an actor
+         */
+        void unwatch(const actor_ref & watchee, const actor_ref & watcher) const;
 
         /**
          * Attorney class for accessing extended interface

@@ -20,9 +20,6 @@ namespace yato
 {
 namespace actors
 {
-
-    enum class system_signal;
-
     /**
      * Helper structs to specify mailbox filter for the actor
      */
@@ -98,14 +95,24 @@ namespace actors
         actor_system & system();
 
         /**
+         * Start watching another actor
+         */
+        void watch(const actor_ref & watchee) const;
+
+        /**
+         * Stop watching another actor
+         */
+        void unwatch(const actor_ref & watchee) const;
+
+        /**
          * Handle message
          */
-        void receive_message(const message & message) noexcept;
+        void receive_message(const message & msg) noexcept;
 
         /**
          * Handle system message
          */
-        bool recieve_system_message(const system_signal& signal) noexcept;
+        bool recieve_system_message(const message & msg) noexcept;
 
         /**
          * Used by actor system to initialize the actor

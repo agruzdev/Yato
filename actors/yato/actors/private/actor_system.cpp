@@ -98,14 +98,22 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    void actor_system::enqueue_system_signal(mailbox* mbox, const system_signal & signal)
+    template <typename Ty_, typename ... Args_>
+    inline
+    bool enqueue_system_message_(mailbox* mbox, const actor_ref & sender, Args_ && ... args)
     {
         assert(mbox != nullptr);
-
-        std::unique_lock<std::mutex> lock(mbox->mutex);
-
-        mbox->sys_queue.push(signal);
-        mbox->condition.notify_one();
+        bool success = false;
+        auto payload = yato::any(yato::in_place_type_t<Ty_>{}, std::forward<Args_>(args)...);
+        {
+            std::unique_lock<std::mutex> lock(mbox->mutex);
+            if (mbox->is_open) {
+                mbox->sys_queue.push(std::make_unique<message>(std::move(payload), sender));
+                mbox->condition.notify_one();
+                success = true;
+            }
+        }
+        return success;
     }
     //-------------------------------------------------------
 
@@ -152,7 +160,9 @@ namespace actors
         }
         m_logger->verbose("Actor %s is started!", path.c_str());
 
-        enqueue_system_signal(pcell->mbox.get(), system_signal::start);
+        auto ret = enqueue_system_message_<system_message::start>(pcell->mbox.get(), dead_letters());
+        assert(ret);
+
         m_executor->execute(pcell->mbox.get());
 
         return ref;
@@ -202,16 +212,7 @@ namespace actors
     void actor_system::stop_impl_(mailbox* mbox) const 
     {
         assert(mbox != nullptr);
-        bool execute = false;
-        {
-            std::unique_lock<std::mutex> lock(mbox->mutex);
-            if (mbox->is_open) {
-                mbox->sys_queue.push(system_signal::stop);
-                mbox->condition.notify_one();
-                execute = true;
-            }
-        }
-        if (execute) {
+        if(enqueue_system_message_<system_message::stop>(mbox, dead_letters())) {
             m_executor->execute(mbox);
         }
     }
@@ -246,7 +247,40 @@ namespace actors
         }
         return dead_letters();
     }
+    //--------------------------------------------------------
 
+    void actor_system::watch(const actor_ref & watchee, const actor_ref & watcher) const
+    {
+        if(watchee == dead_letters() || watcher == dead_letters()) {
+            m_logger->error("DeadLetters can't be used in watching");
+            return;
+        }
+        std::shared_ptr<mailbox> mbox = watchee.get_mailbox().lock();
+        if (mbox == nullptr) {
+            m_logger->error("Failed to find watchee. Actor %s is not found!", watchee.get_path().c_str());
+            return;
+        }
+        if (enqueue_system_message_<system_message::watch>(mbox.get(), watcher, watcher)) {
+            m_executor->execute(mbox.get());
+        }
+    }
+    //--------------------------------------------------------
+    
+    void actor_system::unwatch(const actor_ref & watchee, const actor_ref & watcher) const
+    {
+        if (watchee == dead_letters() || watcher == dead_letters()) {
+            m_logger->error("DeadLetters can't be used in watching");
+            return;
+        }
+        std::shared_ptr<mailbox> mbox = watchee.get_mailbox().lock();
+        if (mbox == nullptr) {
+            m_logger->error("Failed to find watchee. Actor %s is not found!", watchee.get_path().c_str());
+            return;
+        }
+        if (enqueue_system_message_<system_message::unwatch>(mbox.get(), watcher, watcher)) {
+            m_executor->execute(mbox.get());
+        }
+    }
     //--------------------------------------------------------
 
     void actor_system::notify_on_stop_(const actor_ref & ref)

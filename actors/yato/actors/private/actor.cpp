@@ -5,6 +5,8 @@
 * Copyright (c) 2016 Alexey Gruzdev
 */
 
+#include <yato/any_match.h>
+
 #include "../actor.h"
 
 #include "../actor_system.h"
@@ -65,6 +67,18 @@ namespace actors
     }
     //-------------------------------------------------------
 
+    void actor_base::watch(const actor_ref & watchee) const
+    {
+        system().watch(watchee, self());
+    }
+    //-------------------------------------------------------
+
+    void actor_base::unwatch(const actor_ref & watchee) const
+    {
+        system().unwatch(watchee, self());
+    }
+    //-------------------------------------------------------
+
     void actor_base::receive_message(const message & message) noexcept
     {
         assert(m_context != nullptr);
@@ -76,39 +90,61 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    bool actor_base::recieve_system_message(const system_signal& signal) noexcept
+    bool actor_base::recieve_system_message(const message & msg) noexcept
     {
         assert(m_context != nullptr);
-        
-        switch (signal)
-        {
-        case yato::actors::system_signal::start:
-            try {
-                pre_start();
+        return any_match(
+            [this](const system_message::start &) {
+                try {
+                    pre_start();
+                }
+                catch (std::exception & e) {
+                    log().error("actor[system_signal]: Unhandled exception: %s", e.what());
+                }
+                catch (...) {
+                    log().error("actor[system_signal]: Unknown exception!");
+                }
+                return false;
+            },
+            [this](const system_message::stop &) {
+                try {
+                    post_stop();
+                }
+                catch (std::exception & e) {
+                    log().error("actor[system_signal]: Unhandled exception: %s", e.what());
+                }
+                catch (...) {
+                    log().error("actor[system_signal]: Unknown exception!");
+                }
+                // Notify watchers
+                std::for_each(m_context->watchers.begin(), m_context->watchers.end(), [this](const actor_ref & watcher) {
+                    watcher.tell(yato::actors::terminated(self()), self());
+                });
+                return true;
+            },
+            [this](const system_message::watch & watch) {
+                auto & watchers = m_context->watchers;
+                auto pos = std::find(watchers.begin(), watchers.end(), watch.watcher);
+                if(pos == watchers.end()) {
+                    watchers.push_back(watch.watcher);
+                }
+                return false;
+            },
+            [this](const system_message::unwatch & watch) {
+                auto & watchers = m_context->watchers;
+                auto pos = std::find(watchers.begin(), watchers.end(), watch.watcher);
+                if (pos != watchers.end()) {
+                    watchers.erase(pos);
+                }
+                return false;
+            },
+            [this](match_default_t) {
+                assert(false);
+                log().error("actor[system_signal]: Unknown system message!");
+                return false;
             }
-            catch (std::exception & e) {
-                log().error("actor[system_signal]: Unhandled exception: %s", e.what());
-            }
-            catch (...) {
-                log().error("actor[system_signal]: Unknown exception!");
-            }
-            break;
-        case yato::actors::system_signal::stop:
-            try {
-                post_stop();
-            }
-            catch (std::exception & e) {
-                log().error("actor[system_signal]: Unhandled exception: %s", e.what());
-            }
-            catch (...) {
-                log().error("actor[system_signal]: Unknown exception!");
-            }
-            return true;
-        default:
-            assert(false);
-            break;
-        }
-        return false;
+        )
+        (msg.payload);
     }
     //-------------------------------------------------------
 

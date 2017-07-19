@@ -19,17 +19,50 @@ namespace yato
 namespace actors
 {
 
-    enum class system_signal
+    struct system_message
     {
-        none,
-        start,
-        stop
+        /**
+         * First message an actor gets. Invokes pre_start()
+         */
+        struct start {};
+
+        /**
+         * Last message an actor gets. Terminatesactor and invokes post_stop()
+         */
+        struct stop {};
+
+        /**
+         * Adds watcher
+         */
+        struct watch
+        {
+            actor_ref watcher;
+
+            explicit
+            watch(const actor_ref & watcher)
+                : watcher(watcher)
+            { }
+        };
+
+        /**
+         * Removes watcher
+         */
+        struct unwatch
+        {
+            actor_ref watcher;
+
+            explicit
+            unwatch(const actor_ref & watcher)
+                : watcher(watcher)
+            { }
+        };
     };
 
     struct message
     {
         yato::any payload;
         actor_ref sender;
+        //-----------------------------------------------------------
 
         message(const yato::any & payload, const actor_ref & sender)
             : payload(payload), sender(sender)

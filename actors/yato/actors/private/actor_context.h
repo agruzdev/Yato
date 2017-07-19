@@ -27,6 +27,8 @@ namespace actors
         actor_ref self;
         logger_ptr log;
 
+        std::vector<actor_ref> watchers;
+
         //-------------------------------------------------------
         explicit
         actor_context(actor_system* system, const actor_ref & ref)

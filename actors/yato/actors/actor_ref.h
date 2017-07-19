@@ -111,6 +111,21 @@ namespace actors
     };
     //-------------------------------------------------------
 
+    // ToDo (a.gruzdev): Group all standard messages
+    /**
+     * Special message type informing that actor was stopped.
+     */
+    struct terminated
+    {
+        actor_ref ref;
+
+        explicit
+        terminated(const actor_ref & ref)
+            : ref(ref)
+        { }
+    };
+
+
 }// namespace actors
 
 }// namespace yato
