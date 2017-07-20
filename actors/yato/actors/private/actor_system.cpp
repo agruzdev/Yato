@@ -257,7 +257,8 @@ namespace actors
         }
         std::shared_ptr<mailbox> mbox = watchee.get_mailbox().lock();
         if (mbox == nullptr) {
-            m_logger->error("Failed to find watchee. Actor %s is not found!", watchee.get_path().c_str());
+            m_logger->warning("Failed to find watchee. Actor %s is not found!", watchee.get_path().c_str());
+            watcher.tell(terminated(watchee)); // Already terminated
             return;
         }
         if (enqueue_system_message_<system_message::watch>(mbox.get(), watcher, watcher)) {

@@ -95,12 +95,13 @@ namespace actors
         actor_system & system();
 
         /**
-         * Start watching another actor
+         * Start watching another actor.
+         * If watchee doesn't exist then terminated is sent immediately.
          */
         void watch(const actor_ref & watchee) const;
 
         /**
-         * Stop watching another actor
+         * Stop watching another actor.
          */
         void unwatch(const actor_ref & watchee) const;
 

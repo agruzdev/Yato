@@ -155,12 +155,13 @@ namespace actors
         }
 
         /**
-         * Start watch of an actor
+         * Start watch of an actor.
+         * If watchee doesn't exist then terminated is sent immediately.
          */
         void watch(const actor_ref & watchee, const actor_ref & watcher) const;
 
         /**
-         * Stop watch of an actor
+         * Stop watch of an actor.
          */
         void unwatch(const actor_ref & watchee, const actor_ref & watcher) const;
 

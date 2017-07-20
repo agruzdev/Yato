@@ -29,7 +29,7 @@ namespace
                     log().info("Received: %s", std::string(received.data.cbegin(), received.data.cend()).c_str());
                     sender().tell(tcp::write(received.data));
                 },
-                [this](const tcp::peer_closed & closed) {
+                [this](const tcp::peer_closed &) {
                     log().info("Disconnected");
                 },
                 [this](const tcp::command_fail & fail) {
@@ -57,7 +57,7 @@ TEST(Yato_Actors, io_tcp)
 
     manager.tell(io::tcp::bind(server, io::inet_address("localhost", 9001)));
 
-    std::this_thread::sleep_for(std::chrono::seconds(4));
+    std::this_thread::sleep_for(std::chrono::seconds(2));
     server.tell(poison_pill);
 }
 
