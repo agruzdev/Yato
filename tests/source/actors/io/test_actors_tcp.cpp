@@ -11,7 +11,7 @@
 
 namespace
 {
-    class TcpServer
+    class TcpEchoServer
         : public yato::actors::actor<>
     {
         void receive(const yato::any & message) override {
@@ -26,7 +26,11 @@ namespace
                     sender().tell(tcp::assign(self())); // Register self as handler for messages
                 },
                 [this](const tcp::received & received) {
-                    log().info("Received: %s", std::string(&received.data[0], received.data.size()).c_str());
+                    log().info("Received: %s", std::string(received.data.cbegin(), received.data.cend()).c_str());
+                    sender().tell(tcp::write(received.data));
+                },
+                [this](const tcp::peer_closed & closed) {
+                    log().info("Disconnected");
                 },
                 [this](const tcp::command_fail & fail) {
                     log().error("Fail. Reason: %s", fail.reason.c_str());
@@ -49,12 +53,12 @@ TEST(Yato_Actors, io_tcp)
     auto manager = io::tcp::get_for(system);
     ASSERT_NE(manager, system.dead_letters());
 
-    auto server = system.create_actor<TcpServer>("server");
+    auto server = system.create_actor<TcpEchoServer>("server");
 
     manager.tell(io::tcp::bind(server, io::inet_address("localhost", 9001)));
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
-    //server.tell(poison_pill);
+    std::this_thread::sleep_for(std::chrono::seconds(4));
+    server.tell(poison_pill);
 }
 
 

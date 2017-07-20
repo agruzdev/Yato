@@ -76,8 +76,9 @@ namespace io
                     return;
                 }
 
-                auto name = "tcpListener/" + address.host + ":" + std::to_string(address.port);
+                auto name = "tcp/" + address.host + ":" + std::to_string(address.port);
                 auto listener = actor_system_ex::create_actor<tcp_listener>(system(), actor_scope::system, name, bind.handler, m_context->io_service, endpoint);
+                system().watch(bind.handler, listener);
 
                 bind.handler.tell(tcp::bound(listener, address), self());
             }

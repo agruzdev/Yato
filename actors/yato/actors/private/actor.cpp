@@ -90,7 +90,7 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    bool actor_base::recieve_system_message(const message & msg) noexcept
+    bool actor_base::receive_system_message(const message & msg) noexcept
     {
         assert(m_context != nullptr);
         return any_match(

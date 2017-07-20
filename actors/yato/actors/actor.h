@@ -112,7 +112,7 @@ namespace actors
         /**
          * Handle system message
          */
-        bool recieve_system_message(const message & msg) noexcept;
+        bool receive_system_message(const message & msg) noexcept;
 
         /**
          * Used by actor system to initialize the actor

@@ -89,9 +89,19 @@ namespace io
         struct received;
 
         /**
+         * Outgoing data wrapper
+         */
+        struct write;
+
+        /**
          * Reports error in command execution.
          */
         struct command_fail;
+
+        /**
+         * Connection was closed by remote
+         */
+        struct peer_closed;
 
         /**
          * Returns tcp manager for an actor system.
@@ -153,6 +163,24 @@ namespace io
             : data(std::move(data))
         { }
     };
+
+    struct tcp::write
+    {
+        std::vector<char> data;
+
+        explicit
+        write(const std::vector<char> & data)
+            : data(data)
+        { }
+
+        explicit
+        write(std::vector<char> && data)
+            : data(std::move(data))
+        { }
+    };
+
+    struct tcp::peer_closed
+    { };
 
     struct tcp::command_fail
     {
