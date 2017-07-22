@@ -25,7 +25,7 @@ namespace yato
 namespace actors
 {
 
-    struct actor_cell;
+    class actor_cell;
     struct mailbox;
 
     class abstract_executor;
@@ -41,6 +41,8 @@ namespace actors
 
         std::string m_name;
         logger_ptr m_logger;
+
+        std::vector<std::unique_ptr<actor_cell>> m_guardians;
 
         mutable std::mutex m_cells_mutex;
         std::condition_variable m_cells_condition;
@@ -62,9 +64,10 @@ namespace actors
             return [&] { return std::unique_ptr<Ty_>(new Ty_(std::forward<Args_>(args)...)); };
         }
 
-        actor_ref init_cell_(actor_cell* cell, const actor_builder & builder, const actor_path & path);
+        actor_ref create_guardian_(const actor_path & name);
         actor_ref create_actor_impl_(const actor_builder & builder, const actor_path & name);
         void send_impl_(const actor_ref & toActor, const actor_ref & fromActor, yato::any && message) const;
+        void send_system_impl_(const actor_ref & addressee, const actor_ref & sender, yato::any && userMessage) const;
         void stop_impl_(mailbox* mbox) const;
 
         std::future<yato::any> ask_impl_(const actor_ref & addressee, yato::any && message, const timeout_type & timeout) const;
@@ -79,6 +82,20 @@ namespace actors
         actor_ref create_actor_(const actor_scope & scope, const std::string & name, Args_ && ... args) {
             return create_actor_impl_(make_builder<ActorType_>(std::forward<Args_>(args)...), actor_path(*this, scope, name));
         }
+
+        /**
+         * Send system message
+         */
+        template <typename Ty_>
+        void send_system_message(const actor_ref & addressee, Ty_ && message) const {
+            send_system_impl_(addressee, dead_letters(), yato::any(std::forward<Ty_>(message)));
+        }
+
+        template <typename Ty_>
+        void send_system_message(const actor_ref & addressee, Ty_ && message, const actor_ref & sender) const {
+            send_system_impl_(addressee, sender, yato::any(std::forward<Ty_>(message)));
+        }
+
 
         /**
          * Notify system that actor is topped and can be destroyed
@@ -105,12 +122,12 @@ namespace actors
 
         template <typename Ty_>
         void send_message(const actor_ref & addressee, Ty_ && message) const {
-            send_impl_(addressee, dead_letters(), yato::any(message));
+            send_impl_(addressee, dead_letters(), yato::any(std::forward<Ty_>(message)));
         }
 
         template <typename Ty_>
         void send_message(const actor_ref & addressee, Ty_ && message, const actor_ref & sender) const {
-            send_impl_(addressee, sender, yato::any(message));
+            send_impl_(addressee, sender, yato::any(std::forward<Ty_>(message)));
         }
 
         template <typename Ty_, typename Rep_, typename Period_>

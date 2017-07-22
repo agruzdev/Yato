@@ -20,6 +20,8 @@ namespace yato
 {
 namespace actors
 {
+    class actor_cell;
+
     /**
      * Helper structs to specify mailbox filter for the actor
      */
@@ -35,16 +37,17 @@ namespace actors
     };
     //-------------------------------------------------------
 
-    struct actor_context;
-
     /**
      * Base class for actor
      * Implements generic interface for receiveing messages
      */
     class actor_base
     {
-    private:
-        std::unique_ptr<actor_context> m_context;
+        /**
+         * Pointer to actor's context.
+         * Becomes valid only after registraction in the actors system.
+         */
+        actor_cell* m_context = nullptr; 
         //-------------------------------------------------------
 
     protected:
@@ -118,7 +121,10 @@ namespace actors
         /**
          * Used by actor system to initialize the actor
          */
-        void init_base_(actor_system* system, const actor_ref & ref);
+        void init_base_(actor_cell* cell);
+
+        // Temporal
+        actor_cell & context();
     };
     //-------------------------------------------------------
 

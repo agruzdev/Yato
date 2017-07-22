@@ -27,8 +27,19 @@ namespace actors
         system, ///< all system-created actors
         temp,   ///< all short-lived system-created actors
         remote, ///< all actors representing remote entities
-        dead    ///< virtual dead letter actors
+        dead,   ///< virtual dead letter actors
+
+        unknown
     };
+
+
+    struct path_elements
+    {
+        std::string system_name;
+        actor_scope scope;
+        std::vector<std::string> names;
+    };
+
 
     class actor_path
     {
@@ -82,15 +93,21 @@ namespace actors
         std::string get_name() const 
         {
             //ToDo (a.gruzdev): temporal solution
-            auto pos = std::find(m_path.begin() + actor_path::path_root.size(), m_path.end(), '/');
-            pos = std::find(pos + 1, m_path.end(), '/');
-            return m_path.substr(pos + 1 - m_path.begin());
+            //auto pos = std::find(m_path.begin() + actor_path::path_root.size(), m_path.end(), '/');
+            //pos = std::find(pos + 1, m_path.end(), '/');
+            //return m_path.substr(pos + 1 - m_path.begin());
+            return m_path;
         }
 
         /**
          * Check if this path represents actor in system scope
          */
         bool is_system_scope() const;
+
+        /**
+         * Parce actor path
+         */
+        bool parce(path_elements & elems) const;
 
         friend
         bool operator == (const actor_path & one, const actor_path & another)
@@ -111,11 +128,23 @@ namespace actors
         }
 
         static
+        const std::string & default_root()
+        {
+            return actor_path::path_root;
+        }
+
+        static
         const std::locale & locale() 
         {
             return actor_path::path_locale;
         }
+
+        static
+        actor_path join(const actor_path & path, const std::string & name) {
+            return actor_path(path.m_path + "/" + name);
+        }
     };
+
 
 }// namespace actors
 

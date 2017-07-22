@@ -10,7 +10,7 @@
 #include "../actor.h"
 
 #include "../actor_system.h"
-#include "actor_context.h"
+#include "actor_cell.h"
 #include "message.h"
 
 namespace yato
@@ -26,9 +26,9 @@ namespace actors
     { }
     //-------------------------------------------------------
 
-    void actor_base::init_base_(actor_system* system, const actor_ref & ref) 
+    void actor_base::init_base_(actor_cell* cell) 
     {
-        m_context = std::make_unique<actor_context>(system, ref);
+        m_context = cell;
     }
     //-------------------------------------------------------
 
@@ -37,7 +37,7 @@ namespace actors
         if(m_context == nullptr) {
             throw yato::bad_state_error("Actor is not initialized yet");
         }
-        return m_context->self;
+        return m_context->ref();
     }
     //-------------------------------------------------------
 
@@ -46,8 +46,7 @@ namespace actors
         if (m_context == nullptr) {
             throw yato::bad_state_error("Actor is not initialized yet");
         }
-        assert(m_context->system != nullptr); // Actor can't live longer than system
-        return *m_context->system;
+        return m_context->system();
     }
     //-------------------------------------------------------
 
@@ -62,8 +61,7 @@ namespace actors
         if (m_context == nullptr) {
             throw yato::bad_state_error("Actor is not initialized yet");
         }
-        assert(m_context->log != nullptr);
-        return *m_context->log;
+        return m_context->log();
     }
     //-------------------------------------------------------
 
@@ -83,7 +81,7 @@ namespace actors
     {
         assert(m_context != nullptr);
         if (message.payload.type() == typeid(poison_pill_t)) {
-            m_context->self.stop();
+            m_context->ref().stop();
             return;
         }
         do_unwrap_message(message);
@@ -117,13 +115,14 @@ namespace actors
                     log().error("actor[system_signal]: Unknown exception!");
                 }
                 // Notify watchers
-                std::for_each(m_context->watchers.begin(), m_context->watchers.end(), [this](const actor_ref & watcher) {
+                auto & watchers = m_context->watchers();
+                std::for_each(watchers.begin(), watchers.end(), [this](const actor_ref & watcher) {
                     watcher.tell(yato::actors::terminated(self()), self());
                 });
                 return true;
             },
             [this](const system_message::watch & watch) {
-                auto & watchers = m_context->watchers;
+                auto & watchers = m_context->watchers();
                 auto pos = std::find(watchers.begin(), watchers.end(), watch.watcher);
                 if(pos == watchers.end()) {
                     watchers.push_back(watch.watcher);
@@ -131,13 +130,20 @@ namespace actors
                 return false;
             },
             [this](const system_message::unwatch & watch) {
-                auto & watchers = m_context->watchers;
+                auto & watchers = m_context->watchers();
                 auto pos = std::find(watchers.begin(), watchers.end(), watch.watcher);
                 if (pos != watchers.end()) {
                     watchers.erase(pos);
                 }
                 return false;
             },
+            //[this](const system_message::attach_child & attach) {
+            //    auto child = std::move(const_cast<system_message::attach_child &>(attach).cell);
+            //    child->parent = std::make_unique<actor_ref>(self());
+            //    auto child_ref = child->act->self();
+            //    cell_().children.push_back(std::move(child));
+            //    actor_system_ex::send_system_message(system(), child_ref, system_message::start());
+            //},
             [this](match_default_t) {
                 assert(false);
                 log().error("actor[system_signal]: Unknown system message!");
@@ -147,6 +153,13 @@ namespace actors
         (msg.payload);
     }
     //-------------------------------------------------------
+
+    actor_cell & actor_base::context() {
+        if (m_context == nullptr) {
+            throw yato::bad_state_error("Actor is not initialized yet");
+        }
+        return *m_context;
+    }
 
 } // namespace actors
 

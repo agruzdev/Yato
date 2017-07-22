@@ -19,7 +19,7 @@ namespace
             log().info(message.type().name());
             yato::any_match(
                 [this](const tcp::bound & bound) {
-                    log().info("Bound. Actor %s Address %s:%d", bound.listener.get_name().c_str(), bound.address.host.c_str(), bound.address.port);
+                    log().info("Bound. Actor %s Address %s:%d", bound.listener.name().c_str(), bound.address.host.c_str(), bound.address.port);
                 },
                 [this](const tcp::connected & connected) {
                     log().info("New connection. Address %s:%d", connected.remote.host.c_str(), connected.remote.port);

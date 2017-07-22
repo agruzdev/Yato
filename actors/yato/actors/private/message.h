@@ -18,6 +18,7 @@ namespace yato
 {
 namespace actors
 {
+    class actor_cell;
 
     struct system_message
     {
@@ -56,6 +57,8 @@ namespace actors
                 : watcher(watcher)
             { }
         };
+
+        struct attach_child;
     };
 
     struct message
@@ -70,6 +73,21 @@ namespace actors
 
         message(yato::any && payload, const actor_ref & sender)
             : payload(std::move(payload)), sender(sender)
+        { }
+    };
+
+
+    /**
+    * Wraps a message for finding addressee in the actors tree
+    */
+    struct envelop
+    {
+        message msg;
+        std::vector<std::string> route;
+
+        explicit
+        envelop(message && msg)
+            : msg(msg) 
         { }
     };
 

@@ -64,7 +64,7 @@ namespace actors
         actor_ref& operator=(const actor_ref&) = default;
         actor_ref& operator=(actor_ref&&) = default;
 
-        std::string get_name() const 
+        std::string name() const 
         {
             return m_path.get_name();
         }
@@ -108,6 +108,7 @@ namespace actors
         }
 
         friend class actor_system;
+        friend class actor_cell;
     };
     //-------------------------------------------------------
 

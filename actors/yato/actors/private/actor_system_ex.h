@@ -32,6 +32,21 @@ namespace actors
         void notify_on_stop(actor_system & sys, const actor_ref & ref) {
             sys.notify_on_stop_(ref);
         }
+
+        /**
+         * Send system message
+         */
+        template <typename Ty_>
+        static
+        void send_system_message(const actor_system & sys, const actor_ref & addressee, Ty_ && message) {
+            sys.send_system_impl_(addressee, sys.dead_letters(), yato::any(message));
+        }
+
+        template <typename Ty_>
+        static
+        void send_system_message(const actor_system & sys, const actor_ref & addressee, Ty_ && message, const actor_ref & sender) {
+            sys.send_system_impl_(addressee, sender, yato::any(message));
+        }
     };
 
 } // namespacea actors

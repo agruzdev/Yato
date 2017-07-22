@@ -9,10 +9,13 @@
 #include <iostream>
 
 #include <yato/assert.h>
+#include <yato/any_match.h>
 
 #include "../actor.h"
 #include "../actor_system.h"
 
+#include "actor_system_ex.h"
+#include "actor_cell.h"
 #include "asking_actor.h"
 #include "mailbox.h"
 #include "pinned_executor.h"
@@ -34,13 +37,40 @@ namespace yato
 {
 namespace actors
 {
-
-
-    struct actor_cell
+    struct system_message::attach_child
     {
-        std::unique_ptr<actor_base> act;
-        std::shared_ptr<mailbox> mbox;
+        std::unique_ptr<actor_cell> cell;
+
+        explicit
+            attach_child(std::unique_ptr<actor_cell> && cell)
+            : cell(std::move(cell))
+        { }
     };
+    //-------------------------------------------------------------
+
+    class guardian
+        : public actor<>
+    {
+        void pre_start() override
+        {
+            log().info("Guardian is started!");
+        }
+
+        void receive(const yato::any & message) override
+        {
+            //yato::any_match(
+            //    [this](const system_message::attach_child & attach) {
+            //        auto child = std::move(const_cast<system_message::attach_child &>(attach).cell);
+            //        child->parent = std::make_unique<actor_ref>(self());
+            //        auto child_ref = child->act->self();
+            //        cell_().children.push_back(std::move(child));
+            //        actor_system_ex::send_system_message(system(), child_ref, system_message::start());
+            //    }
+            //)(message);
+        }
+    };
+
+
     //-------------------------------------------------------
 
     actor_system::actor_system(const std::string & name, const config & conf)
@@ -70,6 +100,11 @@ namespace actors
             throw yato::argument_error("actor_system[actor_system]: IO can't be enabled. Build with flag YATO_ACTORS_WITH_IO");
 #endif
         }
+
+        // Crete guardians
+        create_guardian_(actor_path("yato://" + m_name + "/users"));
+        create_guardian_(actor_path("yato://" + m_name + "/system"));
+
     }
     //-------------------------------------------------------
 
@@ -86,9 +121,13 @@ namespace actors
                 m_cells_condition.wait(lock);
             }
             std::for_each(m_actors.begin(), m_actors.end(), [this](decltype(m_actors)::value_type & entry) {
-                stop_impl_(entry.second->mbox.get());
+                stop_impl_(entry.second->mail());
             });
             while(!m_actors.empty()) {
+                m_cells_condition.wait(lock);
+            }
+
+            while (!m_guardians.empty()) {
                 m_cells_condition.wait(lock);
             }
         }
@@ -117,53 +156,45 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    actor_ref actor_system::init_cell_(actor_cell* cell, const actor_builder & builder, const actor_path & path)
+    actor_ref actor_system::create_guardian_(const actor_path & path)
     {
-        auto a = builder();
+        auto cell = std::make_unique<actor_cell>(*this, path, std::make_unique<guardian>());
+        auto & ref = cell->ref();
 
-        // create mailbox
-        auto mbox = std::make_shared<mailbox>();
-        mbox->owner = a.get();
+        m_guardians.push_back(std::move(cell));
+        send_system_message(ref, system_message::start());
 
-        // create ref
-        actor_ref ref{ this, path };
-        ref.set_mailbox(mbox);
-
-        // setup actor
-        a->init_base_(this, ref);
-
-        cell->act = std::move(a);
-        cell->mbox = mbox;
+        m_logger->verbose("Guardian %s is started!", path.c_str());
 
         return ref;
     }
 
-    //-------------------------------------------------------
-
     actor_ref actor_system::create_actor_impl_(const actor_builder & builder, const actor_path & path)
     {
-        auto cell = std::make_unique<actor_cell>();
-        actor_cell* pcell = cell.get();
+        auto cell = std::make_unique<actor_cell>(*this, path, builder());
 
-        auto ref = init_cell_(pcell, builder, path);
+        auto ref = cell->ref();
 
-        {
-            std::unique_lock<std::mutex> lock(m_cells_mutex);
-            auto pos = m_actors.find(path);
-            if(pos != m_actors.end()) {
-                throw yato::argument_error("Actor with the name " + path.to_string() + " already exists!");
-            }
-            m_actors.emplace_hint(pos, path, std::move(cell));
-            if(!path.is_system_scope()) {
-                ++m_user_priority_actors_num;
-            }
-        }
-        m_logger->verbose("Actor %s is started!", path.c_str());
+        //actor_cell* pcell = cell.get();
+        //{
+        //    std::unique_lock<std::mutex> lock(m_cells_mutex);
+        //    auto pos = m_actors.find(path);
+        //    if(pos != m_actors.end()) {
+        //        throw yato::argument_error("Actor with the name " + path.to_string() + " already exists!");
+        //    }
+        //    m_actors.emplace_hint(pos, path, std::move(cell));
+        //    if(!path.is_system_scope()) {
+        //        ++m_user_priority_actors_num;
+        //    }
+        //}
+        //m_logger->verbose("Actor %s is created!", path.c_str());
 
-        auto ret = enqueue_system_message_<system_message::start>(pcell->mbox.get(), dead_letters());
-        assert(ret);
+        send_system_message(m_guardians[0]->ref(), system_message::attach_child(std::move(cell)));
 
-        m_executor->execute(pcell->mbox.get());
+        //auto ret = enqueue_system_message_<system_message::start>(pcell->mail(), dead_letters());
+        //assert(ret);
+        //
+        //m_executor->execute(pcell->mail());
 
         return ref;
     }
@@ -187,6 +218,31 @@ namespace actors
             std::unique_lock<std::mutex> lock(mbox->mutex);
             if (mbox->is_open) {
                 mbox->queue.push(std::move(msg));
+                mbox->condition.notify_one();
+            }
+        }
+        m_executor->execute(mbox.get());
+    }
+    //-------------------------------------------------------
+
+    void actor_system::send_system_impl_(const actor_ref & addressee, const actor_ref & sender, yato::any && userMessage) const
+    {
+        if (addressee == dead_letters()) {
+            m_logger->verbose("A message was delivered to DeadLetters.");
+            return;
+        }
+
+        std::shared_ptr<mailbox> mbox = addressee.get_mailbox().lock();
+        if (mbox == nullptr) {
+            m_logger->verbose("Failed to send a message. Actor %s is not found!", addressee.get_path().c_str());
+            return;
+        }
+
+        auto msg = std::make_unique<message>(std::move(userMessage), sender);
+        {
+            std::unique_lock<std::mutex> lock(mbox->mutex);
+            if (mbox->is_open) {
+                mbox->sys_queue.push(std::move(msg));
                 mbox->condition.notify_one();
             }
         }
@@ -233,7 +289,7 @@ namespace actors
     {
         std::unique_lock<std::mutex> lock(m_cells_mutex);
         std::for_each(m_actors.begin(), m_actors.end(), [this](decltype(m_actors)::value_type & entry) {
-            stop_impl_(entry.second->mbox.get());
+            stop_impl_(entry.second->mail());
         });
     }
     //--------------------------------------------------------
@@ -243,7 +299,7 @@ namespace actors
         std::unique_lock<std::mutex> lock(m_cells_mutex);
         auto it = m_actors.find(path);
         if(it != m_actors.cend()) {
-            return (*it).second->act->self();
+            return (*it).second->ref();
         }
         return dead_letters();
     }
