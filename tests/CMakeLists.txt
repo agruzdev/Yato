@@ -12,6 +12,17 @@ message(STATUS "gtest include = ${GTEST_INCLUDE_DIR}")
 
 include(${TARGET_CONFIG_LISTS})
 
+macro(_gtest_add_definitions _TARGET_NAME_)
+    if(TARGET ${_TARGET_NAME_})
+        target_compile_definitions(${_TARGET_NAME_} PRIVATE GTEST_LANG_CXX11=1 GTEST_HAS_TR1_TUPLE=0)
+    endif()
+endmacro(_gtest_add_definitions)
+
+_gtest_add_definitions(gmock)
+_gtest_add_definitions(gmock_main)
+_gtest_add_definitions(gtest)
+_gtest_add_definitions(gtest_main)
+
 #==========================================
 # Sources
 
