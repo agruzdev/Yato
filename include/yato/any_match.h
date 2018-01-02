@@ -43,6 +43,11 @@ namespace yato
             return dispatcher::match(m_cases, anyval);
         }
 
+        decltype(auto) operator()(yato::any & anyval) const
+        {
+            return dispatcher::match(m_cases, std::move(anyval));
+        }
+
         decltype(auto) operator()(yato::any && anyval) const
         {
             return dispatcher::match(m_cases, std::move(anyval));
