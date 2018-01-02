@@ -73,3 +73,5 @@ target_link_libraries(YatoTests gtest_main)
 if(YATO_BUILD_ACTORS)
     target_link_libraries(YatoTests YatoActors)
 endif()
+
+_gtest_add_definitions(YatoTests)
