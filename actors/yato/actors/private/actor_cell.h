@@ -39,6 +39,16 @@ namespace actors
         logger_ptr m_log;
 
         /**
+         * Started
+         */
+        bool m_started;
+
+        /**
+         * Stop message is received
+         */
+        bool m_stop;
+
+        /**
          * Actor's watchers
          */
         std::vector<actor_ref> m_watchers;
@@ -66,6 +76,15 @@ namespace actors
             return m_self;
         }
 
+        bool has_parent() const {
+            return (m_parent != nullptr);
+        }
+
+        const actor_ref & parent() const {
+            assert(m_parent != nullptr);
+            return *m_parent;
+        }
+
         actor_base* actor() const {
             return m_actor.get();
         }
@@ -81,6 +100,39 @@ namespace actors
 
         mailbox* mail() const {
             return m_mailbox.get();
+        }
+
+        bool is_started() const {
+            return m_started;
+        }
+
+        void set_started(bool val) {
+            m_started = val;
+        }
+
+        void set_stop(bool val) {
+            m_stop = val;
+        }
+
+        bool stopping() const {
+            return m_stop;
+        }
+
+        /**
+         * Add child to the cell.
+         * Sets correct parent ref to the child as well.
+         * @return child ref
+         */
+        actor_ref add_child(std::unique_ptr<actor_cell> && child);
+
+        /**
+         * Destroys child actor.
+         * Child has to be stopped.
+         */
+        void remove_child(const actor_ref & ref);
+
+        const std::vector<std::unique_ptr<actor_cell>> & children() const {
+            return m_children;
         }
     };
 

@@ -16,7 +16,7 @@ namespace
             log().info("pre_start() is called!");
         }
 
-        void receive(const yato::any& message) override
+        void receive(yato::any& message) override
         {
             yato::any_match(
                 [this](const std::string & str) {
@@ -59,12 +59,7 @@ namespace
     class PingActor
         : public yato::actors::actor<>
     {
-        void pre_start() override
-        {
-            system().select("PongActor").tell(1, self());
-        }
-
-        void receive(const yato::any& message) override
+        void receive(yato::any & message) override
         {
             yato::any_match(
                 [this](int count) {
@@ -86,7 +81,7 @@ namespace
     class PongActor
         : public yato::actors::actor<>
     {
-        void receive(const yato::any& message) override
+        void receive(yato::any & message) override
         {
             yato::any_match(
                 [this](int count) {
@@ -114,5 +109,7 @@ TEST(Yato_Actors, ping_pong)
 
     auto actor1 = system.create_actor<PongActor>("PongActor");
     auto actor2 = system.create_actor<PingActor>("PingActor");
+
+    system.send_message(actor1, 1, actor2);
 }
 

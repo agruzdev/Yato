@@ -22,7 +22,7 @@ namespace actors
     {
         std::promise<yato::any> m_promise;
 
-        void receive(const yato::any & message) override
+        void receive(yato::any & message) override
         {
             m_promise.set_value(message);
             self().stop();

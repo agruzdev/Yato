@@ -16,6 +16,11 @@ namespace yato
 namespace actors
 {
 
+    actor_ref::actor_ref()
+        : m_system(nullptr), m_path(std::string())
+    { }
+    //-------------------------------------------------------
+
     actor_ref::actor_ref(actor_system* system, const actor_path & path)
         : m_system(system), m_path(path) 
     { }

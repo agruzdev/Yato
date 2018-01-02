@@ -10,6 +10,7 @@
 #include "../actor_system.h"
 #include "../logger.h"
 #include "actor_system_ex.h"
+#include "actor_cell.h"
 #include "pinned_executor.h"
 
 namespace yato
@@ -31,6 +32,12 @@ namespace actors
                     actor_ref ref = mbox->owner->self();
                     actor_system_ex::notify_on_stop(*executor->m_system, ref);
                     return;
+                }
+
+                if (!mbox->owner->context().is_started()) {
+                    // ToDo (a.gruzdev): Quick solution
+                    // dont process user messages untill started
+                    continue;
                 }
 
                 std::unique_ptr<message> msg = nullptr;

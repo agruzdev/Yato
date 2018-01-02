@@ -50,12 +50,14 @@ namespace actors
         actor_cell* m_context = nullptr; 
         //-------------------------------------------------------
 
+        void stop_impl() noexcept;
+
     protected:
         /**
          * Unwrap message and check dynamic type of the payload
          * Apply filter if specified and invoke receive() 
          */
-        virtual void do_unwrap_message(const message & message) = 0;
+        virtual void do_unwrap_message(message & message) = 0;
 
         //-------------------------------------------------------
 
@@ -111,12 +113,12 @@ namespace actors
         /**
          * Handle message
          */
-        void receive_message(const message & msg) noexcept;
+        void receive_message(message & msg) noexcept;
 
         /**
          * Handle system message
          */
-        bool receive_system_message(const message & msg) noexcept;
+        bool receive_system_message(message & msg) noexcept;
 
         /**
          * Used by actor system to initialize the actor
@@ -145,7 +147,7 @@ namespace actors
         const actor_ref* m_sender;
         //-------------------------------------------------------
 
-        void unwrap_message_impl(mailbox_no_filter, const message & message) 
+        void unwrap_message_impl(mailbox_no_filter, message & message) 
         {
             try {
                 receive(message.payload);
@@ -159,7 +161,7 @@ namespace actors
         }
 
         template <typename... Alternatives_>
-        void unwrap_message_impl(mailbox_filter<Alternatives_...>, const message & message) 
+        void unwrap_message_impl(mailbox_filter<Alternatives_...>, message & message) 
         {
             (void)message;
             //ToDo (a.gruzdev): To be implemetned
@@ -170,7 +172,7 @@ namespace actors
          * Unwrap message and check dynamic type of the payload
          * Apply filter if specified and invoke receive()
          */
-        void do_unwrap_message(const message & message) override final
+        void do_unwrap_message(message & message) override final
         {
             m_sender = &message.sender;
             unwrap_message_impl(filter_type{}, message);
@@ -183,7 +185,7 @@ namespace actors
         /**
          * Main method for processing all incoming messages
          */
-        virtual void receive(const received_type & message) = 0;
+        virtual void receive(received_type & message) = 0;
 
         //-------------------------------------------------------
 
@@ -191,13 +193,13 @@ namespace actors
          * Optional pre-start hook
          * Is called before first message
          */
-        virtual void pre_start() override { }
+        void pre_start() override { }
 
         /**
          * Optional post-stop hook
          * Is called after the last message
          */
-        virtual void post_stop() override { }
+        void post_stop() override { }
 
 
         //-------------------------------------------------------

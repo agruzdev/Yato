@@ -41,5 +41,9 @@ endif()
 
 add_library(YatoActors STATIC ${yato_actors_sources})
 
+if(NOT Boost_SYSTEM_LIBRARY_DEBUG OR NOT Boost_SYSTEM_LIBRARY_RELEASE)
+    message(FATAL_ERROR "Boost was not found!")
+endif()
+
 target_link_libraries(YatoActors PRIVATE debug ${Boost_SYSTEM_LIBRARY_DEBUG})
 target_link_libraries(YatoActors PRIVATE optimized ${Boost_SYSTEM_LIBRARY_RELEASE})

@@ -56,6 +56,11 @@ namespace actors
         }
 
     public:
+        /**
+         * Empty ref not correspondint any system
+         */
+        actor_ref();
+
         ~actor_ref();
 
         actor_ref(const actor_ref&) = default;

@@ -22,6 +22,7 @@
 #include "dynamic_executor.h"
 #include "scheduler.h"
 #include "name_generator.h"
+#include "system_message.h"
 
 #ifdef YATO_ACTORS_WITH_IO
 #include "../io/tcp.h"
@@ -37,36 +38,95 @@ namespace yato
 {
 namespace actors
 {
-    struct system_message::attach_child
+    /**
+     * Guardian actor
+     */
+    class guardian
+        : public actor<>
+    {
+        void receive(yato::any & message) override
+        { }
+    };
+
+    /**
+     * Add new actor to the tree
+     */
+    struct root_add
     {
         std::unique_ptr<actor_cell> cell;
 
         explicit
-            attach_child(std::unique_ptr<actor_cell> && cell)
+        root_add(std::unique_ptr<actor_cell> && cell)
             : cell(std::move(cell))
         { }
     };
-    //-------------------------------------------------------------
 
-    class guardian
+    /**
+     * Message for terminating root on exit of actor system
+     */
+    struct root_terminate {};
+
+    // ToDo (a.gruzdev): Add processing of unexpected termination of the guards!
+    class root
         : public actor<>
     {
-        void pre_start() override
-        {
-            log().info("Guardian is started!");
+        actor_ref m_sys_guard;
+        actor_ref m_usr_guard;
+
+        actor_ref create_guard_(const actor_path & path) {
+            auto cell = std::make_unique<actor_cell>(system(), path, std::make_unique<guardian>());
+            auto ref  = cell->ref();
+
+            log().debug("Guard %s is created.", path.c_str());
+            actor_system_ex::send_system_message(system(), self(), system_message::attach_child(std::move(cell)));
+
+            return ref;
         }
 
-        void receive(const yato::any & message) override
+        void pre_start() override {
+            m_sys_guard = create_guard_(actor_path(self().get_path().to_string() + "/system"));
+            watch(m_sys_guard);
+
+            m_usr_guard = create_guard_(actor_path(self().get_path().to_string() + "/user"));
+            watch(m_usr_guard);
+        }
+
+        void receive(yato::any & message) override
         {
-            //yato::any_match(
-            //    [this](const system_message::attach_child & attach) {
-            //        auto child = std::move(const_cast<system_message::attach_child &>(attach).cell);
-            //        child->parent = std::make_unique<actor_ref>(self());
-            //        auto child_ref = child->act->self();
-            //        cell_().children.push_back(std::move(child));
-            //        actor_system_ex::send_system_message(system(), child_ref, system_message::start());
-            //    }
-            //)(message);
+            yato::any_match(
+                [this] (root_add & add) {
+                    YATO_REQUIRES(add.cell != nullptr);
+                    path_elements elems;
+                    add.cell->ref().get_path().parce(elems);
+
+                    log().debug("Adding " + add.cell->ref().get_path().to_string());
+
+                    switch(elems.scope) {
+                    case actor_scope::user :
+                        actor_system_ex::send_system_message(system(), m_usr_guard, system_message::attach_child(std::move(add.cell)));
+                        break;
+                    case actor_scope::system :
+                        actor_system_ex::send_system_message(system(), m_sys_guard, system_message::attach_child(std::move(add.cell)));
+                        break;
+                    default:
+                        log().error("root_add: Invalid scope!");
+                        break;
+                    }
+                },
+                [this] (const root_terminate & t) {
+                    log().debug("Terminating root");
+                    actor_system_ex::send_system_message(system(), m_usr_guard, system_message::stop_after_children{});
+                },
+                [this](const terminated & t) {
+                    log().debug("Terminated " + t.ref.get_path().to_string());
+                    if(t.ref == m_sys_guard) {
+                        actor_system_ex::send_system_message(system(), self(), system_message::stop_after_children{});
+                    }
+                    else if (t.ref == m_usr_guard) {
+                        actor_system_ex::send_system_message(system(), m_sys_guard, system_message::stop{});
+                    }
+                }
+            )(message);
         }
     };
 
@@ -90,7 +150,8 @@ namespace actors
         m_scheduler = std::make_unique<scheduler>();
         m_name_generator = std::make_unique<name_generator>();
 
-        m_user_priority_actors_num = 0;
+        m_root = std::make_unique<actor_cell>(*this, actor_path("yato://" + m_name), std::make_unique<actors::root>());
+        m_root_stopped = false;
 
         // System actors
         if(conf.enable_io) {
@@ -100,11 +161,8 @@ namespace actors
             throw yato::argument_error("actor_system[actor_system]: IO can't be enabled. Build with flag YATO_ACTORS_WITH_IO");
 #endif
         }
-
-        // Crete guardians
-        create_guardian_(actor_path("yato://" + m_name + "/users"));
-        create_guardian_(actor_path("yato://" + m_name + "/system"));
-
+        YATO_ENSURES(m_root != nullptr);
+        send_system_message(m_root->ref(), system_message::start());
     }
     //-------------------------------------------------------
 
@@ -115,21 +173,11 @@ namespace actors
 
     actor_system::~actor_system()
     {
-        {
-            std::unique_lock<std::mutex> lock(m_cells_mutex);
-            while(m_user_priority_actors_num != 0) {
-                m_cells_condition.wait(lock);
-            }
-            std::for_each(m_actors.begin(), m_actors.end(), [this](decltype(m_actors)::value_type & entry) {
-                stop_impl_(entry.second->mail());
-            });
-            while(!m_actors.empty()) {
-                m_cells_condition.wait(lock);
-            }
+        send_message(m_root->ref(), root_terminate{});
 
-            while (!m_guardians.empty()) {
-                m_cells_condition.wait(lock);
-            }
+        {
+            std::unique_lock<std::mutex> lock(m_terminate_mutex);
+            m_terminate_cv.wait(lock, [this]() { return m_root_stopped; });
         }
         // Now all actors are stopped
 
@@ -156,45 +204,21 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    actor_ref actor_system::create_guardian_(const actor_path & path)
-    {
-        auto cell = std::make_unique<actor_cell>(*this, path, std::make_unique<guardian>());
-        auto & ref = cell->ref();
-
-        m_guardians.push_back(std::move(cell));
-        send_system_message(ref, system_message::start());
-
-        m_logger->verbose("Guardian %s is started!", path.c_str());
-
-        return ref;
-    }
-
     actor_ref actor_system::create_actor_impl_(const actor_builder & builder, const actor_path & path)
     {
-        auto cell = std::make_unique<actor_cell>(*this, path, builder());
+        path_elements elems;
+        path.parce(elems);
 
+        if(elems.scope == actor_scope::unknown) {
+            throw yato::argument_error("Invalid actor path!");
+        }
+
+        auto cell = std::make_unique<actor_cell>(*this, path, builder());
         auto ref = cell->ref();
 
-        //actor_cell* pcell = cell.get();
-        //{
-        //    std::unique_lock<std::mutex> lock(m_cells_mutex);
-        //    auto pos = m_actors.find(path);
-        //    if(pos != m_actors.end()) {
-        //        throw yato::argument_error("Actor with the name " + path.to_string() + " already exists!");
-        //    }
-        //    m_actors.emplace_hint(pos, path, std::move(cell));
-        //    if(!path.is_system_scope()) {
-        //        ++m_user_priority_actors_num;
-        //    }
-        //}
-        //m_logger->verbose("Actor %s is created!", path.c_str());
+        m_logger->verbose("Actor %s is created.", path.c_str());
 
-        send_system_message(m_guardians[0]->ref(), system_message::attach_child(std::move(cell)));
-
-        //auto ret = enqueue_system_message_<system_message::start>(pcell->mail(), dead_letters());
-        //assert(ret);
-        //
-        //m_executor->execute(pcell->mail());
+        send_message(m_root->ref(), root_add(std::move(cell)));
 
         return ref;
     }
@@ -287,21 +311,24 @@ namespace actors
 
     void actor_system::stop_all()
     {
-        std::unique_lock<std::mutex> lock(m_cells_mutex);
-        std::for_each(m_actors.begin(), m_actors.end(), [this](decltype(m_actors)::value_type & entry) {
-            stop_impl_(entry.second->mail());
-        });
+        throw std::logic_error("To be implemented");
+        //std::unique_lock<std::mutex> lock(m_cells_mutex);
+        //std::for_each(m_actors.begin(), m_actors.end(), [this](decltype(m_actors)::value_type & entry) {
+        //    stop_impl_(entry.second->mail());
+        //});
     }
     //--------------------------------------------------------
 
     actor_ref actor_system::select(const actor_path & path) const
     {
-        std::unique_lock<std::mutex> lock(m_cells_mutex);
-        auto it = m_actors.find(path);
-        if(it != m_actors.cend()) {
-            return (*it).second->ref();
-        }
-        return dead_letters();
+        YATO_MAYBE_UNUSED(path);
+        throw std::logic_error("To be implemented");
+        //std::unique_lock<std::mutex> lock(m_cells_mutex);
+        //auto it = m_actors.find(path);
+        //if(it != m_actors.cend()) {
+        //    return (*it).second->ref();
+        //}
+        //return dead_letters();
     }
     //--------------------------------------------------------
 
@@ -342,18 +369,15 @@ namespace actors
 
     void actor_system::notify_on_stop_(const actor_ref & ref)
     {
-        {
-            std::unique_lock<std::mutex> lock(m_cells_mutex);
-            auto it = m_actors.find(ref.get_path());
-            if (it != m_actors.end()) {
-                m_actors.erase(it);
-            }
-            if(!ref.get_path().is_system_scope()) {
-                --m_user_priority_actors_num;
-            }
+        if(ref == m_root->ref()) {
+            m_root_stopped = true;
+            std::unique_lock<std::mutex> lock(m_terminate_mutex);
+            m_terminate_cv.notify_one();
+            m_logger->verbose("The root is stopped.", ref.get_path().c_str());
         }
-        m_cells_condition.notify_one();
-        m_logger->verbose("Actor %s is stopped.", ref.get_path().c_str());
+        else {
+            m_logger->verbose("Actor %s is stopped.", ref.get_path().c_str());
+        }
     }
     //--------------------------------------------------------
 

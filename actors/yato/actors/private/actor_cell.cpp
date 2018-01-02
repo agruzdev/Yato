@@ -17,7 +17,7 @@ namespace actors
 {
 
     actor_cell::actor_cell(actor_system & system, const actor_path & path, std::unique_ptr<actor_base> && instance)
-        : m_system(system), m_self(&system, path)
+        : m_system(system), m_self(&system, path), m_started(false), m_stop(false)
     {
         m_log = logger_factory::create(std::string("Actor[") + m_self.name() + "]");
 
@@ -35,6 +35,27 @@ namespace actors
 
     actor_cell::~actor_cell()
     { }
+    //--------------------------------------------
+
+    actor_ref actor_cell::add_child(std::unique_ptr<actor_cell> && child)
+    {
+        assert(child->m_parent == nullptr);
+
+        child->m_parent = std::make_unique<actor_ref>(m_self);
+        auto child_ref = child->ref();
+        m_children.push_back(std::move(child));
+        return child_ref;
+    }
+    //--------------------------------------------
+
+    void actor_cell::remove_child(const actor_ref & ref)
+    {
+        auto it = std::find_if(m_children.begin(), m_children.end(), [&ref](const std::unique_ptr<actor_cell> & cell) { return cell->ref() == ref; });
+        assert(it != m_children.end());
+        if(it != m_children.end()) {
+            m_children.erase(it);
+        }
+    }
     //--------------------------------------------
 
 } // namespace actors

@@ -42,18 +42,16 @@ namespace actors
         std::string m_name;
         logger_ptr m_logger;
 
-        std::vector<std::unique_ptr<actor_cell>> m_guardians;
-
-        mutable std::mutex m_cells_mutex;
-        std::condition_variable m_cells_condition;
-        std::map<actor_path, std::unique_ptr<actor_cell>> m_actors;
-        size_t m_user_priority_actors_num;
-
         std::unique_ptr<abstract_executor> m_executor;
 
         std::unique_ptr<scheduler> m_scheduler;
         std::unique_ptr<name_generator> m_name_generator;
 
+        std::mutex m_terminate_mutex;
+        std::condition_variable m_terminate_cv;
+        bool m_root_stopped;
+
+        std::unique_ptr<actor_cell> m_root;
         std::unique_ptr<actor_ref> m_dead_letters;
         //-------------------------------------------------------
 
@@ -64,8 +62,8 @@ namespace actors
             return [&] { return std::unique_ptr<Ty_>(new Ty_(std::forward<Args_>(args)...)); };
         }
 
-        actor_ref create_guardian_(const actor_path & name);
         actor_ref create_actor_impl_(const actor_builder & builder, const actor_path & name);
+
         void send_impl_(const actor_ref & toActor, const actor_ref & fromActor, yato::any && message) const;
         void send_system_impl_(const actor_ref & addressee, const actor_ref & sender, yato::any && userMessage) const;
         void stop_impl_(mailbox* mbox) const;

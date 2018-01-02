@@ -10,8 +10,10 @@
 #include "../actor.h"
 
 #include "../actor_system.h"
+#include "actor_system_ex.h"
 #include "actor_cell.h"
 #include "message.h"
+#include "system_message.h"
 
 namespace yato
 {
@@ -77,7 +79,7 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    void actor_base::receive_message(const message & message) noexcept
+    void actor_base::receive_message(message & message) noexcept
     {
         assert(m_context != nullptr);
         if (message.payload.type() == typeid(poison_pill_t)) {
@@ -88,13 +90,39 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    bool actor_base::receive_system_message(const message & msg) noexcept
+    void actor_base::stop_impl() noexcept
+    {
+        try {
+            post_stop();
+        }
+        catch (std::exception & e) {
+            log().error("actor[system_signal]: Unhandled exception: %s", e.what());
+        }
+        catch (...) {
+            log().error("actor[system_signal]: Unknown exception!");
+        }
+        context().set_started(false);
+
+        // Notify watchers
+        auto & watchers = m_context->watchers();
+        std::for_each(watchers.begin(), watchers.end(), [this](const actor_ref & watcher) {
+            watcher.tell(yato::actors::terminated(self()), self());
+        });
+        // Detach from parent
+        if (context().has_parent()) {
+            actor_system_ex::send_system_message(system(), context().parent(), system_message::detach_child(self()));
+        }
+    }
+    //-------------------------------------------------------
+
+    bool actor_base::receive_system_message(message & msg) noexcept
     {
         assert(m_context != nullptr);
         return any_match(
             [this](const system_message::start &) {
                 try {
                     pre_start();
+                    context().set_started(true);
                 }
                 catch (std::exception & e) {
                     log().error("actor[system_signal]: Unhandled exception: %s", e.what());
@@ -105,21 +133,25 @@ namespace actors
                 return false;
             },
             [this](const system_message::stop &) {
-                try {
-                    post_stop();
+                if(context().children().empty()) {
+                    stop_impl();
+                    return true;
+                } else {
+                    // Wait and stop after children
+                    context().set_stop(true);
+                    for(auto & child : context().children()) {
+                        child->ref().tell(poison_pill);
+                    }
+                    return false;
                 }
-                catch (std::exception & e) {
-                    log().error("actor[system_signal]: Unhandled exception: %s", e.what());
+            },
+            [this](const system_message::stop_after_children &) {
+                if (context().children().empty()) {
+                    stop_impl();
+                    return true;
                 }
-                catch (...) {
-                    log().error("actor[system_signal]: Unknown exception!");
-                }
-                // Notify watchers
-                auto & watchers = m_context->watchers();
-                std::for_each(watchers.begin(), watchers.end(), [this](const actor_ref & watcher) {
-                    watcher.tell(yato::actors::terminated(self()), self());
-                });
-                return true;
+                context().set_stop(true);
+                return false;
             },
             [this](const system_message::watch & watch) {
                 auto & watchers = m_context->watchers();
@@ -137,13 +169,26 @@ namespace actors
                 }
                 return false;
             },
-            //[this](const system_message::attach_child & attach) {
-            //    auto child = std::move(const_cast<system_message::attach_child &>(attach).cell);
-            //    child->parent = std::make_unique<actor_ref>(self());
-            //    auto child_ref = child->act->self();
-            //    cell_().children.push_back(std::move(child));
-            //    actor_system_ex::send_system_message(system(), child_ref, system_message::start());
-            //},
+            [this](const system_message::attach_child & attach) {
+                if(context().stopping()) {
+                    context().log().warning("Child can't be attached. Actor is going to stop.");
+                    return false;
+                }
+                auto child = std::move(const_cast<system_message::attach_child &>(attach).cell);
+                auto child_ref = context().add_child(std::move(child));
+                actor_system_ex::send_system_message(system(), child_ref, system_message::start());
+                context().log().info("Attached child %s", child_ref.get_path().c_str());
+                return false;
+            },
+            [this](const system_message::detach_child & detach) {
+                context().remove_child(detach.ref);
+                context().log().info("Detached child %s", detach.ref.get_path().c_str());
+                if(context().stopping() && context().children().empty()) {
+                    stop_impl();
+                    return true;
+                }
+                return false;
+            },
             [this](match_default_t) {
                 assert(false);
                 log().error("actor[system_signal]: Unknown system message!");

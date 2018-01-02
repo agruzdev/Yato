@@ -9,7 +9,7 @@
 namespace
 {
     const size_t ECHO_NUM   = 10;
-    const size_t ACTORS_NUM = 100000;
+    const size_t ACTORS_NUM = 10000;
 
     std::atomic_bool gStart{ false };
 
@@ -61,9 +61,11 @@ namespace
 
 TEST(Yato_Actors, highload_spawn)
 {
+    auto conf = yato::actors::config::defaults();
+    conf.log_filter = yato::actors::log_level::verbose;
 
-    yato::actors::actor_system system("default");
-    system.logger()->set_filter(yato::actors::log_level::verbose);
+    yato::actors::actor_system system("default", conf);
+    //system.logger()->set_filter(yato::actors::log_level::verbose);
 
     auto echoActor = system.create_actor<EchoActor>("Echo");
 
