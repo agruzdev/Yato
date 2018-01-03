@@ -17,6 +17,7 @@ TEST(Yato_AnyMatch, common)
     auto xi = yato::any(1);
     auto xf = yato::any(1.0f);
     auto xs = yato::any(std::string("abc"));
+    const auto cs = yato::any(std::string("abc"));
     auto xp = yato::any(fp);
     auto xe = yato::any();
 
@@ -49,9 +50,11 @@ TEST(Yato_AnyMatch, common)
     EXPECT_NO_THROW(r = matcher(xp));
     EXPECT_EQ(3, r);
     EXPECT_NO_THROW(r = matcher(xs));
-    EXPECT_EQ(-1, r);
+    EXPECT_EQ(4, r);
     EXPECT_NO_THROW(r = matcher(std::move(xs)));
     EXPECT_EQ(4, r);
+    EXPECT_NO_THROW(r = matcher(cs));
+    EXPECT_EQ(-1, r);
     EXPECT_NO_THROW(r = matcher(xe));
     EXPECT_EQ(0, r);
     EXPECT_NO_THROW(r = matcher(yato::any(cfp)));
@@ -116,7 +119,7 @@ TEST(Yato_VariantMatch, common)
     EXPECT_NO_THROW(r = matcher(vf));
     EXPECT_EQ(2, r);
     EXPECT_NO_THROW(r = matcher(vs));
-    EXPECT_EQ(-1, r);
+    EXPECT_EQ(4, r);
     EXPECT_NO_THROW(r = matcher(ve));
     EXPECT_EQ(0, r);
     EXPECT_NO_THROW(r = matcher(vc));
