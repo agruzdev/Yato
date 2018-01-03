@@ -216,7 +216,7 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    actor_ref actor_system::create_actor_impl_(const actor_builder & builder, const actor_path & path)
+    actor_ref actor_system::create_actor_impl_(const details::cell_builder & builder, const actor_path & path)
     {
         path_elements elems;
         path.parce(elems);
@@ -225,8 +225,8 @@ namespace actors
             throw yato::argument_error("Invalid actor path!");
         }
 
-        auto cell = std::make_unique<actor_cell>(*this, path, builder());
-        auto ref = cell->ref();
+        auto cell = builder(*this, path);
+        auto ref  = cell->ref();
 
         m_logger->verbose("Actor %s is created.", path.c_str());
 
@@ -292,7 +292,7 @@ namespace actors
         auto result = response.get_future();
 
         auto ask_actor_path = actor_path(*this, actor_scope::temp, m_name_generator->next_indexed("ask"));
-        auto ask_actor = const_cast<actor_system*>(this)->create_actor_impl_(make_builder<asking_actor>(std::move(response)), ask_actor_path);
+        auto ask_actor = const_cast<actor_system*>(this)->create_actor_impl_(details::make_cell_builder<asking_actor>(std::move(response)), ask_actor_path);
         send_impl_(addressee, ask_actor, std::move(message));
 
         m_scheduler->enqueue(std::chrono::high_resolution_clock::now() + timeout, [ask_actor]{ ask_actor.stop(); });

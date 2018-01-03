@@ -19,6 +19,7 @@
 
 #include "actor.h"
 #include "config.h"
+#include "cell_builder.h"
 
 namespace yato
 {
@@ -33,11 +34,10 @@ namespace actors
     class scheduler;
     class name_generator;
 
-    class actor_system final
+    class actor_system
     {
     private:
         using timeout_type = std::chrono::microseconds;
-        using actor_builder = std::function<std::unique_ptr<actor_base>()>;
 
         std::string m_name;
         logger_ptr m_logger;
@@ -55,14 +55,7 @@ namespace actors
         std::unique_ptr<actor_ref> m_dead_letters;
         //-------------------------------------------------------
 
-        template<typename Ty_, typename... Args_>
-        static
-        actor_builder make_builder(Args_ && ... args) {
-            //return [&] { return std::make_unique<Ty_>(std::forward<Args_>(args)...); };
-            return [&] { return std::unique_ptr<Ty_>(new Ty_(std::forward<Args_>(args)...)); };
-        }
-
-        actor_ref create_actor_impl_(const actor_builder & builder, const actor_path & name);
+        actor_ref create_actor_impl_(const details::cell_builder & builder, const actor_path & name);
 
         void send_impl_(const actor_ref & toActor, const actor_ref & fromActor, yato::any && message) const;
         void send_system_impl_(const actor_ref & addressee, const actor_ref & sender, yato::any && userMessage) const;
@@ -78,7 +71,8 @@ namespace actors
          */
         template <typename ActorType_, typename ... Args_>
         actor_ref create_actor_(const actor_scope & scope, const std::string & name, Args_ && ... args) {
-            return create_actor_impl_(make_builder<ActorType_>(std::forward<Args_>(args)...), actor_path(*this, scope, name));
+            //return create_actor_impl_(make_builder<ActorType_>(std::forward<Args_>(args)...), actor_path(*this, scope, name));
+            return create_actor_impl_(details::make_cell_builder<ActorType_>(std::forward<Args_>(args)...), actor_path(*this, scope, name));
         }
 
         /**
@@ -115,7 +109,7 @@ namespace actors
 
         template <typename ActorType_, typename ... Args_>
         actor_ref create_actor(const std::string & name, Args_ && ... args) {
-            return create_actor_impl_(make_builder<ActorType_>(std::forward<Args_>(args)...), actor_path(*this, actor_scope::user, name));
+            return create_actor_impl_(details::make_cell_builder<ActorType_>(std::forward<Args_>(args)...), actor_path(*this, actor_scope::user, name));
         }
 
         template <typename Ty_>
