@@ -102,6 +102,7 @@ namespace actors
             log().error("actor[system_signal]: Unknown exception!");
         }
         context().set_started(false);
+        log().verbose("actor %s is stopped", self().get_path().c_str());
 
         // Notify watchers
         auto & watchers = m_context->watchers();
@@ -123,6 +124,7 @@ namespace actors
                 try {
                     pre_start();
                     context().set_started(true);
+                    log().verbose("actor %s is started", self().get_path().c_str());
                 }
                 catch (std::exception & e) {
                     log().error("actor[system_signal]: Unhandled exception: %s", e.what());
@@ -177,12 +179,12 @@ namespace actors
                 auto child = std::move(const_cast<system_message::attach_child &>(attach).cell);
                 auto child_ref = context().add_child(std::move(child));
                 actor_system_ex::send_system_message(system(), child_ref, system_message::start());
-                context().log().info("Attached child %s", child_ref.get_path().c_str());
+                context().log().verbose("Attached child %s", child_ref.get_path().c_str());
                 return false;
             },
             [this](const system_message::detach_child & detach) {
                 context().remove_child(detach.ref);
-                context().log().info("Detached child %s", detach.ref.get_path().c_str());
+                context().log().verbose("Detached child %s", detach.ref.get_path().c_str());
                 if(context().stopping() && context().children().empty()) {
                     stop_impl();
                     return true;

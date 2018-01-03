@@ -18,6 +18,7 @@ namespace actors
 
     void dynamic_executor::mailbox_function(dynamic_executor* executor, mailbox* mbox, uint32_t throughput)
     {
+        bool reschedule = true;
         for(uint32_t count = 0;;) {
             if(process_all_system_messages(mbox)) {
                 // Terminate actor
@@ -34,7 +35,8 @@ namespace actors
             if(!mbox->owner->context().is_started()) {
                 // ToDo (a.gruzdev): Quick solution
                 // dont process user messages untill started
-                continue;
+                reschedule = false;
+                break;
             }
 
             std::unique_ptr<message> msg = nullptr;
@@ -47,7 +49,6 @@ namespace actors
 
                 if (mbox->queue.empty() || count >= throughput) {
                     // Terminate batch
-                    mbox->is_scheduled = false;
                     break;
                 }
 
@@ -59,8 +60,11 @@ namespace actors
                 mbox->owner->receive_message(*msg);
             }
         }
-        // Schedule again, moving to the end of the queue
-        executor->execute(mbox);
+        mbox->is_scheduled = false;
+        if(reschedule) {
+            // Schedule again, moving to the end of the queue
+            executor->execute(mbox);
+        }
     }
     //----------------------------------------------------------
 

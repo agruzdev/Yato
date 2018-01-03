@@ -72,6 +72,7 @@ namespace actors
     {
         actor_ref m_sys_guard;
         actor_ref m_usr_guard;
+        actor_ref m_tmp_guard;
 
         actor_ref create_guard_(const actor_path & path) {
             auto cell = std::make_unique<actor_cell>(system(), path, std::make_unique<guardian>());
@@ -87,6 +88,9 @@ namespace actors
             m_sys_guard = create_guard_(actor_path(self().get_path().to_string() + "/system"));
             watch(m_sys_guard);
 
+            m_tmp_guard = create_guard_(actor_path(self().get_path().to_string() + "/temp"));
+            watch(m_tmp_guard);
+
             m_usr_guard = create_guard_(actor_path(self().get_path().to_string() + "/user"));
             watch(m_usr_guard);
         }
@@ -99,7 +103,7 @@ namespace actors
                     path_elements elems;
                     add.cell->ref().get_path().parce(elems);
 
-                    log().debug("Adding " + add.cell->ref().get_path().to_string());
+                    log().verbose("Adding " + add.cell->ref().get_path().to_string());
 
                     switch(elems.scope) {
                     case actor_scope::user :
@@ -107,6 +111,9 @@ namespace actors
                         break;
                     case actor_scope::system :
                         actor_system_ex::send_system_message(system(), m_sys_guard, system_message::attach_child(std::move(add.cell)));
+                        break;
+                    case actor_scope::temp :
+                        actor_system_ex::send_system_message(system(), m_tmp_guard, system_message::attach_child(std::move(add.cell)));
                         break;
                     default:
                         log().error("root_add: Invalid scope!");
@@ -124,7 +131,12 @@ namespace actors
                     }
                     else if (t.ref == m_usr_guard) {
                         actor_system_ex::send_system_message(system(), m_sys_guard, system_message::stop{});
+                        actor_system_ex::send_system_message(system(), m_tmp_guard, system_message::stop_after_children{});
                     }
+                },
+                [this](yato::match_default_t) {
+                    YATO_ASSERT(false, "Unknown root message!");
+                    log().error("Unknown root message!");
                 }
             )(message);
         }

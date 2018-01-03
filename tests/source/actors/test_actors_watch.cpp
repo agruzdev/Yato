@@ -11,14 +11,14 @@ namespace
     class TestActor
         : public yato::actors::actor<>
     {
-        void receive(const yato::any &) override
+        void receive(yato::any &) override
         { }
     };
 
     class ObserverActor
         : public yato::actors::actor<>
     {
-        void receive(const yato::any& message) override
+        void receive(yato::any & message) override
         {
             yato::any_match(
                 [this](const yato::actors::terminated & t) {
@@ -32,7 +32,6 @@ namespace
 
 TEST(Yato_Actors, watch)
 {
-
     yato::actors::actor_system system("default");
     system.logger()->set_filter(yato::actors::log_level::verbose);
 
@@ -46,7 +45,6 @@ TEST(Yato_Actors, watch)
 
 TEST(Yato_Actors, unwatch)
 {
-
     yato::actors::actor_system system("default");
     system.logger()->set_filter(yato::actors::log_level::verbose);
 
