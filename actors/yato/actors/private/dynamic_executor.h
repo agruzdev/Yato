@@ -28,7 +28,7 @@ namespace actors
         std::unique_ptr<thread_pool> m_tpool;
         uint32_t m_throughput;
 
-        static void mailbox_function(dynamic_executor* executor, mailbox* mbox, uint32_t throughput);
+        static void mailbox_function(dynamic_executor* executor, const std::shared_ptr<mailbox> & mbox, uint32_t throughput);
 
     public:
         dynamic_executor(actor_system* system, uint32_t threads_num, uint32_t throughput);
@@ -37,7 +37,10 @@ namespace actors
         dynamic_executor(const dynamic_executor&) = delete;
         dynamic_executor& operator=(const dynamic_executor&) = delete;
 
-        bool execute(mailbox* mbox) override;
+        dynamic_executor(dynamic_executor&&) = delete;
+        dynamic_executor& operator=(dynamic_executor&&) = delete;
+
+        bool execute(const std::shared_ptr<mailbox> & mbox) override;
     };
 
 

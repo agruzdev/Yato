@@ -16,9 +16,10 @@ namespace yato
 namespace actors
 {
 
-    void dynamic_executor::mailbox_function(dynamic_executor* executor, mailbox* mbox, uint32_t throughput)
+    void dynamic_executor::mailbox_function(dynamic_executor* executor, const std::shared_ptr<mailbox> & mbox, uint32_t throughput)
     {
         bool reschedule = true;
+        const actor_ref ref = mbox->owner->self();
         for(uint32_t count = 0;;) {
             if(process_all_system_messages(mbox)) {
                 // Terminate actor
@@ -27,7 +28,6 @@ namespace actors
                     mbox->is_open = false;
                     mbox->is_scheduled = false;
                 }
-                actor_ref ref = mbox->owner->self();
                 actor_system_ex::notify_on_stop(*executor->m_system, ref);
                 return;
             }
@@ -77,11 +77,11 @@ namespace actors
     }
     //-----------------------------------------------------------
 
-    dynamic_executor::~dynamic_executor() 
+    dynamic_executor::~dynamic_executor()
     { }
     //-----------------------------------------------------------
 
-    bool dynamic_executor::execute(mailbox* mbox)
+    bool dynamic_executor::execute(const std::shared_ptr<mailbox> & mbox)
     {
         assert(mbox != nullptr);
         {

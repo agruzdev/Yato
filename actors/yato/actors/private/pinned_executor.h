@@ -33,7 +33,7 @@ namespace actors
         std::vector<std::thread> m_threads;
         logger_ptr m_logger;
 
-        static void pinned_thread_function(pinned_executor* executor, mailbox* mbox) noexcept;
+        static void pinned_thread_function(pinned_executor* executor, const std::shared_ptr<mailbox> & mbox) noexcept;
 
     public:
         pinned_executor(actor_system* system);
@@ -42,7 +42,10 @@ namespace actors
         pinned_executor(const pinned_executor&) = delete;
         pinned_executor& operator=(const pinned_executor&) = delete;
 
-        bool execute(mailbox* mbox) override;
+        pinned_executor(pinned_executor&&) = delete;
+        pinned_executor& operator=(pinned_executor&&) = delete;
+
+        bool execute(const std::shared_ptr<mailbox> & mbox) override;
     };
 
 

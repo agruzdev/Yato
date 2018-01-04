@@ -115,11 +115,11 @@ namespace actors
         }
     }
     //-------------------------------------------------------
-
     bool actor_base::receive_system_message(message & msg) noexcept
     {
         assert(m_context != nullptr);
-        return any_match(
+        // (a.gruzdev) static_cast for ReSharper's calmness
+        return static_cast<bool>(any_match(
             [this](const system_message::start &) {
                 try {
                     pre_start();
@@ -196,8 +196,7 @@ namespace actors
                 log().error("actor[system_signal]: Unknown system message!");
                 return false;
             }
-        )
-        (msg.payload);
+        )(msg.payload));
     }
     //-------------------------------------------------------
 

@@ -199,7 +199,7 @@ namespace actors
 
     template <typename Ty_, typename ... Args_>
     inline
-    bool enqueue_system_message_(mailbox* mbox, const actor_ref & sender, Args_ && ... args)
+    bool enqueue_system_message_(const std::shared_ptr<mailbox> & mbox, const actor_ref & sender, Args_ && ... args)
     {
         assert(mbox != nullptr);
         bool success = false;
@@ -257,7 +257,7 @@ namespace actors
                 mbox->condition.notify_one();
             }
         }
-        m_executor->execute(mbox.get());
+        m_executor->execute(mbox);
     }
     //-------------------------------------------------------
 
@@ -282,7 +282,7 @@ namespace actors
                 mbox->condition.notify_one();
             }
         }
-        m_executor->execute(mbox.get());
+        m_executor->execute(mbox);
     }
     //-------------------------------------------------------
 
@@ -291,8 +291,8 @@ namespace actors
         std::promise<yato::any> response;
         auto result = response.get_future();
 
-        auto ask_actor_path = actor_path(*this, actor_scope::temp, m_name_generator->next_indexed("ask"));
-        auto ask_actor = const_cast<actor_system*>(this)->create_actor_impl_(details::make_cell_builder<asking_actor>(std::move(response)), ask_actor_path);
+        const auto ask_actor_path = actor_path(*this, actor_scope::temp, m_name_generator->next_indexed("ask"));
+        const auto ask_actor = const_cast<actor_system*>(this)->create_actor_impl_(details::make_cell_builder<asking_actor>(std::move(response)), ask_actor_path);
         send_impl_(addressee, ask_actor, std::move(message));
 
         m_scheduler->enqueue(std::chrono::high_resolution_clock::now() + timeout, [ask_actor]{ ask_actor.stop(); });
@@ -301,7 +301,7 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    void actor_system::stop_impl_(mailbox* mbox) const 
+    void actor_system::stop_impl_(const std::shared_ptr<mailbox> & mbox) const 
     {
         assert(mbox != nullptr);
         if(enqueue_system_message_<system_message::stop>(mbox, dead_letters())) {
@@ -312,12 +312,12 @@ namespace actors
 
     void actor_system::stop(const actor_ref & addressee) const 
     {
-        std::shared_ptr<mailbox> mbox = addressee.get_mailbox().lock();
+        const std::shared_ptr<mailbox> mbox = addressee.get_mailbox().lock();
         if (mbox == nullptr) {
             m_logger->verbose("Failed to stop actor. Actor %s is not found!", addressee.get_path().c_str());
             return;
         }
-        stop_impl_(mbox.get());
+        stop_impl_(mbox);
     }
     //--------------------------------------------------------
 
@@ -350,14 +350,14 @@ namespace actors
             m_logger->error("DeadLetters can't be used in watching");
             return;
         }
-        std::shared_ptr<mailbox> mbox = watchee.get_mailbox().lock();
+        const std::shared_ptr<mailbox> mbox = watchee.get_mailbox().lock();
         if (mbox == nullptr) {
             m_logger->warning("Failed to find watchee. Actor %s is not found!", watchee.get_path().c_str());
             watcher.tell(terminated(watchee)); // Already terminated
             return;
         }
-        if (enqueue_system_message_<system_message::watch>(mbox.get(), watcher, watcher)) {
-            m_executor->execute(mbox.get());
+        if (enqueue_system_message_<system_message::watch>(mbox, watcher, watcher)) {
+            m_executor->execute(mbox);
         }
     }
     //--------------------------------------------------------
@@ -368,13 +368,13 @@ namespace actors
             m_logger->error("DeadLetters can't be used in watching");
             return;
         }
-        std::shared_ptr<mailbox> mbox = watchee.get_mailbox().lock();
+        const std::shared_ptr<mailbox> mbox = watchee.get_mailbox().lock();
         if (mbox == nullptr) {
             m_logger->error("Failed to find watchee. Actor %s is not found!", watchee.get_path().c_str());
             return;
         }
-        if (enqueue_system_message_<system_message::unwatch>(mbox.get(), watcher, watcher)) {
-            m_executor->execute(mbox.get());
+        if (enqueue_system_message_<system_message::unwatch>(mbox, watcher, watcher)) {
+            m_executor->execute(mbox);
         }
     }
     //--------------------------------------------------------

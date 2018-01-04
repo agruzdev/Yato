@@ -18,9 +18,10 @@ namespace yato
 namespace actors
 {
 
-    void pinned_executor::pinned_thread_function(pinned_executor* executor, mailbox* mbox) noexcept
+    void pinned_executor::pinned_thread_function(pinned_executor* executor, const std::shared_ptr<mailbox> & mbox) noexcept
     {
         try {
+            const actor_ref ref = mbox->owner->self();
             for (;;) {
                 if(process_all_system_messages(mbox)) {
                     // Terminate actor
@@ -29,7 +30,6 @@ namespace actors
                         mbox->is_open = false;
                         mbox->is_scheduled = false;
                     }
-                    actor_ref ref = mbox->owner->self();
                     actor_system_ex::notify_on_stop(*executor->m_system, ref);
                     return;
                 }
@@ -85,7 +85,7 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    bool pinned_executor::execute(mailbox* mbox) {
+    bool pinned_executor::execute(const std::shared_ptr<mailbox> & mbox) {
         std::unique_lock<std::mutex> lock(mbox->mutex);
         if(!mbox->is_scheduled && mbox->is_open) {
             mbox->is_scheduled = true;

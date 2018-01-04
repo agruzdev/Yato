@@ -59,7 +59,7 @@ namespace actors
 
         void send_impl_(const actor_ref & toActor, const actor_ref & fromActor, yato::any && message) const;
         void send_system_impl_(const actor_ref & addressee, const actor_ref & sender, yato::any && userMessage) const;
-        void stop_impl_(mailbox* mbox) const;
+        void stop_impl_(const std::shared_ptr<mailbox> & mbox) const;
 
         std::future<yato::any> ask_impl_(const actor_ref & addressee, yato::any && message, const timeout_type & timeout) const;
 

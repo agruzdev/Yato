@@ -24,12 +24,12 @@ namespace actors
         /**
          * Execute full mailbox or a part of it
          */
-        virtual bool execute(mailbox* mbox) = 0;
+        virtual bool execute(const std::shared_ptr<mailbox> & mbox) = 0;
     };
 
 
     inline 
-    bool process_all_system_messages(mailbox* mbox) {
+    bool process_all_system_messages(const std::shared_ptr<mailbox> & mbox) {
         for(;;) {
             std::unique_ptr<message> sys_msg = nullptr;
             {
