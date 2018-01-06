@@ -88,6 +88,26 @@ namespace actors
                 : ref(ref)
             { }
         };
+
+
+        /**
+         * Message for searching an actor
+         */
+        struct selection
+        {
+            actor_ref sender;
+            actor_scope scope;
+            std::vector<std::string> path;
+
+            selection(const actor_ref & sender, const actor_scope & scope, const std::vector<std::string> & path)
+                : sender(sender), scope(scope), path(path)
+            { }
+
+            selection(const actor_ref & sender, std::vector<std::string> && path)
+                : sender(sender), scope(scope), path(std::move(path))
+            { }
+        };
+
     };
 
 }// namespace actors

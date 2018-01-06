@@ -9,6 +9,7 @@
 #define _YATO_ACTOR_SYSTEM_EX_H_
 
 #include "../actor_system.h"
+#include "../cell_builder.h"
 
 namespace yato
 {
@@ -22,10 +23,31 @@ namespace actors
     class actor_system_ex
     {
     public:
+        static
+        const actor_ref & root(const actor_system & sys) {
+            return sys.root();
+        }
+
+        static
+        actor_ref create_actor(actor_system & sys, const actor_scope & scope, const std::string & name, const details::cell_builder & builder) {
+            return sys.create_actor_(scope, name, builder);
+        }
+
+        static
+        actor_ref create_actor(actor_system & sys, const actor_ref & parent, const std::string & name, const details::cell_builder & builder) {
+            return sys.create_actor_(parent, name, builder);
+        }
+
         template <typename ActorType_, typename ... Args_>
         static
         actor_ref create_actor(actor_system & sys, const actor_scope & scope, const std::string & name, Args_ && ... args) {
-            return sys.create_actor_<ActorType_>(scope, name, std::forward<Args_>(args)...);
+            return sys.create_actor_(scope, name, details::make_cell_builder<ActorType_>(std::forward<Args_>(args)...));
+        }
+
+        template <typename ActorType_, typename ... Args_>
+        static
+        actor_ref create_actor(actor_system & sys, const actor_ref & parent, const std::string & name, Args_ && ... args) {
+            return sys.create_actor_(parent, name, details::make_cell_builder<ActorType_>(std::forward<Args_>(args)...));
         }
 
         static

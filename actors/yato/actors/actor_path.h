@@ -44,6 +44,9 @@ namespace actors
     class actor_path
     {
     private:
+        using path_iterator       = std::string::iterator;
+        using path_const_iterator = std::string::const_iterator;
+
         static const std::locale path_locale;
         static const std::string path_root;
         //----------------------------------------------------
@@ -51,6 +54,9 @@ namespace actors
     public:
         static bool is_valid_system_name(const std::string & name);
         static bool is_valid_actor_name(const std::string & name);
+
+        static const std::string & scope_to_str(const actor_scope & scope);
+        static const actor_scope & str_to_scope(const std::string & name);
         //----------------------------------------------------
 
     private:
@@ -90,24 +96,26 @@ namespace actors
             return m_path.c_str();
         }
 
-        std::string get_name() const 
-        {
-            //ToDo (a.gruzdev): temporal solution
-            //auto pos = std::find(m_path.begin() + actor_path::path_root.size(), m_path.end(), '/');
-            //pos = std::find(pos + 1, m_path.end(), '/');
-            //return m_path.substr(pos + 1 - m_path.begin());
-            return m_path;
-        }
-
-        /**
-         * Check if this path represents actor in system scope
-         */
-        bool is_system_scope() const;
-
         /**
          * Parce actor path
          */
-        bool parce(path_elements & elems) const;
+        bool parce(path_elements & elems, bool header_only = false) const;
+
+        /**
+         * Get actor name without full path
+         */
+        std::string get_name() const 
+        {
+            //ToDo (a.gruzdev): temporal solution
+            auto pos = m_path.find_last_of('/');
+            if(pos == std::string::npos) {
+                return std::string{};
+            }
+            if(pos < m_path.size()) {
+                ++pos; // skip '/'
+            }
+            return m_path.substr(pos);
+        }
 
         friend
         bool operator == (const actor_path & one, const actor_path & another)

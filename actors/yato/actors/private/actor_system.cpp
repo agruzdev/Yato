@@ -28,122 +28,20 @@
 #include "../io/tcp.h"
 #endif
 
+#include "actors/root.h"
+#include "actors/selector.h"
+
 namespace
 {
     const std::string DEAD_LETTERS = "_dead_";
     const std::string POISON_PILL  = "_poison_";
 }
 
+
 namespace yato
 {
 namespace actors
 {
-    /**
-     * Guardian actor
-     */
-    class guardian
-        : public actor<>
-    {
-        void receive(yato::any & message) override
-        { }
-    };
-
-    /**
-     * Add new actor to the tree
-     */
-    struct root_add
-    {
-        std::unique_ptr<actor_cell> cell;
-
-        explicit
-        root_add(std::unique_ptr<actor_cell> && cell)
-            : cell(std::move(cell))
-        { }
-    };
-
-    /**
-     * Message for terminating root on exit of actor system
-     */
-    struct root_terminate {};
-
-    // ToDo (a.gruzdev): Add processing of unexpected termination of the guards!
-    class root
-        : public actor<>
-    {
-        actor_ref m_sys_guard;
-        actor_ref m_usr_guard;
-        actor_ref m_tmp_guard;
-
-        actor_ref create_guard_(const actor_path & path) {
-            auto cell = std::make_unique<actor_cell>(system(), path, std::make_unique<guardian>());
-            auto ref  = cell->ref();
-
-            log().debug("Guard %s is created.", path.c_str());
-            actor_system_ex::send_system_message(system(), self(), system_message::attach_child(std::move(cell)));
-
-            return ref;
-        }
-
-        void pre_start() override {
-            m_sys_guard = create_guard_(actor_path(self().get_path().to_string() + "/system"));
-            watch(m_sys_guard);
-
-            m_tmp_guard = create_guard_(actor_path(self().get_path().to_string() + "/temp"));
-            watch(m_tmp_guard);
-
-            m_usr_guard = create_guard_(actor_path(self().get_path().to_string() + "/user"));
-            watch(m_usr_guard);
-        }
-
-        void receive(yato::any & message) override
-        {
-            yato::any_match(
-                [this] (root_add & add) {
-                    YATO_REQUIRES(add.cell != nullptr);
-                    path_elements elems;
-                    add.cell->ref().get_path().parce(elems);
-
-                    log().verbose("Adding " + add.cell->ref().get_path().to_string());
-
-                    switch(elems.scope) {
-                    case actor_scope::user :
-                        actor_system_ex::send_system_message(system(), m_usr_guard, system_message::attach_child(std::move(add.cell)));
-                        break;
-                    case actor_scope::system :
-                        actor_system_ex::send_system_message(system(), m_sys_guard, system_message::attach_child(std::move(add.cell)));
-                        break;
-                    case actor_scope::temp :
-                        actor_system_ex::send_system_message(system(), m_tmp_guard, system_message::attach_child(std::move(add.cell)));
-                        break;
-                    default:
-                        log().error("root_add: Invalid scope!");
-                        break;
-                    }
-                },
-                [this] (const root_terminate & t) {
-                    log().debug("Terminating root");
-                    actor_system_ex::send_system_message(system(), m_usr_guard, system_message::stop_after_children{});
-                },
-                [this](const terminated & t) {
-                    log().debug("Terminated " + t.ref.get_path().to_string());
-                    if(t.ref == m_sys_guard) {
-                        actor_system_ex::send_system_message(system(), self(), system_message::stop_after_children{});
-                    }
-                    else if (t.ref == m_usr_guard) {
-                        actor_system_ex::send_system_message(system(), m_sys_guard, system_message::stop{});
-                        actor_system_ex::send_system_message(system(), m_tmp_guard, system_message::stop_after_children{});
-                    }
-                },
-                [this](yato::match_default_t) {
-                    YATO_ASSERT(false, "Unknown root message!");
-                    log().error("Unknown root message!");
-                }
-            )(message);
-        }
-    };
-
-
-    //-------------------------------------------------------
 
     actor_system::actor_system(const std::string & name, const config & conf)
         : m_name(name)
@@ -197,6 +95,12 @@ namespace actors
     }
     //-------------------------------------------------------
 
+    const actor_ref & actor_system::root() const {
+        YATO_REQUIRES(m_root != nullptr);
+        return m_root->ref();
+    }
+    //-------------------------------------------------------
+
     template <typename Ty_, typename ... Args_>
     inline
     bool enqueue_system_message_(const std::shared_ptr<mailbox> & mbox, const actor_ref & sender, Args_ && ... args)
@@ -216,7 +120,7 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    actor_ref actor_system::create_actor_impl_(const details::cell_builder & builder, const actor_path & path)
+    actor_ref actor_system::create_actor_impl_(const details::cell_builder & builder, const actor_path & path, const actor_ref & parent)
     {
         path_elements elems;
         path.parce(elems);
@@ -228,9 +132,11 @@ namespace actors
         auto cell = builder(*this, path);
         auto ref  = cell->ref();
 
-        m_logger->verbose("Actor %s is created.", path.c_str());
-
-        send_message(m_root->ref(), root_add(std::move(cell)));
+        if(parent.empty()) {
+            send_message(m_root->ref(), root_add(std::move(cell)));
+        } else {
+            send_system_message(parent, system_message::attach_child(std::move(cell)));
+        }
 
         return ref;
     }
@@ -292,7 +198,7 @@ namespace actors
         auto result = response.get_future();
 
         const auto ask_actor_path = actor_path(*this, actor_scope::temp, m_name_generator->next_indexed("ask"));
-        const auto ask_actor = const_cast<actor_system*>(this)->create_actor_impl_(details::make_cell_builder<asking_actor>(std::move(response)), ask_actor_path);
+        const auto ask_actor = const_cast<actor_system*>(this)->create_actor_impl_(details::make_cell_builder<asking_actor>(std::move(response)), ask_actor_path, actor_ref{});
         send_impl_(addressee, ask_actor, std::move(message));
 
         m_scheduler->enqueue(std::chrono::high_resolution_clock::now() + timeout, [ask_actor]{ ask_actor.stop(); });
@@ -331,16 +237,17 @@ namespace actors
     }
     //--------------------------------------------------------
 
-    actor_ref actor_system::select(const actor_path & path) const
+    std::future<actor_ref> actor_system::find_impl_(const actor_path & path, const timeout_type & timeout) const
     {
-        YATO_MAYBE_UNUSED(path);
-        throw std::logic_error("To be implemented");
-        //std::unique_lock<std::mutex> lock(m_cells_mutex);
-        //auto it = m_actors.find(path);
-        //if(it != m_actors.cend()) {
-        //    return (*it).second->ref();
-        //}
-        //return dead_letters();
+        std::promise<actor_ref> promise;
+        auto result = promise.get_future();
+
+        const auto selector_path = actor_path(*this, actor_scope::temp, m_name_generator->next_indexed("find"));
+        const auto select_actor  = const_cast<actor_system*>(this)->create_actor_impl_(details::make_cell_builder<selector>(path, std::move(promise)), selector_path, actor_ref{});
+
+        m_scheduler->enqueue(std::chrono::high_resolution_clock::now() + timeout, [select_actor]{ select_actor.stop(); });
+
+        return result;
     }
     //--------------------------------------------------------
 

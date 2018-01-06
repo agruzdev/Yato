@@ -82,6 +82,10 @@ namespace actors
             m_filter = level;
         }
 
+        log_level get_filter() const {
+            return m_filter;
+        }
+
         template <typename ... Args_>
         void error(const char* format, Args_ && ... args) const {
             format_and_write(log_level::error, format, std::forward<Args_>(args)...);

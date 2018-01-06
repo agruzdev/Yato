@@ -8,12 +8,14 @@
 #include <yato/any_match.h>
 
 #include "../actor.h"
-
 #include "../actor_system.h"
+
 #include "actor_system_ex.h"
 #include "actor_cell.h"
 #include "message.h"
 #include "system_message.h"
+
+#include "actors/selector.h"
 
 namespace yato
 {
@@ -90,6 +92,12 @@ namespace actors
     }
     //-------------------------------------------------------
 
+    actor_ref actor_base::create_child_impl_(const std::string & name, const details::cell_builder & builder)
+    {
+        return actor_system_ex::create_actor(system(), self(), name, builder);
+    }
+    //-------------------------------------------------------
+
     void actor_base::stop_impl() noexcept
     {
         try {
@@ -102,7 +110,7 @@ namespace actors
             log().error("actor[system_signal]: Unknown exception!");
         }
         context().set_started(false);
-        log().verbose("actor %s is stopped", self().get_path().c_str());
+        log().verbose("Actor %s is stopped", self().get_path().c_str());
 
         // Notify watchers
         auto & watchers = m_context->watchers();
@@ -124,7 +132,7 @@ namespace actors
                 try {
                     pre_start();
                     context().set_started(true);
-                    log().verbose("actor %s is started", self().get_path().c_str());
+                    log().verbose("Actor %s is started", self().get_path().c_str());
                 }
                 catch (std::exception & e) {
                     log().error("actor[system_signal]: Unhandled exception: %s", e.what());
@@ -188,6 +196,28 @@ namespace actors
                 if(context().stopping() && context().children().empty()) {
                     stop_impl();
                     return true;
+                }
+                return false;
+            },
+            [this](system_message::selection & select) {
+                auto & path = select.path;
+                if(path.empty()) {
+                    // Reached the path's end
+                    select.sender.tell(selection_success(context().ref()));
+                } else {
+                    // Forward to a child
+                    bool found = false;
+                    auto next = std::move(path.back());
+                    path.pop_back();
+                    for(auto & child : context().children()) {
+                        if(next == child->ref().name()) {
+                            actor_system_ex::send_system_message(system(), child->ref(), std::move(select));
+                            found = true;
+                        }
+                    }
+                    if(!found) {
+                        select.sender.tell(selection_failure("Selection target is not found."));
+                    }
                 }
                 return false;
             },

@@ -55,7 +55,7 @@ namespace actors
         std::unique_ptr<actor_ref> m_dead_letters;
         //-------------------------------------------------------
 
-        actor_ref create_actor_impl_(const details::cell_builder & builder, const actor_path & name);
+        actor_ref create_actor_impl_(const details::cell_builder & builder, const actor_path & name, const actor_ref & parent);
 
         void send_impl_(const actor_ref & toActor, const actor_ref & fromActor, yato::any && message) const;
         void send_system_impl_(const actor_ref & addressee, const actor_ref & sender, yato::any && userMessage) const;
@@ -63,16 +63,36 @@ namespace actors
 
         std::future<yato::any> ask_impl_(const actor_ref & addressee, yato::any && message, const timeout_type & timeout) const;
 
+        std::future<actor_ref> find_impl_(const actor_path & path, const timeout_type & timeout) const;
+
         //-------------------------------------------------------
 
     private: // Extended inferface for internal usage
         /**
+         * Get root actor reference
+         */
+        const actor_ref & root() const;
+
+        /**
          * Create actor in specified scope
          */
-        template <typename ActorType_, typename ... Args_>
-        actor_ref create_actor_(const actor_scope & scope, const std::string & name, Args_ && ... args) {
-            //return create_actor_impl_(make_builder<ActorType_>(std::forward<Args_>(args)...), actor_path(*this, scope, name));
-            return create_actor_impl_(details::make_cell_builder<ActorType_>(std::forward<Args_>(args)...), actor_path(*this, scope, name));
+        actor_ref create_actor_(const actor_scope & scope, const std::string & name, const details::cell_builder & builder) {
+            if(!actor_path::is_valid_actor_name(name)) {
+                throw yato::argument_error("Invalid actor name!");
+            }
+            return create_actor_impl_(builder, actor_path(*this, scope, name), actor_ref{});
+        }
+
+        /**
+         * Create a child actor
+         */
+        actor_ref create_actor_(const actor_ref & parent, const std::string & name, const details::cell_builder & builder) {
+            YATO_REQUIRES(!parent.empty());
+            if(!actor_path::is_valid_actor_name(name)) {
+                throw yato::argument_error("Invalid actor name!");
+            }
+            const auto child_path = actor_path::join(parent.get_path(), name);
+            return create_actor_impl_(builder, child_path, parent);
         }
 
         /**
@@ -107,9 +127,15 @@ namespace actors
          */
         ~actor_system();
 
+        /**
+         * Create a user actor
+         */
         template <typename ActorType_, typename ... Args_>
         actor_ref create_actor(const std::string & name, Args_ && ... args) {
-            return create_actor_impl_(details::make_cell_builder<ActorType_>(std::forward<Args_>(args)...), actor_path(*this, actor_scope::user, name));
+            if(!actor_path::is_valid_actor_name(name)) {
+                throw yato::argument_error("Invalid actor name!");
+            }
+            return create_actor_impl_(details::make_cell_builder<ActorType_>(std::forward<Args_>(args)...), actor_path(*this, actor_scope::user, name), actor_ref{});
         }
 
         template <typename Ty_>
@@ -152,15 +178,11 @@ namespace actors
         void stop_all();
 
         /**
-         * Find actor by name and get reference to it
+         * Find actor by name and get reference to it.
          */
-        actor_ref select(const actor_path & path) const;
-
-        /**
-         * Find actor in user scope of the system
-         */
-        actor_ref select(const std::string & name) const {
-            return select(actor_path(*this, actor_scope::user, name));
+        template <typename Rep_, typename Period_>
+        std::future<actor_ref> find(const actor_path & path, const std::chrono::duration<Rep_, Period_> & timeout) const {
+            return find_impl_(path, std::chrono::duration_cast<timeout_type>(timeout));
         }
 
         /**

@@ -100,6 +100,14 @@ namespace actors
          */
         void stop() const;
 
+        /**
+         * Check that this ref is empty, not corresponding any actor
+         */
+        bool empty() const 
+        {
+            return m_system == nullptr;
+        }
+
         friend
         bool operator == (const actor_ref & one, const actor_ref & another)
         {

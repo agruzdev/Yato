@@ -19,33 +19,33 @@ namespace actors
     const std::string actor_path::path_root = "yato://";
 
     static
-    const std::array<std::pair<actor_scope, std::string>, 5> scope_names = {
-        std::make_pair(actor_scope::user,   "user"),
-        std::make_pair(actor_scope::system, "system"),
-        std::make_pair(actor_scope::temp,   "temp"),
-        std::make_pair(actor_scope::remote, "remote"),
-        std::make_pair(actor_scope::dead,   "deadLetters")
+    const std::array<std::pair<actor_scope, std::string>, 6> scope_names = {
+        std::make_pair(actor_scope::unknown,  "unknown"),
+        std::make_pair(actor_scope::user,     "user"),
+        std::make_pair(actor_scope::system,   "system"),
+        std::make_pair(actor_scope::temp,     "temp"),
+        std::make_pair(actor_scope::remote,   "remote"),
+        std::make_pair(actor_scope::dead,     "dead")
     };
-
     //---------------------------------------------------
-    inline
-    std::string get_scope_name(const actor_scope & scope) 
+
+
+    const std::string & actor_path::scope_to_str(const actor_scope & scope)
     {
-        auto it = std::find_if(scope_names.cbegin(), scope_names.cend(), [&scope](const auto & entry) { return entry.first == scope; });
+        const auto it = std::find_if(scope_names.cbegin(), scope_names.cend(), [&scope](const auto & entry) { return entry.first == scope; });
         return (it != scope_names.cend())
             ? (*it).second
-            : std::string();
+            : scope_names[0].second;
     }
+    //---------------------------------------------------
 
-    inline
-    actor_scope get_scope_enum(const std::string & name)
+    const actor_scope & actor_path::str_to_scope(const std::string & name)
     {
-        auto it = std::find_if(scope_names.cbegin(), scope_names.cend(), [&name](const auto & entry) { return entry.second == name; });
+        const auto it = std::find_if(scope_names.cbegin(), scope_names.cend(), [&name](const auto & entry) { return entry.second == name; });
         return (it != scope_names.cend())
             ? (*it).first
-            : actor_scope::unknown;
+            : scope_names[0].first;
     }
-
     //---------------------------------------------------
 
     inline
@@ -84,7 +84,7 @@ namespace actors
         if (!is_valid_actor_name(actor_name)) {
             throw yato::argument_error("actor_path[actor_path]: Invalid actor name!");
         }
-        m_path = actor_path::path_root + system_name + "/" + get_scope_name(scope) + "/" + actor_name;
+        m_path = actor_path::path_root + system_name + "/" + scope_to_str(scope) + "/" + actor_name;
     }
     //---------------------------------------------------
 
@@ -94,11 +94,12 @@ namespace actors
         if (!is_valid_actor_name(actor_name)) {
             throw yato::argument_error("actor_path[actor_path]: Invalid actor name!");
         }
-        m_path = actor_path::path_root + system.name() + "/" + get_scope_name(scope) + "/" + actor_name;
+        m_path = actor_path::path_root + system.name() + "/" + scope_to_str(scope) + "/" + actor_name;
     }
+
     //---------------------------------------------------
 
-    bool actor_path::parce(path_elements & elems) const {
+    bool actor_path::parce(path_elements & elems, bool header_only) const {
         // Check root
         auto begin = m_path.cbegin();
         if(!std::equal(path_root.cbegin(), path_root.cend(), begin)) {
@@ -119,28 +120,28 @@ namespace actors
             std::advance(begin, 1);
         }
         end   = std::find(begin, m_path.cend(), '/');
-        elems.scope = get_scope_enum(std::string(begin, end));
+        elems.scope = str_to_scope(std::string(begin, end));
+        if(elems.scope == actor_scope::unknown) {
+            return false;
+        }
 
-        // Decode names
-        elems.names.clear();
-        while(end != m_path.cend()) {
-            begin = std::next(end);
-            end   = std::find(begin, m_path.cend(), '/');
-            if(begin != end) {
-                elems.names.emplace_back(begin, end);
+        if(!header_only) {
+            // Decode names
+            elems.names.clear();
+            while(end != m_path.cend()) {
+                begin = std::next(end); // skip '/'
+                end   = std::find(begin, m_path.cend(), '/');
+                if(begin != end) {
+                    elems.names.emplace_back(begin, end);
+                }
+            }
+            if(elems.names.empty()) {
+                return false;
             }
         }
-        return !elems.names.empty();
+        return true;
     }
-    //---------------------------------------------------
 
-    bool actor_path::is_system_scope() const 
-    {
-        //auto scope_name = get_scope_name(actor_scope::system);
-        //auto pos = std::find(std::next(m_path.cbegin(), actor_path::path_root.size()), m_path.cend(), '/');
-        //return std::equal(scope_name.begin(), scope_name.end(), std::next(pos));
-        return false;
-    }
 
 }// namespace actors
 

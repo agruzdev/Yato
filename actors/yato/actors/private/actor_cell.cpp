@@ -10,6 +10,7 @@
 #include "mailbox.h"
 
 #include "actor_cell.h"
+#include "../actor_system.h"
 
 namespace yato
 {
@@ -20,6 +21,7 @@ namespace actors
         : m_system(system), m_self(&system, path), m_started(false), m_stop(false)
     {
         m_log = logger_factory::create(std::string("Actor[") + m_self.name() + "]");
+        m_log->set_filter(m_system.logger()->get_filter());
 
         // setup actor
         m_actor = std::move(instance);

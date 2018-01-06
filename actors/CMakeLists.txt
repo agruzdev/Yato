@@ -9,7 +9,9 @@ include(${TARGET_CONFIG_LISTS})
 file(GLOB yato_actors_sources 
     "${CMAKE_CURRENT_SOURCE_DIR}/yato/actors/*.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/yato/actors/private/*.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/yato/actors/private/*.cpp")
+    "${CMAKE_CURRENT_SOURCE_DIR}/yato/actors/private/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/yato/actors/private/actors/*.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/yato/actors/private/actors/*.cpp")
 
 include_directories(${YATO_INCLUDE_DIRS})
 

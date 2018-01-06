@@ -11,6 +11,8 @@
 #include <memory>
 #include <vector>
 
+#include "../logger.h"
+
 namespace yato
 {
 namespace actors

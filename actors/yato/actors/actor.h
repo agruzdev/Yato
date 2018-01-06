@@ -12,6 +12,7 @@
 #include <yato/variant.h>
 #include "logger.h"
 #include "actor_ref.h"
+#include "cell_builder.h"
 
 // ToDo (a.gruzdev): Remove private includes from the public interface
 #include "private/message.h"
@@ -51,6 +52,8 @@ namespace actors
         //-------------------------------------------------------
 
         void stop_impl() noexcept;
+
+        actor_ref create_child_impl_(const std::string & name, const details::cell_builder & builder);
 
     protected:
         /**
@@ -109,6 +112,17 @@ namespace actors
          * Stop watching another actor.
          */
         void unwatch(const actor_ref & watchee) const;
+
+        /**
+         * Create a child actor
+         */
+        template <typename ActorType_, typename... Args_>
+        actor_ref create_child(const std::string & name, Args_ && ... args) {
+            return create_child_impl_(name, details::make_cell_builder<ActorType_>(std::forward<Args_>(args)...));
+        }
+
+        // Internal methods 
+        // ToDo (a.gruzdev): To be hidden from user
 
         /**
          * Handle message
