@@ -41,6 +41,9 @@ TEST(Yato_Actors, ask)
     ASSERT_EQ(43, res2.get_as<int>(0));
     ASSERT_EQ(44, res3.get_as<int>(0));
 
+    // shoould not wait sop long, will be killed by the system
+    actor.ask(1.0f, std::chrono::seconds(1000));
+
     actor.tell(yato::actors::poison_pill);
 }
 

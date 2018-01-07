@@ -16,7 +16,6 @@
 
 #include "actor_system_ex.h"
 #include "actor_cell.h"
-#include "asking_actor.h"
 #include "mailbox.h"
 #include "pinned_executor.h"
 #include "dynamic_executor.h"
@@ -30,6 +29,7 @@
 
 #include "actors/root.h"
 #include "actors/selector.h"
+#include "actors/asking_actor.h"
 
 namespace
 {
@@ -91,7 +91,7 @@ namespace actors
         }
         // Now all actors are stopped
 
-        m_scheduler->stop();
+        //m_scheduler->stop();
     }
     //-------------------------------------------------------
 
@@ -293,6 +293,11 @@ namespace actors
             std::unique_lock<std::mutex> lock(m_terminate_mutex);
             m_terminate_cv.notify_one();
             m_logger->verbose("The root is stopped.", ref.get_path().c_str());
+        }
+        // ToDo (a.gruzdev): Consider better scheduler implementation
+        else if(ref.get_path() == actor_path::join(root().get_path(), actor_path::scope_to_str(actor_scope::user))) {
+            // Stop after all user actors
+            m_scheduler->stop();
         }
         else {
             m_logger->verbose("Actor %s is stopped.", ref.get_path().c_str());

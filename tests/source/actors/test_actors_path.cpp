@@ -45,7 +45,7 @@ TEST(Yato_Actors, path4)
     ASSERT_FALSE(p1.parce(elems));
 
     auto p2 = yato::actors::actor_path("yato://someSystem/scoped/parent/child");
-    ASSERT_TRUE(p2.parce(elems));
+    ASSERT_FALSE(p2.parce(elems));
     EXPECT_EQ(yato::actors::actor_scope::unknown, elems.scope);
 
     auto p3 = yato::actors::actor_path("yato://someSystem");

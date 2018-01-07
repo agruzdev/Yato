@@ -32,13 +32,13 @@ namespace actors
 
     void root::pre_start()
     {
-        m_sys_guard = create_guard_(actor_path(self().get_path().to_string() + "/system"));
+        m_sys_guard = create_guard_(actor_path::join(self().get_path(), actor_path::scope_to_str(actor_scope::system)));
         watch(m_sys_guard);
 
-        m_tmp_guard = create_guard_(actor_path(self().get_path().to_string() + "/temp"));
+        m_tmp_guard = create_guard_(actor_path::join(self().get_path(), actor_path::scope_to_str(actor_scope::temp)));
         watch(m_tmp_guard);
 
-        m_usr_guard = create_guard_(actor_path(self().get_path().to_string() + "/user"));
+        m_usr_guard = create_guard_(actor_path::join(self().get_path(), actor_path::scope_to_str(actor_scope::user)));
         watch(m_usr_guard);
     }
     //-----------------------------------------------------------
@@ -83,7 +83,8 @@ namespace actors
                 }
                 else if (t.ref == m_usr_guard) {
                     actor_system_ex::send_system_message(system(), m_sys_guard, system_message::stop{});
-                    actor_system_ex::send_system_message(system(), m_tmp_guard, system_message::stop_after_children{});
+                    actor_system_ex::send_system_message(system(), m_tmp_guard, system_message::stop{});
+                    //actor_system_ex::send_system_message(system(), m_tmp_guard, system_message::stop_after_children{});
                 }
             },
             [this](yato::match_default_t) {

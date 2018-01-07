@@ -62,13 +62,12 @@ namespace
 TEST(Yato_Actors, highload_spawn)
 {
     auto conf = yato::actors::config::defaults();
-    conf.log_filter = yato::actors::log_level::verbose;
+    conf.log_filter = yato::actors::log_level::info;
 
     yato::actors::actor_system system("default", conf);
 
     auto echoActor = system.create_actor<EchoActor>("Echo");
 
-    system.logger()->set_filter(yato::actors::log_level::info);
     std::vector<yato::actors::actor_ref> actors;
     for(size_t i = 0; i < ACTORS_NUM; ++i) {
         actors.push_back(system.create_actor<TempActor>("temp_" + std::to_string(i), echoActor));
