@@ -47,6 +47,13 @@ namespace actors
         actor_ref m_sys_guard;
         actor_ref m_usr_guard;
         actor_ref m_tmp_guard;
+        actor_ref m_rmt_guard;
+
+        bool m_sys_stopped;
+        bool m_usr_stopped;
+        bool m_tmp_stopped;
+        bool m_rmt_stopped;
+
         //---------------------------------------
 
         actor_ref create_guard_(const actor_path & path);

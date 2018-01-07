@@ -59,7 +59,7 @@ namespace io
     }
     //-----------------------------------------------------
 
-    void tcp_manager::receive(const yato::any & message)
+    void tcp_manager::receive(yato::any & message)
     {
         yato::any_match(
             [this](const tcp::bind & bind) {
@@ -97,8 +97,10 @@ namespace io
 
     actor_ref tcp::get_for(const actor_system & sys)
     {
-        auto manager = sys.select(actor_path(sys, actor_scope::system, tcp_manager::actor_name()));
-        if(manager == sys.dead_letters()) {
+        // ToDo (a.gruzdev): Add additional name->ref registration in the actor system for fast lookup?
+        YATO_CONSTEXPR_VAR auto timeout = std::chrono::seconds(5);
+        auto manager = sys.find(actor_path(sys, actor_scope::system, tcp_manager::actor_name()), timeout).get();
+        if(manager.empty()) {
             throw yato::runtime_error("yato::actors::io::tcp[get_for]: Tcp manager doesn't exist for actor_system \"" + sys.name() + "\"");
         }
         return manager;

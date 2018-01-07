@@ -66,7 +66,7 @@ namespace actors
         // System actors
         if(conf.enable_io) {
 #ifdef YATO_ACTORS_WITH_IO
-            create_actor_impl_(make_builder<io::tcp_manager>(), actor_path(m_name, actor_scope::system, io::tcp_manager::actor_name()));
+            create_actor_impl_(details::make_cell_builder<io::tcp_manager>(), actor_path(m_name, actor_scope::system, io::tcp_manager::actor_name()), actor_ref{});
 #else
             throw yato::argument_error("actor_system[actor_system]: IO can't be enabled. Build with flag YATO_ACTORS_WITH_IO");
 #endif
@@ -224,16 +224,6 @@ namespace actors
             return;
         }
         stop_impl_(mbox);
-    }
-    //--------------------------------------------------------
-
-    void actor_system::stop_all()
-    {
-        throw std::logic_error("To be implemented");
-        //std::unique_lock<std::mutex> lock(m_cells_mutex);
-        //std::for_each(m_actors.begin(), m_actors.end(), [this](decltype(m_actors)::value_type & entry) {
-        //    stop_impl_(entry.second->mail());
-        //});
     }
     //--------------------------------------------------------
 

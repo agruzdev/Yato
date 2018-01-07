@@ -26,11 +26,10 @@ namespace io
         std::unique_ptr<tcp_context> m_context;
         //------------------------------------------------
 
-        tcp_manager();
 
         void pre_start() override;
 
-        void receive(const yato::any & message);
+        void receive(yato::any & message) override;
 
         void post_stop() override;
 
@@ -38,10 +37,12 @@ namespace io
         //------------------------------------------------
 
     public:
+        // ToDo (a.gruzdev): Make an interface for protecting actors constructors
+        tcp_manager();
+
         ~tcp_manager();
 
-        // ToDo (a.gruzdev): Consider interface in actor_system for using actor factory
-        friend class actor_system; // can be created only by actor system
+        friend class actor_system;
         friend class tcp;
     };
 

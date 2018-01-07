@@ -172,12 +172,6 @@ namespace actors
         void stop(const actor_ref & addressee) const;
 
         /**
-         * Stop all actors
-         * Sends stop() to all created actors
-         */
-        void stop_all();
-
-        /**
          * Find actor by name and get reference to it.
          */
         template <typename Rep_, typename Period_>

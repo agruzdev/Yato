@@ -14,7 +14,7 @@ namespace
     class TcpEchoServer
         : public yato::actors::actor<>
     {
-        void receive(const yato::any & message) override {
+        void receive(yato::any & message) override {
             using namespace yato::actors::io;
             log().info(message.type().name());
             yato::any_match(
@@ -50,14 +50,14 @@ TEST(Yato_Actors, io_tcp)
 
     actor_system system("default", conf);
 
-    auto manager = io::tcp::get_for(system);
-    ASSERT_NE(manager, system.dead_letters());
+    actor_ref manager;
+    ASSERT_NO_THROW(manager = io::tcp::get_for(system));
 
     auto server = system.create_actor<TcpEchoServer>("server");
 
     manager.tell(io::tcp::bind(server, io::inet_address("localhost", 9001)));
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     server.tell(poison_pill);
 }
 
