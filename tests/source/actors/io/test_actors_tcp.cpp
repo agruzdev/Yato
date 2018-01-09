@@ -11,20 +11,14 @@
 
 namespace
 {
-    class TcpEchoServer
+
+    class EchoSession
         : public yato::actors::actor<>
     {
         void receive(yato::any & message) override {
             using namespace yato::actors::io;
             log().info(message.type().name());
             yato::any_match(
-                [this](const tcp::bound & bound) {
-                    log().info("Bound. Actor %s Address %s:%d", bound.listener.name().c_str(), bound.address.host.c_str(), bound.address.port);
-                },
-                [this](const tcp::connected & connected) {
-                    log().info("New connection. Address %s:%d", connected.remote.host.c_str(), connected.remote.port);
-                    sender().tell(tcp::assign(self())); // Register self as handler for messages
-                },
                 [this](const tcp::received & received) {
                     std::string msg = std::string(received.data.cbegin(), received.data.cend());
                     while(!msg.empty() && (msg.back() == '\n' || msg.back() == '\r')) {
@@ -38,6 +32,28 @@ namespace
                 },
                 [this](const tcp::peer_closed &) {
                     log().info("Disconnected");
+                    self().stop();
+                }
+            )(message);
+        }
+    };
+
+    class TcpEchoServer
+        : public yato::actors::actor<>
+    {
+        uint32_t m_counter = 0;
+
+        void receive(yato::any & message) override {
+            using namespace yato::actors::io;
+            log().info(message.type().name());
+            yato::any_match(
+                [this](const tcp::bound & bound) {
+                    log().info("Bound. Actor %s Address %s:%d", bound.listener.name().c_str(), bound.address.host.c_str(), bound.address.port);
+                },
+                [this](const tcp::connected & connected) {
+                    log().info("New connection. Address %s:%d", connected.remote.host.c_str(), connected.remote.port);
+                    const auto session = create_child<EchoSession>("Session_" + std::to_string(m_counter++));
+                    sender().tell(tcp::assign(session)); // Register session actor as handler for messages
                 },
                 [this](const tcp::command_fail & fail) {
                     log().error("Fail. Reason: %s", fail.reason.c_str());
