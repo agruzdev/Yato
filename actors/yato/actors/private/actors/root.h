@@ -33,7 +33,15 @@ namespace actors
     /**
      * Message for terminating root on exit of actor system
      */
-    struct root_terminate {};
+    struct root_terminate
+    {
+        bool stop_user;
+
+        explicit
+        root_terminate(bool stop_user)
+            : stop_user(stop_user)
+        { }
+    };
     //---------------------------------------------------------
 
 
@@ -49,10 +57,10 @@ namespace actors
         actor_ref m_tmp_guard;
         actor_ref m_rmt_guard;
 
-        bool m_sys_stopped;
-        bool m_usr_stopped;
-        bool m_tmp_stopped;
-        bool m_rmt_stopped;
+        bool m_sys_stopped = false;
+        bool m_usr_stopped = false;
+        bool m_tmp_stopped = false;
+        bool m_rmt_stopped = false;
 
         //---------------------------------------
 

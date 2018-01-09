@@ -39,14 +39,14 @@ namespace
 TEST(Yato_Actors, common)
 {
     auto conf = yato::actors::config::defaults();
-    conf.log_filter = yato::actors::log_level::verbose;
+    conf.log_filter = yato::actors::log_level::debug;
 
     yato::actors::actor_system system("default", conf);
 
     auto actor = system.create_actor<EchoActor>("echo1");
     actor.tell(std::string("Hello, Actor!"));
 
-    actor.tell(yato::actors::poison_pill);
+    system.shutdown();
 }
 
 

@@ -34,7 +34,6 @@
 namespace
 {
     const std::string DEAD_LETTERS = "_dead_";
-    const std::string POISON_PILL  = "_poison_";
 }
 
 
@@ -83,15 +82,26 @@ namespace actors
 
     actor_system::~actor_system()
     {
-        send_message(m_root->ref(), root_terminate{});
+        shutdown_impl_(false);
+    }
+    //-------------------------------------------------------
+
+    void actor_system::shutdown_impl_(bool forced)
+    {
+        send_message(m_root->ref(), root_terminate(forced));
 
         {
             std::unique_lock<std::mutex> lock(m_terminate_mutex);
             m_terminate_cv.wait(lock, [this]() { return m_root_stopped; });
         }
         // Now all actors are stopped
-
         //m_scheduler->stop();
+    }
+    //-------------------------------------------------------
+
+    void actor_system::shutdown()
+    {
+        shutdown_impl_(true);
     }
     //-------------------------------------------------------
 
@@ -144,7 +154,7 @@ namespace actors
 
     void actor_system::send_impl_(const actor_ref & addressee, const actor_ref & sender, yato::any && userMessage) const
     {
-        if(addressee == dead_letters()) {
+        if(addressee.empty() || addressee == dead_letters()) {
             m_logger->verbose("A message was delivered to DeadLetters.");
             return;
         }
@@ -169,8 +179,8 @@ namespace actors
 
     void actor_system::send_system_impl_(const actor_ref & addressee, const actor_ref & sender, yato::any && userMessage) const
     {
-        if (addressee == dead_letters()) {
-            m_logger->verbose("A message was delivered to DeadLetters.");
+        if (addressee.empty() || addressee == dead_letters()) {
+            m_logger->verbose("A system message was delivered to DeadLetters.");
             return;
         }
 

@@ -100,17 +100,19 @@ namespace actors
 
     void actor_base::stop_impl() noexcept
     {
-        try {
-            post_stop();
-        }
-        catch (std::exception & e) {
-            log().error("actor[system_signal]: Unhandled exception: %s", e.what());
-        }
-        catch (...) {
-            log().error("actor[system_signal]: Unknown exception!");
+        if(context().is_started()) {
+            try {
+                post_stop();
+            }
+            catch (std::exception & e) {
+                log().error("actor[system_signal]: Unhandled exception: %s", e.what());
+            }
+            catch (...) {
+                log().error("actor[system_signal]: Unknown exception!");
+            }
         }
         context().set_started(false);
-        log().verbose("Actor %s is stopped", self().get_path().c_str());
+        log().verbose("Stopped (%s)", self().get_path().c_str());
 
         // Notify watchers
         auto & watchers = m_context->watchers();
@@ -129,16 +131,22 @@ namespace actors
         // (a.gruzdev) static_cast for ReSharper's calmness
         return static_cast<bool>(any_match(
             [this](const system_message::start &) {
+                bool success = false;
                 try {
                     pre_start();
-                    context().set_started(true);
-                    log().verbose("Actor %s is started", self().get_path().c_str());
+                    success = true;
+                    log().verbose("Started (%s)", self().get_path().c_str());
                 }
                 catch (std::exception & e) {
                     log().error("actor[system_signal]: Unhandled exception: %s", e.what());
                 }
                 catch (...) {
                     log().error("actor[system_signal]: Unknown exception!");
+                }
+                context().set_started(success);
+                if(!success) {
+                    // if failed to start, then terminate
+                    self().stop();
                 }
                 return false;
             },

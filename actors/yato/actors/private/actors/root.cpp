@@ -82,10 +82,15 @@ namespace actors
                     break;
                 }
             },
-            [this] (const root_terminate &) {
+            [this] (const root_terminate & t) {
                 log().debug("Terminating root");
-                actor_system_ex::send_system_message(system(), m_usr_guard, system_message::stop_after_children{});
-                actor_system_ex::send_system_message(system(), m_rmt_guard, system_message::stop_after_children{});
+                if(t.stop_user) {
+                    actor_system_ex::send_system_message(system(), m_usr_guard, system_message::stop{});
+                    actor_system_ex::send_system_message(system(), m_rmt_guard, system_message::stop{});
+                } else {
+                    actor_system_ex::send_system_message(system(), m_usr_guard, system_message::stop_after_children{});
+                    actor_system_ex::send_system_message(system(), m_rmt_guard, system_message::stop_after_children{});
+                }
             },
             [this](const terminated & t) {
                 log().debug("Terminated " + t.ref.get_path().to_string());

@@ -65,6 +65,11 @@ namespace actors
 
         std::future<actor_ref> find_impl_(const actor_path & path, const timeout_type & timeout) const;
 
+        /**
+         * If forced then terminates all actors, otherwise only after all user scope actors are stopped by user.
+         */
+        void shutdown_impl_(bool forced);
+
         //-------------------------------------------------------
 
     private: // Extended inferface for internal usage
@@ -121,7 +126,7 @@ namespace actors
         actor_system(const std::string & name);
 
         /**
-         * By default waits for all actors to finish
+         * Waits for all user actors to finish.
          * Use method stop() or stopAll() for terminating actors
          * Use poison_pill for terminating actor after processing current messages
          */
@@ -189,6 +194,13 @@ namespace actors
          * Stop watch of an actor.
          */
         void unwatch(const actor_ref & watchee, const actor_ref & watcher) const;
+
+        // ToDo (a.gruzdev): Make non-blocking
+        /**
+         * Terminates the actor system, stopping all actors.
+         * Blocks until the system is stopped.
+         */
+        void shutdown();
 
         /**
          * Attorney class for accessing extended interface
