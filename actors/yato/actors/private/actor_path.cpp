@@ -58,8 +58,7 @@ namespace actors
     inline
     bool is_valid_path(const char & c)
     {
-        //return std::isalnum(c, actor_path::locale()) || (c == '_') || (c == '/');
-        return std::isgraph(c, actor_path::locale());
+        return std::isgraph(c, actor_path::locale()) && (c != '/');
     }
     //---------------------------------------------------
 

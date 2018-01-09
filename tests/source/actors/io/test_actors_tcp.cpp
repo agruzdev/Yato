@@ -26,7 +26,14 @@ namespace
                     sender().tell(tcp::assign(self())); // Register self as handler for messages
                 },
                 [this](const tcp::received & received) {
-                    log().info("Received: %s", std::string(received.data.cbegin(), received.data.cend()).c_str());
+                    std::string msg = std::string(received.data.cbegin(), received.data.cend());
+                    while(!msg.empty() && (msg.back() == '\n' || msg.back() == '\r')) {
+                        msg.pop_back();
+                    }
+                    log().info("Received: %s", msg.c_str());
+                    if(msg == "exit") {
+                        self().stop();
+                    }
                     sender().tell(tcp::write(received.data));
                 },
                 [this](const tcp::peer_closed &) {

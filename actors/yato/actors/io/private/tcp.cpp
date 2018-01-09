@@ -14,8 +14,9 @@
 
 #include "../../actor_system.h"
 #include "../../private/actor_system_ex.h"
-#include "../tcp.h"
+#include "../../private/actors/group.h"
 
+#include "../tcp.h"
 #include "tcp_listener.h"
 
 namespace yato
@@ -30,11 +31,12 @@ namespace io
         std::unique_ptr<boost::asio::io_service::work> io_work;
         std::thread io_thread;
     };
+    //----------------------------------------------------
 
 
     const char* tcp_manager::actor_name()
     {
-        return "tcpManager";
+        return "tcp";
     }
     //-----------------------------------------------------
 
@@ -76,8 +78,8 @@ namespace io
                     return;
                 }
 
-                auto name = "tcp/" + address.host + ":" + std::to_string(address.port);
-                auto listener = actor_system_ex::create_actor<tcp_listener>(system(), actor_scope::system, name, bind.handler, m_context->io_service, endpoint);
+                const auto name = address.host + ":" + std::to_string(address.port);
+                const auto listener = actor_system_ex::create_actor<tcp_listener>(system(), self(), name, bind.handler, m_context->io_service, endpoint);
                 system().watch(bind.handler, listener);
 
                 bind.handler.tell(tcp::bound(listener, address), self());

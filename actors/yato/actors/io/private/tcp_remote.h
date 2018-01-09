@@ -103,7 +103,7 @@ namespace io
              */
             bool write(const std::vector<char> & data) {
                 boost::system::error_code err;
-                size_t len = m_connection->socket.send(boost::asio::buffer(data), 0, err);
+                const size_t len = m_connection->socket.send(boost::asio::buffer(data), 0, err);
                 return !err && (len == data.size());
             }
 

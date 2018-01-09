@@ -106,8 +106,12 @@ namespace actors
                     actor_system_ex::send_system_message(system(), self(), system_message::stop_after_children{});
                 }
                 else if (m_usr_stopped && m_rmt_stopped) {
-                    actor_system_ex::send_system_message(system(), m_sys_guard, system_message::stop{});
-                    actor_system_ex::send_system_message(system(), m_tmp_guard, system_message::stop{});
+                    if(!m_sys_stopped) {
+                        actor_system_ex::send_system_message(system(), m_sys_guard, system_message::stop{});
+                    }
+                    if(!m_tmp_stopped) {
+                        actor_system_ex::send_system_message(system(), m_tmp_guard, system_message::stop{});
+                    }
                 }
             },
             [this](yato::match_default_t) {
