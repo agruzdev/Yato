@@ -106,11 +106,8 @@ namespace io
                         auto remote = acc.connection->socket.remote_endpoint();
                         log().debug("New connection from %s", remote.address().to_string().c_str());
 
-                        //const std::string remote_name = m_server.name() + "/" + remote.address().to_string() + ":" + std::to_string(remote.port());
-                        //auto remote_handler = actor_system_ex::create_actor<tcp_remote>(system(), actor_scope::remote, remote_name, acc.connection);
                         const std::string remote_name = remote.address().to_string() + ":" + std::to_string(remote.port());
-                        const auto remote_handler = actor_system_ex::create_actor<tcp_remote>(system(), self(), remote_name, acc.connection);
-                        //system().watch(self(), remote_handler); // ToDo (a.gruzdev): Temporal solution. Proper family tree will solve it
+                        actor_system_ex::create_actor<tcp_remote>(system(), self(), remote_name, acc.connection);
                     } else {
                         log().error("Error! %s", acc.error.message().c_str());
                     }

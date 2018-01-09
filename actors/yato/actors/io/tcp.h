@@ -26,7 +26,6 @@ namespace io
         std::unique_ptr<tcp_context> m_context;
         //------------------------------------------------
 
-
         void pre_start() override;
 
         void receive(yato::any & message) override;
@@ -58,6 +57,10 @@ namespace io
         inet_address(const std::string & host, uint16_t port)
             : host(host), port(port)
         { }
+
+        std::string to_string() const {
+            return host + ":" + std::to_string(port);
+        }
     };
 
     class tcp
@@ -67,6 +70,11 @@ namespace io
          * Create a TCP server and listen for inbound connections.
          */
         struct bind;
+
+        /**
+         * Create a TCP client and connect to an endpoint.
+         */
+        struct connect;
 
         /**
          * Assign handler for a new connection.
@@ -116,6 +124,16 @@ namespace io
         inet_address address;
 
         bind(const actor_ref & handler, const inet_address & address)
+            : handler(handler), address(address)
+        { }
+    };
+
+    struct tcp::connect
+    {
+        actor_ref handler;
+        inet_address address;
+
+        connect(const actor_ref & handler, const inet_address & address)
             : handler(handler), address(address)
         { }
     };

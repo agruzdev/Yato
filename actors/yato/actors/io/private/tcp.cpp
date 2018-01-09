@@ -83,6 +83,35 @@ namespace io
                 system().watch(bind.handler, listener);
 
                 bind.handler.tell(tcp::bound(listener, address), self());
+            },
+            [this](const tcp::connect & connect) {
+                if(connect.handler.empty() || connect.handler == system().dead_letters()) {
+                    log().error("Connection handler is empty.");
+                    return;
+                }
+                const auto & remote = connect.address;
+                log().debug("Connect " + remote.to_string());
+
+                boost::system::error_code err;
+                boost::asio::ip::tcp::resolver resolver(*m_context->io_service);
+                boost::asio::ip::tcp::resolver::query query(boost::asio::ip::tcp::v4(), remote.host, std::to_string(remote.port));
+                auto endpoint = *resolver.resolve(query, err);
+                if (err) {
+                    connect.handler.tell(tcp::command_fail("Failed to resolve endpoint! Address = " + remote.to_string()), self());
+                    return;
+                }
+
+                auto connection = std::make_shared<tcp_connection>(connect.handler, *m_context->io_service);
+
+                // ToDo (a.gruzdev): Is async connect necessary?
+                connection->socket.connect(endpoint, err);
+                if(err) {
+                    connect.handler.tell(tcp::command_fail("Failed to connect endpoint! Address = " + remote.to_string()), self());
+                    return;
+                }
+
+                const std::string remote_name = remote.to_string();
+                actor_system_ex::create_actor<tcp_remote>(system(), self(), remote_name, connection);
             }
         )(message);
     }
