@@ -8,7 +8,7 @@ TEST(Yato_Actors, path)
     auto p1 = yato::actors::actor_path("system", yato::actors::actor_scope::user, "test1");
     yato::actors::path_elements elems;
     ASSERT_TRUE(p1.parce(elems));
-    ASSERT_EQ(1, elems.names.size());
+    ASSERT_EQ(1U, elems.names.size());
     EXPECT_EQ("system", elems.system_name);
     EXPECT_EQ(yato::actors::actor_scope::user, elems.scope);
     EXPECT_EQ("test1", elems.names[0]);
@@ -19,7 +19,7 @@ TEST(Yato_Actors, path2)
     auto p1 = yato::actors::actor_path("yato://someSystem/system/parent/child");
     yato::actors::path_elements elems;
     ASSERT_TRUE(p1.parce(elems));
-    ASSERT_EQ(2, elems.names.size());
+    ASSERT_EQ(2U, elems.names.size());
     EXPECT_EQ("someSystem", elems.system_name);
     EXPECT_EQ(yato::actors::actor_scope::system, elems.scope);
     EXPECT_EQ("parent", elems.names[0]);
@@ -31,7 +31,7 @@ TEST(Yato_Actors, path3)
     auto p1 = yato::actors::actor_path("yato://someSystem/system/parent//child/");
     yato::actors::path_elements elems;
     ASSERT_TRUE(p1.parce(elems));
-    ASSERT_EQ(2, elems.names.size());
+    ASSERT_EQ(2U, elems.names.size());
     EXPECT_EQ("someSystem", elems.system_name);
     EXPECT_EQ(yato::actors::actor_scope::system, elems.scope);
     EXPECT_EQ("parent", elems.names[0]);

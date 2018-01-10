@@ -41,7 +41,7 @@ namespace io
 
         ~tcp_manager();
 
-        friend class actor_system;
+        friend class yato::actors::actor_system;
         friend class tcp;
     };
 

@@ -18,6 +18,8 @@ namespace actors
 
     const std::string actor_path::path_root = "yato://";
 
+YATO_PRAGMA_WARNING_PUSH
+YATO_CLANG_WARNING_IGNORE("-Wmissing-braces")
     static
     const std::array<std::pair<actor_scope, std::string>, 6> scope_names = {
         std::make_pair(actor_scope::unknown,  "unknown"),
@@ -27,6 +29,7 @@ namespace actors
         std::make_pair(actor_scope::remote,   "remote"),
         std::make_pair(actor_scope::dead,     "dead")
     };
+YATO_PRAGMA_WARNING_PUSH
     //---------------------------------------------------
 
 

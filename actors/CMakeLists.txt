@@ -19,7 +19,7 @@ include_directories(${YATO_INCLUDE_DIRS})
 # IO
 
 if(YATO_ACTORS_WITH_IO)
-    find_package(Boost REQUIRED COMPONENTS system)
+    find_package(Boost REQUIRED COMPONENTS system date_time regex)
 
     file(GLOB yato_actors_io_sources
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/actors/io/*.h"
@@ -30,8 +30,12 @@ if(YATO_ACTORS_WITH_IO)
 
     add_definitions(-DYATO_ACTORS_WITH_IO)
 
-    include_directories(${Boost_INCLUDE_DIR})
-    link_directories(${Boost_LIBRARY_DIR})
+    include_directories(${Boost_INCLUDE_DIRS})
+    link_directories(${Boost_LIBRARY_DIRS})
+
+    if(WIN32 AND CLANG)
+        add_definitions("-DBOOST_USE_WINDOWS_H")
+    endif()
 endif()
 
 #=========================================
@@ -43,9 +47,12 @@ endif()
 
 add_library(YatoActors STATIC ${yato_actors_sources})
 
-if(NOT Boost_SYSTEM_LIBRARY_DEBUG OR NOT Boost_SYSTEM_LIBRARY_RELEASE)
-    message(FATAL_ERROR "Boost was not found!")
-endif()
 
-target_link_libraries(YatoActors PRIVATE debug ${Boost_SYSTEM_LIBRARY_DEBUG})
-target_link_libraries(YatoActors PRIVATE optimized ${Boost_SYSTEM_LIBRARY_RELEASE})
+if(YATO_ACTORS_WITH_IO)
+    target_link_libraries(YatoActors PRIVATE debug ${Boost_SYSTEM_LIBRARY_DEBUG} ${Boost_DATE_TIME_LIBRARY_DEBUG} ${Boost_REGEX_LIBRARY_DEBUG})
+    target_link_libraries(YatoActors PRIVATE optimized ${Boost_SYSTEM_LIBRARY_RELEASE} ${Boost_DATE_TIME_LIBRARY_RELEASE} ${Boost_REGEX_LIBRARY_RELEASE})
+
+    if(WIN32 AND NOT MSVC)
+        target_link_libraries(YatoActors PRIVATE wsock32 ws2_32)
+    endif()
+endif()

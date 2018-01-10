@@ -10,7 +10,7 @@
 
 #include <future>
 
-#include "../actor.h"
+#include "../../actor.h"
 
 namespace yato
 {
