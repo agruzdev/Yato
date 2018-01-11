@@ -42,16 +42,16 @@ namespace actors
         std::string m_name;
         logger_ptr m_logger;
 
-	std::unique_ptr<actor_cell> m_root;
+        std::unique_ptr<actor_cell> m_root;
         std::unique_ptr<actor_ref> m_dead_letters;
 
-	std::mutex m_terminate_mutex;
+        std::mutex m_terminate_mutex;
         std::condition_variable m_terminate_cv;
         bool m_root_stopped;
 
-	std::unique_ptr<name_generator> m_name_generator;
+        std::unique_ptr<name_generator> m_name_generator;
 
-	std::unique_ptr<scheduler> m_scheduler;
+        std::unique_ptr<scheduler> m_scheduler;
         std::unique_ptr<abstract_executor> m_executor;
         
         //-------------------------------------------------------

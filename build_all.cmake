@@ -5,6 +5,7 @@ cmake_minimum_required (VERSION 3.2)
 #   -D_TARGET=<target name>
 #   -D_CONFIGURATION=[Debug, Release, All]
 #   -D_MT=[ON/OFF] Multithreaded build
+#   -D_ACTORS=[ON/OFF] Build with whole actors module
 # Supported targets:
 #   vc12x32  - MSVC_2013 x32
 #   vc14x32  - MSVC_2015 x32
@@ -209,7 +210,13 @@ foreach(CURRENT_TARGET ${all_build_targers})
             LOGGED_MESSAGE(STATUS "Using toolchain ${TOOLCHAIN_${CURRENT_TARGET}}")
         endif()
         
-        execute_process(COMMAND cmake "-G${GENERATOR_${CURRENT_TARGET}}" ${CUSTOM_TOOLCHAIN_ARG} -DBIN_OUTPUT_DIR=${CURRENT_BIN_DIR} ${_SOURCE_DIR} -DCMAKE_BUILD_TYPE=${CURRENT_CONFIGURATION}
+        if(_ACTORS)
+            list(APPEND configure_flags -DYATO_BUILD_ACTORS=ON)
+            list(APPEND configure_flags -DYATO_ACTORS_WITH_IO=ON)
+        endif()
+        
+        message(STATUS "configure_flags=${configure_flags}")
+        execute_process(COMMAND cmake "-G${GENERATOR_${CURRENT_TARGET}}" ${CUSTOM_TOOLCHAIN_ARG} -DBIN_OUTPUT_DIR=${CURRENT_BIN_DIR} -DCMAKE_BUILD_TYPE=${CURRENT_CONFIGURATION} ${configure_flags} ${_SOURCE_DIR}
             WORKING_DIRECTORY ${CURRENT_BUILD_DIR}
             OUTPUT_FILE ${CURRENT_BUILD_DIR}/config_log.stdout.txt
             ERROR_FILE ${CURRENT_BUILD_DIR}/config_log.stderr.txt
@@ -217,6 +224,7 @@ foreach(CURRENT_TARGET ${all_build_targers})
         )
         CHECK_RETURN_CODE(ret)
         
+        unset(configure_flags)
         
         # ==============================================================
         # Build

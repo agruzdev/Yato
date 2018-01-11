@@ -84,8 +84,8 @@ namespace actors
     {
         shutdown_impl_(false);
 
-	// Important to destroy executor first, so all messages are processed.
-	m_executor.reset();
+        // Important to destroy executor first, so all messages are processed.
+        m_executor.reset();
     }
     //-------------------------------------------------------
 
