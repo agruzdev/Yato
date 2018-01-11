@@ -47,7 +47,6 @@ endif()
 
 add_library(YatoActors STATIC ${yato_actors_sources})
 
-
 if(YATO_ACTORS_WITH_IO)
     target_link_libraries(YatoActors PRIVATE debug ${Boost_SYSTEM_LIBRARY_DEBUG} ${Boost_DATE_TIME_LIBRARY_DEBUG} ${Boost_REGEX_LIBRARY_DEBUG})
     target_link_libraries(YatoActors PRIVATE optimized ${Boost_SYSTEM_LIBRARY_RELEASE} ${Boost_DATE_TIME_LIBRARY_RELEASE} ${Boost_REGEX_LIBRARY_RELEASE})

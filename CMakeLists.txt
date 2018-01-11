@@ -25,8 +25,24 @@ set(YATO_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/include")
 
 file(GLOB_RECURSE yato_sources "${YATO_INCLUDE_DIRS}/*.h")
 
+
+if(UNIX)
+    option(YATO_WITH_ADDRESS_SANITIZER "Enable address sanitizing" OFF)
+    if(YATO_WITH_ADDRESS_SANITIZER)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -g -fsanitize=address")
+    endif()
+endif()
+
+
 #==========================================
 # Targets
+
+#ToDo (a.gruzdev) Temporal workaround
+if(UNIX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-noexcept-type")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-security")
+endif()
+
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")

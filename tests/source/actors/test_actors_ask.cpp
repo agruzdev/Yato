@@ -15,10 +15,13 @@ namespace
        
         void receive(yato::any& message) override
         {
+	    log().info(message.type().name());
             yato::any_match(
                 [this](int num) {
                     sender().tell(num + 1);
-                }
+                },
+		[this](yato::match_default_t) {
+		}
             )(message);
         }
 
