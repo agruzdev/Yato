@@ -52,7 +52,7 @@ namespace
                     m_echo.tell("ping", self());
                     self().tell(yato::actors::poison_pill);
                 },
-                [this, &message](yato::match_default_t){
+                [this](yato::match_default_t){
                 }
             )(message);
         }
