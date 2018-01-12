@@ -18,7 +18,7 @@ namespace actors
      * Group actor for using as a root of subtree
      */
     class group
-        : public actor<>
+        : public actor
     {
         void receive(yato::any &) override
         { }

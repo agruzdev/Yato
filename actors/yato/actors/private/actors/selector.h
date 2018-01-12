@@ -61,7 +61,7 @@ namespace actors
      * Runs search of a path in the actors tree
      */
     class selector
-        : public actor<>
+        : public actor
     {
     private:
         std::promise<actor_ref> m_result;

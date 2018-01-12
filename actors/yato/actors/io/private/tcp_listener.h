@@ -22,7 +22,7 @@ namespace actors
 namespace io
 {
     class tcp_listener
-        : public actor<>
+        : public actor
     {
         struct accept
         {

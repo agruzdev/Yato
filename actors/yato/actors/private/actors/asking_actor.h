@@ -5,8 +5,8 @@
 * Copyright (c) 2016 Alexey Gruzdev
 */
 
-#ifndef _YATO_ACTORS_PRIVATE_ACTORS_ASSKING_ACTOR_H_
-#define _YATO_ACTORS_PRIVATE_ACTORS_ASSKING_ACTOR_H_
+#ifndef _YATO_ACTORS_PRIVATE_ACTORS_ASKING_ACTOR_H_
+#define _YATO_ACTORS_PRIVATE_ACTORS_ASKING_ACTOR_H_
 
 #include <future>
 
@@ -18,7 +18,7 @@ namespace actors
 {
 
     class asking_actor
-        : public yato::actors::actor<>
+        : public actor
     {
         std::promise<yato::any> m_promise;
         bool m_satisfied;
@@ -51,5 +51,5 @@ namespace actors
 
 }// namespace yato
 
-#endif //_YATO_ACTORS_PRIVATE_ACTORS_ASSKING_ACTOR_H_
+#endif //_YATO_ACTORS_PRIVATE_ACTORS_ASKING_ACTOR_H_
 

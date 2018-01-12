@@ -9,7 +9,7 @@
 namespace
 {
     class EchoActor
-        : public yato::actors::actor<>
+        : public yato::actors::actor
     {
         void pre_start() override 
         {
@@ -57,7 +57,7 @@ namespace
     const int PING_TICK  = PING_LIMIT / 10;
 
     class PingActor
-        : public yato::actors::actor<>
+        : public yato::actors::actor
     {
         void receive(yato::any & message) override
         {
@@ -79,7 +79,7 @@ namespace
 
 
     class PongActor
-        : public yato::actors::actor<>
+        : public yato::actors::actor
     {
         void receive(yato::any & message) override
         {
@@ -122,7 +122,7 @@ namespace
 {
 
     class actD
-        : public yato::actors::actor<>
+        : public yato::actors::actor
     {
         void pre_start() override {
             log().info("start %s", self().name().c_str());
@@ -141,7 +141,7 @@ namespace
     };
 
     class actB
-        : public yato::actors::actor<>
+        : public yato::actors::actor
     {
         void pre_start() override {
             log().info("start %s", self().name().c_str());
@@ -156,7 +156,7 @@ namespace
     };
 
     class actC
-        : public yato::actors::actor<>
+        : public yato::actors::actor
     {
         void pre_start() override {
             log().info("start %s", self().name().c_str());
@@ -172,7 +172,7 @@ namespace
     };
 
     class actA
-        : public yato::actors::actor<>
+        : public yato::actors::actor
     {
         void pre_start() override {
             log().info("start %s", self().name().c_str());

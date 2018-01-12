@@ -147,10 +147,10 @@ namespace actors
 
 
     template <typename MailboxFilter_ = mailbox_no_filter>
-    class actor
+    class basic_actor
         : public actor_base
     {
-        using this_type = actor<MailboxFilter_>;
+        using this_type = basic_actor<MailboxFilter_>;
     public:
 
         using filter_type = MailboxFilter_;
@@ -226,19 +226,22 @@ namespace actors
         //-------------------------------------------------------
 
     public:
-        actor() = default;
-        ~actor() = default;
+        basic_actor() = default;
+        ~basic_actor() = default;
         //-------------------------------------------------------
 
-        actor(const actor&) = delete;
-        actor(actor&&) = delete;
+        basic_actor(const basic_actor&) = delete;
+        basic_actor(basic_actor&&) = delete;
         //-------------------------------------------------------
 
-        actor& operator= (const actor&) = delete;
-        actor& operator= (actor&&) = delete;
+        basic_actor& operator= (const basic_actor&) = delete;
+        basic_actor& operator= (basic_actor&&) = delete;
         //-------------------------------------------------------
     };
     //-------------------------------------------------------
+
+    // General actor type
+    using actor = basic_actor<>;
 
 }// namespace actors
 

@@ -19,7 +19,7 @@ namespace actors
      * Root for system, user, temp and remote subtrees
      */
     class guardian
-        : public actor<>
+        : public actor
     {
         void receive(yato::any &) override
         { }

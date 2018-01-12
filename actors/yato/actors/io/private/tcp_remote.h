@@ -34,7 +34,7 @@ namespace io
     };
 
     class tcp_remote
-        : public actor<>
+        : public actor
     {
         class receiver
             : public boost::enable_shared_from_this<receiver>

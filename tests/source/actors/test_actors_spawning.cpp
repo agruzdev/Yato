@@ -14,7 +14,7 @@ namespace
 
 
     class EchoActor
-        : public yato::actors::actor<>
+        : public yato::actors::actor
     {
         uint32_t m_counter = 0;
     public:
@@ -37,7 +37,7 @@ namespace
     struct run_actor {};
 
     class TempActor
-        : public yato::actors::actor<>
+        : public yato::actors::actor
     {
         yato::actors::actor_ref m_echo;
     public:

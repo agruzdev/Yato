@@ -9,14 +9,14 @@
 namespace
 {
     class TestActor
-        : public yato::actors::actor<>
+        : public yato::actors::actor
     {
         void receive(yato::any &) override
         { }
     };
 
     class ObserverActor
-        : public yato::actors::actor<>
+        : public yato::actors::actor
     {
         void receive(yato::any & message) override
         {

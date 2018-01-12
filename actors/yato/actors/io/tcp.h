@@ -20,7 +20,7 @@ namespace io
 
     // ToDo (a.gruzdev): Move declaration into private sources
     class tcp_manager
-        : public actor<>
+        : public actor
     {
     private:
         std::unique_ptr<tcp_context> m_context;

@@ -49,7 +49,7 @@ namespace actors
      * Root of the actors tree
      */
     class root
-        : public actor<>
+        : public actor
     {
     private:
         actor_ref m_sys_guard;
