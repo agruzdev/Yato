@@ -59,7 +59,7 @@ TEST(Yato_Actors, io_udp_server)
 
     manager.tell(io::udp::bind(server, io::inet_address("localhost", 9001)));
 
-    std::this_thread::sleep_for(std::chrono::seconds(1000));
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     server.tell(poison_pill);
 }
 

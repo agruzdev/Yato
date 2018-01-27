@@ -213,23 +213,27 @@ namespace actors
     template <typename Ty_>
     inline
     void actor_ref::tell(Ty_ && message) const {
+        YATO_REQUIRES(!empty());
         m_system->send_message(*this, std::forward<Ty_>(message));
     }
 
     template <typename Ty_>
     inline
     void actor_ref::tell(Ty_ && message, const actor_ref & sender) const {
+        YATO_REQUIRES(!empty());
         m_system->send_message(*this, std::forward<Ty_>(message), sender);
     }
 
     template <typename Ty_, typename Rep_, typename Period_>
     inline
     std::future<yato::any> actor_ref::ask(Ty_ && message, const std::chrono::duration<Rep_, Period_> & timeout) const {
+        YATO_REQUIRES(!empty());
         return m_system->ask(*this, std::forward<Ty_>(message), timeout);
     }
 
     inline
     void actor_ref::stop() const {
+        YATO_REQUIRES(!empty());
         m_system->stop(*this);
     }
 
