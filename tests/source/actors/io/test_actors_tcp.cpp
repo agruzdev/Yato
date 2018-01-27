@@ -48,7 +48,7 @@ namespace
             log().info(message.type().name());
             yato::any_match(
                 [this](const tcp::bound & bound) {
-                    log().info("Bound. Actor %s Address %s:%d", bound.listener.name().c_str(), bound.address.host.c_str(), bound.address.port);
+                    log().info("Bound. Address %s:%d", bound.local.host.c_str(), bound.local.port);
                 },
                 [this](const tcp::connected & connected) {
                     log().info("New connection. Address %s:%d", connected.remote.host.c_str(), connected.remote.port);
@@ -77,7 +77,7 @@ TEST(Yato_Actors, io_tcp_server)
     actor_ref manager;
     ASSERT_NO_THROW(manager = io::tcp::get_for(system));
 
-    auto server = system.create_actor<TcpEchoServer>("server");
+    auto server = system.create_actor<TcpEchoServer>("TcpServer");
 
     manager.tell(io::tcp::bind(server, io::inet_address("localhost", 9001)));
 

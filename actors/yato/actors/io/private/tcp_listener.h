@@ -14,6 +14,7 @@
 
 #include "../../actor.h"
 #include "tcp_remote.h"
+#include "tcp_connection.h"
 
 namespace yato
 {
@@ -60,7 +61,7 @@ namespace io
             void start_accept_()
             {
                 auto connection = std::make_shared<tcp_connection>(m_server, *m_io);
-                m_acceptor.async_accept(connection->socket,
+                m_acceptor.async_accept(connection->socket(),
                     boost::bind(&handle_accept_, weak_from_this(), connection, boost::asio::placeholders::error));
             }
 
@@ -103,7 +104,7 @@ namespace io
             yato::any_match(
                 [this](const accept & acc) {
                     if (!acc.error) {
-                        auto remote = acc.connection->socket.remote_endpoint();
+                        auto remote = acc.connection->socket().remote_endpoint();
                         log().debug("New connection from %s", remote.address().to_string().c_str());
 
                         const std::string remote_name = remote.address().to_string() + ":" + std::to_string(remote.port());

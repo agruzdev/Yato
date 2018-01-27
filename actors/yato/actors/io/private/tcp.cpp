@@ -82,7 +82,7 @@ namespace io
                 const auto listener = actor_system_ex::create_actor<tcp_listener>(system(), self(), name, bind.handler, m_context->io_service, endpoint);
                 system().watch(bind.handler, listener);
 
-                bind.handler.tell(tcp::bound(listener, address), self());
+                bind.handler.tell(tcp::bound(address), self());
             },
             [this](const tcp::connect & connect) {
                 if(connect.handler.empty() || connect.handler == system().dead_letters()) {
@@ -104,7 +104,7 @@ namespace io
                 auto connection = std::make_shared<tcp_connection>(connect.handler, *m_context->io_service);
 
                 // ToDo (a.gruzdev): Is async connect necessary?
-                connection->socket.connect(endpoint, err);
+                connection->socket().connect(endpoint, err);
                 if(err) {
                     connect.handler.tell(tcp::command_fail("Failed to connect endpoint! Address = " + remote.to_string()), self());
                     return;
