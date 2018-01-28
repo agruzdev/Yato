@@ -38,7 +38,9 @@ namespace actors
         log_level m_filter;
         std::array<const char*, 6> m_tags;
 
+        explicit
         logger(const std::string & name);
+
         ~logger();
 
         void write_message(log_level level, const char* message) const noexcept;
@@ -46,24 +48,21 @@ namespace actors
         template <typename ... Args_>
         void format_and_write(log_level level, const char* format, Args_ && ... args) const {
             if (level <= m_filter) {
-                std::array<char, MESSAGE_LENGTH + 2> buffer;
+                std::array<char, MESSAGE_LENGTH + 1> buffer;
 
-                // Firstly write tag
-                int len = std::snprintf(buffer.data(), MESSAGE_LENGTH, "%s", m_tags[static_cast<uint16_t>(level)]);
-                assert(len > 0);
-
-                // Write logger name
-                len += std::snprintf(buffer.data() + len, MESSAGE_LENGTH - len, "%s - ", m_name.c_str());
-                assert(len > 0);
+                // Firstly write tag and logger name
+                int len = std::snprintf(buffer.data(), MESSAGE_LENGTH, "%s%s - ", m_tags[static_cast<uint16_t>(level)], m_name.c_str());
+                len = std::min(len, static_cast<int>(MESSAGE_LENGTH) - 1);
 
                 // Write message after the tag
                 len += std::snprintf(buffer.data() + len, MESSAGE_LENGTH - len, format, std::forward<Args_>(args)...);
-                assert(len > 0);
+                len = std::min(len, static_cast<int>(MESSAGE_LENGTH) - 1);
 
                 // Put newline if necessary
+                // After print 'len' is index of terminating zero
                 if(buffer[len - 1] != '\n') {
                     buffer[len]     = '\n';
-                    buffer[len + 1] = '\0'; // +1 is valid since buffer if bigger than MESSAGE_LENGTH
+                    buffer[len + 1] = '\0'; // is valid since buffer if bigger than MESSAGE_LENGTH
                 }
 
                 write_message(level, buffer.data());
