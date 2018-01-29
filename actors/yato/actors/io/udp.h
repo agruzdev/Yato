@@ -9,12 +9,15 @@
 #define _YATO_ACTORS_IO_UDP_H_
 
 #include "../actor.h"
+#include "facade.h"
 #include "inet_address.h"
 
 namespace yato
 {
 namespace actors
 {
+    class actor_system;
+
 namespace io
 {
     // UDP commands
@@ -122,12 +125,12 @@ namespace io
 
     } // namespace udp
 
-    struct udp_context;
+    class io_context;
 
     class udp_manager
         : public actor
     {
-        std::unique_ptr<udp_context> m_context;
+        std::shared_ptr<io_context> m_context;
         //--------------------------------------------
 
         void pre_start() override;
@@ -141,11 +144,11 @@ namespace io
 
     public:
         // ToDo (a.gruzdev): Make an interface for protecting actors constructors
-        udp_manager();
+        udp_manager(const std::shared_ptr<io_context>& ctx);
 
         ~udp_manager();
 
-        friend class yato::actors::actor_system;
+        friend struct facade;
         friend actor_ref udp::get_for(const actor_system & sys);
     };
 

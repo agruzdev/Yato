@@ -24,8 +24,7 @@
 #include "system_message.h"
 
 #ifdef YATO_ACTORS_WITH_IO
-#include "../io/tcp.h"
-#include "../io/udp.h"
+#include "../io/facade.h"
 #endif
 
 #include "actors/root.h"
@@ -66,8 +65,7 @@ namespace actors
         // System actors
         if(conf.enable_io) {
 #ifdef YATO_ACTORS_WITH_IO
-            create_actor_impl_(details::make_cell_builder<io::tcp_manager>(), actor_path(m_name, actor_scope::system, io::tcp_manager::actor_name()), actor_ref{});
-            create_actor_impl_(details::make_cell_builder<io::udp_manager>(), actor_path(m_name, actor_scope::system, io::udp_manager::actor_name()), actor_ref{});
+            io::facade::init(*this);
 #else
             throw yato::argument_error("actor_system[actor_system]: IO can't be enabled. Build with flag YATO_ACTORS_WITH_IO");
 #endif

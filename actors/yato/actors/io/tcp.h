@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "../actor.h"
+#include "facade.h"
 #include "inet_address.h"
 
 namespace yato
@@ -22,7 +23,7 @@ namespace actors
 
 namespace io
 {
-    struct tcp_context;
+    class io_context;
 
 
     namespace tcp
@@ -164,7 +165,7 @@ namespace io
         : public actor
     {
     private:
-        std::unique_ptr<tcp_context> m_context;
+        std::shared_ptr<io_context> m_context;
         //------------------------------------------------
 
         void pre_start() override;
@@ -178,11 +179,11 @@ namespace io
 
     public:
         // ToDo (a.gruzdev): Make an interface for protecting actors constructors
-        tcp_manager();
+        tcp_manager(const std::shared_ptr<io_context> & io_context);
 
         ~tcp_manager();
 
-        friend class yato::actors::actor_system;
+        friend struct facade;
         friend actor_ref tcp::get_for(const actor_system & sys);
     };
 

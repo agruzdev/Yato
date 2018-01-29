@@ -42,7 +42,7 @@ namespace io
         class acceptor
             : public boost::enable_shared_from_this<acceptor>
         {
-            std::shared_ptr<boost::asio::io_service> m_io;
+            std::shared_ptr<io_context> m_context;
             boost::asio::ip::tcp::acceptor m_acceptor;
             boost::asio::ip::tcp::endpoint m_endpoint;
             actor_ref m_server;
@@ -60,13 +60,13 @@ namespace io
 
             void start_accept_()
             {
-                auto connection = std::make_shared<tcp_connection>(m_server, *m_io);
+                auto connection = std::make_shared<tcp_connection>(m_server, m_context->service());
                 m_acceptor.async_accept(connection->socket(),
                     boost::bind(&handle_accept_, weak_from_this(), connection, boost::asio::placeholders::error));
             }
 
-            acceptor(const std::shared_ptr<boost::asio::io_service> & io, const boost::asio::ip::tcp::endpoint & endpoint, const actor_ref & server, const actor_ref & listener)
-                : m_io(io), m_acceptor(*io, endpoint), m_endpoint(endpoint), m_server(server), m_listener(listener) 
+            acceptor(const std::shared_ptr<io_context> & ctx, const boost::asio::ip::tcp::endpoint & endpoint, const actor_ref & server, const actor_ref & listener)
+                : m_context(ctx), m_acceptor(ctx->service(), endpoint), m_endpoint(endpoint), m_server(server), m_listener(listener) 
             { }
 
         public:
@@ -76,17 +76,17 @@ namespace io
              * Has to be stored in shared_ptr object
              */
             static
-            boost::shared_ptr<acceptor> create(const std::shared_ptr<boost::asio::io_service> & io, const boost::asio::ip::tcp::endpoint & endpoint, const actor_ref & server, const actor_ref & listener) 
+            boost::shared_ptr<acceptor> create(const std::shared_ptr<io_context> & ctx, const boost::asio::ip::tcp::endpoint & endpoint, const actor_ref & server, const actor_ref & listener) 
             {
                 boost::shared_ptr<acceptor> p;
-                p.reset(new acceptor(io, endpoint, server, listener));
+                p.reset(new acceptor(ctx, endpoint, server, listener));
                 p->start_accept_();
                 return p;
             }
         };
         //-----------------------------------------------------------
 
-        std::shared_ptr<boost::asio::io_service> m_io;
+        std::shared_ptr<io_context> m_context;
         boost::asio::ip::tcp::endpoint m_endpoint;
         actor_ref m_server;
 
@@ -96,7 +96,7 @@ namespace io
         void pre_start() override
         {
             log().info("Listening %s", m_endpoint.address().to_string().c_str());
-            m_acceptor = acceptor::create(m_io, m_endpoint, m_server, self());
+            m_acceptor = acceptor::create(m_context, m_endpoint, m_server, self());
         }
 
         void receive(yato::any & message) override
@@ -129,8 +129,8 @@ namespace io
         }
 
     public:
-        tcp_listener(const actor_ref & handler, const std::shared_ptr<boost::asio::io_service>& io_service, const boost::asio::ip::tcp::endpoint & endpoint)
-            : m_io(io_service), m_endpoint(endpoint), m_server(handler)
+        tcp_listener(const actor_ref & handler, const std::shared_ptr<io_context>& ctx, const boost::asio::ip::tcp::endpoint & endpoint)
+            : m_context(ctx), m_endpoint(endpoint), m_server(handler)
         { }
     };
 

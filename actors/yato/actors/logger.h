@@ -126,7 +126,11 @@ namespace actors
         }
 #else
         template <typename ... Args_>
-        void debug(Args_ && ...) const { }
+        void debug(const char*, Args_ && ...) const {
+        }
+
+        void debug(const std::string &) const {
+        }
 #endif
 
         template <typename ... Args_>

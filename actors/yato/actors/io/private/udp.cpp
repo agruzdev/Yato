@@ -12,6 +12,7 @@
 #include "../../actor_system.h"
 #include "../../private/actor_system_ex.h"
 #include "../udp.h"
+#include "context.h"
 
 #include "udp_remote.h"
 
@@ -22,21 +23,14 @@ namespace actors
 namespace io
 {
 
-    struct udp_context
-    {
-        std::shared_ptr<boost::asio::io_service> io_service;
-        std::unique_ptr<boost::asio::io_service::work> io_work;
-        std::thread io_thread;
-    };
-    //------------------------------------------------------
-
     const char* udp_manager::actor_name()
     {
         return "udp";
     }
     //-----------------------------------------------------
 
-    udp_manager::udp_manager()
+    udp_manager::udp_manager(const std::shared_ptr<io_context> & ctx)
+        : m_context(ctx)
     { }
     //-----------------------------------------------------
 
@@ -45,14 +39,6 @@ namespace io
     //-----------------------------------------------------
 
     void udp_manager::pre_start() {
-        m_context = std::make_unique<udp_context>();
-        m_context->io_service = std::make_unique<boost::asio::io_service>();
-        m_context->io_work = std::make_unique<boost::asio::io_service::work>(*m_context->io_service);
-        m_context->io_thread = std::thread([this]{
-            log().debug("IO start");
-            m_context->io_service->run();
-            log().debug("IO stop");
-        });
     }
     //------------------------------------------------------
 
@@ -60,7 +46,7 @@ namespace io
         yato::any_match(
             [this](const udp::bind & bind) {
                 log().debug("Bind");
-                auto connection = std::make_unique<udp_connection>(bind.handler, *m_context->io_service, bind.address);
+                auto connection = std::make_unique<udp_connection>(bind.handler, m_context->service(), bind.address);
 
                 const std::string remote_name = bind.address.to_string();
                 actor_system_ex::create_actor<udp_remote>(system(), self(), remote_name, std::move(connection));
@@ -72,10 +58,6 @@ namespace io
     //------------------------------------------------------
 
     void udp_manager::post_stop() {
-        m_context->io_work.reset();
-        m_context->io_service->stop();
-        m_context->io_thread.join();
-        m_context.reset();
     }
     //-----------------------------------------------------
 
