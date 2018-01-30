@@ -30,7 +30,7 @@ namespace io
         facade() = delete;
 
         // Only actor system can use the facade
-        friend class actor_system;
+        friend class yato::actors::actor_system;
     };
 
 } // namespace io
