@@ -101,6 +101,11 @@ namespace actors
         void stop() const;
 
         /**
+         * Watch this actor
+         */
+        void watch(const actor_ref & watcher) const;
+
+        /**
          * Check that this ref is empty, not corresponding any actor
          */
         bool empty() const 
@@ -122,6 +127,7 @@ namespace actors
 
         friend class actor_system;
         friend class actor_cell;
+        friend class inbox;
     };
     //-------------------------------------------------------
 

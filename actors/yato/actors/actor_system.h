@@ -232,6 +232,14 @@ namespace actors
     }
 
     inline
+    void actor_ref::watch(const actor_ref & watcher) const {
+        YATO_REQUIRES(!empty());
+        if(!watcher.empty() && watcher != m_system->dead_letters()) {
+            m_system->watch(*this, watcher);
+        }
+    }
+
+    inline
     void actor_ref::stop() const {
         YATO_REQUIRES(!empty());
         m_system->stop(*this);
