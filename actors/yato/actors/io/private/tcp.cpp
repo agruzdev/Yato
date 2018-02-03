@@ -45,7 +45,7 @@ namespace io
     { }
     //-----------------------------------------------------
 
-    void tcp_manager::receive(yato::any & message)
+    void tcp_manager::receive(yato::any && message)
     {
         yato::any_match(
             [this](const tcp::bind & bind) {

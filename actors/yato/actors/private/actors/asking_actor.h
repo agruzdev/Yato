@@ -23,7 +23,7 @@ namespace actors
         std::promise<yato::any> m_promise;
         bool m_satisfied;
 
-        void receive(yato::any & message) override
+        void receive(yato::any && message) override
         {
             if(!m_satisfied) {
                 m_promise.set_value(message);

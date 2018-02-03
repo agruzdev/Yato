@@ -51,7 +51,7 @@ namespace actors
     //-----------------------------------------------------------
 
     // ToDo (a.gruzdev): Add processing of unexpected termination of the guards!
-    void root::receive(yato::any & message)
+    void root::receive(yato::any && message)
     {
         yato::any_match(
             [this] (root_add & add) {

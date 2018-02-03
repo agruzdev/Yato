@@ -18,7 +18,7 @@ namespace
     {
         uint32_t m_counter = 0;
     public:
-        void receive(yato::any & message) override
+        void receive(yato::any && message) override
         {
             for(uint32_t i = 0; i < ECHO_NUM; ++i) {
                 sender().tell(message, self());
@@ -45,7 +45,7 @@ namespace
             : m_echo(dst)
         { }
 
-        void receive(yato::any & message) override
+        void receive(yato::any && message) override
         {
             yato::any_match(
                 [this](const run_actor &) {

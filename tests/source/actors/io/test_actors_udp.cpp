@@ -15,7 +15,7 @@ namespace
     class UdpEchoServer
         : public yato::actors::actor
     {
-        void receive(yato::any & message) override {
+        void receive(yato::any && message) override {
             using namespace yato::actors::io;
             log().info(message.type().name());
             yato::any_match(

@@ -81,14 +81,14 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    void actor_base::receive_message(message & message) noexcept
+    void actor_base::receive_message(message && message) noexcept
     {
         assert(m_context != nullptr);
         if (message.payload.type() == typeid(poison_pill_t)) {
             m_context->ref().stop();
             return;
         }
-        do_unwrap_message(message);
+        do_unwrap_message(std::move(message));
     }
     //-------------------------------------------------------
 
@@ -125,7 +125,7 @@ namespace actors
         }
     }
     //-------------------------------------------------------
-    bool actor_base::receive_system_message(message & msg) noexcept
+    bool actor_base::receive_system_message(message && msg) noexcept
     {
         assert(m_context != nullptr);
         // (a.gruzdev) static_cast for ReSharper's calmness
@@ -234,7 +234,7 @@ namespace actors
                 log().error("actor[system_signal]: Unknown system message!");
                 return false;
             }
-        )(msg.payload));
+        )(std::move(msg.payload)));
     }
     //-------------------------------------------------------
 

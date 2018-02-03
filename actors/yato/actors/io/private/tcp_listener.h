@@ -99,7 +99,7 @@ namespace io
             m_acceptor = acceptor::create(m_context, m_endpoint, m_server, self());
         }
 
-        void receive(yato::any & message) override
+        void receive(yato::any && message) override
         {
             yato::any_match(
                 [this](const accept & acc) {

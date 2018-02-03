@@ -16,7 +16,7 @@ namespace
             log().info("pre_start() is called!");
         }
 
-        void receive(yato::any& message) override
+        void receive(yato::any && message) override
         {
             yato::any_match(
                 [this](const std::string & str) {
@@ -59,7 +59,7 @@ namespace
     class PingActor
         : public yato::actors::actor
     {
-        void receive(yato::any & message) override
+        void receive(yato::any && message) override
         {
             yato::any_match(
                 [this](int count) {
@@ -81,7 +81,7 @@ namespace
     class PongActor
         : public yato::actors::actor
     {
-        void receive(yato::any & message) override
+        void receive(yato::any && message) override
         {
             yato::any_match(
                 [this](int count) {
@@ -132,7 +132,7 @@ namespace
             }
         }
 
-        void receive(yato::any &) override
+        void receive(yato::any &&) override
         { }
 
         void post_stop() override {
@@ -147,7 +147,7 @@ namespace
             log().info("start %s", self().name().c_str());
         }
 
-        void receive(yato::any &) override
+        void receive(yato::any &&) override
         { }
 
         void post_stop() override {
@@ -163,7 +163,7 @@ namespace
             create_child<actD>("D");
         }
 
-        void receive(yato::any &) override
+        void receive(yato::any &&) override
         { }
 
         void post_stop() override {
@@ -180,7 +180,7 @@ namespace
             create_child<actC>("C");
         }
 
-        void receive(yato::any &) override
+        void receive(yato::any &&) override
         { }
 
         void post_stop() override {
@@ -238,7 +238,7 @@ namespace
     class actF3
         : public yato::actors::actor
     {
-        void receive(yato::any & message) override {
+        void receive(yato::any && message) override {
             log().info("Got message from " + sender().name());
             forward(std::move(message), sender());
         }
@@ -247,7 +247,7 @@ namespace
     class actF2
         : public yato::actors::actor
     {
-        void receive(yato::any & message) override {
+        void receive(yato::any && message) override {
             log().info("Got message from " + sender().name());
             const auto next_actor = system().find("F3", std::chrono::seconds(1)).get();
             forward(std::move(message), next_actor);
@@ -257,7 +257,7 @@ namespace
     class actF1
         : public yato::actors::actor
     {
-        void receive(yato::any & message) override {
+        void receive(yato::any && message) override {
             log().info("Got message from " + sender().name());
             const auto next_actor = system().find("F2", std::chrono::seconds(1)).get();
             forward(std::move(message), next_actor);
@@ -272,7 +272,7 @@ namespace
             system().find("F1", std::chrono::seconds(1)).get().tell("ping", self());
         }
 
-        void receive(yato::any &) override {
+        void receive(yato::any &&) override {
             log().info("Got message from " + sender().name());
 
             system().find("F1", std::chrono::seconds(1)).get().stop();

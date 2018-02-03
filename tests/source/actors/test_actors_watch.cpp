@@ -11,14 +11,14 @@ namespace
     class TestActor
         : public yato::actors::actor
     {
-        void receive(yato::any &) override
+        void receive(yato::any &&) override
         { }
     };
 
     class ObserverActor
         : public yato::actors::actor
     {
-        void receive(yato::any & message) override
+        void receive(yato::any && message) override
         {
             yato::any_match(
                 [this](const yato::actors::terminated & t) {

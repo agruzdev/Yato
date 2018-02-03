@@ -57,7 +57,7 @@ namespace actors
                 ++count;
             }
             if (msg) {
-                mbox->owner->receive_message(*msg);
+                mbox->owner->receive_message(std::move(*msg));
             }
         }
         mbox->is_scheduled = false;

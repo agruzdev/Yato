@@ -170,7 +170,7 @@ namespace io
 
         void pre_start() override;
 
-        void receive(yato::any & message) override;
+        void receive(yato::any && message) override;
 
         void post_stop() override;
 

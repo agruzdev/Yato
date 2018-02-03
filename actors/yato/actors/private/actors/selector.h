@@ -71,7 +71,7 @@ namespace actors
 
         void pre_start() override;
 
-        void receive(yato::any &) override;
+        void receive(yato::any &&) override;
 
         void post_stop() override;
 

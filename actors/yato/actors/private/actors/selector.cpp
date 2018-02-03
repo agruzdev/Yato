@@ -32,7 +32,7 @@ namespace actors
     }
     //-----------------------------------------------------
 
-    void selector::receive(yato::any & message)
+    void selector::receive(yato::any && message)
     {
         yato::any_match(
             [this](const selection_success & succ) {

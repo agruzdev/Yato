@@ -21,7 +21,7 @@ namespace actors
     class guardian
         : public actor
     {
-        void receive(yato::any &) override
+        void receive(yato::any &&) override
         { }
     };
 

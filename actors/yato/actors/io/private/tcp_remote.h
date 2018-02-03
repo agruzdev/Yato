@@ -37,7 +37,7 @@ namespace io
             m_connection->server().tell(tcp::connected(remote_address), self());
         }
 
-        void receive(yato::any & message) override
+        void receive(yato::any && message) override
         {
             any_match(
                 [this](const tcp::write & msg) {

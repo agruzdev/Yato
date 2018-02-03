@@ -60,7 +60,7 @@ namespace actors
          * Unwrap message and check dynamic type of the payload
          * Apply filter if specified and invoke receive() 
          */
-        virtual void do_unwrap_message(message & message) = 0;
+        virtual void do_unwrap_message(message && message) = 0;
 
         //-------------------------------------------------------
 
@@ -127,12 +127,12 @@ namespace actors
         /**
          * Handle message
          */
-        void receive_message(message & msg) noexcept;
+        void receive_message(message && msg) noexcept;
 
         /**
          * Handle system message
          */
-        bool receive_system_message(message & msg) noexcept;
+        bool receive_system_message(message && msg) noexcept;
 
         /**
          * Used by actor system to initialize the actor
@@ -161,10 +161,10 @@ namespace actors
         const actor_ref* m_sender;
         //-------------------------------------------------------
 
-        void unwrap_message_impl(mailbox_no_filter, message & message) 
+        void unwrap_message_impl(mailbox_no_filter, message && message) 
         {
             try {
-                receive(message.payload);
+                receive(std::move(message.payload));
             }
             catch(std::exception & e) {
                 log().error("actor[receive]: Unhandled exception: %s", e.what());
@@ -175,7 +175,7 @@ namespace actors
         }
 
         template <typename... Alternatives_>
-        void unwrap_message_impl(mailbox_filter<Alternatives_...>, message & message) 
+        void unwrap_message_impl(mailbox_filter<Alternatives_...>, message && message) 
         {
             (void)message;
             //ToDo (a.gruzdev): To be implemetned
@@ -186,10 +186,10 @@ namespace actors
          * Unwrap message and check dynamic type of the payload
          * Apply filter if specified and invoke receive()
          */
-        void do_unwrap_message(message & message) override final
+        void do_unwrap_message(message && message) override final
         {
             m_sender = &message.sender;
-            unwrap_message_impl(filter_type{}, message);
+            unwrap_message_impl(filter_type{}, std::move(message));
             // ToDo (a.gruzdev): Use finally
             m_sender = nullptr; 
         }
@@ -199,7 +199,7 @@ namespace actors
         /**
          * Main method for processing all incoming messages
          */
-        virtual void receive(received_type & message) = 0;
+        virtual void receive(received_type && message) = 0;
 
         //-------------------------------------------------------
 

@@ -42,7 +42,7 @@ namespace io
     }
     //------------------------------------------------------
 
-    void udp_manager::receive(yato::any & message) {
+    void udp_manager::receive(yato::any && message) {
         yato::any_match(
             [this](const udp::bind & bind) {
                 log().debug("Bind");

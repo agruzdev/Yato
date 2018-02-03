@@ -20,7 +20,7 @@ namespace actors
     class group
         : public actor
     {
-        void receive(yato::any &) override
+        void receive(yato::any &&) override
         { }
     };
 

@@ -13,7 +13,7 @@ namespace
         : public yato::actors::actor
     {
        
-        void receive(yato::any& message) override
+        void receive(yato::any && message) override
         {
             yato::any_match(
                 [this](int num) {

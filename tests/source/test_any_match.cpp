@@ -61,6 +61,54 @@ TEST(Yato_AnyMatch, common)
     EXPECT_EQ(-1, r);
 }
 
+TEST(Yato_AnyMatch, common_2)
+{
+    Foo f;
+    Foo* fp = &f;
+    const Foo* cfp = &f;
+
+    auto xi = yato::any(1);
+    auto xf = yato::any(1.0f);
+    auto xs = yato::any(std::string("abc"));
+    auto xp = yato::any(fp);
+    auto xe = yato::any();
+
+    auto matcher = yato::any_match(
+        [](int) {
+            return 1;
+        },
+        [](const float) {
+            return 2;
+        },
+        [](Foo*) {
+            return 3;
+        },
+        [](std::string &&) {
+            return 4;
+        },
+        [](yato::match_empty_t) {
+            return 0;
+        },
+        [](yato::match_default_t) {
+            return -1;
+        }
+    );
+
+    int r = -1;
+    EXPECT_NO_THROW(r = matcher(std::move(xi)));
+    EXPECT_EQ(1, r);
+    EXPECT_NO_THROW(r = matcher(std::move(xf)));
+    EXPECT_EQ(2, r);
+    EXPECT_NO_THROW(r = matcher(std::move(xp)));
+    EXPECT_EQ(3, r);
+    EXPECT_NO_THROW(r = matcher(std::move(xs)));
+    EXPECT_EQ(4, r);
+    EXPECT_NO_THROW(r = matcher(std::move(xe)));
+    EXPECT_EQ(0, r);
+    EXPECT_NO_THROW(r = matcher(yato::any(cfp)));
+    EXPECT_EQ(-1, r);
+}
+
 TEST(Yato_AnyMatch, exception)
 {
     auto xi = yato::any(1);
