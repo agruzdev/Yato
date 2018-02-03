@@ -54,6 +54,7 @@ namespace actors
     public:
         static bool is_valid_system_name(const std::string & name);
         static bool is_valid_actor_name(const std::string & name);
+        static bool is_valid_actor_path(const std::string & name);
 
         static const std::string & scope_to_str(const actor_scope & scope);
         static const actor_scope & str_to_scope(const std::string & name);

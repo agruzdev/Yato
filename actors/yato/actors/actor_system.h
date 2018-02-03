@@ -156,7 +156,7 @@ namespace actors
 
         template <typename Ty_, typename Rep_, typename Period_>
         std::future<yato::any> ask(const actor_ref & addressee, Ty_ && message, const std::chrono::duration<Rep_, Period_> & timeout) const {
-            return ask_impl_(addressee, yato::any(message), std::chrono::duration_cast<timeout_type>(timeout));
+            return ask_impl_(addressee, yato::any(std::forward<Ty_>(message)), std::chrono::duration_cast<timeout_type>(timeout));
         }
 
         const std::string & name() const {
@@ -178,11 +178,19 @@ namespace actors
         void stop(const actor_ref & addressee) const;
 
         /**
-         * Find actor by name and get reference to it.
+         * Find actor by path
          */
         template <typename Rep_, typename Period_>
         std::future<actor_ref> find(const actor_path & path, const std::chrono::duration<Rep_, Period_> & timeout) const {
             return find_impl_(path, std::chrono::duration_cast<timeout_type>(timeout));
+        }
+
+        /**
+         * Find actor by name in user scope
+         */
+        template <typename Rep_, typename Period_>
+        std::future<actor_ref> find(const std::string & name, const std::chrono::duration<Rep_, Period_> & timeout) const {
+            return find_impl_(actor_path(*this, actor_scope::user, name), std::chrono::duration_cast<timeout_type>(timeout));
         }
 
         /**

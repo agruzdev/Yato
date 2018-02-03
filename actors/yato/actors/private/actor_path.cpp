@@ -59,9 +59,16 @@ YATO_PRAGMA_WARNING_PUSH
     //---------------------------------------------------
 
     inline
-    bool is_valid_path(const char & c)
+    bool is_valid_name(const char & c)
     {
         return std::isgraph(c, actor_path::locale()) && (c != '/');
+    }
+    //---------------------------------------------------
+
+    inline
+    bool is_valid_path(const char & c)
+    {
+        return std::isgraph(c, actor_path::locale());
     }
     //---------------------------------------------------
 
@@ -73,6 +80,12 @@ YATO_PRAGMA_WARNING_PUSH
 
     bool actor_path::is_valid_actor_name(const std::string & name)
     {
+        return !name.empty() && std::all_of(name.cbegin(), name.cend(), &is_valid_name);
+    }
+    //---------------------------------------------------
+
+    bool actor_path::is_valid_actor_path(const std::string & name)
+    {
         return !name.empty() && std::all_of(name.cbegin(), name.cend(), &is_valid_path);
     }
     //---------------------------------------------------
@@ -83,7 +96,7 @@ YATO_PRAGMA_WARNING_PUSH
         if (!is_valid_system_name(system_name)) {
             throw yato::argument_error("actor_path[actor_path]: Invalid system name!");
         }
-        if (!is_valid_actor_name(actor_name)) {
+        if (!is_valid_actor_path(actor_name)) {
             throw yato::argument_error("actor_path[actor_path]: Invalid actor name!");
         }
         m_path = actor_path::path_root + system_name + "/" + scope_to_str(scope) + "/" + actor_name;
@@ -93,7 +106,7 @@ YATO_PRAGMA_WARNING_PUSH
     actor_path::actor_path(const actor_system & system, const actor_scope & scope, const std::string & actor_name)
     {
         assert(scope != actor_scope::unknown);
-        if (!is_valid_actor_name(actor_name)) {
+        if (!is_valid_actor_path(actor_name)) {
             throw yato::argument_error("actor_path[actor_path]: Invalid actor name!");
         }
         m_path = actor_path::path_root + system.name() + "/" + scope_to_str(scope) + "/" + actor_name;

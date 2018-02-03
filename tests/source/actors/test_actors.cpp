@@ -210,3 +210,88 @@ TEST(Yato_Actors, search)
 
     root.tell(yato::actors::poison_pill);
 }
+
+TEST(Yato_Actors, search_2) 
+{
+    auto conf = yato::actors::config::defaults();
+    conf.log_filter = yato::actors::log_level::verbose;
+
+    yato::actors::actor_system system("default", conf);
+
+    auto root = system.create_actor<actA>("A");
+
+    auto a = system.find("A", std::chrono::seconds(5)).get();
+    EXPECT_FALSE(a.empty());
+
+    auto b = system.find("A/B", std::chrono::seconds(5)).get();
+    EXPECT_FALSE(b.empty());
+
+    auto c = system.find("C", std::chrono::seconds(5)).get();
+    EXPECT_TRUE(c.empty());
+
+    root.tell(yato::actors::poison_pill);
+}
+
+
+namespace
+{
+    class actF3
+        : public yato::actors::actor
+    {
+        void receive(yato::any & message) override {
+            log().info("Got message from " + sender().name());
+            forward(std::move(message), sender());
+        }
+    };
+
+    class actF2
+        : public yato::actors::actor
+    {
+        void receive(yato::any & message) override {
+            log().info("Got message from " + sender().name());
+            const auto next_actor = system().find("F3", std::chrono::seconds(1)).get();
+            forward(std::move(message), next_actor);
+        }
+    };
+
+    class actF1
+        : public yato::actors::actor
+    {
+        void receive(yato::any & message) override {
+            log().info("Got message from " + sender().name());
+            const auto next_actor = system().find("F2", std::chrono::seconds(1)).get();
+            forward(std::move(message), next_actor);
+        }
+    };
+
+    class actF0
+        : public yato::actors::actor
+    {
+        void pre_start() override {
+            log().info("Send message");
+            system().find("F1", std::chrono::seconds(1)).get().tell("ping", self());
+        }
+
+        void receive(yato::any &) override {
+            log().info("Got message from " + sender().name());
+
+            system().find("F1", std::chrono::seconds(1)).get().stop();
+            system().find("F2", std::chrono::seconds(1)).get().stop();
+            system().find("F3", std::chrono::seconds(1)).get().stop();
+            self().stop();
+        }
+    };
+}
+
+TEST(Yato_Actors, forward)
+{
+    auto conf = yato::actors::config::defaults();
+    conf.log_filter = yato::actors::log_level::info;
+
+    yato::actors::actor_system system("default", conf);
+
+    system.create_actor<actF0>("F0");
+    system.create_actor<actF1>("F1");
+    system.create_actor<actF2>("F2");
+    system.create_actor<actF3>("F3");
+}

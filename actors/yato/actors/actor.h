@@ -218,9 +218,26 @@ namespace actors
 
         //-------------------------------------------------------
 
+        /**
+         * Get sender of the current message
+         */
         const actor_ref & sender() const {
             assert(m_sender != nullptr);
             return *m_sender;
+        }
+
+        /**
+         * Forward message keeping original sender
+         */
+        void forward(yato::any & message, const actor_ref & target) const {
+            target.tell(message, sender());
+        }
+
+        /**
+         * Forward message keeping original sender
+         */
+        void forward(yato::any && message, const actor_ref & target) const {
+            target.tell(std::move(message), sender());
         }
 
         //-------------------------------------------------------
