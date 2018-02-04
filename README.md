@@ -31,6 +31,14 @@ Currently the library can be successfully built by the following compilers:
 
 ## Description
 
+### Actors system
+
+Yato provides a simple actors system implementation, that is developed to look and feel like [Akka](https://akka.io/). 
+It supports basic features of an actor system and optional io model for networking (requires `boost` dependency).
+
+[More...](./actors/Actors.md)
+
+
 ### Type support
 
 Yato library provides a set of additional type traits
