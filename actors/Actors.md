@@ -1,4 +1,4 @@
-## Yato\::Actors
+## Yato::Actors
 
 
 Hello world:
@@ -22,7 +22,7 @@ Hello world:
 
 ```
 
-## Yato\::Actors\::IO
+## Yato::Actors::IO
 
 Actors IO module implements basic interface for creating TCP connection and sending/receiving UDP datagrams similar to Akka.IO
 

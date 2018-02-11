@@ -6,7 +6,7 @@ A small repository where I'm gatherting useful snippets and abstractions for C++
 
 If you find any bug, please feel free to submit an issue! It will be very helpful for me
 
-##Licence
+## Licence
 
 The MIT License (MIT)
 
@@ -15,6 +15,7 @@ Copyright (c) 2016 Alexey Gruzdev
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 
 ## Build/Install
 
@@ -124,7 +125,9 @@ Yato library provides few compile time algorithms on tuples
 * **yato::any_ptr** type safe wrapper for any pointer (i.e. `void*`)
 * **yato::variant** type safe wrapper for a specified alternativies. Similar to std::variant but can't have empty state. If empty state is necessary, then `void` should be in alternatives list
 
-There provided effective matchers for `yato::any` and `yato::variant` allowing to handle stored value in `swicth` style. 
+Cast between `variants` with different sets of alternatives can be made with the help of `yato::variant_cast`.
+
+There provided effective matchers for `yato::any` and `yato::variant` allowing to handle stored value in `swicth` style.
 If no match is found then default case is called (`yato::match_default_t`) if defined, otherwise the exception `yato::bad_match_error` is thrown.
 
 * **yato::any_match** matches stored value of `yato::any`
