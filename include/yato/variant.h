@@ -292,6 +292,15 @@ namespace yato
 
         struct construct_empty_t {};
 
+        class bad_variant_access
+            : public std::runtime_error
+        {
+        public:
+            bad_variant_access(const char* what)
+                : std::runtime_error(what)
+            { }
+        };
+
         /**
          *  Type-safe union. Holds one of possible alternatives
          *  Each alternative type should be CopyConstructible or void
@@ -668,28 +677,34 @@ namespace yato
 
     }
 
-    template <typename... Alts_>
-    using variant = details::basic_variant<yato::meta::list<Alts_...>>;
-
     /**
      *  Exception used to indicate variant access error
      */
-    class bad_variant_access
-        : public std::runtime_error
-    {
-    public:
-        bad_variant_access(const char* what)
-            : std::runtime_error(what)
-        { }
-    };
+    using details::bad_variant_access;
 
+    /**
+     *  Exception used to indicate variant_cast error
+     */
     using details::bad_variant_cast;
 
+    /**
+     * @see detials::basic_variant
+     */
+    template <typename... Alts_>
+    using variant = details::basic_variant<yato::meta::list<Alts_...>>;
+
+
+    /**
+     * Cast variants with different alternatives lists
+     */
     template <typename AltsListTo_, typename AltsListFrom_>
     yato::details::basic_variant<AltsListTo_> variant_cast(const yato::details::basic_variant<AltsListFrom_> & var) {
         return details::variant_cast_impl<AltsListTo_, AltsListFrom_, AltsListFrom_, 0>().cast(var);
     }
 
+    /**
+     * Cast variants with different alternatives lists
+     */
     template <typename AltsListTo_, typename AltsListFrom_>
     yato::details::basic_variant<AltsListTo_> variant_cast(yato::details::basic_variant<AltsListFrom_> && var) {
         return details::variant_cast_impl<AltsListTo_, AltsListFrom_, AltsListFrom_, 0>().cast(std::move(var));
