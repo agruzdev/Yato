@@ -17,7 +17,7 @@ namespace yato
 namespace actors
 {
 
-    actor_cell::actor_cell(actor_system & system, const actor_path & path, std::unique_ptr<actor_base> && instance)
+    actor_cell::actor_cell(actor_system & system, const actor_path & path, std::unique_ptr<basic_actor> && instance)
         : m_system(system), m_self(&system, path), m_started(false), m_stop(false)
     {
         m_log = logger_factory::create(std::string("Actor[") + m_self.name() + "]");
@@ -25,7 +25,7 @@ namespace actors
 
         // setup actor
         m_actor = std::move(instance);
-        m_actor->init_base_(this);
+        m_actor->set_context_(this);
 
         // create mailbox
         m_mailbox = std::make_shared<mailbox>();

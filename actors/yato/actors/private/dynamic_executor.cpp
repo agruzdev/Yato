@@ -32,7 +32,7 @@ namespace actors
                 return;
             }
 
-            if(!mbox->owner->context().is_started()) {
+            if(!mbox->owner->context_().is_started()) {
                 // ToDo (a.gruzdev): Quick solution
                 // dont process user messages untill started
                 reschedule = false;
@@ -57,7 +57,7 @@ namespace actors
                 ++count;
             }
             if (msg) {
-                mbox->owner->receive_message(std::move(*msg));
+                mbox->owner->receive_message_(std::move(*msg));
             }
         }
         mbox->is_scheduled = false;

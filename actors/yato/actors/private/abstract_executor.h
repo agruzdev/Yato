@@ -41,7 +41,7 @@ namespace actors
                 mbox->sys_queue.pop();
             }
             if (sys_msg) {
-                if(mbox->owner->receive_system_message(std::move(*sys_msg))) {
+                if(mbox->owner->receive_system_message_(std::move(*sys_msg))) {
                     return true;
                 }
             }

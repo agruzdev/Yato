@@ -17,7 +17,7 @@ namespace yato
 {
 namespace actors
 {
-    class actor_base;
+    class basic_actor;
     class actor_ref;
     struct mailbox;
 
@@ -32,7 +32,7 @@ namespace actors
          * Stored actor
          */
         actor_ref m_self;
-        std::unique_ptr<actor_base> m_actor;
+        std::unique_ptr<basic_actor> m_actor;
         std::shared_ptr<mailbox> m_mailbox;
 
         /**
@@ -63,7 +63,7 @@ namespace actors
 
         //----------------------------------------------
     public:
-        actor_cell(actor_system & system, const actor_path & path, std::unique_ptr<actor_base> && instance);
+        actor_cell(actor_system & system, const actor_path & path, std::unique_ptr<basic_actor> && instance);
 
         ~actor_cell();
 
@@ -87,7 +87,7 @@ namespace actors
             return *m_parent;
         }
 
-        actor_base* actor() const {
+        basic_actor* actor() const {
             return m_actor.get();
         }
 

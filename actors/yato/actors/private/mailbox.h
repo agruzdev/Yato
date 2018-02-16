@@ -38,7 +38,7 @@ namespace actors
         std::mutex mutex;
         std::condition_variable condition;
 
-        actor_base* owner = nullptr;
+        basic_actor* owner = nullptr;
         //mailbox_status status = mailbox_status::opened;
         bool is_open = true;
         bool is_scheduled = false;

@@ -15,7 +15,7 @@ namespace yato
 {
 namespace actors
 {
-    class actor_base;
+    class basic_actor;
     class actor_cell;
     class actor_path;
     class actor_system;
@@ -27,14 +27,14 @@ namespace actors
          */
         class cell_builder
         {
-            std::function<std::unique_ptr<actor_base>()> m_ctor;
+            std::function<std::unique_ptr<basic_actor>()> m_ctor;
 
         public:
-            cell_builder(const std::function<std::unique_ptr<actor_base>()> & ctor)
+            cell_builder(const std::function<std::unique_ptr<basic_actor>()> & ctor)
                 : m_ctor(ctor)
             { }
             
-            cell_builder(std::function<std::unique_ptr<actor_base>()> && ctor)
+            cell_builder(std::function<std::unique_ptr<basic_actor>()> && ctor)
                 : m_ctor(std::move(ctor))
             { }
 
