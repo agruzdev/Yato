@@ -8,11 +8,14 @@
 #ifndef _YATO_ACTOR_H_
 #define _YATO_ACTOR_H_
 
+#include <stack>
+
 #include <yato/any.h>
 
-#include "logger.h"
 #include "actor_ref.h"
+#include "behaviour.h"
 #include "cell_builder.h"
+#include "logger.h"
 
 namespace yato
 {
@@ -26,13 +29,19 @@ namespace actors
      * Implements generic interface for receiveing messages
      */
     class basic_actor
+        : public message_consumer
     {
         /**
          * Pointer to actor's context.
          * Becomes valid only after registraction in the actors system.
          */
         actor_cell* m_context = nullptr;
-        
+
+        /**
+         * Behaviours stack
+         */
+        std::stack<message_consumer*> m_behaviours{};
+
         /**
          * Cache for current sender ref
          */
@@ -56,7 +65,7 @@ namespace actors
         /**
          * Main method for processing all incoming messages
          */
-        virtual void receive(yato::any && message) = 0;
+        virtual void receive(yato::any && message) override = 0;
 
         /**
         * Optional post-stop hook
@@ -122,6 +131,19 @@ namespace actors
         actor_ref create_child(const std::string & name, Args_ && ... args) {
             return create_child_impl_(name, details::make_cell_builder<ActorType_>(std::forward<Args_>(args)...));
         }
+
+        /**
+         * Replace the actor's behavior
+         * @param new_behaviour
+         * @param discard_old if true rewrite old behaviour, otherwise put on the top of behaviours stack
+         * @return if discard_old is true then returns replaced behaviour
+         */
+        message_consumer* become(message_consumer* behaviour, bool discard_old = true) noexcept;
+
+        /**
+         * Remove behavior from the top of stack and return it
+         */
+        message_consumer* unbecome() noexcept;
 
         //-------------------------------------------------------
 

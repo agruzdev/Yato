@@ -25,6 +25,8 @@ namespace actors
     void basic_actor::set_context_(actor_cell* cell) 
     {
         m_context = cell;
+        // default behaviour
+        m_behaviours.push(this);
     }
     //-------------------------------------------------------
 
@@ -82,7 +84,8 @@ namespace actors
         }
         m_sender = &message.sender;
         try {
-            receive(std::move(message.payload));
+            YATO_ASSERT(!m_behaviours.empty(), "No behaviours!");
+            m_behaviours.top()->receive(std::move(message.payload));
         }
         catch(std::exception & e) {
             log().error("actor[receive]: Unhandled exception: %s", e.what());
@@ -91,6 +94,34 @@ namespace actors
             log().error("actor[receive]: Unknown exception!");
         }
         m_sender = nullptr;
+    }
+    //-------------------------------------------------------
+
+    message_consumer* basic_actor::become(message_consumer* behaviour, bool discard_old) noexcept
+    {
+        if(behaviour == nullptr) {
+            log().error("failed to perform become(): the new behaviour is empty.");
+            return nullptr;
+        }
+        if (discard_old) {
+            std::swap(m_behaviours.top(), behaviour);
+            return behaviour;
+        } else {
+            m_behaviours.push(behaviour);
+            return nullptr;
+        }
+    }
+    //-------------------------------------------------------
+
+    message_consumer* basic_actor::unbecome() noexcept
+    {
+        if(m_behaviours.size() <= 1) {
+            log().error("failed to perform unbecome(): the behaviour stack has only one element.");
+            return nullptr;
+        }
+        const auto tmp = m_behaviours.top();
+        m_behaviours.pop();
+        return tmp;
     }
     //-------------------------------------------------------
 
