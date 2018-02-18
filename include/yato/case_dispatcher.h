@@ -25,6 +25,12 @@ namespace yato
 
 
     /**
+     * Copy/move cases into the matcher object if passed
+     */
+    struct store_cases_t {};
+
+
+    /**
      * Thrown if match not found
      */
     class bad_match_error

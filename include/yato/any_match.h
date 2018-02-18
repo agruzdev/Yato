@@ -54,12 +54,20 @@ namespace yato
         }
     };
 
+    
+
+
     template <typename... Cases_>
     constexpr
     auto any_match(const Cases_ & ... cases) {
         return any_matcher<std::tuple<const Cases_ &...>>(std::tuple<const Cases_ &...>(cases...));
     }
 
+    template <typename... Cases_>
+    constexpr
+    auto any_match(store_cases_t, Cases_ && ... cases) {
+        return any_matcher<std::tuple<Cases_...>>(std::tuple<Cases_...>(std::forward<Cases_>(cases)...));
+    }
 
 }
 
