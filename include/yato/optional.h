@@ -372,6 +372,7 @@ namespace yato
             { }
 
             basic_optional(const basic_optional & other)
+                : super_type()
             {
                 super_type::copy_impl_(other);
             }
@@ -380,6 +381,7 @@ namespace yato
                 typename = std::enable_if_t<std::is_constructible<value_type, OtherVal_>::value>
             >
             basic_optional(const basic_optional<OtherVal_, OtherCopy_, OtherMove_> & other)
+                : super_type()
             {
                 super_type::copy_impl_(other);
             }
@@ -447,6 +449,7 @@ namespace yato
             basic_optional(const basic_optional&) = delete;
 
             basic_optional(basic_optional && other) noexcept(is_nothrow_move_constructible)
+                : super_type()
             {
                 super_type::move_copy_impl_(std::move(other));
             }
@@ -455,6 +458,7 @@ namespace yato
                 typename = std::enable_if_t<std::is_constructible<value_type, typename std::add_rvalue_reference<OtherVal_>::type>::value>
             >
             basic_optional(basic_optional<OtherVal_, OtherCopy_, OtherMove_> && other)
+                : super_type()
             {
                 super_type::move_copy_impl_(std::move(other));
             }
@@ -523,6 +527,7 @@ namespace yato
             { }
     
             basic_optional(const basic_optional & other)
+                : super_type()
             {
                 super_type::copy_impl_(other);
             }
@@ -531,11 +536,13 @@ namespace yato
                 typename = std::enable_if_t<std::is_constructible<value_type, OtherVal_>::value>
             >
             basic_optional(const basic_optional<OtherVal_, OtherCopy_, OtherMove_> & other)
+                : super_type()
             {
                 super_type::copy_impl_(other);
             }
 
             basic_optional(basic_optional && other) noexcept(is_nothrow_move_constructible)
+                : super_type()
             {
                 super_type::move_copy_impl_(std::move(other));
             }
@@ -544,6 +551,7 @@ namespace yato
                 typename = std::enable_if_t<std::is_constructible<value_type, typename std::add_rvalue_reference<OtherVal_>::type>::value>
             >
             basic_optional(basic_optional<OtherVal_, OtherCopy_, OtherMove_> && other)
+                : super_type()
             {
                 super_type::move_copy_impl_(std::move(other));
             }
