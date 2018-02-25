@@ -329,7 +329,7 @@ namespace yato
             template <typename... Args_>
             void emplace(Args_ && ... args) {
                 super_type::clear();
-                construct_(std::forward<Args_>(args)...);
+                super_type::construct_(std::forward<Args_>(args)...);
             }
         };
 
