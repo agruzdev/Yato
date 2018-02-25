@@ -328,7 +328,7 @@ namespace yato
              */
             template <typename... Args_>
             void emplace(Args_ && ... args) {
-                clear();
+                super_type::clear();
                 construct_(std::forward<Args_>(args)...);
             }
         };
