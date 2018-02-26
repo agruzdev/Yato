@@ -261,8 +261,6 @@ namespace yato
             return attr.get_as<std::atomic<AttrType>>().load(mem_order);
         }
 
-#ifdef YATO_HAS_OPTIONAL
-        /* Experimental */
         /**
          *  Get attribute as given type as optional value
          *  Doesn't throw bad_attribute
@@ -272,15 +270,15 @@ namespace yato
         {
             auto pos = m_attributes.find(key);
             if (pos == m_attributes.cend()) {
-                return yato::nullopt;
+                return yato::nullopt_t{};
             }
             const yato::any & attr = (*pos).second.value;
             if (std::type_index(attr.type()) != std::type_index(typeid(std::atomic<AttrType>))) {
-                return yato::nullopt;
+                return yato::nullopt_t{};
             }
             return yato::make_optional<AttrType>(attr.get_as<std::atomic<AttrType>>().load(mem_order));
         }
-#endif
+
     };
 
     template <typename... Args>

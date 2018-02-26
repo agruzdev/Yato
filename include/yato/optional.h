@@ -189,7 +189,6 @@ namespace yato
                 }
             }
 
-
         public:
             constexpr
             optional_core() = default;
@@ -244,6 +243,16 @@ namespace yato
                 return *get_ptr_();
             }
 
+            constexpr
+            const value_type & get_unsafe() const noexcept {
+                return *get_ptr_();
+            }
+
+            constexpr
+            value_type & get_unsafe() noexcept {
+                return *get_ptr_();
+            }
+
             template <typename DefTy_>
             constexpr
             value_type get_or(DefTy_ && default_value) const & {
@@ -285,12 +294,19 @@ namespace yato
             friend class optional_core;
         };
 
-
-
-
-
         template <typename Ty_, bool IsCopy_ = false, bool IsMove_ = false>
-        class basic_optional
+        class basic_optional;
+
+        template <typename Ty_>
+        using choose_optional = basic_optional<Ty_, std::is_copy_constructible<Ty_>::value, std::is_move_constructible<Ty_>::value>;
+
+        template <typename Ty_>
+        choose_optional<Ty_> make_optional_(Ty_ && val) {
+            return choose_optional<Ty_>(std::forward<Ty_>(val));
+        }
+
+        template <typename Ty_>
+        class basic_optional<Ty_, /*IsCopy=*/false, /*IsMove=*/false>
             : public optional_core<Ty_>
         {
         private:
@@ -407,6 +423,14 @@ namespace yato
             {
                 super_type::swap_impl_(other);
             }
+
+            template <typename Function_>
+            auto map(Function_ && transform) const &
+            {
+                return (!super_type::empty())
+                    ? make_optional_(transform(super_type::get_unsafe()))
+                    : nullopt_t{};
+            }
         };
 
 
@@ -481,6 +505,22 @@ namespace yato
             void swap(this_type & other)
             {
                 super_type::swap_impl_(other);
+            }
+
+            template <typename Function_>
+            auto map(Function_ && transform) const &
+            {
+                return (!super_type::empty())
+                    ? make_optional_(transform(super_type::get_unsafe()))
+                    : nullopt_t{};
+            }
+            
+            template <typename Function_>
+            auto map(Function_ && transform) &&
+            {
+                return (!super_type::empty())
+                    ? make_optional_(transform(std::move(super_type::get_unsafe())))
+                    : nullopt_t{};
             }
         };
 
@@ -583,15 +623,31 @@ namespace yato
             }
 
             void swap(this_type & other)
-            { 
+            {
                 super_type::swap_impl_(other);
+            }
+
+            template <typename Function_>
+            auto map(Function_ && transform) const &
+            {
+                return (!super_type::empty())
+                    ? make_optional_(transform(super_type::get_unsafe()))
+                    : nullopt_t{};
+            }
+            
+            template <typename Function_>
+            auto map(Function_ && transform) &&
+            {
+                return (!super_type::empty())
+                    ? make_optional_(transform(std::move(super_type::get_unsafe())))
+                    : nullopt_t{};
             }
         };
 
     }
 
     template <typename Ty_>
-    using optional = details::basic_optional<Ty_, std::is_copy_constructible<Ty_>::value, std::is_move_constructible<Ty_>::value>;
+    using optional = details::choose_optional<Ty_>;
 
     template <typename Ty_>
     void swap(optional<Ty_> & lhs, optional<Ty_> & rhs)
@@ -599,11 +655,11 @@ namespace yato
         lhs.swap(rhs);
     }
 
-
     template <typename Ty_>
     optional<Ty_> make_optional(Ty_ && val) {
-        return optional<Ty_>(val);
+        return optional<Ty_>(std::forward<Ty_>(val));
     }
+
 
 
 } // namespace yato

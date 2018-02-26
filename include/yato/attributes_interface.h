@@ -308,7 +308,6 @@ namespace yato
             return attr.get_as<AttrType>(default_value);
         }
 
-#ifdef YATO_HAS_OPTIONAL
         /**
          *  Get attribute as given type as optional value
          *  Doesn't throw bad_attribute
@@ -318,15 +317,14 @@ namespace yato
         {
             auto it = m_attributes.find(key);
             if (it == m_attributes.cend()) {
-                return yato::nullopt;
+                return yato::nullopt_t{};
             }
             const yato::any & attr = (*it).second;
             if (attr.type() != typeid(AttrType)) {
-                return yato::nullopt;
+                return yato::nullopt_t{};
             }
             return yato::make_optional<AttrType>(yato::any_cast<AttrType>(attr));
         }
-#endif
 
         /**
          *  Acquire lock for this interface

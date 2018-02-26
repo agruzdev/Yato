@@ -4,7 +4,7 @@
 
 #include <yato/optional.h>
 
-#include <iostream>
+
 namespace
 {
     yato::optional<std::string> create(bool b)
@@ -174,3 +174,18 @@ TEST(Yato_Optional, common_3)
 
 }
 
+
+TEST(Yato_Optional, map)
+{
+    auto opt = yato::optional<int>(10);
+    opt = opt.map([](int x) { return 2 * x; });
+    
+    EXPECT_NO_THROW(EXPECT_EQ(20, opt.get()));
+    
+    auto opt2 = opt.map([](int x){ return std::make_unique<float>(x * 2.0f); });
+    EXPECT_NO_THROW(ASSERT_NE(nullptr, opt2.get().get()));
+    EXPECT_NO_THROW(EXPECT_FLOAT_EQ(40.0f, *opt2.get()));
+    
+    auto opt3 = std::move(opt2).map([](std::unique_ptr<float> && p){ return *p + 2.0f; });
+    EXPECT_FLOAT_EQ(42.0f, opt3.get_or(0.0f));
+}
