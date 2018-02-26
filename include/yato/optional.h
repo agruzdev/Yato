@@ -286,8 +286,8 @@ namespace yato
     
             template <typename... Args_>
             void emplace(Args_ && ... args) {
-                optional_core<value_type> tmp(yato::in_place_t{}, std::forward<Args_>(args)...);
-                swap_impl_(tmp);
+                clear();
+                construct_(std::forward<Args_>(args)...);
             }
 
             template <typename SomeTy_>
@@ -338,15 +338,6 @@ namespace yato
 
             basic_optional& operator = (const basic_optional&) = delete;
             basic_optional& operator = (basic_optional&&) = delete;
-
-            /**
-             * Override since the basic implementation through swap is impossible
-             */
-            template <typename... Args_>
-            void emplace(Args_ && ... args) {
-                super_type::clear();
-                super_type::construct_(std::forward<Args_>(args)...);
-            }
         };
 
 
