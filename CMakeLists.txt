@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.1)
+cmake_minimum_required (VERSION 3.8)
 
 project(Yato)
 
@@ -28,6 +28,9 @@ file(GLOB_RECURSE yato_sources "${YATO_INCLUDE_DIRS}/*.h")
 #==========================================
 # Targets
 
+list(APPEND Yato_TEST_DIRS) # List of all test directories
+list(APPEND Yato_TEST_LIBS) # List of all test dependensies
+
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
@@ -40,6 +43,15 @@ if(YATO_BUILD_ACTORS)
     add_subdirectory(./modules/actors)
     list(APPEND YATO_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/modules/actors")
 endif()
+
+option(YATO_BUILD_CONFIG "Build config module" OFF)
+if(YATO_BUILD_CONFIG)
+    add_subdirectory(./modules/config)
+    list(APPEND YATO_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/modules/config")
+endif()
+
+#==========================================
+# Tests
 
 option(YATO_BUILD_TESTS "Build unit tests" ON)
 if(YATO_BUILD_TESTS)

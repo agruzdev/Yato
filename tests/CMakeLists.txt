@@ -29,38 +29,32 @@ _gtest_add_definitions(gtest_main)
 include_directories(${GTEST_INCLUDE_DIR})
 include_directories(${YATO_INCLUDE_DIRS})
 
-file(GLOB all_tests "source/*.cpp" "source/*.h")
+file(GLOB all_tests "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/source/*.h")
 list(APPEND all_sources ${all_tests})
 list(APPEND all_sources ${yato_sources})
 
-if(YATO_BUILD_ACTORS)
-    file(GLOB actors_tests "source/actors/*.cpp" "source/actors/*.h")
-    list(APPEND all_sources ${actors_tests})
+foreach(test_dir ${Yato_TEST_DIRS})
+    message(STATUS "Added tests from: ${test_dir}")
+    file(GLOB test_files "${test_dir}/*.cpp" "${test_dir}/*.h")
+    list(APPEND all_sources ${test_files})
+endforeach()
 
-    if(YATO_ACTORS_WITH_IO)
-        file(GLOB actors_io_tests "source/actors/io/*.cpp" "source/actors/io/*.h")
-        list(APPEND all_sources ${actors_io_tests})
-    endif()
-endif()
+# source_group(TREE "${CMAKE_SOURCE_DIR}" FILES ${all_sources})
 
+foreach(f ${all_sources})
+    # Get the path of the file relative to ${CMAKE_SOURCE_DIR},
+    # then alter it (not compulsory)
+    file(RELATIVE_PATH SRCGR ${CMAKE_SOURCE_DIR} ${f})
+    set(SRCGR "${SRCGR}")
 
-if("${CMAKE_VERSION}" VERSION_GREATER 3.8.0)
-    source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${all_sources})
-else()
-    foreach(f ${all_sources})
-        # Get the path of the file relative to ${CMAKE_HOME_DIRECTORY},
-        # then alter it (not compulsory)
-        file(RELATIVE_PATH SRCGR ${CMAKE_HOME_DIRECTORY} ${f})
-        set(SRCGR "${SRCGR}")
+    # Extract the folder, ie remove the filename part
+    string(REGEX REPLACE "(.*)(/[^/]*)$" "\\1" SRCGR ${SRCGR})
 
-        # Extract the folder, ie remove the filename part
-        string(REGEX REPLACE "(.*)(/[^/]*)$" "\\1" SRCGR ${SRCGR})
+    # Source_group expects \\ (double antislash), not / (slash)
+    string(REPLACE / \\ SRCGR ${SRCGR})
+    source_group("${SRCGR}" FILES ${f})
+endforeach()
 
-        # Source_group expects \\ (double antislash), not / (slash)
-        string(REPLACE / \\ SRCGR ${SRCGR})
-        source_group("${SRCGR}" FILES ${f})
-    endforeach()
-endif()
 
 #==========================================
 # Targets
@@ -70,8 +64,11 @@ add_executable(YatoTests ${all_sources})
 target_link_libraries(YatoTests gtest)
 target_link_libraries(YatoTests gtest_main)
 
-if(YATO_BUILD_ACTORS)
-    target_link_libraries(YatoTests YatoActors)
-endif()
+#if(YATO_BUILD_ACTORS)
+#    target_link_libraries(YatoTests YatoActors)
+#endif()
+foreach(test_lib ${Yato_TEST_LIBS})
+    target_link_libraries(YatoTests ${test_lib})
+endforeach()
 
 _gtest_add_definitions(YatoTests)

@@ -43,10 +43,7 @@ endif()
 
 #=========================================
 
-
-if(NOT "${CMAKE_VERSION}" VERSION_LESS 3.8.0)
-    source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${yato_actors_sources})
-endif()
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${yato_actors_sources})
 
 add_library(YatoActors STATIC ${yato_actors_sources})
 
@@ -58,3 +55,18 @@ if(YATO_ACTORS_WITH_IO)
         target_link_libraries(YatoActors PRIVATE wsock32 ws2_32)
     endif()
 endif()
+
+
+#==========================================
+# Tests
+
+list(APPEND YatoActors_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests")
+if(YATO_ACTORS_WITH_IO)
+    list(APPEND YatoActors_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/io")
+endif()
+list(APPEND Yato_TEST_DIRS ${YatoActors_TEST_DIRS})
+set(Yato_TEST_DIRS ${Yato_TEST_DIRS} PARENT_SCOPE)
+
+list(APPEND Yato_TEST_LIBS YatoActors)
+set(Yato_TEST_LIBS ${Yato_TEST_LIBS} PARENT_SCOPE)
+
