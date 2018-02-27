@@ -6,6 +6,7 @@ cmake_minimum_required (VERSION 3.2)
 #   -D_CONFIGURATION=[Debug, Release, All]
 #   -D_MT=[ON/OFF] Multithreaded build
 #   -D_ACTORS=[ON/OFF] Build with whole actors module
+#   -D_CONFIG=[ON/OFF] Build with whole config module
 # Supported targets:
 #   vc12x32  - MSVC_2013 x32
 #   vc14x32  - MSVC_2015 x32
@@ -215,6 +216,11 @@ foreach(CURRENT_TARGET ${all_build_targers})
             list(APPEND configure_flags -DYATO_ACTORS_WITH_IO=ON)
         endif()
         
+        if(_CONFIG)
+            list(APPEND configure_flags -DYATO_BUILD_CONFIG=ON)
+            list(APPEND configure_flags -DYATO_CONFIG_MANUAL=ON)
+        endif()
+
         message(STATUS "configure_flags=${configure_flags}")
         execute_process(COMMAND cmake "-G${GENERATOR_${CURRENT_TARGET}}" ${CUSTOM_TOOLCHAIN_ARG} -DBIN_OUTPUT_DIR=${CURRENT_BIN_DIR} -DCMAKE_BUILD_TYPE=${CURRENT_CONFIGURATION} ${configure_flags} ${_SOURCE_DIR}
             WORKING_DIRECTORY ${CURRENT_BUILD_DIR}
