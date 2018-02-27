@@ -301,8 +301,8 @@ namespace yato
         using choose_optional = basic_optional<Ty_, std::is_copy_constructible<Ty_>::value, std::is_move_constructible<Ty_>::value>;
 
         template <typename Ty_>
-        choose_optional<Ty_> make_optional_(Ty_ && val) {
-            return choose_optional<Ty_>(std::forward<Ty_>(val));
+        choose_optional<std::decay_t<Ty_>> make_optional_(Ty_ && val) {
+            return choose_optional<std::decay_t<Ty_>>(std::forward<Ty_>(val));
         }
 
         template <typename Ty_>
@@ -647,8 +647,8 @@ namespace yato
     }
 
     template <typename Ty_>
-    optional<Ty_> make_optional(Ty_ && val) {
-        return optional<Ty_>(std::forward<Ty_>(val));
+    optional<std::decay_t<Ty_>> make_optional(Ty_ && val) {
+        return optional<std::decay_t<Ty_>>(std::forward<Ty_>(val));
     }
 
 
