@@ -12,3 +12,13 @@ if(CLANG)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -femulated-tls")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 endif()
+
+#ToDo (a.gruzdev) Temporal workaround
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-noexcept-type")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-security")
+
+option(YATO_WITH_ADDRESS_SANITIZER "Enable address sanitizing" OFF)
+if(YATO_WITH_ADDRESS_SANITIZER)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -g -fsanitize=address")
+endif()
+
