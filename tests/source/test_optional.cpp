@@ -189,3 +189,40 @@ TEST(Yato_Optional, map)
     auto opt3 = std::move(opt2).map([](std::unique_ptr<float> && p){ return *p + 2.0f; });
     EXPECT_FLOAT_EQ(42.0f, opt3.get_or(0.0f));
 }
+
+namespace
+{
+    void foo(yato::optional<const int*> p) {
+        if(p) {
+            EXPECT_TRUE(*p > 0);
+        }
+    }
+
+    yato::optional<int*> bar(int x) {
+        return yato::make_optional(new int(x));
+    }
+
+    yato::optional<int*> zoo(int) {
+        return yato::nullopt_t{};
+    }
+}
+
+TEST(Yato_Optional, opt_ptr)
+{
+    int x = 42;
+    auto opt = yato::make_optional(&x);
+
+    EXPECT_TRUE(!opt.empty());
+    EXPECT_NO_THROW(EXPECT_EQ(42, opt.deref()));
+
+    opt.clear();
+    EXPECT_THROW(opt.get(), yato::bad_optional_access);
+
+    foo(&x);
+
+    auto opt3 = bar(10);
+    EXPECT_EQ(10, *(opt3.get_or(&x)));
+    delete opt3.get_or_null();
+
+    EXPECT_EQ(-1, zoo(1).deref_or(-1));
+}

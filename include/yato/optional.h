@@ -2,7 +2,7 @@
 * YATO library
 *
 * The MIT License (MIT)
-* Copyright (c) 2016 Alexey Gruzdev
+* Copyright (c) 2018 Alexey Gruzdev
 */
 
 #ifndef _YATO_OPTIONAL_H_
@@ -245,11 +245,13 @@ namespace yato
 
             constexpr
             const value_type & get_unsafe() const noexcept {
+                YATO_REQUIRES(!empty());
                 return *get_ptr_();
             }
 
             constexpr
             value_type & get_unsafe() noexcept {
+                YATO_REQUIRES(!empty());
                 return *get_ptr_();
             }
 
@@ -294,16 +296,164 @@ namespace yato
             friend class optional_core;
         };
 
+
+
+
+        template <typename TyPtr_>
+        class optional_ptr
+        {
+        private:
+            static_assert(std::is_pointer<TyPtr_>::value, "Only for pointers");
+            using this_type  = optional_ptr<TyPtr_>;
+
+        public:
+            using value_type = TyPtr_;
+            using reference_type = std::remove_pointer_t<TyPtr_>;
+
+        private:
+            TyPtr_ m_ptr = nullptr;
+
+        public:
+            constexpr
+            optional_ptr() = default;
+
+            constexpr
+            optional_ptr(TyPtr_ ptr)
+                : m_ptr(ptr)
+            { }
+
+            constexpr
+            optional_ptr(yato::nullopt_t)
+                : optional_ptr()
+            { }
+
+            ~optional_ptr() = default;
+
+            optional_ptr(const optional_ptr&) = delete;
+
+            constexpr
+            optional_ptr(optional_ptr&&) noexcept = default;
+
+            optional_ptr& operator = (const optional_ptr&) = delete;
+
+            constexpr
+            optional_ptr& operator = (optional_ptr&&) noexcept = default;
+
+            constexpr
+            this_type clone() const
+            {
+                return this_type(m_ptr);
+            }
+
+            constexpr
+            bool empty() const {
+                return m_ptr == nullptr;
+            }
+
+            constexpr
+            operator bool() const {
+                return m_ptr != nullptr;
+            }
+
+            void swap(this_type & other) noexcept {
+                std::swap(m_ptr, other.m_ptr);
+            }
+
+            void clear() {
+                m_ptr = nullptr;
+            }
+
+            constexpr
+            value_type get() const {
+                if(empty()) {
+                    throw yato::bad_optional_access("empty optional");
+                }
+                return m_ptr;
+            }
+
+            constexpr
+            value_type get_unsafe() const noexcept {
+                YATO_REQUIRES(!empty());
+                return m_ptr;
+            }
+
+            template <typename DefTy_>
+            constexpr
+            value_type get_or(DefTy_ && default_value) const {
+                return (!empty()) ? m_ptr : static_cast<value_type>(std::forward<DefTy_>(default_value));
+            }
+
+            constexpr
+            value_type get_or_null() const {
+                return get_or(nullptr);
+            }
+
+            reference_type deref() const {
+                return *get();
+            }
+
+            reference_type operator * () const {
+                return deref();
+            }
+
+            template <typename DefTy_>
+            reference_type deref_or(DefTy_ && default_value) const {
+                return (!empty()) ? *m_ptr : static_cast<reference_type>(std::forward<DefTy_>(default_value));
+            }
+
+            template <typename Function_>
+            auto map(Function_ && transform) const &;
+        };
+        
         template <typename Ty_, bool IsCopy_ = false, bool IsMove_ = false>
         class basic_optional;
 
+
+
+
+
+        template <typename Ty_, typename = void>
+        struct choose_optional
+        {
+            using type = basic_optional<Ty_, std::is_copy_constructible<Ty_>::value, std::is_move_constructible<Ty_>::value>;
+        };
+        
         template <typename Ty_>
-        using choose_optional = basic_optional<Ty_, std::is_copy_constructible<Ty_>::value, std::is_move_constructible<Ty_>::value>;
+        struct choose_optional
+            <
+                Ty_,
+                std::enable_if_t<std::is_pointer<Ty_>::value>
+            >
+        {
+            using type = yato::details::optional_ptr<Ty_>;
+        };
+        
+        template <typename Ty_>
+        struct choose_optional
+            <
+                Ty_,
+                std::enable_if_t<std::is_reference<Ty_>::value>
+            >
+        {
+            // Reference can't be stored in the optional
+        };
+        
+        template <typename Ty_>
+        using choose_optional_t = typename choose_optional<Ty_>::type;
+
+
+
+
+
 
         template <typename Ty_>
-        choose_optional<std::decay_t<Ty_>> make_optional_(Ty_ && val) {
-            return choose_optional<std::decay_t<Ty_>>(std::forward<Ty_>(val));
+        auto make_optional_(Ty_ && val) 
+            -> choose_optional_t<std::decay_t<Ty_>>
+        {
+            return choose_optional_t<std::decay_t<Ty_>>(std::forward<Ty_>(val));
         }
+
+
 
         template <typename Ty_>
         class basic_optional<Ty_, /*IsCopy=*/false, /*IsMove=*/false>
@@ -635,10 +785,25 @@ namespace yato
             }
         };
 
+
+
+        template <typename Ty_>
+        template <typename Function_>
+        auto optional_ptr<Ty_>::map(Function_ && transform) const &
+        {
+            return (!empty())
+                ? make_optional_(transform(get_unsafe()))
+                : nullopt_t{};
+        }
+        
     }
 
+    /**
+     * Container for optional value.
+     * Provides specific no-copyable overload for stored pointer types.
+     */
     template <typename Ty_>
-    using optional = details::choose_optional<Ty_>;
+    using optional = details::choose_optional_t<Ty_>;
 
     template <typename Ty_>
     void swap(optional<Ty_> & lhs, optional<Ty_> & rhs)
