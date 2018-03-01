@@ -219,7 +219,7 @@ namespace yato
                 return *get_ptr_();
             }
 
-            constexpr
+            YATO_CONSTEXPR_FUNC_EX
             value_type & get() & {
                 if(!m_stored) {
                     throw yato::bad_optional_access("empty optional");
@@ -235,7 +235,7 @@ namespace yato
                 return *get_ptr_();
             }
 
-            constexpr
+            YATO_CONSTEXPR_FUNC_EX
             value_type && get() && {
                 if(!m_stored) {
                     throw yato::bad_optional_access("empty optional");
@@ -249,7 +249,7 @@ namespace yato
                 return *get_ptr_();
             }
 
-            constexpr
+            YATO_CONSTEXPR_FUNC_EX
             value_type & get_unsafe() noexcept {
                 YATO_REQUIRES(!empty());
                 return *get_ptr_();
@@ -262,7 +262,7 @@ namespace yato
             }
 
             template <typename DefTy_>
-            constexpr
+            YATO_CONSTEXPR_FUNC_EX
             value_type get_or(DefTy_ && default_value) && {
                 return m_stored ? std::move(*get_ptr_()) : static_cast<value_type>(std::forward<DefTy_>(default_value));
             }
@@ -331,14 +331,25 @@ namespace yato
 
             optional_ptr(const optional_ptr&) = delete;
 
-            constexpr
+#ifdef YATO_MSVC_2015
+            optional_ptr(optional_ptr && other) noexcept
+                : m_ptr(other.m_ptr)
+            { }
+#else
             optional_ptr(optional_ptr&&) noexcept = default;
+#endif
 
             optional_ptr& operator = (const optional_ptr&) = delete;
 
-            constexpr
+#ifdef YATO_MSVC_2015
+            optional_ptr& operator = (optional_ptr && other) noexcept
+            {
+                m_ptr = other.m_ptr;
+                return *m_ptr;
+            }
+#else
             optional_ptr& operator = (optional_ptr&&) noexcept = default;
-
+#endif
             constexpr
             this_type clone() const
             {
