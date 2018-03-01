@@ -76,10 +76,10 @@ TEST(Yato_InstanceOf, instance_of)
     EXPECT_TRUE(d->get_x() == 11);
 
     EXPECT_NO_THROW(zoo(d.get()));
-    EXPECT_THROW(zoo(&b), yato::assertion_error);
+    EXPECT_THROW(zoo(&b), yato::runtime_error);
     Base* bp = d.get();
     EXPECT_NO_THROW(zoo(bp));
 
     NotDerived nd;
-    EXPECT_THROW(foo(nd), yato::assertion_error);
+    EXPECT_THROW(foo(nd), yato::runtime_error);
 }

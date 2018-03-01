@@ -60,7 +60,7 @@ namespace yato
             {
                 auto _cast = dynamic_cast<_T*>(ptr(obj));
                 if (_cast == nullptr) {
-                    throw yato::assertion_error("yato::member_info[as_ptr]: bad cast!");
+                    throw yato::runtime_error("yato::member_info[as_ptr]: bad cast!");
                 }
                 return _cast;
             }
@@ -231,7 +231,7 @@ namespace yato
                 void _register_member(std::unique_ptr<member_info<_Class>> && info)
                 {
                     if (m_members.cend() != m_members.find(info->name())) {
-                        throw yato::assertion_error("yato::reflection_manager_impl[_register_member]: Failed to register members with same name!");
+                        throw yato::runtime_error("yato::reflection_manager_impl[_register_member]: Failed to register members with same name!");
                     }
                     m_members[info->name()] = std::move(info);
                 }

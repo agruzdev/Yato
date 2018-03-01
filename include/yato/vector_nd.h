@@ -129,7 +129,7 @@ namespace yato
             }
 
             template<typename RangeType>
-            void init_sizes_(RangeType range) YATO_NOEXCEPT_IN_RELEASE
+            void init_sizes_(RangeType range)
             {
                 YATO_REQUIRES(range.distance() == dimensions_number);
                 std::copy(range.begin(), range.end(), dimensions_ref_range_().begin());
@@ -189,7 +189,7 @@ namespace yato
                 if (old_size > 0) {
                     //if (!std::equal(std::next(m_dimensions.cbegin()), m_dimensions.cend(), sub_dims.begin())) {
                     if (!std::equal(current_sub_dims.begin(), current_sub_dims.end(), sub_dims.begin())) {
-                        YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[push_back]: Cannot push subvector with a different shape");
+                        throw yato::argument_error("yato::vector_nd[push_back]: Cannot push subvector with a different shape");
                     }
                 }
                 else {
@@ -209,7 +209,7 @@ namespace yato
                 if (old_size > 0) {
                     //if (!std::equal(std::next(m_dimensions.cbegin()), m_dimensions.cend(), sub_dims.begin())) {
                     if (!std::equal(current_sub_dims.begin(), current_sub_dims.end(), sub_dims.begin())) {
-                        YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[insert]: Cannot insert sub-vector with a different shape");
+                        throw yato::argument_error("yato::vector_nd[insert]: Cannot insert sub-vector with a different shape");
                     }
                 }
                 else {
@@ -219,7 +219,7 @@ namespace yato
                 // Compute offsets because iterators may be destroyed
                 auto insert_begin_offset = std::distance<const_data_iterator>(m_plain_vector.cbegin(), position.plain_cbegin());
                 if (insert_begin_offset < 0) {
-                    YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[insert]: position iterator doesn't belong to this vector!");
+                    throw yato::argument_error("yato::vector_nd[insert]: position iterator doesn't belong to this vector!");
                 }
                 //auto insert_end_offset = insert_begin_offset + length * m_dimensions[1];
                 auto insert_end_offset = insert_begin_offset + length * std::get<dim_descriptor::idx_total>(m_descriptors[1]);
@@ -236,7 +236,7 @@ namespace yato
             {
                 auto count = std::distance(first, last);
                 if (count < 0) {
-                    YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[insert]: invalid iterators range!");
+                    throw yato::argument_error("yato::vector_nd[insert]: invalid iterators range!");
                 }
                 size_t erase_size = count * first.total_size();
                 size_t erase_offset = std::distance(plain_cbegin(), first.plain_cbegin());
@@ -463,42 +463,24 @@ namespace yato
                 swap(m_descriptors, other.m_descriptors);
                 swap(m_plain_vector, other.m_plain_vector);
             }
-#ifdef YATO_MSVC
-            /*  Disable unreachable code warning appearing due to additional code in ternary operator with throw
-            *	MSVC complains about type cast otherwise
-            */
-#pragma warning(push)
-#pragma warning(disable:4702) 
-#endif
             /**
              *  Element access without bounds check in release
              */
-            const_proxy operator[](size_t idx) const YATO_NOEXCEPT_IN_RELEASE
+            YATO_CONSTEXPR_FUNC_EX
+            const_proxy operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
             {
-#if YATO_DEBUG
-                return (idx < size(0))
-                    ? create_const_proxy_(idx)
-                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), create_const_proxy_(0));
-#else
+                YATO_REQUIRES(idx < size(0));
                 return create_const_proxy_(idx);
-#endif
             }
             /**
              *  Element access without bounds check in release
              */
-            proxy operator[](size_t idx) YATO_NOEXCEPT_IN_RELEASE
+            YATO_CONSTEXPR_FUNC_EX
+            proxy operator[](size_t idx) YATO_NOEXCEPT_KEYWORD
             {
-#if YATO_DEBUG
-                return (idx < size(0))
-                    ? create_proxy_(idx)
-                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), create_proxy_(0));
-#else
+                YATO_REQUIRES(idx < size(0));
                 return create_proxy_(idx);
-#endif
             }
-#ifdef YATO_MSVC
-#pragma warning(pop)
-#endif
             /**
              *  Element access with bounds check
              */
@@ -669,31 +651,16 @@ namespace yato
             {
                 return make_range(m_descriptors).map(tuple_cgetter<typename dim_descriptor::type, dim_descriptor::idx_size>());
             }
-
-#ifdef YATO_MSVC
-            /*  Disable unreachable code warning appearing due to additional code in ternary operator with throw
-            *	MSVC complains about type cast otherwise
-            */
-#pragma warning(push)
-#pragma warning(disable:4702) 
-#endif
             /**
              *  Get size of specified dimension
              *  If the vector is empty ( empty() returns true ) then calling for size(idx) returns 0 for idx = 0; Return value for any idx > 0 is undefined
              */
-            size_type size(size_t idx) const YATO_NOEXCEPT_IN_RELEASE
+            YATO_CONSTEXPR_FUNC_EX
+            size_type size(size_t idx) const YATO_NOEXCEPT_KEYWORD
             {
-#if YATO_DEBUG
-                return (idx < dimensions_number)
-                    ? std::get<dim_descriptor::idx_size>(m_descriptors[idx])
-                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[size]: dimension index is out of range"), 0);
-#else
+                YATO_REQUIRES(idx < dimensions_number);
                 return std::get<dim_descriptor::idx_size>(m_descriptors[idx]);
-#endif
             }
-#ifdef YATO_MSVC
-#pragma warning(pop)
-#endif
             /**
              *  Get the total size of the vector (number of all elements)
              */
@@ -913,7 +880,7 @@ namespace yato
             {
                 auto count = std::distance(first, last);
                 if (count < 0) {
-                    YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[insert]: invalid iterators range!");
+                    throw yato::argument_error("yato::vector_nd[insert]: invalid iterators range!");
                 }
                 auto insert_range = prepare_insert_(first.dimensions_range(), position, count);
                 std::copy(first.plain_cbegin(), last.plain_cbegin(), insert_range.begin());
@@ -1065,7 +1032,7 @@ namespace yato
                 : m_plain_vector(alloc)
             {
                 if (range.distance() != dimensions_number) {
-                    throw yato::assertion_error("Constructor takes the amount of arguments equal to dimensions number");
+                    throw yato::out_of_range_error("Constructor takes the amount of arguments equal to dimensions number");
                 }
                 m_plain_vector.resize(*range.begin());
             }
@@ -1078,7 +1045,7 @@ namespace yato
                 : m_plain_vector(alloc)
             {
                 if (range.distance() != dimensions_number) {
-                    throw yato::assertion_error("Constructor takes the amount of arguments equal to dimensions number");
+                    throw yato::out_of_range_error("Constructor takes the amount of arguments equal to dimensions number");
                 }
                 m_plain_vector.resize(*range.begin(), value);
             }
@@ -1254,42 +1221,24 @@ namespace yato
             {
                 m_plain_vector.swap(other.m_plain_vector);
             }
-#ifdef YATO_MSVC
-            /*  Disable unreachable code warning appearing due to additional code in ternary operator with throw
-             *  MSVC complains about type cast otherwise
-             */
-#pragma warning(push)
-#pragma warning(disable:4702) 
-#endif
             /**
              *  Element access without bounds check in release
              */
-            const_reference operator[](size_t idx) const YATO_NOEXCEPT_IN_RELEASE
+            YATO_CONSTEXPR_FUNC_EX
+            const_reference operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
             {
-#if YATO_DEBUG
-                return (idx < m_plain_vector.size())
-                    ? m_plain_vector[idx]
-                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), m_plain_vector[0]);
-#else
+                YATO_REQUIRES(idx < m_plain_vector.size());
                 return m_plain_vector[idx];
-#endif
             }
             /**
              *  Element access without bounds check in release
              */
-            reference operator[](size_t idx) YATO_NOEXCEPT_IN_RELEASE
+            YATO_CONSTEXPR_FUNC_EX
+            reference operator[](size_t idx) YATO_NOEXCEPT_KEYWORD
             {
-#if YATO_DEBUG
-                return (idx < m_plain_vector.size())
-                    ? m_plain_vector[idx]
-                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd: out of range!"), m_plain_vector[0]);
-#else
+                YATO_REQUIRES(idx < m_plain_vector.size());
                 return m_plain_vector[idx];
-#endif
             }
-#ifdef YATO_MSVC
-#pragma warning(pop)
-#endif
             /**
              *  Element access with bounds check
              */
@@ -1451,30 +1400,16 @@ namespace yato
                 return yato::make_range(m_plain_vector.size(), m_plain_vector.size() + 1);
             }
 
-#ifdef YATO_MSVC
-            /*  Disable unreachable code warning appearing due to additional code in ternary operator with throw
-             *  MSVC complains about type cast otherwise
-             */
-#pragma warning(push)
-#pragma warning(disable:4702) 
-#endif
             /**
              *  Get size of specified dimension
              */
-            size_t size(size_t idx) const YATO_NOEXCEPT_IN_RELEASE
+            size_t size(size_t idx) const YATO_NOEXCEPT_KEYWORD
             {
-#if YATO_DEBUG
-                return (idx < dimensions_number)
-                    ? m_plain_vector.size()
-                    : (YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[size]: dimension index is out of range"), 0);
-#else
+                YATO_REQUIRES(idx < dimensions_number);
                 YATO_MAYBE_UNUSED(idx);
                 return m_plain_vector.size();
-#endif
             }
-#ifdef YATO_MSVC
-#pragma warning(pop)
-#endif
+
             /**
              *  Get the total size of the vector (number of all elements)
              */
@@ -1557,7 +1492,7 @@ namespace yato
             const_reference front() const
             {
                 if (empty()) {
-                    YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[front]: vector is empty");
+                    throw yato::out_of_range_error("yato::vector_nd[front]: vector is empty");
                 }
                 return m_plain_vector.front();
             }
@@ -1568,7 +1503,7 @@ namespace yato
             reference front()
             {
                 if (empty()) {
-                    YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[front]: vector is empty");
+                    throw yato::out_of_range_error("yato::vector_nd[front]: vector is empty");
                 }
                 return m_plain_vector.front();
             }
@@ -1579,7 +1514,7 @@ namespace yato
             const_reference back() const
             {
                 if (empty()) {
-                    YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[back]: vector is empty");
+                    throw yato::out_of_range_error("yato::vector_nd[back]: vector is empty");
                 }
                 return m_plain_vector.back();
             }
@@ -1590,7 +1525,7 @@ namespace yato
             reference back()
             {
                 if (empty()) {
-                    YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[back]: vector is empty");
+                    throw yato::out_of_range_error("yato::vector_nd[back]: vector is empty");
                 }
                 return m_plain_vector.back();
             }
@@ -1617,7 +1552,7 @@ namespace yato
             void pop_back()
             {
                 if (empty()) {
-                    YATO_THROW_ASSERT_EXCEPT("yato::vector_nd[pop_back]: vector is already empty!");
+                    throw yato::out_of_range_error("yato::vector_nd[pop_back]: vector is already empty!");
                 }
                 m_plain_vector.pop_back();
             }
@@ -1627,7 +1562,7 @@ namespace yato
              */
             iterator insert(const const_iterator & position, const data_type & value)
             {
-                m_plain_vector.insert(position, value);
+                return m_plain_vector.insert(position, value);
             }
 
             /**
@@ -1635,7 +1570,7 @@ namespace yato
              */
             iterator insert(const const_iterator & position, data_type && value)
             {
-                m_plain_vector.insert(position, std::move(value));
+                return m_plain_vector.insert(position, std::move(value));
             }
 
             /**
@@ -1643,7 +1578,7 @@ namespace yato
              */
             iterator insert(const const_iterator & position, size_t count, const data_type & value)
             {
-                m_plain_vector.insert(position, count, value);
+                return m_plain_vector.insert(position, count, value);
             }
 
             /**
@@ -1652,7 +1587,7 @@ namespace yato
             template<class _InputIt>
             iterator insert(const const_iterator & position, _InputIt && first, _InputIt && last)
             {
-                m_plain_vector.insert(position, std::forward<_InputIt>(first), std::forward<_InputIt>(last));
+                return m_plain_vector.insert(position, std::forward<_InputIt>(first), std::forward<_InputIt>(last));
             }
 
             /**
@@ -1661,7 +1596,7 @@ namespace yato
             template<class _InputIt>
             iterator insert(const const_iterator & position, const yato::range<_InputIt> & range)
             {
-                m_plain_vector.insert(position, range.begin(), range.end());
+                return m_plain_vector.insert(position, range.begin(), range.end());
             }
 
             /**
@@ -1669,7 +1604,7 @@ namespace yato
              */
             iterator erase(const const_iterator & position)
             {
-                m_plain_vector.erase(position);
+                return m_plain_vector.erase(position);
             }
 
             /**
@@ -1677,7 +1612,7 @@ namespace yato
              */
             iterator erase(const const_iterator & first, const const_iterator & last)
             {
-                m_plain_vector.erase(first, last);
+                return m_plain_vector.erase(first, last);
             }
 
             /**
@@ -1686,7 +1621,7 @@ namespace yato
             template<class _InputIt>
             iterator erase(const yato::range<_InputIt> & range)
             {
-                m_plain_vector.erase(range.begin(), range.last());
+                return m_plain_vector.erase(range.begin(), range.last());
             }
 
             //------------------------------------------------------------

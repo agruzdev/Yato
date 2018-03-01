@@ -608,21 +608,21 @@ namespace yato
 
     template<typename T, typename Size1, typename... Sizes>
     inline
-    array_view_nd<T, sizeof...(Sizes) + 1> make_view(T* ptr, Size1 && size1, Sizes && ...sizes) YATO_NOEXCEPT_IN_RELEASE
+    array_view_nd<T, sizeof...(Sizes) + 1> make_view(T* ptr, Size1 && size1, Sizes && ...sizes)
     {
         return array_view_nd<T, sizeof...(Sizes) + 1>(ptr, yato::dims(std::forward<Size1>(size1), std::forward<Sizes>(sizes)...));
     }
 
     template<typename T, size_t Size1, size_t Size2>
     inline
-    array_view_nd<T, 2> make_view(T(&arr)[Size1][Size2]) YATO_NOEXCEPT_IN_RELEASE
+    array_view_nd<T, 2> make_view(T(&arr)[Size1][Size2])
     {
         return array_view_nd<T, 2>(&arr[0][0], yato::dims(Size1, Size2));
     }
 
     template<typename T, size_t Size1, size_t Size2, size_t Size3>
     inline
-    array_view_nd<T, 3> make_view(T(&arr)[Size1][Size2][Size3]) YATO_NOEXCEPT_IN_RELEASE
+    array_view_nd<T, 3> make_view(T(&arr)[Size1][Size2][Size3])
     {
         return array_view_nd<T, 3>(&arr[0][0][0], yato::dims(Size1, Size2, Size3));
     }

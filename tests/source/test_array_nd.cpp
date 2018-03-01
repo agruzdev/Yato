@@ -1,7 +1,5 @@
 #include "gtest/gtest.h"
 
-#define YATO_THROW_ON_ASSERT
-
 #include <yato/types.h>
 #include <yato/array_nd.h>
 
@@ -13,22 +11,17 @@ TEST(Yato_Array_Nd, array_nd)
     yato::array_nd<int, 2> array_1d;
     EXPECT_NO_THROW(array_1d[0] = 0);
     EXPECT_NO_THROW(array_1d[1] = 0);
-#if YATO_DEBUG
-    EXPECT_THROW(array_1d[2] = 0, yato::assertion_error);
-#endif
+    //EXPECT_THROW(array_1d[2] = 0, yato::assertion_error);
 
     EXPECT_EQ(2U, yato::length(array_1d));
 
     yato::array_nd<int, 2, 3> array_2d;
     EXPECT_NO_THROW(array_2d[1]);
-#if YATO_DEBUG
-    EXPECT_THROW(array_2d[3], yato::assertion_error);
-#endif
+    //EXPECT_THROW(array_2d[3], yato::assertion_error);
+
     const auto & p = array_2d[1];
     EXPECT_NO_THROW(p[0] = 1);
-#if YATO_DEBUG
-    EXPECT_THROW(p[4] = 0, yato::assertion_error);
-#endif
+    //EXPECT_THROW(p[4] = 0, yato::assertion_error);
 
     EXPECT_EQ(2U, yato::height_2d(array_2d));
     EXPECT_EQ(3U, yato::width_2d(array_2d));
@@ -36,11 +29,10 @@ TEST(Yato_Array_Nd, array_nd)
     yato::array_nd<int, 2, 3, 4> array_3d;
     EXPECT_NO_THROW(array_3d[1][1][1] = 2);
     EXPECT_NO_THROW(array_3d[1][2][3] = 2);
-#if YATO_DEBUG
-    EXPECT_THROW(array_3d[2][1][1] = 0, yato::assertion_error);
-    EXPECT_THROW(array_3d[1][3][1] = 0, yato::assertion_error);
-    EXPECT_THROW(array_3d[1][1][4] = 0, yato::assertion_error);
-#endif
+
+    //EXPECT_THROW(array_3d[2][1][1] = 0, yato::assertion_error);
+    //EXPECT_THROW(array_3d[1][3][1] = 0, yato::assertion_error);
+    //EXPECT_THROW(array_3d[1][1][4] = 0, yato::assertion_error);
 
     EXPECT_EQ(2U, yato::depth_3d(array_3d));
     EXPECT_EQ(3U, yato::height_3d(array_3d));

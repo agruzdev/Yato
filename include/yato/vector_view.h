@@ -93,12 +93,11 @@ namespace yato
         { }
 
         YATO_CONSTEXPR_FUNC
-        vector_view(my_type && other)
+        vector_view(my_type && other) YATO_NOEXCEPT_KEYWORD
             : m_begin(std::move(other.m_begin)), m_end(std::move(other.m_end)), m_max_size(std::move(other.m_max_size))
         { }
 
-        ~vector_view()
-        { }
+        ~vector_view() = default;
 
         void swap(my_type & other) YATO_NOEXCEPT_KEYWORD
         {
@@ -127,7 +126,7 @@ namespace yato
             return *this;
         }
 
-        my_type & operator = (my_type && other)
+        my_type & operator = (my_type && other) YATO_NOEXCEPT_KEYWORD
         {
             if (this != &other) {
                 m_begin = std::move(other.m_begin);
@@ -224,25 +223,17 @@ namespace yato
             return m_end;
         }
 
-        YATO_CONSTEXPR_FUNC
-        const_reference operator[] (size_type idx) const YATO_NOEXCEPT_IN_RELEASE
+        YATO_CONSTEXPR_FUNC_EX
+        const_reference operator[] (size_type idx) const YATO_NOEXCEPT_KEYWORD
         {
-#if YATO_DEBUG
-            return (idx >= size())
-                ? (throw yato::out_of_range_error("vector_view[operator[]]: out of range"), *m_begin)
-                : *std::next(m_begin, idx);
-#else
+            YATO_REQUIRES(idx < size());
             return *std::next(m_begin, idx);
-#endif
         }
 
-        reference operator[] (size_type idx) YATO_NOEXCEPT_IN_RELEASE
+        YATO_CONSTEXPR_FUNC_EX
+        reference operator[] (size_type idx) YATO_NOEXCEPT_KEYWORD
         {
-#if YATO_DEBUG
-            if (idx >= size()) {
-                throw yato::out_of_range_error("vector_view[operator[]]: out of range");
-            }
-#endif
+            YATO_REQUIRES(idx < size());
             return *std::next(m_begin, idx);
         }
 

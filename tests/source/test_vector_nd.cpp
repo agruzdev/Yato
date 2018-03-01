@@ -5,7 +5,6 @@
 #include <numeric>
 #include <initializer_list>
 
-#define YATO_THROW_ON_ASSERT
 #include <yato/vector_nd.h>
 
 

@@ -94,17 +94,17 @@ namespace yato {
         virtual yato::optional<std::string> do_get_string() const noexcept = 0;
 
         template <typename Ty_>
-        yato::optional<Ty_> get_impl_(details::config_integral_tag) const YATO_NOEXCEPT_IN_RELEASE {
+        yato::optional<Ty_> get_impl_(details::config_integral_tag) const noexcept {
             return do_get_int().map([](int64_t val) { return yato::narrow_cast<Ty_>(val); });
         }
     
         template <typename Ty_>
-        yato::optional<Ty_> get_impl_(details::config_floating_tag) const YATO_NOEXCEPT_IN_RELEASE {
+        yato::optional<Ty_> get_impl_(details::config_floating_tag) const noexcept {
             return do_get_real().map([](double val) { return yato::narrow_cast<Ty_>(val); });
         }
     
         template <typename Ty_>
-        yato::optional<std::string> get_impl_(details::config_string_tag) const YATO_NOEXCEPT_IN_RELEASE {
+        yato::optional<std::string> get_impl_(details::config_string_tag) const noexcept {
             return do_get_string();
         }
     
@@ -112,7 +112,7 @@ namespace yato {
         virtual ~config_value() = default;
 
         template <typename Ty_>
-        yato::optional<Ty_> get_opt() const YATO_NOEXCEPT_IN_RELEASE {
+        yato::optional<Ty_> get_opt() const noexcept {
             using stored_tag = typename details::config_choose_stored_type<typename std::decay<Ty_>::type>::tag;
             return get_impl_<Ty_>(stored_tag{});
         }
@@ -128,7 +128,7 @@ namespace yato {
         }
     
         template <typename Ty_, typename Uy_>
-        Ty_ get(Uy_ && default_value) const YATO_NOEXCEPT_IN_RELEASE {
+        Ty_ get(Uy_ && default_value) const noexcept {
             if(const auto opt = get_opt<Ty_>()){
                 return opt.get_unsafe();
             }

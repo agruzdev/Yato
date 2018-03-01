@@ -32,7 +32,7 @@ namespace yato
             : m_ptr(dynamic_cast<instance_type*>(ptr))
         {
             if (nullptr == m_ptr) {
-                throw yato::assertion_error("The object is not an instance of the required type");
+                throw yato::runtime_error("The object is not an instance of the required type");
             }
         }
 
@@ -44,7 +44,7 @@ namespace yato
             : m_ptr(dynamic_cast<instance_type*>(&ptr))
         {
             if (nullptr == m_ptr) {
-                throw yato::assertion_error("The object is not an instance of the required type");
+                throw yato::runtime_error("The object is not an instance of the required type");
             }
         }
 

@@ -19,15 +19,11 @@ TEST(Yato_Types, sizes)
 
 TEST(Yato_Types, narrow_cast)
 {
-#if YATO_DEBUG
-    EXPECT_THROW(yato::narrow_cast<yato::uint8_t>(1000U), yato::assertion_error);
-    EXPECT_THROW(yato::narrow_cast<yato::int32_t>(1.5f), yato::assertion_error);
-    EXPECT_THROW(yato::narrow_cast<yato::uint8_t>(-1), yato::assertion_error);
+    //EXPECT_THROW(yato::narrow_cast<yato::uint8_t>(1000U), yato::assertion_error);
+    //EXPECT_THROW(yato::narrow_cast<yato::int32_t>(1.5f), yato::assertion_error);
+    //EXPECT_THROW(yato::narrow_cast<yato::uint8_t>(-1), yato::assertion_error);
     EXPECT_NO_THROW(yato::narrow_cast<yato::uint8_t>(255U));
     EXPECT_NO_THROW(yato::narrow_cast<yato::int32_t>(1.0f));
-#else
-    EXPECT_TRUE(true);
-#endif
 }
 
 #ifdef YATO_MSVC
@@ -72,11 +68,8 @@ TEST(Yato_Types, pointer_cast)
 TEST(Yato_Types, TestLiterals)
 {
     using namespace yato::literals;
-#if YATO_DEBUG
-    EXPECT_THROW(1000_u8, yato::assertion_error);
-#else
-    EXPECT_TRUE(true);
-#endif
+
+    //EXPECT_THROW(1000_u8, yato::assertion_error);
 
     EXPECT_NO_THROW(255_u8);
     EXPECT_NO_THROW(0.0_f32);

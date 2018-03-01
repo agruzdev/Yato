@@ -18,13 +18,6 @@
 namespace yato
 {
 
-#ifdef YATO_MSVC
-    /*  Disable unreachable code warning appearing due to additional code in ternary operator with throw
-    *	MSVC complains about type cast otherwise
-    */
-#pragma warning(push)
-#pragma warning(disable:4702) 
-#endif
     namespace details
     {
         template<typename DataIterator, typename DimensionDescriptor, size_t DimsNum>
@@ -112,7 +105,7 @@ namespace yato
                 return *this;
             }
 
-            this_type & operator= (this_type && other) YATO_NOEXCEPT_IN_RELEASE
+            this_type & operator= (this_type && other) YATO_NOEXCEPT_KEYWORD
             {
                 YATO_REQUIRES(this != &other);
                 m_data_iter = std::move(other.m_data_iter);
@@ -120,34 +113,24 @@ namespace yato
                 return *this;
             }
 
-            ~sub_array_proxy()= default;
+            ~sub_array_proxy() = default;
 
             template<size_t MyDimsNum = dimensions_number>
-            YATO_CONSTEXPR_FUNC
-            auto operator[](size_t idx) const YATO_NOEXCEPT_IN_RELEASE
+            YATO_CONSTEXPR_FUNC_EX
+            auto operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
                 -> typename std::enable_if<(MyDimsNum > 1), reference>::type
             {
-#if YATO_DEBUG
-                return (idx < size(0))
-                    ? create_sub_proxy_(idx)
-                    : (YATO_THROW_ASSERT_EXCEPT("yato::array_sub_view_nd: out of range!"), create_sub_proxy_(0));
-#else
+                YATO_REQUIRES(idx < size(0));
                 return create_sub_proxy_(idx);
-#endif
             }
 
             template<size_t MyDimsNum = dimensions_number>
-            YATO_CONSTEXPR_FUNC
-            auto operator[](size_t idx) const YATO_NOEXCEPT_IN_RELEASE
+            YATO_CONSTEXPR_FUNC_EX
+            auto operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
                 -> typename std::enable_if <(MyDimsNum == 1), reference>::type
             {
-#if YATO_DEBUG
-                return (idx < size(0))
-                    ? *std::next(m_data_iter, idx)
-                    : (YATO_THROW_ASSERT_EXCEPT("yato::array_sub_view_nd: out of range!"), *(m_data_iter));
-#else
+                YATO_REQUIRES(idx < size(0));
                 return *std::next(m_data_iter, idx);
-#endif
             }
 
             template<size_t MyDimsNum = dimensions_number, typename... _IdxTail>
@@ -201,31 +184,21 @@ namespace yato
             /**
              *  Get size along one dimension
              */
-            YATO_CONSTEXPR_FUNC
-            size_type size(size_t idx) const YATO_NOEXCEPT_IN_RELEASE
+            YATO_CONSTEXPR_FUNC_EX
+            size_type size(size_t idx) const YATO_NOEXCEPT_KEYWORD
             {
-#if YATO_DEBUG
-                return (idx < dimensions_number)
-                    ? std::get<dim_descriptor::idx_size>(*std::next(m_desc_iter, idx))
-                    : (YATO_THROW_ASSERT_EXCEPT("yato::sub_array_proxy[size]: Dimension index is out of range"), static_cast<size_type>(0));
-#else
+                YATO_REQUIRES(idx < dimensions_number);
                 return std::get<dim_descriptor::idx_size>(*std::next(m_desc_iter, idx));
-#endif
             }
 
             /**
              *  Get stride along one dimension
              */
-            YATO_CONSTEXPR_FUNC
-            size_type stride(size_t idx) const YATO_NOEXCEPT_IN_RELEASE
+            YATO_CONSTEXPR_FUNC_EX
+            size_type stride(size_t idx) const YATO_NOEXCEPT_KEYWORD
             {
-#if YATO_DEBUG
-                return (idx < dimensions_number - 1)
-                    ? get_stride_(idx)
-                    : (YATO_THROW_ASSERT_EXCEPT("yato::sub_array_proxy[size]: Dimension index is out of range"), static_cast<size_type>(0));
-#else
+                YATO_REQUIRES(idx < dimensions_number - 1);
                 return get_stride_(idx);
-#endif
             }
 
             /**
@@ -560,10 +533,6 @@ namespace yato
         };
 
     }
-
-#ifdef YATO_MSVC
-#pragma warning(pop)
-#endif
 
 }
 

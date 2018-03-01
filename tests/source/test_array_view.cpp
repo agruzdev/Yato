@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#define YATO_THROW_ON_ASSERT
 #include <yato/array_view.h>
 
 TEST(Yato_ArrayView, common)
@@ -61,10 +60,8 @@ TEST(Yato_ArrayView, array_view)
     }
     EXPECT_THROW(view.at(10), yato::out_of_range_error);
 
-#if defined(YATO_DEBUG) && (YATO_DEBUG != 0)
-    int* p = nullptr;
-    EXPECT_THROW(yato::array_view<int>(p, yato::dims(100)), yato::assertion_error);
-#endif
+    //int* p = nullptr;
+    //EXPECT_THROW(yato::array_view<int>(p, yato::dims(100)), yato::assertion_error);
 
     int j = 1;
     for (auto x : view.plain_crange()){
@@ -149,11 +146,9 @@ TEST(Yato_ArrayView, array_view_nd)
     EXPECT_TRUE(view[1][1] == 2);
     EXPECT_TRUE(view[1][2] == 2);
 
-#if YATO_DEBUG
-    EXPECT_THROW(view[2], yato::assertion_error);
-    EXPECT_THROW(view[0][3], yato::assertion_error);
-    EXPECT_THROW(view[1][3], yato::assertion_error);
-#endif
+    //EXPECT_THROW(view[2], yato::assertion_error);
+    //EXPECT_THROW(view[0][3], yato::assertion_error);
+    //EXPECT_THROW(view[1][3], yato::assertion_error);
 }
 
 TEST(Yato_ArrayView, array_view_nd_1)

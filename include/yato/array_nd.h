@@ -15,13 +15,7 @@
 
 namespace yato
 {
-#ifdef YATO_MSVC
-/*  Disable unreachable code warning appearing due to additional code in ternary operator with throw
- *  MSVC complains about type cast otherwise
- */
-#pragma warning(push)
-#pragma warning(disable:4702) 
-#endif
+
     namespace details
     {
         struct null_shape {};
@@ -100,8 +94,7 @@ namespace yato
                 }
             }
 
-            ~sub_array()
-            { }
+            ~sub_array() = default;
 
             /**
              *	Get begin iterator
@@ -124,28 +117,23 @@ namespace yato
             *    case of Nd shape
             */
             template <typename _HyperShape = typename _my_shape::hyper_shape>
-            YATO_CONSTEXPR_FUNC
+            YATO_CONSTEXPR_FUNC_EX
             typename std::enable_if<!std::is_same<_HyperShape, null_shape>::value,
                 sub_array<iterator, _HyperShape> >::type
             operator[](size_t idx) const 
             {
-#if YATO_DEBUG
-                return sub_array<iterator, _HyperShape>{
-                    idx < _my_shape::top_dimension ? std::next(m_iter, idx * _HyperShape::total_size) :
-                        (YATO_THROW_ASSERT_EXCEPT("yato::array_nd: out of range!"), m_iter)
-                };
-#else
+                YATO_REQUIRES(idx < _my_shape::top_dimension);
                 return sub_array<iterator, _HyperShape>{ std::next(m_iter, idx * _HyperShape::total_size) };
-#endif
             }
 
             template<typename _HyperShape = typename _my_shape::hyper_shape, typename... _Tail>
             typename std::enable_if<
                 !std::is_same<_HyperShape, null_shape>::value,
                 decltype(*std::declval<iterator>())>::type
-            at(size_t firstIdx, _Tail... indexes) {
+            at(size_t firstIdx, _Tail... indexes)
+            {
                 if (firstIdx >= _my_shape::top_dimension) {
-                    throw std::runtime_error("yato::array_nd[at]: index is out of range!");
+                    throw yato::out_of_range_error("yato::array_nd[at]: index is out of range!");
                 }
                 return (*this)[firstIdx].at(std::forward<_Tail>(indexes)...);
             }
@@ -154,26 +142,23 @@ namespace yato
              *    case of 1d shape 
              */
             template <typename _HyperShape = typename _my_shape::hyper_shape>
-            YATO_CONSTEXPR_FUNC
+            YATO_CONSTEXPR_FUNC_EX
             typename std::enable_if<std::is_same<_HyperShape, null_shape>::value,
                 decltype(*std::declval<iterator>())>::type
             operator[](size_t idx) const 
             {
-#if YATO_DEBUG
-                return (idx < _my_shape::top_dimension) ? *std::next(m_iter, idx) :
-                    (YATO_THROW_ASSERT_EXCEPT("yato::array_nd: out of range!"), *m_iter);
-#else
+                YATO_REQUIRES(idx < _my_shape::top_dimension);
                 return *std::next(m_iter, idx);
-#endif
             }
 
             template<typename _HyperShape = typename _my_shape::hyper_shape>
             typename std::enable_if<
                 std::is_same<_HyperShape, null_shape>::value,
                 decltype(*std::declval<iterator>())>::type
-            at(size_t firstIdx) {
+            at(size_t firstIdx)
+            {
                 if (firstIdx >= _my_shape::top_dimension) {
-                    throw std::runtime_error("yato::array_nd[at]: index is out of range!");
+                    throw yato::out_of_range_error("yato::array_nd[at]: index is out of range!");
                 }
                 return (*this)[firstIdx];
             }
@@ -237,8 +222,7 @@ namespace yato
                 return *this;
             }
 
-            ~array_nd_impl()
-            { }
+            ~array_nd_impl() = default;
 
             /**
              *	Swap arrays data
@@ -286,19 +270,13 @@ namespace yato
             *    case of Nd shape
             */
             template <typename _HyperShape = typename shape::hyper_shape>
-            YATO_CONSTEXPR_FUNC
+            YATO_CONSTEXPR_FUNC_EX
             typename std::enable_if<!std::is_same<_HyperShape, null_shape>::value,
                 sub_array<const_iterator, _HyperShape> >::type
             operator[](size_t idx) const 
             {
-#if YATO_DEBUG
-                return sub_array<const_iterator, _HyperShape>{
-                    (idx < shape::top_dimension) ? std::next(cbegin(), idx * _HyperShape::total_size) :
-                        (YATO_THROW_ASSERT_EXCEPT("yato::array_nd: out of range!"), cbegin())
-                };
-#else
+                YATO_REQUIRES(idx < shape::top_dimension);
                 return sub_array<const_iterator, _HyperShape>{ std::next(cbegin(), idx * _HyperShape::total_size) };
-#endif
             }
 
             template <typename _HyperShape = typename shape::hyper_shape>
@@ -306,9 +284,7 @@ namespace yato
                 sub_array<iterator, _HyperShape> >::type
             operator[](size_t idx)
             {
-#if YATO_DEBUG
-                YATO_ASSERT(idx < shape::top_dimension, "yato::array_nd: out of range!");
-#endif
+                YATO_REQUIRES(idx < shape::top_dimension);
                 return sub_array<iterator, _HyperShape>{ std::next(begin(), idx * _HyperShape::total_size) };
             }
 
@@ -317,9 +293,10 @@ namespace yato
             typename std::enable_if<
                 !std::is_same<_HyperShape, null_shape>::value,
                 decltype(*std::declval<iterator>())>::type
-            at(size_t firstIdx, _Tail... indexes) {
+            at(size_t firstIdx, _Tail... indexes)
+            {
                 if (firstIdx >= shape::top_dimension) {
-                    throw std::runtime_error("yato::array_nd[at]: index is out of range!");
+                    throw yato::out_of_range_error("yato::array_nd[at]: index is out of range!");
                 }
                 return (*this)[firstIdx].at(std::forward<_Tail>(indexes)...);
             }
@@ -328,27 +305,22 @@ namespace yato
             *    case of 1d shape
             */
             template <typename _HyperShape = typename shape::hyper_shape>
-            YATO_CONSTEXPR_FUNC
+            YATO_CONSTEXPR_FUNC_EX
             typename std::enable_if<std::is_same<_HyperShape, null_shape>::value,
                 decltype(*std::declval<const_iterator>())>::type
             operator[](size_t idx) const 
             {
-#if YATO_DEBUG
-                return idx < shape::top_dimension ? *std::next(cbegin(), idx) :
-                    (YATO_THROW_ASSERT_EXCEPT("yato::array_nd: out of range!"), *cbegin());
-#else
+                YATO_REQUIRES(idx < shape::top_dimension);
                 return *std::next(cbegin(), idx);
-#endif
             }
 
             template <typename _HyperShape = typename shape::hyper_shape>
+            YATO_CONSTEXPR_FUNC_EX
             typename std::enable_if<std::is_same<_HyperShape, null_shape>::value,
                 decltype(*std::declval<iterator>())>::type
             operator[](size_t idx) 
             {
-#if YATO_DEBUG
-                YATO_ASSERT(idx < shape::top_dimension, "yato::array_nd: out of range!");
-#endif
+                YATO_REQUIRES(idx < shape::top_dimension);
                 return *std::next(begin(), idx);
             }
 
@@ -359,7 +331,7 @@ namespace yato
             at(size_t firstIdx) 
             {
                 if (firstIdx >= shape::top_dimension) {
-                    throw std::runtime_error("yato::array_nd[at]: index is out of range!");
+                    throw yato::out_of_range_error("yato::array_nd[at]: index is out of range!");
                 }
                 return (*this)[firstIdx];
             }
@@ -435,9 +407,7 @@ namespace yato
             one.swap(another);
         } 
     }
-#ifdef YATO_MSVC
-#pragma warning(pop)
-#endif
+
     using details::is_array_nd;
     using details::swap;
 

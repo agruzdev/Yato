@@ -32,23 +32,6 @@ namespace yato
         { }
     };
 
-    class assertion_error 
-        : public yato::runtime_error
-    {
-    public:
-        assertion_error(const std::string & message)
-            : yato::runtime_error(message)
-        { }
-
-        assertion_error(const char* message)
-            : yato::runtime_error(message)
-        { }
-
-        ~assertion_error()
-        { }
-    };
-
-
     class out_of_range_error 
         : public yato::runtime_error
     {
@@ -99,23 +82,10 @@ namespace yato
     };
 }
 
-#define YATO_THROW_ASSERT_EXCEPT(Message) throw yato::assertion_error(YATO_GET_FILE_LINE " " Message)
-
-/**
- * By default assert() is used
- * define macro YATO_THROW_ON_ASSERT to enable throwing exceptions on assertation failure  
- */
-
 #if YATO_DEBUG
-# ifdef YATO_THROW_ON_ASSERT
-#  define YATO_REQUIRES(Condition) if(!(Condition)) { YATO_THROW_ASSERT_EXCEPT("Precondition failure!"); }
-#  define YATO_ENSURES(Condition)  if(!(Condition)) { YATO_THROW_ASSERT_EXCEPT("Postcondition failure!"); }
-#  define YATO_ASSERT(Condition, Message) if(!(Condition)) { YATO_THROW_ASSERT_EXCEPT(Message); }
-# else
 #  define YATO_REQUIRES(Condition) assert((Condition) && "Precondition failure!");
 #  define YATO_ENSURES(Condition)  assert((Condition) && "Postcondition failure!");
 #  define YATO_ASSERT(Condition, Message) assert((Condition) && Message);
-# endif
 #else
 #define YATO_REQUIRES(Condition) { }
 #define YATO_ENSURES(Condition) { }
