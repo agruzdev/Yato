@@ -232,7 +232,7 @@ namespace yato
                 if(!m_stored) {
                     throw yato::bad_optional_access("empty optional");
                 }
-                return *get_ptr_();
+                return std::move(*get_ptr_());
             }
 
             YATO_CONSTEXPR_FUNC_EX
@@ -240,19 +240,31 @@ namespace yato
                 if(!m_stored) {
                     throw yato::bad_optional_access("empty optional");
                 }
-                return *get_ptr_();
+                return std::move(*get_ptr_());
             }
 
             constexpr
-            const value_type & get_unsafe() const noexcept {
-                YATO_REQUIRES(!empty());
+            const value_type & get_unsafe() const & {
+                YATO_REQUIRES(m_stored);
                 return *get_ptr_();
             }
 
             YATO_CONSTEXPR_FUNC_EX
-            value_type & get_unsafe() noexcept {
-                YATO_REQUIRES(!empty());
+            value_type & get_unsafe() & {
+                YATO_REQUIRES(m_stored);
                 return *get_ptr_();
+            }
+
+            constexpr
+            const value_type && get_unsafe() const && {
+                YATO_REQUIRES(m_stored);
+                return std::move(*get_ptr_());
+            }
+
+            YATO_CONSTEXPR_FUNC_EX
+            value_type && get_unsafe() && {
+                YATO_REQUIRES(m_stored);
+                return std::move(*get_ptr_());
             }
 
             template <typename DefTy_>
@@ -317,7 +329,7 @@ namespace yato
             constexpr
             optional_ptr() = default;
 
-            constexpr
+            constexpr explicit
             optional_ptr(TyPtr_ ptr)
                 : m_ptr(ptr)
             { }
@@ -331,25 +343,36 @@ namespace yato
 
             optional_ptr(const optional_ptr&) = delete;
 
-#ifdef YATO_MSVC_2015
             optional_ptr(optional_ptr && other) noexcept
                 : m_ptr(other.m_ptr)
-            { }
-#else
-            optional_ptr(optional_ptr&&) noexcept = default;
-#endif
+            {
+                other.m_ptr = nullptr;
+            }
+
+            template <typename Ptr_, typename = std::enable_if_t<std::is_convertible<Ptr_, value_type>::value>>
+            optional_ptr(optional_ptr<Ptr_> && other) noexcept
+                : m_ptr(other.m_ptr)
+            {
+                other.m_ptr = nullptr;
+            }
 
             optional_ptr& operator = (const optional_ptr&) = delete;
 
-#ifdef YATO_MSVC_2015
             optional_ptr& operator = (optional_ptr && other) noexcept
             {
                 m_ptr = other.m_ptr;
-                return *m_ptr;
+                other.m_ptr = nullptr;
+                return *this;
             }
-#else
-            optional_ptr& operator = (optional_ptr&&) noexcept = default;
-#endif
+
+            template <typename Ptr_, typename = std::enable_if_t<std::is_convertible<Ptr_, value_type>::value>>
+            optional_ptr& operator = (optional_ptr<Ptr_> && other) noexcept
+            {
+                m_ptr = other.m_ptr;
+                other.m_ptr = nullptr;
+                return *this;
+            }
+
             constexpr
             this_type clone() const
             {
@@ -414,6 +437,9 @@ namespace yato
 
             template <typename Function_>
             auto map(Function_ && transform) const &;
+
+            template <typename Ptr_>
+            friend class optional_ptr;
         };
         
         template <typename Ty_, bool IsCopy_ = false, bool IsMove_ = false>
@@ -466,6 +492,62 @@ namespace yato
 
 
 
+        template <typename Ty_, typename = void>
+        struct is_optional
+            : std::false_type
+        { };
+
+        template <typename Ty_, bool B1_, bool B2_>
+        struct is_optional
+        <
+            basic_optional<Ty_, B1_, B2_>,
+            void
+        >
+            : std::true_type
+        { };
+
+        template <typename Ty_>
+        struct is_optional
+        <
+            optional_ptr<Ty_>,
+            void
+        >
+            : std::true_type
+        { };
+
+
+        
+        template <typename ValTy_, typename = void>
+        struct flatten_op
+        {
+            template <typename OptTy_>
+            static
+            OptTy_ apply(OptTy_ && opt)
+            {
+                return std::forward<OptTy_>(opt);
+            }
+        };
+        
+        template <typename ValTy_>
+        struct flatten_op
+        <
+            ValTy_,
+            std::enable_if_t<is_optional<ValTy_>::value>
+        >
+        {
+            template <typename OptTy_>
+            static
+            auto apply(OptTy_ && opt)
+            {
+                return static_cast<bool>(opt)
+                    ? std::forward<OptTy_>(opt).get_unsafe().flatten()
+                    : yato::nullopt_t{};
+            }
+        };
+
+
+
+
         template <typename Ty_>
         class basic_optional<Ty_, /*IsCopy=*/false, /*IsMove=*/false>
             : public optional_core<Ty_>
@@ -499,6 +581,7 @@ namespace yato
 
             basic_optional& operator = (const basic_optional&) = delete;
             basic_optional& operator = (basic_optional&&) = delete;
+
         };
 
 
@@ -535,6 +618,7 @@ namespace yato
             { }
 
             constexpr
+            explicit
             basic_optional(const value_type & val)
                 : super_type(yato::in_place_t{}, val)
             { }
@@ -554,8 +638,6 @@ namespace yato
                 super_type::copy_impl_(other);
             }
 
-            basic_optional(basic_optional &&) = delete;
-
             basic_optional & operator= (const basic_optional & other) {
                 super_type::assign_impl_(other);
                 return *this;
@@ -569,8 +651,6 @@ namespace yato
                 return *this;
             }
 
-            basic_optional & operator= (basic_optional &&) = delete;
-
             void swap(this_type & other)
             {
                 super_type::swap_impl_(other);
@@ -582,6 +662,16 @@ namespace yato
                 return (!super_type::empty())
                     ? make_optional_(transform(super_type::get_unsafe()))
                     : nullopt_t{};
+            }
+
+            auto flatten() const &
+            {
+                return flatten_op<value_type>::apply(*this);
+            }
+
+            auto flatten() &&
+            {
+                return flatten_op<value_type>::apply(std::move(*this));
             }
         };
 
@@ -618,6 +708,7 @@ namespace yato
                 : super_type(yato::in_place_t{}, std::forward<Args_>(args)...)
             { }
 
+            explicit
             basic_optional(value_type && val)
                 : super_type(yato::in_place_t{}, std::move(val))
             { }
@@ -674,6 +765,11 @@ namespace yato
                     ? make_optional_(transform(std::move(super_type::get_unsafe())))
                     : nullopt_t{};
             }
+
+            auto flatten() &&
+            {
+                return flatten_op<value_type>::apply(std::move(*this));
+            }
         };
 
 
@@ -709,11 +805,12 @@ namespace yato
                 : super_type(yato::in_place_t{}, std::forward<Args_>(args)...)
             { }
 
-            constexpr
+            constexpr explicit
             basic_optional(const value_type & val)
                 : super_type(yato::in_place_t{}, val)
             { }
 
+            explicit
             basic_optional(value_type && val)
                 : super_type(yato::in_place_t{}, std::move(val))
             { }
@@ -794,6 +891,16 @@ namespace yato
                     ? make_optional_(transform(std::move(super_type::get_unsafe())))
                     : nullopt_t{};
             }
+
+            auto flatten() const &
+            {
+                return flatten_op<value_type>::apply(*this);
+            }
+
+            auto flatten() &&
+            {
+                return flatten_op<value_type>::apply(std::move(*this));
+            }
         };
 
 
@@ -815,6 +922,14 @@ namespace yato
      */
     template <typename Ty_>
     using optional = details::choose_optional_t<Ty_>;
+
+    /**
+     * Check is type is optional
+     */
+    template <typename Ty_>
+    struct is_optional
+        : details::is_optional<Ty_>
+    { };
 
     template <typename Ty_>
     void swap(optional<Ty_> & lhs, optional<Ty_> & rhs)

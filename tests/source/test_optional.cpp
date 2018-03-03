@@ -75,6 +75,7 @@ namespace
     {
         int x_;
     public:
+        explicit
         Foo(int x) : x_(x) {}
         ~Foo() = default;
 
@@ -93,6 +94,7 @@ namespace
     {
         int x_;
     public:
+        explicit
         FooCopy(int x) : x_(x) {}
         ~FooCopy() = default;
 
@@ -101,12 +103,17 @@ namespace
 
         FooCopy& operator = (const FooCopy&) = default;
         FooCopy& operator = (FooCopy&&) = delete;
+
+        int x() const {
+            return x_;
+        }
     };
 
     class FooMove
     {
         int x_;
     public:
+        explicit
         FooMove(int x) : x_(x) {}
         ~FooMove() = default;
 
@@ -115,12 +122,17 @@ namespace
 
         FooMove& operator = (const FooMove&) = delete;
         FooMove& operator = (FooMove&&) = default;
+
+        int x() const {
+            return x_;
+        }
     };
 
     class FooCopyMove
     {
         int x_;
     public:
+        explicit
         FooCopyMove(int x) : x_(x) {}
         ~FooCopyMove() = default;
 
@@ -129,6 +141,10 @@ namespace
 
         FooCopyMove& operator = (const FooCopyMove&) = default;
         FooCopyMove& operator = (FooCopyMove&&) = default;
+
+        int x() const {
+            return x_;
+        }
     };
 }
 
@@ -218,11 +234,92 @@ TEST(Yato_Optional, opt_ptr)
     opt.clear();
     EXPECT_THROW(opt.get(), yato::bad_optional_access);
 
-    foo(&x);
+    foo(yato::make_optional(&x));
 
     auto opt3 = bar(10);
     EXPECT_EQ(10, *(opt3.get_or(&x)));
     delete opt3.get_or_null();
 
     EXPECT_EQ(-1, zoo(1).deref_or(-1));
+}
+
+
+TEST(Yato_Optional, flatten) 
+{
+    {
+        auto opt1 = yato::make_optional(FooCopy(1));
+        auto opt2 = yato::make_optional(yato::make_optional(FooCopy(2)));
+        auto opt3 = yato::make_optional(yato::make_optional(yato::make_optional(FooCopy(3))));
+        auto opt4 = yato::make_optional(yato::make_optional(yato::make_optional(yato::make_optional(FooCopy(4)))));
+        
+        yato::optional<FooCopy> flat = opt1.flatten();
+        EXPECT_NO_THROW(EXPECT_EQ(1, flat.get().x()));
+
+        flat = opt2.flatten();
+        EXPECT_NO_THROW(EXPECT_EQ(2, flat.get().x()));
+
+        flat = opt3.flatten();
+        EXPECT_NO_THROW(EXPECT_EQ(3, flat.get().x()));
+
+        flat = opt4.flatten();
+        EXPECT_NO_THROW(EXPECT_EQ(4, flat.get().x()));
+    }
+
+    {
+        auto opt1 = yato::make_optional(FooMove(1));
+        auto opt2 = yato::make_optional(yato::make_optional(FooMove(2)));
+        auto opt3 = yato::make_optional(yato::make_optional(yato::make_optional(FooMove(3))));
+        auto opt4 = yato::make_optional(yato::make_optional(yato::make_optional(yato::make_optional(FooMove(4)))));
+        
+        yato::optional<FooMove> flat = std::move(opt1).flatten();
+        EXPECT_NO_THROW(EXPECT_EQ(1, flat.get().x()));
+
+        flat = std::move(opt2).flatten();
+        EXPECT_NO_THROW(EXPECT_EQ(2, flat.get().x()));
+
+        flat = std::move(opt3).flatten();
+        EXPECT_NO_THROW(EXPECT_EQ(3, flat.get().x()));
+        
+        flat = std::move(opt4).flatten();
+        EXPECT_NO_THROW(EXPECT_EQ(4, flat.get().x()));
+    }
+
+    {
+        auto opt1 = yato::make_optional(FooCopyMove(1));
+        auto opt2 = yato::make_optional(yato::make_optional(FooCopyMove(2)));
+        auto opt3 = yato::make_optional(yato::make_optional(yato::make_optional(FooCopyMove(3))));
+        auto opt4 = yato::make_optional(yato::make_optional(yato::make_optional(yato::make_optional(FooCopyMove(4)))));
+        
+        yato::optional<FooCopyMove> flat = opt1.flatten();
+        EXPECT_NO_THROW(EXPECT_EQ(1, flat.get().x()));
+
+        flat = opt2.flatten();
+        EXPECT_NO_THROW(EXPECT_EQ(2, flat.get().x()));
+
+        flat = opt3.flatten();
+        EXPECT_NO_THROW(EXPECT_EQ(3, flat.get().x()));
+
+        flat = opt4.flatten();
+        EXPECT_NO_THROW(EXPECT_EQ(4, flat.get().x()));
+    }
+
+     {
+        auto opt1 = yato::make_optional(FooCopyMove(1));
+        auto opt2 = yato::make_optional(yato::make_optional(FooCopyMove(2)));
+        auto opt3 = yato::make_optional(yato::make_optional(yato::make_optional(FooCopyMove(3))));
+        auto opt4 = yato::make_optional(yato::make_optional(yato::make_optional(yato::make_optional(FooCopyMove(4)))));
+        
+        yato::optional<FooCopyMove> flat = std::move(opt1).flatten();
+        EXPECT_NO_THROW(EXPECT_EQ(1, flat.get().x()));
+
+        flat = std::move(opt2).flatten();
+        EXPECT_NO_THROW(EXPECT_EQ(2, flat.get().x()));
+
+        flat = std::move(opt3).flatten();
+        EXPECT_NO_THROW(EXPECT_EQ(3, flat.get().x()));
+
+        flat = std::move(opt4).flatten();
+        EXPECT_NO_THROW(EXPECT_EQ(4, flat.get().x()));
+    }
+
 }
