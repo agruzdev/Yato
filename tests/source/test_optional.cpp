@@ -323,3 +323,12 @@ TEST(Yato_Optional, flatten)
     }
 
 }
+
+TEST(Yato_Optional, visit) 
+{
+    auto opt = yato::make_optional(1);
+    EXPECT_EQ(1, opt.get_or(0));
+
+    opt.visit([](int & x) { ++x; });
+    EXPECT_EQ(2, opt.get_or(0));
+}

@@ -309,6 +309,21 @@ namespace yato
         };
 
 
+        template <typename OptTy_, typename Function_>
+        OptTy_ & visit_impl_(OptTy_ & opt, Function_ && visitor) {
+            if (opt) {
+                visitor(opt.get_unsafe());
+            }
+            return opt;
+        }
+
+        template <typename OptTy_, typename Function_>
+        const OptTy_ & visit_impl_(const OptTy_ & opt, Function_ && visitor) {
+            if (opt) {
+                visitor(opt.get_unsafe());
+            }
+            return opt;
+        }
 
 
         template <typename TyPtr_>
@@ -319,8 +334,8 @@ namespace yato
             using this_type  = optional_ptr<TyPtr_>;
 
         public:
-            using value_type = TyPtr_;
-            using reference_type = std::remove_pointer_t<TyPtr_>;
+            using value_type     = TyPtr_;
+            using reference_type = std::add_lvalue_reference_t<std::remove_pointer_t<TyPtr_>>;
 
         private:
             TyPtr_ m_ptr = nullptr;
@@ -436,6 +451,16 @@ namespace yato
             }
 
             template <typename Function_>
+            this_type & visit(Function_ && visitor) {
+                return visit_impl_(*this, std::forward<Function_>(visitor));
+            }
+
+            template <typename Function_>
+            const this_type & visit(Function_ && visitor) const {
+                return visit_impl_(*this, std::forward<Function_>(visitor));
+            }
+
+            template <typename Function_>
             auto map(Function_ && transform) const &;
 
             template <typename Ptr_>
@@ -548,6 +573,8 @@ namespace yato
 
 
 
+
+
         template <typename Ty_>
         class basic_optional<Ty_, /*IsCopy=*/false, /*IsMove=*/false>
             : public optional_core<Ty_>
@@ -556,6 +583,7 @@ namespace yato
             using super_type = optional_core<Ty_>;
 
         public:
+            using this_type = basic_optional<Ty_, false, false>;
             using typename super_type::value_type;
             using super_type::is_nothrow_move_constructible;
             using super_type::is_nothrow_move_assignable;
@@ -582,6 +610,15 @@ namespace yato
             basic_optional& operator = (const basic_optional&) = delete;
             basic_optional& operator = (basic_optional&&) = delete;
 
+            template <typename Function_>
+            this_type & visit(Function_ && visitor) {
+                return visit_impl_(*this, std::forward<Function_>(visitor));
+            }
+
+            template <typename Function_>
+            const this_type & visit(Function_ && visitor) const {
+                return visit_impl_(*this, std::forward<Function_>(visitor));
+            }
         };
 
 
@@ -654,6 +691,16 @@ namespace yato
             void swap(this_type & other)
             {
                 super_type::swap_impl_(other);
+            }
+
+            template <typename Function_>
+            this_type & visit(Function_ && visitor) {
+                return visit_impl_(*this, std::forward<Function_>(visitor));
+            }
+
+            template <typename Function_>
+            const this_type & visit(Function_ && visitor) const {
+                return visit_impl_(*this, std::forward<Function_>(visitor));
             }
 
             template <typename Function_>
@@ -748,6 +795,21 @@ namespace yato
             void swap(this_type & other)
             {
                 super_type::swap_impl_(other);
+            }
+
+            template <typename Function_>
+            this_type & visit(Function_ && visitor) {
+                return visit_impl_(*this, std::forward<Function_>(visitor));
+            }
+
+            template <typename Function_>
+            const this_type & visit(Function_ && visitor) const {
+                return visit_impl_(*this, std::forward<Function_>(visitor));
+            }
+
+            template <typename Function_>
+            const this_type & visit(Function_ && visitor) {
+                return visit_impl_(*this, std::forward<Function_>(visitor));
             }
 
             template <typename Function_>
@@ -874,6 +936,16 @@ namespace yato
             void swap(this_type & other)
             {
                 super_type::swap_impl_(other);
+            }
+
+            template <typename Function_>
+            this_type & visit(Function_ && visitor) {
+                return visit_impl_(*this, std::forward<Function_>(visitor));
+            }
+
+            template <typename Function_>
+            const this_type & visit(Function_ && visitor) const {
+                return visit_impl_(*this, std::forward<Function_>(visitor));
             }
 
             template <typename Function_>
