@@ -332,13 +332,17 @@ namespace yato
         private:
             static_assert(std::is_pointer<TyPtr_>::value, "Only for pointers");
             using this_type  = optional_ptr<TyPtr_>;
+            //-----------------------------------------------------------------------------------------------
 
         public:
             using value_type     = TyPtr_;
             using reference_type = std::add_lvalue_reference_t<std::remove_pointer_t<TyPtr_>>;
+            using creference_type = std::add_lvalue_reference_t<std::add_const_t<std::remove_pointer_t<TyPtr_>>>;
+            //-----------------------------------------------------------------------------------------------
 
         private:
             TyPtr_ m_ptr = nullptr;
+            //-----------------------------------------------------------------------------------------------
 
         public:
             constexpr
@@ -445,9 +449,15 @@ namespace yato
                 return deref();
             }
 
-            template <typename DefTy_>
-            reference_type deref_or(DefTy_ && default_value) const {
-                return (!empty()) ? *m_ptr : static_cast<reference_type>(std::forward<DefTy_>(default_value));
+            reference_type deref_or(reference_type default_value) const {
+                return static_cast<bool>(*this) ? *m_ptr : default_value;
+            }
+
+            template <typename RefTy_ = reference_type, 
+                typename = std::enable_if_t<!std::is_same<RefTy_, creference_type>::value>
+            >
+            creference_type deref_or(creference_type default_value) const {
+                return static_cast<bool>(*this) ? *m_ptr : default_value;
             }
 
             template <typename Function_>
