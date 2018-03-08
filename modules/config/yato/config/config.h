@@ -180,18 +180,30 @@ namespace yato {
             return do_has_array(key);
         }
     
-        const config_value* get_value(const std::string & key) const {
-            return do_get_value(key);
+        yato::optional<const config_value*> get_value(const std::string & key) const {
+            return yato::make_optional(do_get_value(key));
         }
     
-        const config_object* get_object(const std::string & key) const {
-            return do_get_object(key);
+        yato::optional<const config_object*> get_object(const std::string & key) const {
+            return yato::make_optional(do_get_object(key));
         }
     
-        const config_array* get_array(const std::string & key) const {
-            return do_get_array(key);
+        yato::optional<const config_array*> get_array(const std::string & key) const {
+            return yato::make_optional(do_get_array(key));
         }
     
+        template <typename Ty_, typename 
+            = yato::void_t<typename details::config_choose_stored_type<Ty_>::type>
+        >
+        yato::optional<Ty_> value(const std::string & key) const {
+            if(const auto opt = get_value(key)){
+                return opt.get_unsafe()->get_opt<Ty_>();
+            }
+            else {
+                throw config_error("Invalid config_value access.");
+            }
+        }
+
         const void* get_underlying_type() const {
             return const_cast<config_object*>(this)->do_get_underlying_type();
         }
@@ -228,19 +240,28 @@ namespace yato {
             return do_get_size();
         }
     
-        const config_value* get_value(size_t idx) const {
-            YATO_REQUIRES(idx < size());
-            return do_get_value(idx);
+        yato::optional<const config_value*> get_value(size_t idx) const {
+            return yato::make_optional(do_get_value(idx));
         }
     
-        const config_object* get_object(size_t idx) const {
-            YATO_REQUIRES(idx < size());
-            return do_get_object(idx);
+        yato::optional<const config_object*> get_object(size_t idx) const {
+            return yato::make_optional(do_get_object(idx));
         }
     
-        const config_array* get_array(size_t idx) const {
-            YATO_REQUIRES(idx < size());
-            return do_get_array(idx);
+        yato::optional<const config_array*> get_array(size_t idx) const {
+            return yato::make_optional(do_get_array(idx));
+        }
+
+        template <typename Ty_, typename 
+            = yato::void_t<typename details::config_choose_stored_type<Ty_>::type>
+        >
+        yato::optional<Ty_> value(size_t idx) const {
+            if(const auto opt = get_value(idx)){
+                return opt.get_unsafe()->get_opt<Ty_>();
+            }
+            else {
+                throw config_error("Invalid config_value access.");
+            }
         }
     
         const void* get_underlying_type() const {
