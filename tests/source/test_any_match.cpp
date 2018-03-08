@@ -174,4 +174,26 @@ TEST(Yato_VariantMatch, common)
     EXPECT_EQ(-1, r);
 }
 
+TEST(Yato_AnyMatch, ref)
+{
+    auto xi = yato::any(1);
+
+    int x1 = 10;
+    int x2 = 20;
+
+    auto matcher = yato::any_match(
+        [&](int) {
+            return std::ref(x1);
+        },
+        [&](yato::match_default_t) {
+            return std::ref(x2);
+        }
+    );
+
+    int& r = matcher(xi);
+    EXPECT_EQ(10, r);
+    r = 11;
+    EXPECT_EQ(11, x1);
+    EXPECT_EQ(20, x2);
+}
 

@@ -25,12 +25,6 @@ namespace yato
 
 
     /**
-     * Copy/move cases into the matcher object if passed
-     */
-    struct store_cases_t {};
-
-
-    /**
      * Thrown if match not found
      */
     class bad_match_error
@@ -174,10 +168,12 @@ namespace yato
             using has_empty_case   = std::integral_constant<bool, (empty_index != match_case_npos)>;
             using has_default_case = std::integral_constant<bool, (default_index != match_case_npos)>;
 
+        public:
             using result_type = match_result_type<CasesTuple_>;
 
+        private:
             static
-            decltype(auto) on_default_impl_(std::true_type /*default case*/, const CasesTuple_ & cases)
+            result_type on_default_impl_(std::true_type /*default case*/, const CasesTuple_ & cases)
             {
                 return std::get<default_index>(cases)(match_default_t{});
             }
@@ -189,7 +185,7 @@ namespace yato
             }
 
             static
-            decltype(auto) on_default_(const CasesTuple_ & cases)
+            result_type on_default_(const CasesTuple_ & cases)
             {
                 return on_default_impl_(has_default_case{}, cases);
             }
@@ -198,7 +194,7 @@ namespace yato
 
             template <typename AnyRef_>
             static
-            decltype(auto) match_impl_(std::true_type /*has empty case*/, const CasesTuple_ & cases, AnyRef_ && anyval)
+            result_type match_impl_(std::true_type /*has empty case*/, const CasesTuple_ & cases, AnyRef_ && anyval)
             {
                 return (std::type_index(typeid(void)) == std::type_index(anyval.type()))
                     ? std::get<empty_index>(cases)(match_empty_t{})
@@ -207,7 +203,7 @@ namespace yato
 
             template <typename AnyRef_>
             static
-            decltype(auto) match_impl_(std::false_type /*has empty case*/, const CasesTuple_ & cases, AnyRef_ && anyval)
+            result_type match_impl_(std::false_type /*has empty case*/, const CasesTuple_ & cases, AnyRef_ && anyval)
             {
                 return (std::type_index(typeid(void)) == std::type_index(anyval.type()))
                     ? on_default_(cases)
@@ -216,13 +212,13 @@ namespace yato
 
         public:
             static
-            decltype(auto) match(const CasesTuple_ & cases, const AnyTy_ & anyval)
+            result_type match(const CasesTuple_ & cases, const AnyTy_ & anyval)
             {
                 return match_impl_(has_empty_case{}, cases, anyval);
             }
 
             static
-            decltype(auto) match(const CasesTuple_ & cases, AnyTy_ && anyval)
+            result_type match(const CasesTuple_ & cases, AnyTy_ && anyval)
             {
                 return match_impl_(has_empty_case{}, cases, std::move(anyval));
             }

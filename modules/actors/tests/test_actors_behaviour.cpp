@@ -17,7 +17,7 @@ namespace
 
         void pre_start() override {
             m_ping = yato::actors::make_behaviour(
-                yato::any_match(yato::store_cases_t{},
+                yato::any_match(
                     [this](yato::match_default_t) {
                         sender().tell(std::string("ping"));
                         become(m_pong.get());

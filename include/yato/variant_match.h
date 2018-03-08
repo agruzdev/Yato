@@ -60,13 +60,7 @@ namespace yato
 
     template <typename... Cases_>
     constexpr
-    auto variant_match(const Cases_ & ... cases) {
-        return variant_matcher<std::tuple<const Cases_ &...>>(std::tuple<const Cases_ &...>(cases...));
-    }
-
-    template <typename... Cases_>
-    constexpr
-    auto variant_match(store_cases_t, Cases_ && ... cases) {
+    auto variant_match(Cases_ && ... cases) {
         return variant_matcher<std::tuple<Cases_...>>(std::tuple<Cases_...>(std::forward<Cases_>(cases)...));
     }
 

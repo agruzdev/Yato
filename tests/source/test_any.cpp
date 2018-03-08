@@ -56,6 +56,11 @@ TEST(Yato_Any, common)
     TestFunction<Bar>(yato::any(Bar{}));
     TestFunction<std::unique_ptr<Foo>>(yato::any(std::make_unique<Foo>()));
 #endif
+
+    EXPECT_TRUE(static_cast<bool>(yato::any(1)));
+    EXPECT_FALSE(static_cast<bool>(yato::any()));
+
+    EXPECT_TRUE(static_cast<bool>(yato::make_any<float>(1.0f)));
 }
 
 TEST(Yato_Any, bad_any_cast)

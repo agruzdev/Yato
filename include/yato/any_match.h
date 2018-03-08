@@ -24,6 +24,8 @@ namespace yato
         CasesTuple_ m_cases;
 
     public:
+        using result_type = typename dispatcher::result_type;
+
         constexpr explicit
         any_matcher(const CasesTuple_ & cases)
             : m_cases(cases)
@@ -38,34 +40,26 @@ namespace yato
         any_matcher& operator=(any_matcher&&) = default;
 
 
-        decltype(auto) operator()(const yato::any & anyval) const
+        result_type operator()(const yato::any & anyval) const
         {
             return dispatcher::match(m_cases, anyval);
         }
 
-        decltype(auto) operator()(yato::any & anyval) const
+        result_type operator()(yato::any & anyval) const
         {
             return dispatcher::match(m_cases, std::move(anyval));
         }
 
-        decltype(auto) operator()(yato::any && anyval) const
+        result_type operator()(yato::any && anyval) const
         {
             return dispatcher::match(m_cases, std::move(anyval));
         }
     };
 
-    
-
 
     template <typename... Cases_>
     constexpr
-    auto any_match(const Cases_ & ... cases) {
-        return any_matcher<std::tuple<const Cases_ &...>>(std::tuple<const Cases_ &...>(cases...));
-    }
-
-    template <typename... Cases_>
-    constexpr
-    auto any_match(store_cases_t, Cases_ && ... cases) {
+    auto any_match(Cases_ && ... cases) {
         return any_matcher<std::tuple<Cases_...>>(std::tuple<Cases_...>(std::forward<Cases_>(cases)...));
     }
 
