@@ -38,6 +38,9 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 #  define YATO_MSVC_2015 
 # elif (_MSC_VER == 1910)
 #  define YATO_MSVC_2017 
+# elif (_MSC_VER == 1913)
+#  define YATO_MSVC_2017 
+#  define YATO_MSVC_2017_15_6
 # endif
 #endif
 
