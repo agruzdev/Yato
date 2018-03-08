@@ -263,6 +263,12 @@ namespace yato
             return !m_content;
         }
 
+        explicit
+        operator bool() const YATO_NOEXCEPT_KEYWORD
+        {
+            return static_cast<bool>(m_content);
+        }
+
         void clear() YATO_NOEXCEPT_KEYWORD
         {
             m_content.reset();
@@ -353,20 +359,22 @@ namespace yato
     }
 
     template <typename ValueType>
-    inline
     ValueType any_cast(any && operand)
     {
         return operand.get_as<ValueType>();
     }
 
     template <typename ValueType>
-    inline 
     ValueType any_cast(const any & operand)
     {
         return operand.get_as<ValueType>();
     }
 
-
+    template <class Ty_, class... Args_>
+    yato::any make_any(Args_ && ... args)
+    {
+        return yato::any(yato::in_place_type<Ty_>, std::forward<Args_>(args)...);
+    }
 }
 
 #endif
