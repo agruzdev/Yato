@@ -28,10 +28,13 @@ namespace actors
      * Special message type for graceful stopping of actor
      * Actor will be stopped after processing all messages in queue before the poison_pill.
      */
-    struct poison_pill_t {};
+    struct poison_pill_t
+    {
+        explicit constexpr poison_pill_t() = default;
+    };
 
     YATO_INLINE_VARIABLE constexpr 
-    poison_pill_t poison_pill;
+    poison_pill_t poison_pill{};
 
 
     /**

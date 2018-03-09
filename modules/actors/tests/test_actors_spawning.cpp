@@ -6,6 +6,7 @@
 #include <yato/any_match.h>
 #include <yato/actors/actor_system.h>
 #include <yato/actors/logger.h>
+#include <yato/stl_utility.h>
 
 namespace
 {
@@ -52,7 +53,7 @@ namespace
                     m_echo.tell("ping", self());
                     self().tell(yato::actors::poison_pill);
                 },
-                [this](yato::match_default_t){
+                [](yato::match_default_t){
                 }
             )(message);
         }
@@ -72,7 +73,7 @@ TEST(Yato_Actors, highload_spawn)
 
     std::vector<yato::actors::actor_ref> actors;
     for(size_t i = 0; i < ACTORS_NUM; ++i) {
-        actors.push_back(system.create_actor<TempActor>("temp_" + std::to_string(i), echoActor));
+        actors.push_back(system.create_actor<TempActor>("temp_" + yato::stl::to_string(i), echoActor));
     }
 
     for (size_t i = 0; i < ACTORS_NUM; ++i) {

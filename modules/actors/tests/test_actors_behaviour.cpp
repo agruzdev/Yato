@@ -6,6 +6,7 @@
 #include <yato/actors/logger.h>
 #include <yato/actors/inbox.h>
 #include <yato/any_match.h>
+#include <yato/stl_utility.h>
 
 namespace
 {
@@ -89,7 +90,7 @@ namespace
         void enabled(yato::any && msg) {
             yato::any_match(
                 [this](int x) {
-                    log().info(std::to_string(x));
+                    log().info(yato::stl::to_string(x));
                 },
                 [this](std::string && txt) {
                     if(txt == "disable") {

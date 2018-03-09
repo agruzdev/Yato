@@ -110,8 +110,7 @@ namespace yato
                 m_stored = true;
             }
 
-            template <typename... Args_>
-            void destroy_(Args_ && ... args) {
+            void destroy_() {
                 get_ptr_()->~value_type();
                 m_stored = false;
             }

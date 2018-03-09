@@ -11,6 +11,8 @@
 #include <map>
 #include <string>
 
+#include <yato/stl_utility.h>
+
 namespace yato
 {
 namespace actors
@@ -39,7 +41,7 @@ namespace actors
             if(it == m_prefixes.end()) {
                 it = m_prefixes.emplace_hint(it, prefix, 0);
             }
-            return prefix + std::to_string((*it).second++);
+            return prefix + yato::stl::to_string((*it).second++);
         }
     };
 

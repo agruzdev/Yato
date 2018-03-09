@@ -5,6 +5,7 @@
 #include <yato/actors/actor_system.h>
 #include <yato/actors/logger.h>
 #include <yato/any_match.h>
+#include <yato/stl_utility.h>
 
 namespace
 {
@@ -69,7 +70,7 @@ namespace
                     }
                     else {
                         if (count % PING_TICK == 0) {
-                            log().info("Ping " + std::to_string(count));
+                            log().info("Ping " + yato::stl::to_string(count));
                         }
                     }
                 }
@@ -91,7 +92,7 @@ namespace
                     }
                     else {
                         if (count % PING_TICK == 1) {
-                            log().info("Pong " + std::to_string(count));
+                            log().info("Pong " + yato::stl::to_string(count));
                         }
                     }
                 }

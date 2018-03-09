@@ -14,8 +14,11 @@ if(CLANG)
 endif()
 
 #ToDo (a.gruzdev) Temporal workaround
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-noexcept-type")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-security")
+if(NOT ANDROID)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-noexcept-type")
+endif()
+
 
 option(YATO_WITH_ADDRESS_SANITIZER "Enable address sanitizing" OFF)
 if(YATO_WITH_ADDRESS_SANITIZER)

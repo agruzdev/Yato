@@ -8,9 +8,12 @@
 #ifndef _YATO_ACTORS_LOGGER_H_
 #define _YATO_ACTORS_LOGGER_H_
 
+#include <cstdio>
 #include <cassert>
 #include <array>
 #include <memory>
+
+#include <yato/stl_utility.h>
 
 namespace yato
 {
@@ -51,11 +54,11 @@ namespace actors
                 std::array<char, MESSAGE_LENGTH + 1> buffer;
 
                 // Firstly write tag and logger name
-                int len = std::snprintf(buffer.data(), MESSAGE_LENGTH, "%s%s - ", m_tags[static_cast<uint16_t>(level)], m_name.c_str());
+                int len = yato::stl::snprintf(buffer.data(), MESSAGE_LENGTH, "%s%s - ", m_tags[static_cast<uint16_t>(level)], m_name.c_str());
                 len = std::min(len, static_cast<int>(MESSAGE_LENGTH) - 1);
 
                 // Write message after the tag
-                len += std::snprintf(buffer.data() + len, MESSAGE_LENGTH - len, format, std::forward<Args_>(args)...);
+                len += yato::stl::snprintf(buffer.data() + len, MESSAGE_LENGTH - len, format, std::forward<Args_>(args)...);
                 len = std::min(len, static_cast<int>(MESSAGE_LENGTH) - 1);
 
                 // Put newline if necessary

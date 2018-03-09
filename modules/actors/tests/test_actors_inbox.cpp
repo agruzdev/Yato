@@ -19,7 +19,7 @@ namespace
                 [this](int num) {
                     sender().tell(num + 1);
                 },
-                [this](yato::match_default_t) {
+                [](yato::match_default_t) {
                 }
             )(message);
         }
