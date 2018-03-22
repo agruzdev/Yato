@@ -8,8 +8,9 @@
 #ifndef _YATO_OPTIONAL_H_
 #define _YATO_OPTIONAL_H_
 
-#include "type_traits.h"
 #include "assert.h"
+#include "type_traits.h"
+#include "types.h"
 
 namespace yato
 {

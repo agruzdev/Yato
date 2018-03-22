@@ -9,7 +9,9 @@
 #define _YATO_META_H_
 
 #include <tuple>
-#include "types.h"
+
+#include "prerequisites.h"
+#include "primitive_types.h"
 
 namespace yato
 {
@@ -35,7 +37,8 @@ namespace yato
          *  Wrapper around unsigned integer value
          */
         template<uint32_t _Num>
-        struct number: public number<_Num - 1>
+        struct number
+            : number<_Num - 1>
         {
             static YATO_CONSTEXPR_VAR uint32_t value = _Num;
         };

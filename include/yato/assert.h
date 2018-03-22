@@ -28,8 +28,7 @@ namespace yato
             : std::runtime_error(message)
         { }
 
-        ~runtime_error()
-        { }
+        ~runtime_error() = default;
     };
 
     class out_of_range_error 
@@ -44,8 +43,7 @@ namespace yato
             : yato::runtime_error(message)
         { }
 
-        ~out_of_range_error()
-        { }
+        ~out_of_range_error() = default;
     };
 
     class argument_error 
@@ -60,8 +58,7 @@ namespace yato
             : yato::runtime_error(message)
         { }
 
-        ~argument_error()
-        { }
+        ~argument_error() = default;
     };
 
 
@@ -77,19 +74,58 @@ namespace yato
             : yato::runtime_error(message)
         { }
 
-        ~bad_state_error()
-        { }
+        ~bad_state_error() = default;
     };
+
+    /**
+     * Exception class for testing.
+     * Do not use this exception class for other logic.
+     */
+    class assertion_error 
+        : public yato::runtime_error
+    {
+    public:
+        assertion_error(const std::string & message)
+            : yato::runtime_error(message)
+        { }
+
+        assertion_error(const char* message)
+            : yato::runtime_error(message)
+        { }
+
+        ~assertion_error() = default;
+    };
+
 }
 
+#define YATO_ASSERT_IMPL_(Condition_, Message_) assert((Condition_) && Message_);
+#define YATO_THROW_ASSERT_IMPL_(Condition_, Message_) { if(!(Condition_)) throw yato::assertion_error(Message_); }
+
 #if YATO_DEBUG
-#  define YATO_REQUIRES(Condition) assert((Condition) && "Precondition failure!");
-#  define YATO_ENSURES(Condition)  assert((Condition) && "Postcondition failure!");
-#  define YATO_ASSERT(Condition, Message) assert((Condition) && Message);
+# define YATO_REQUIRES(Condition_) YATO_ASSERT_IMPL_(Condition_, "Precondition failure!")
+# define YATO_ENSURES(Condition_)  YATO_ASSERT_IMPL_(Condition_, "Postcondition failure!")
+# define YATO_ASSERT(Condition_, Message_) YATO_ASSERT_IMPL_(Condition_, Message_)
 #else
-#define YATO_REQUIRES(Condition) { }
-#define YATO_ENSURES(Condition) { }
-#define YATO_ASSERT(Condition, Message) { }
+# define YATO_REQUIRES(Condition_) { }
+# define YATO_ENSURES(Condition_) { }
+# define YATO_ASSERT(Condition_, Message_) { }
+#endif
+
+/**
+ * Define this flag in order to change testeed assertions to throw expressions in test cases.
+ * Is correct only if tested function is defined as YATO_NOEXCEPT_TESTED. Using this macro for noexcept function is undefined behaviour.
+ */
+#ifdef YATO_THROW_ON_TESTED_ASSERTIONS
+# define YATO_NOEXCEPT_TESTED
+# define YATO_REQUIRES_TESTED(Condition_) YATO_THROW_ASSERT_IMPL_(Condition_, "Precondition failure!")
+# define YATO_ENSURES_TESTED(Condition_)  YATO_THROW_ASSERT_IMPL_(Condition_, "Postcondition failure!")
+# define YATO_ASSERT_TESTED(Condition_, Message_) YATO_THROW_ASSERT_IMPL_(Condition_, Message_)
+#else
+# define YATO_NOEXCEPT_TESTED YATO_NOEXCEPT_KEYWORD
+# define YATO_REQUIRES_TESTED(Condition_) YATO_REQUIRES(Condition_)
+# define YATO_ENSURES_TESTED(Condition_) YATO_ENSURES(Condition_)
+# define YATO_ASSERT_TESTED(Condition_, Message_) YATO_ASSERT(Condition_, Message_)
 #endif
 
 #endif
+

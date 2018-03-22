@@ -12,145 +12,49 @@
 #include <limits>
 
 #include "assert.h"
+#include "type_traits.h"
 
 namespace yato
 {
     //-------------------------------------------------------
-    // Fixed size integer types
-
-
-    using int8_t = ::int8_t;
-    static_assert(sizeof(int8_t) == 1, "Wrong int8_t type!");
-
-    using uint8_t = ::uint8_t;
-    static_assert(sizeof(uint8_t) == 1, "Wrong uint8_t type!");
-
-    using int16_t = ::int16_t;
-    static_assert(sizeof(int16_t) == 2, "Wrong int16_t type!");
-
-    using uint16_t = ::uint16_t;
-    static_assert(sizeof(uint16_t) == 2, "Wrong uint16_t type!");
-
-    using int32_t = ::int32_t;
-    static_assert(sizeof(int32_t) == 4, "Wrong int32_t type!");
-
-    using uint32_t = ::uint32_t;
-    static_assert(sizeof(uint32_t) == 4, "Wrong uint32_t type!");
-
-    using int64_t = ::int64_t;
-    static_assert(sizeof(int64_t) == 8, "Wrong int64_t type!");
-
-    using uint64_t = ::uint64_t;
-    static_assert(sizeof(uint64_t) == 8, "Wrong uint64_t type!");
-
-
-    //-------------------------------------------------------
-    // Fixed size floating point types
-
-    using float32_t = float;
-    static_assert(sizeof(float32_t) == 4, "Wrong float32_t type!");
-
-    using float64_t = double;
-    static_assert(sizeof(float64_t) == 8, "Wrong float64_t type!");
-
-    /**
-     *  Extended precision floating point. May have different implementations, so it's size is at least not less than size of double
-     */
-    using float80_t = long double;
-    static_assert(sizeof(float80_t) >= 8, "Wrong float80_t type!");
-
-
-    //-------------------------------------------------------
-    // Helper for fixed size types
-
-    struct signed_type_tag {};
-    struct unsigned_type_tag {}; 
-    struct floating_type_tag {};
-
-    template <typename _Tag, size_t _Size>
-    struct make_type
-    { };
-
-    template <>
-    struct make_type<signed_type_tag, 8>
-    {
-        using type = int8_t;
-    };
-
-    template <>
-    struct make_type<signed_type_tag, 16>
-    {
-        using type = int16_t;
-    };
-
-    template <>
-    struct make_type<signed_type_tag, 32>
-    {
-        using type = int32_t;
-    };
-
-    template <>
-    struct make_type<signed_type_tag, 64>
-    {
-        using type = int64_t;
-    };
-
-    template <>
-    struct make_type<unsigned_type_tag, 8>
-    {
-        using type = uint8_t;
-    };
-
-    template <>
-    struct make_type<unsigned_type_tag, 16>
-    {
-        using type = uint16_t;
-    };
-
-    template <>
-    struct make_type<unsigned_type_tag, 32>
-    {
-        using type = uint32_t;
-    };
-
-    template <>
-    struct make_type<unsigned_type_tag, 64>
-    {
-        using type = uint64_t;
-    };
-
-    template <>
-    struct make_type<floating_type_tag, 32>
-    {
-        using type = float32_t;
-    };
-
-    template <>
-    struct make_type<floating_type_tag, 64>
-    {
-        using type = float64_t;
-    };
-
-    template <>
-    struct make_type<floating_type_tag, 80>
-    {
-        using type = float80_t;
-    };
-
-    template <typename _Tag, size_t _Size>
-    using make_type_t = typename make_type<_Tag, _Size>::type;
-
-    //-------------------------------------------------------
     // Cast functions
 
-    template<typename _TypeTo, typename _TypeFrom>
-    YATO_CONSTEXPR_FUNC 
-    auto narrow_cast(const _TypeFrom & val) YATO_NOEXCEPT_KEYWORD
-        -> typename std::enable_if<std::is_arithmetic<_TypeTo>::value && std::is_arithmetic<_TypeFrom>::value, _TypeTo>::type
+    namespace details
     {
-        YATO_ASSERT(val == static_cast<_TypeFrom>(static_cast<_TypeTo>(val)), "narrow_cast failed!")
-        return static_cast<_TypeTo>(val);
+        template <typename Ty_, typename Uy_, typename = void>
+        struct check_different_sign_narrowing
+        {
+            static YATO_CONSTEXPR_FUNC
+            bool apply(Ty_, Uy_) {
+                return true;
+            }
+        };
+
+        template <typename Ty_, typename Uy_>
+        struct check_different_sign_narrowing<
+                Ty_, Uy_,
+                std::enable_if_t<!yato::is_same_signedness<Ty_, Uy_>::value>
+            >
+        {
+            static YATO_CONSTEXPR_FUNC
+            bool apply(Ty_ t, Uy_ u)
+            {
+                return ((t < static_cast<Ty_>(0)) == (u < static_cast<Uy_>(0)));
+            }
+        };
+
     }
+
+    template<typename TypeTo_, typename TypeFrom_>
+    YATO_CONSTEXPR_FUNC
+    auto narrow_cast(const TypeFrom_ & val) YATO_NOEXCEPT_TESTED
+        -> typename std::enable_if<std::is_arithmetic<TypeTo_>::value && std::is_arithmetic<TypeFrom_>::value, TypeTo_>::type
+    {
+        YATO_ASSERT_TESTED(val == static_cast<TypeFrom_>(static_cast<TypeTo_>(val)), "yato::narrow_cast failed!");
+        YATO_ASSERT_TESTED((details::check_different_sign_narrowing<TypeTo_, TypeFrom_>::apply(static_cast<TypeTo_>(val), val)), "yato::narrow_cast failed!");
+        return static_cast<TypeTo_>(val);
+    }
+
 
     template<typename _TypeTo, typename _TypeFrom>
     YATO_CONSTEXPR_FUNC 
@@ -185,69 +89,69 @@ namespace yato
 #ifdef YATO_HAS_LITERALS
 
         YATO_CONSTEXPR_FUNC 
-        int8_t operator"" _s8(unsigned long long number) YATO_NOEXCEPT_KEYWORD
+        int8_t operator"" _s8(unsigned long long number) YATO_NOEXCEPT_TESTED
         {
             return narrow_cast<int8_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC 
-        uint8_t operator"" _u8(unsigned long long number) YATO_NOEXCEPT_KEYWORD
+        uint8_t operator"" _u8(unsigned long long number) YATO_NOEXCEPT_TESTED
         {
             return narrow_cast<uint8_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC 
-        int16_t operator"" _s16(unsigned long long number) YATO_NOEXCEPT_KEYWORD
+        int16_t operator"" _s16(unsigned long long number) YATO_NOEXCEPT_TESTED
         {
             return narrow_cast<int16_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC 
-        uint16_t operator"" _u16(unsigned long long number) YATO_NOEXCEPT_KEYWORD
+        uint16_t operator"" _u16(unsigned long long number) YATO_NOEXCEPT_TESTED
         {
             return narrow_cast<uint16_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC 
-        int32_t operator"" _s32(unsigned long long number) YATO_NOEXCEPT_KEYWORD
+        int32_t operator"" _s32(unsigned long long number) YATO_NOEXCEPT_TESTED
         {
             return narrow_cast<int32_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC 
-        uint32_t operator"" _u32(unsigned long long number) YATO_NOEXCEPT_KEYWORD
+        uint32_t operator"" _u32(unsigned long long number) YATO_NOEXCEPT_TESTED
         {
             return narrow_cast<uint32_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC 
-        int64_t operator"" _s64(unsigned long long number) YATO_NOEXCEPT_KEYWORD
+        int64_t operator"" _s64(unsigned long long number) YATO_NOEXCEPT_TESTED
         {
             return narrow_cast<int64_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC 
-        uint64_t operator"" _u64(unsigned long long number) YATO_NOEXCEPT_KEYWORD
+        uint64_t operator"" _u64(unsigned long long number) YATO_NOEXCEPT_TESTED
         {
             return narrow_cast<uint64_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC_EX
-        float32_t operator"" _f32(long double number) YATO_NOEXCEPT_KEYWORD
+        float32_t operator"" _f32(long double number) YATO_NOEXCEPT_TESTED
         {
             YATO_REQUIRES(static_cast<long double>(std::numeric_limits<float32_t>::lowest()) <= number && number <= static_cast<long double>(std::numeric_limits<float32_t>::max()));
             return static_cast<float32_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC_EX
-        float64_t operator"" _f64(long double number) YATO_NOEXCEPT_KEYWORD
+        float64_t operator"" _f64(long double number) YATO_NOEXCEPT_TESTED
         {
             YATO_REQUIRES(static_cast<long double>(std::numeric_limits<float64_t>::lowest()) <= number && number <= static_cast<long double>(std::numeric_limits<float64_t>::max()));
             return static_cast<float64_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC_EX
-        float80_t operator"" _f80(long double number) YATO_NOEXCEPT_KEYWORD
+        float80_t operator"" _f80(long double number) YATO_NOEXCEPT_TESTED
         {
             YATO_REQUIRES(static_cast<long double>(std::numeric_limits<float80_t>::lowest()) <= number && number <= static_cast<long double>(std::numeric_limits<float80_t>::max()));
             return static_cast<float80_t>(number);

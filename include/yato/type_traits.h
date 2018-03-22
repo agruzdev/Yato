@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "prerequisites.h"
+#include "primitive_types.h"
 #include "meta.h"
 
 namespace yato
@@ -40,6 +41,8 @@ namespace yato
     template <typename Ty_>
     using void_t = void;
 
+    template <bool Val_>
+    using boolean_constant = std::integral_constant<bool, Val_>;
 
     // Check that Ty_ has typedef `type`
     template <typename Ty_, typename = void>
@@ -105,6 +108,14 @@ namespace yato
     template <> struct wider_type<int64_t>  { using type = int64_t; };
     template <> struct wider_type<float>    { using type = double; };
     template <> struct wider_type<double>   { using type = long double; };
+
+
+    template <typename Ty_, typename Uy_>
+    struct is_same_signedness
+        : yato::boolean_constant<
+            std::is_signed<Ty_>::value == std::is_signed<Uy_>::value
+        >
+    { };
 
     //----------------------------------------------------------
     // Smart pointer traits

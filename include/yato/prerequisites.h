@@ -109,8 +109,6 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 # define YATO_ALIGN_OF(Type)    __alignof(Type)
 #endif
 
-#define YATO_NOEXCEPT_IN_RELEASE YATO_NOEXCEPT_KEYWORD_EXP(YATO_RELEASE_BOOL)
-
 #define _YATO_QUOTE_IMPL(X) #X
 #define YATO_QUOTE(X) _YATO_QUOTE_IMPL(X)
 

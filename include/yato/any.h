@@ -18,7 +18,8 @@
 #include <algorithm>
 #include <memory>
 #include <typeindex>
-#include "type_traits.h"
+
+#include "types.h"
 
 namespace yato
 {
