@@ -95,7 +95,6 @@ namespace yato
 
         ~assertion_error() = default;
     };
-
 }
 
 #define YATO_ASSERT_IMPL_(Condition_, Message_) assert((Condition_) && Message_);
@@ -111,15 +110,64 @@ namespace yato
 # define YATO_ASSERT(Condition_, Message_) { }
 #endif
 
-/**
+
+namespace yato
+{
+    namespace details
+    {
+        using assert_callback_t = void (*)(bool condition, const char* message);
+
+        inline
+        void assert_default_callback(bool condition, const char* message) {
+            if(!condition) {
+                YATO_ASSERT(condition, message);
+            }
+        }
+
+        inline
+        void assert_throwing_callback(bool condition, const char* message) {
+            if(!condition) {
+                throw yato::assertion_error(message);
+            }
+        }
+
+        struct assert_callback_holder
+        {
+            static
+            assert_callback_t& instance() {
+                static assert_callback_t callback = &assert_default_callback;
+                return callback;
+            }
+        };
+
+        struct throwing_callback_lock
+        {
+            throwing_callback_lock() {
+                assert_callback_holder::instance() = &assert_throwing_callback;
+            }
+
+            ~throwing_callback_lock() {
+                assert_callback_holder::instance() = &assert_default_callback;
+            }
+
+            throwing_callback_lock(const throwing_callback_lock&) = delete;
+            throwing_callback_lock& operator = (const throwing_callback_lock&) = delete;
+            throwing_callback_lock(throwing_callback_lock&&) = delete;
+            throwing_callback_lock& operator = (throwing_callback_lock&&) = delete;
+        };
+    }
+}
+
+/*
  * Define this flag in order to change testeed assertions to throw expressions in test cases.
  * Is correct only if tested function is defined as YATO_NOEXCEPT_TESTED. Using this macro for noexcept function is undefined behaviour.
  */
-#ifdef YATO_THROW_ON_TESTED_ASSERTIONS
+#ifdef YATO_ENABLE_TESTED_ASSERTIONS
 # define YATO_NOEXCEPT_TESTED
-# define YATO_REQUIRES_TESTED(Condition_) YATO_THROW_ASSERT_IMPL_(Condition_, "Precondition failure!")
-# define YATO_ENSURES_TESTED(Condition_)  YATO_THROW_ASSERT_IMPL_(Condition_, "Postcondition failure!")
-# define YATO_ASSERT_TESTED(Condition_, Message_) YATO_THROW_ASSERT_IMPL_(Condition_, Message_)
+# define YATO_REQUIRES_TESTED(Condition_) yato::details::assert_callback_holder::instance()(Condition_, "Precondition failure!")
+# define YATO_ENSURES_TESTED(Condition_)  yato::details::assert_callback_holder::instance()(Condition_, "Postcondition failure!")
+# define YATO_ASSERT_TESTED(Condition_, Message_) yato::details::assert_callback_holder::instance()(Condition_, Message_)
+# define YATO_THROWING_ASSERT_LOCK(LockName_) yato::details::throwing_callback_lock LockName_{}
 #else
 # define YATO_NOEXCEPT_TESTED YATO_NOEXCEPT_KEYWORD
 # define YATO_REQUIRES_TESTED(Condition_) YATO_REQUIRES(Condition_)

@@ -115,7 +115,7 @@ namespace yato
                 m_first = first;
                 m_length = last - first;
                 m_fetch1_cache = std::make_tuple(
-                    narrow_cast<index_type>(m_length - 2 * table_size * m_first),
+                    narrow_cast<index_type>(m_length) - narrow_cast<index_type>(2 * table_size * m_first),
                     narrow_cast<index_type>(2 * m_length)
                 );
                 // Sample function

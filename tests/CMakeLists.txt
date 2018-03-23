@@ -59,6 +59,8 @@ endforeach()
 #==========================================
 # Targets
 
+add_definitions(-DYATO_ENABLE_TESTED_ASSERTIONS)
+
 add_executable(YatoTests ${all_sources})
 
 target_link_libraries(YatoTests gtest)

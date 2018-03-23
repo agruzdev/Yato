@@ -2,7 +2,6 @@
 
 #include <type_traits>
 
-#define YATO_THROW_ON_TESTED_ASSERTIONS
 #include <yato/types.h>
 
 TEST(Yato_Types, sizes)
@@ -21,11 +20,11 @@ TEST(Yato_Types, sizes)
 
 TEST(Yato_Types, narrow_cast)
 {
-    // ToDo (a.gruzdev): These lines invokes assert() even if exceptions are enabled.
-    // Can it be a bug both in msvc and gcc?
-    //EXPECT_THROW(yato::narrow_cast<uint8_t>(1000U), yato::assertion_error);
-    //EXPECT_THROW(yato::narrow_cast<int32_t>(1.5f),  yato::assertion_error);
-    //EXPECT_THROW(yato::narrow_cast<uint32_t>(-1),   yato::assertion_error);
+    YATO_THROWING_ASSERT_LOCK(throwLock);
+
+    EXPECT_THROW(yato::narrow_cast<uint8_t>(1000U), yato::assertion_error);
+    EXPECT_THROW(yato::narrow_cast<int32_t>(1.5f),  yato::assertion_error);
+    EXPECT_THROW(yato::narrow_cast<uint32_t>(-1),   yato::assertion_error);
     EXPECT_NO_THROW(yato::narrow_cast<uint8_t>(255U));
     EXPECT_NO_THROW(yato::narrow_cast<int32_t>(1.0f));
 }
@@ -73,9 +72,8 @@ TEST(Yato_Types, TestLiterals)
 {
     using namespace yato::literals;
 
-    // ToDo (a.gruzdev): These lines invokes assert() even if exceptions are enabled.
-    // Can it be a bug both in msvc and gcc?
-    //EXPECT_THROW(1000_u8, yato::assertion_error);
+    YATO_THROWING_ASSERT_LOCK(throwLock);
+    EXPECT_THROW(1000_u8, yato::assertion_error);
 
     EXPECT_NO_THROW(255_u8);
     EXPECT_NO_THROW(0.0_f32);
