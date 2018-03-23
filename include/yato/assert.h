@@ -119,9 +119,9 @@ namespace yato
 
         inline
         void assert_default_callback(bool condition, const char* message) {
-            if(!condition) {
-                YATO_ASSERT(condition, message);
-            }
+            YATO_MAYBE_UNUSED(condition);
+            YATO_MAYBE_UNUSED(message);
+            YATO_ASSERT(false, message);
         }
 
         inline
