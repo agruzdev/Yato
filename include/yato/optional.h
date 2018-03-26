@@ -430,6 +430,12 @@ namespace yato
                 return m_ptr;
             }
 
+            constexpr
+            value_type operator -> () const {
+                YATO_REQUIRES(!empty());
+                return m_ptr;
+            }
+
             template <typename DefTy_>
             constexpr
             value_type get_or(DefTy_ && default_value) const {

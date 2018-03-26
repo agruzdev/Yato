@@ -8,9 +8,11 @@
 #ifndef _YATO_CONFIG_MANUAL_ARRAY_H_
 #define _YATO_CONFIG_MANUAL_ARRAY_H_
 
-#include "manual_value.h"
+#include "../config.h"
 
 namespace yato {
+
+namespace conf {
 
     class manual_object;
     struct manual_array_impl;
@@ -22,7 +24,7 @@ namespace yato {
         std::unique_ptr<manual_array_impl> m_pimpl;
 
         size_t do_get_size() const noexcept override;
-        const config_value* do_get_value(size_t idx) const noexcept override;
+        config_value do_get_value(size_t idx) const noexcept override;
         const config_object* do_get_object(size_t idx) const noexcept override;
         const config_array* do_get_array(size_t idx) const noexcept override;
         void* do_get_underlying_type() noexcept override;
@@ -39,9 +41,9 @@ namespace yato {
     
         void resize(size_t size);
     
-        void put(size_t idx, const manual_value & val);
+        void put(size_t idx, const config_value & val);
     
-        void put(size_t idx, manual_value && val);
+        void put(size_t idx, config_value && val);
     
         void put(size_t idx, const manual_array & arr);
     
@@ -65,6 +67,8 @@ namespace yato {
     void swap(manual_array & lhs, manual_array & rhs) noexcept {
         lhs.swap(rhs);
     }
+
+} // namespace conf
 
 } // namespace yato
 

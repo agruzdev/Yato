@@ -10,7 +10,9 @@
 
 namespace yato {
 
-    using element_type = yato::variant<void, manual_value, manual_array, manual_object>;
+namespace conf {
+
+    using element_type = yato::variant<void, config_value, manual_array, manual_object>;
 
     struct manual_array_impl {
         std::vector<element_type> data;
@@ -43,9 +45,9 @@ namespace yato {
         return m_pimpl->data.size();
     }
 
-    const config_value* manual_array::do_get_value(size_t idx) const noexcept {
+    config_value manual_array::do_get_value(size_t idx) const noexcept {
         YATO_ASSERT(m_pimpl != nullptr, "null impl");
-        return get_impl_<manual_value>(*m_pimpl, idx);
+        return *get_impl_<config_value>(*m_pimpl, idx);
     }
 
     const config_object* manual_array::do_get_object(size_t idx) const noexcept {
@@ -93,12 +95,12 @@ namespace yato {
         m_pimpl->data.resize(size);
     }
     
-    void manual_array::put(size_t idx, const manual_value & val) {
+    void manual_array::put(size_t idx, const config_value & val) {
         YATO_ASSERT(m_pimpl != nullptr, "null impl");
         put_impl_(*m_pimpl, idx, val);
     }
 
-    void manual_array::put(size_t idx, manual_value && val) {
+    void manual_array::put(size_t idx, config_value && val) {
         YATO_ASSERT(m_pimpl != nullptr, "null impl");
         put_impl_(*m_pimpl, idx, std::move(val));
     }
@@ -127,4 +129,6 @@ namespace yato {
         m_pimpl.swap(other.m_pimpl);
     }
 
-}
+} // namespace conf
+
+} // namespace yato

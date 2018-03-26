@@ -8,9 +8,11 @@
 #ifndef _YATO_CONFIG_MANUAL_OBJECT_H_
 #define _YATO_CONFIG_MANUAL_OBJECT_H_
 
-#include "manual_value.h"
+#include "../config.h"
 
 namespace yato {
+
+namespace conf {
 
     class manual_array;
     struct manual_object_impl;
@@ -21,14 +23,9 @@ namespace yato {
     private:
         std::unique_ptr<manual_object_impl> m_pimpl;
 
-        size_t do_get_size() const noexcept override;
         std::vector<std::string> do_get_keys() const noexcept override;
-    
-        bool do_has_value(const std::string & key) const noexcept override;
-        bool do_has_object(const std::string & key) const noexcept override;
-        bool do_has_array(const std::string & key) const noexcept override;
 
-        const config_value*  do_get_value(const std::string & key) const noexcept override;
+        yato::optional<config_value> do_get_value(const std::string & key) const noexcept override;
         const config_object* do_get_object(const std::string & key) const noexcept override;
         const config_array*  do_get_array(const std::string & key) const noexcept override;
     
@@ -44,9 +41,9 @@ namespace yato {
         manual_object& operator =(const manual_object&);
         manual_object& operator =(manual_object&&) noexcept;
     
-        void put(const std::string & key, const manual_value & val);
+        void put(const std::string & key, const config_value & val);
     
-        void put(const std::string & key, manual_value && val);
+        void put(const std::string & key, config_value && val);
     
         void put(const std::string & key, const manual_array & val);
     
@@ -65,5 +62,7 @@ namespace yato {
     }
 
 } // namespace yato
+
+} // namespace conf
 
 #endif // _YATO_CONFIG_MANUAL_OBJECT_H_

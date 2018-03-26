@@ -14,8 +14,11 @@
 #include <yato/optional.h>
 #include <yato/variant.h>
 #include <yato/assert.h>
+#include "yato/any.h"
 
 namespace yato {
+
+namespace conf {
 
     class config_error
         : public yato::runtime_error
@@ -30,86 +33,222 @@ namespace yato {
         { }
     };
 
+    enum class config_type
+    {
+        integer,
+        floating,
+        boolean,
+        string,
+        config
+    };
+
+    
+    
+    class basic_config;
+    
+    using config_ptr = std::unique_ptr<basic_config>;
 
     namespace details
     {
         struct config_integral_tag {};
         struct config_floating_tag {};
         struct config_string_tag   {};
+
+        struct config_no_cast_tag {};
+        struct config_narrow_cast_tag {};
     
         template <typename Ty_, typename = void>
         struct config_choose_stored_type
         { };
     
         template <typename Ty_>
-        struct config_choose_stored_type
-            <
-                Ty_,
-                std::enable_if_t<std::is_integral<Ty_>::value>
-            >
+        struct config_choose_stored_type <
+            Ty_,
+            std::enable_if_t<std::is_integral<Ty_>::value>
+        >
         {
             using type = int64_t;
             using tag  = config_integral_tag;
+            using cast_tag = config_narrow_cast_tag;
+            static constexpr config_type ctype = config_type::integer;
         };
     
         template <typename Ty_>
         struct config_choose_stored_type
-            <
-                Ty_,
-                std::enable_if_t<std::is_floating_point<Ty_>::value>
-            >
+        <
+            Ty_,
+            std::enable_if_t<std::is_floating_point<Ty_>::value>
+        >
         {
             using type = double;
             using tag  = config_floating_tag;
+            using cast_tag = config_narrow_cast_tag;
+            static constexpr config_type ctype = config_type::floating;
         };
     
         template <typename Ty_>
-        struct config_choose_stored_type
-            <
-                Ty_,
-                std::enable_if_t<std::is_same<std::string, Ty_>::value>
-            >
+        struct config_choose_stored_type <
+            Ty_,
+            std::enable_if_t<std::is_same<bool, Ty_>::value>
+        >
+        {
+            using type = bool;
+            using cast_tag = config_no_cast_tag;
+            static constexpr config_type ctype = config_type::boolean;
+        };
+
+        template <typename Ty_>
+        struct config_choose_stored_type <
+            Ty_,
+            std::enable_if_t<std::is_same<std::string, Ty_>::value>
+        >
         {
             using type = std::string;
             using tag  = config_string_tag;
+            using cast_tag = config_no_cast_tag;
+            static constexpr config_type ctype = config_type::string;
         };
 
+        template <typename Ty_>
+        struct config_choose_stored_type <
+            Ty_,
+            std::enable_if_t<std::is_same<yato::conf::config_ptr, Ty_>::value>
+        >
+        {
+            using type = std::string;
+            using tag  = config_string_tag;
+            using cast_tag = config_no_cast_tag;
+            static constexpr config_type ctype = config_type::config;
+        };
+
+        template <config_type Type_>
+        struct config_type_trait
+        { };
+
+        template <>
+        struct config_type_trait <
+            config_type::integer
+        >
+        {
+            using return_type = int64_t;
+        };
+
+        template <>
+        struct config_type_trait <
+            config_type::floating
+        >
+        {
+            using return_type = double;
+        };
+
+        template <>
+        struct config_type_trait <
+            config_type::boolean
+        >
+        {
+            using return_type = bool;
+        };
+
+        template <>
+        struct config_type_trait <
+            config_type::string
+        >
+        {
+            using return_type = std::string;
+        };
+
+        template <>
+        struct config_type_trait <
+            config_type::config
+        >
+        {
+            using return_type = yato::conf::config_ptr;
+        };
     }
 
-    
-    class config_value;
     class config_array;
     class config_object;
 
     /**
-     * Scalar value interface
+     * Scalar value
      */
     class config_value
     {
     private:
-        virtual void* do_get_underlying_type() noexcept = 0;
-    
-        virtual yato::optional<int64_t>   do_get_int()  const noexcept = 0;
-        virtual yato::optional<double>    do_get_real() const noexcept = 0;
-        virtual yato::optional<std::string> do_get_string() const noexcept = 0;
+        using value_type = yato::variant<int64_t, double, std::string>;
+        value_type m_value;
 
         template <typename Ty_>
         yato::optional<Ty_> get_impl_(details::config_integral_tag) const noexcept {
-            return do_get_int().map([](int64_t val) { return yato::narrow_cast<Ty_>(val); });
+            return m_value.get_opt<int64_t>().map([](int64_t val) { return yato::narrow_cast<Ty_>(val); });
         }
     
         template <typename Ty_>
         yato::optional<Ty_> get_impl_(details::config_floating_tag) const noexcept {
-            return do_get_real().map([](double val) { return yato::narrow_cast<Ty_>(val); });
+            return m_value.get_opt<double>().map([](double val) { return yato::narrow_cast<Ty_>(val); });
         }
     
         template <typename Ty_>
         yato::optional<std::string> get_impl_(details::config_string_tag) const noexcept {
-            return do_get_string();
+            return m_value.get_opt<std::string>();
         }
     
     public:
-        virtual ~config_value() = default;
+        config_value(int8_t val)
+            : m_value(static_cast<int64_t>(val))
+        { }
+    
+        config_value(int16_t val)
+            : m_value(static_cast<int64_t>(val))
+        { }
+    
+        config_value(int32_t val)
+            : m_value(static_cast<int64_t>(val))
+        { }
+    
+        config_value(int64_t val)
+            : m_value(val)
+        { }
+    
+        config_value(uint8_t val)
+            : m_value(static_cast<int64_t>(val))
+        { }
+    
+        config_value(uint16_t val)
+            : m_value(static_cast<int64_t>(val))
+        { }
+    
+        config_value(uint32_t val)
+            : m_value(static_cast<int64_t>(val))
+        { }
+    
+        config_value(uint64_t val)
+            : m_value(yato::narrow_cast<int64_t>(val))
+        { }
+    
+        config_value(float val)
+            : m_value(static_cast<double>(val))
+        { }
+    
+        config_value(double val)
+            : m_value(val)
+        { }
+    
+        config_value(const std::string & val)
+            : m_value(val)
+        { }
+    
+        config_value(std::string && val)
+            : m_value(std::move(val))
+        { }
+
+        ~config_value() = default;
+
+        config_value(const config_value&) = default;
+        config_value(config_value&&) = default;
+    
+        config_value& operator = (const config_value&) = default;
+        config_value& operator = (config_value&&) = default;
 
         template <typename Ty_>
         yato::optional<Ty_> get_opt() const noexcept {
@@ -136,59 +275,31 @@ namespace yato {
                 return static_cast<Ty_>(std::forward<Uy_>(default_value));
             }
         }
-
-        const void* get_underlying_type() const {
-            return const_cast<config_value*>(this)->do_get_underlying_type();
-        }
-    
-        void* get_underlying_type() {
-            return do_get_underlying_type();
-        }
     };
 
 
     /**
      * Set of named values
      */
-    class config_object {
+    class config_object 
+    {
     private:
         virtual void* do_get_underlying_type() noexcept = 0;
 
-        virtual size_t do_get_size() const noexcept = 0;
         virtual std::vector<std::string> do_get_keys() const noexcept = 0;
-    
-        virtual bool do_has_value(const std::string & key) const noexcept = 0;
-        virtual bool do_has_object(const std::string & key) const noexcept = 0;
-        virtual bool do_has_array(const std::string & key) const noexcept = 0;
 
-        virtual const config_value*  do_get_value(const std::string & key) const noexcept  = 0;
+        virtual yato::optional<config_value> do_get_value(const std::string & key) const noexcept  = 0;
         virtual const config_object* do_get_object(const std::string & key) const noexcept = 0;
         virtual const config_array*  do_get_array(const std::string & key) const noexcept = 0;
     
     public:
         virtual ~config_object() = default;
-    
-        bool has_value(const std::string & key) {
-            return do_has_value(key);
-        }
-    
-        bool has_object(const std::string & key) {
-            return do_has_object(key);
-        }
-    
-        bool has_array(const std::string & key) {
-            return do_has_array(key);
-        }
-    
-        yato::optional<const config_value*> get_value(const std::string & key) const {
-            return yato::make_optional(do_get_value(key));
-        }
-    
-        yato::optional<const config_object*> get_object(const std::string & key) const {
+
+        yato::optional<const config_object*> object(const std::string & key) const {
             return yato::make_optional(do_get_object(key));
         }
     
-        yato::optional<const config_array*> get_array(const std::string & key) const {
+        yato::optional<const config_array*> array(const std::string & key) const {
             return yato::make_optional(do_get_array(key));
         }
     
@@ -196,40 +307,32 @@ namespace yato {
             = yato::void_t<typename details::config_choose_stored_type<Ty_>::type>
         >
         yato::optional<Ty_> value(const std::string & key) const {
-            if(const auto opt = get_value(key)){
-                return opt.get_unsafe()->get_opt<Ty_>();
-            }
-            else {
-                throw config_error("Invalid config_value access.");
-            }
+            return do_get_value(key).map([](config_value && val){ return val.get_opt<Ty_>(); });
         }
 
         const void* get_underlying_type() const {
             return const_cast<config_object*>(this)->do_get_underlying_type();
         }
-    
-        size_t size() const noexcept {
-            return do_get_size();
-        }
-    
-        std::vector<std::string> keys() const {
-            return do_get_keys();
-        }
-    
+
         void* get_underlying_type() {
             return do_get_underlying_type();
+        }
+
+        std::vector<std::string> keys() const {
+            return do_get_keys();
         }
     };
 
     /**
      * Array interface
      */
-    class config_array {
+    class config_array 
+    {
     private:
         virtual void* do_get_underlying_type() noexcept = 0;
 
         virtual size_t do_get_size() const noexcept = 0;
-        virtual const config_value*  do_get_value(size_t idx) const noexcept  = 0;
+        virtual config_value do_get_value(size_t idx) const noexcept  = 0;
         virtual const config_object* do_get_object(size_t idx) const noexcept = 0;
         virtual const config_array*  do_get_array(size_t idx) const noexcept  = 0;
 
@@ -239,16 +342,12 @@ namespace yato {
         size_t size() const {
             return do_get_size();
         }
-    
-        yato::optional<const config_value*> get_value(size_t idx) const {
-            return yato::make_optional(do_get_value(idx));
-        }
-    
-        yato::optional<const config_object*> get_object(size_t idx) const {
+
+        yato::optional<const config_object*> object(size_t idx) const {
             return yato::make_optional(do_get_object(idx));
         }
     
-        yato::optional<const config_array*> get_array(size_t idx) const {
+        yato::optional<const config_array*> array(size_t idx) const {
             return yato::make_optional(do_get_array(idx));
         }
 
@@ -256,12 +355,7 @@ namespace yato {
             = yato::void_t<typename details::config_choose_stored_type<Ty_>::type>
         >
         yato::optional<Ty_> value(size_t idx) const {
-            if(const auto opt = get_value(idx)){
-                return opt.get_unsafe()->get_opt<Ty_>();
-            }
-            else {
-                throw config_error("Invalid config_value access.");
-            }
+            return do_get_value(idx).get_opt<Ty_>();
         }
     
         const void* get_underlying_type() const {
@@ -272,6 +366,58 @@ namespace yato {
             return do_get_underlying_type();
         }
     };
+
+
+
+    class basic_config
+    {
+    private:
+        virtual yato::any do_get_by_name(config_type type, const std::string & name) const noexcept = 0;
+
+        template <typename ToType_, typename FromType_>
+        static
+        ToType_ cast_result_(details::config_no_cast_tag, FromType_ && val) {
+            return std::forward<FromType_>(val);
+        }
+
+        template <typename ToType_, typename FromType_>
+        static
+        ToType_ cast_result_(details::config_narrow_cast_tag, FromType_ && val) {
+            return yato::narrow_cast<ToType_>(std::forward<FromType_>(val));
+        }
+
+    public:
+        basic_config() = default;
+        virtual ~basic_config() = default;
+
+        template <typename Ty_>
+        yato::optional<Ty_> value(const std::string & name) const {
+            constexpr config_type type = details::config_choose_stored_type<Ty_>::ctype;
+            using return_type = typename details::config_type_trait<type>::return_type;
+
+            auto val = do_get_by_name(type, name);
+            if(val.type() == typeid(return_type)) {
+                using cast_tag = typename details::config_choose_stored_type<Ty_>::cast_tag;
+                return yato::make_optional(
+                    cast_result_<Ty_>(cast_tag{}, std::move(val.get_as_unsafe<return_type>()))
+                );
+            }
+            return yato::nullopt_t{};
+        }
+
+        /**
+         * Alias for config
+         */
+        yato::optional<config_ptr> config(const std::string & name) const {
+            return value<config_ptr>(name);
+        }
+
+
+
+    };
+
+
+} // namespace conf
 
 } // namespace yato
 
