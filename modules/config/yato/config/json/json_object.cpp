@@ -172,59 +172,113 @@ namespace conf {
         : m_impl(std::move(impl))
     { }
 
+    bool json_config::do_is_object() const noexcept
+    {
+        assert(m_impl != nullptr);
+        const auto & json = m_impl->get();
+        return json.is_object();
+    }
+
+    static
+    yato::any get_impl(const json_object_state* self, config_type type, const nlohmann::json::const_iterator & it)
+    {
+        yato::any res(yato::nullany_t{});
+        switch (type)
+        {
+        case yato::conf::config_type::integer:
+            if(it->is_number_integer()) {
+                using return_type = typename details::config_type_trait<config_type::integer>::return_type;
+                res = yato::narrow_cast<return_type>(it->get<nlohmann::json::number_integer_t>());
+            }
+            break;
+        case yato::conf::config_type::boolean:
+            if(it->is_boolean()) {
+                using return_type = typename details::config_type_trait<config_type::boolean>::return_type;
+                res = static_cast<return_type>(it->get<nlohmann::json::boolean_t>());
+            }
+            break;
+        case yato::conf::config_type::floating:
+            if(it->is_number_float()) {
+                using return_type = typename details::config_type_trait<config_type::floating>::return_type;
+                res = yato::narrow_cast<return_type>(it->get<nlohmann::json::number_float_t>());
+            }
+            break;
+        case yato::conf::config_type::string:
+            if(it->is_string()) {
+                using return_type = typename details::config_type_trait<config_type::string>::return_type;
+                res = static_cast<return_type>(it->get<nlohmann::json::string_t>());
+            }
+            break;
+        case yato::conf::config_type::config:
+            if(it->is_object() || it->is_array()) {
+                using return_type = typename details::config_type_trait<config_type::config>::return_type;
+                auto impl = std::make_unique<json_object_state>(*self, it);
+                return_type subconfig = std::make_unique<json_config>(std::move(impl));
+                res.emplace<return_type>(std::move(subconfig));
+            }
+            break;
+        default:
+            break;
+        }
+        return res;
+    }
+
     yato::any json_config::do_get_by_name(config_type type, const std::string & name) const noexcept
     {
         assert(m_impl != nullptr);
         yato::any res{};
 
-        try {
-            const auto & json = m_impl->get();
-            const auto it = json.find(name);
-            if(it != json.end()) {
-                switch (type)
-                {
-                case yato::conf::config_type::integer:
-                    if(it->is_number_integer()) {
-                        using return_type = typename details::config_type_trait<config_type::integer>::return_type;
-                        res = yato::narrow_cast<return_type>(it->get<nlohmann::json::number_integer_t>());
-                    }
-                    break;
-                case yato::conf::config_type::boolean:
-                    if(it->is_boolean()) {
-                        using return_type = typename details::config_type_trait<config_type::boolean>::return_type;
-                        res = static_cast<return_type>(it->get<nlohmann::json::boolean_t>());
-                    }
-                    break;
-                case yato::conf::config_type::floating:
-                    if(it->is_number_float()) {
-                        using return_type = typename details::config_type_trait<config_type::floating>::return_type;
-                        res = yato::narrow_cast<return_type>(it->get<nlohmann::json::number_float_t>());
-                    }
-                    break;
-                case yato::conf::config_type::string:
-                    if(it->is_string()) {
-                        using return_type = typename details::config_type_trait<config_type::string>::return_type;
-                        res = static_cast<return_type>(it->get<nlohmann::json::string_t>());
-                    }
-                    break;
-                case yato::conf::config_type::config:
-                    if(it->is_object()) {
-                        using return_type = typename details::config_type_trait<config_type::config>::return_type;
-                        auto impl = std::make_unique<json_object_state>(*m_impl, it);
-                        return_type subconfig = std::make_unique<json_config>(std::move(impl));
-                        res.emplace<return_type>(std::move(subconfig));
-                    }
-                    break;
-                default:
-                    break;
+        const auto & json = m_impl->get();
+        if(json.is_object()) {
+            try {
+                const auto it = json.find(name);
+                if(it != json.end()) {
+                    res = get_impl(m_impl.get(), type, it);
                 }
             }
-        }
-        catch(...) {
-            // ToDo (a.gruzdev): Report error somehow
-            /* In case of error return empty result */
+            catch(...) {
+                // ToDo (a.gruzdev): Report error somehow
+                /* In case of error return empty result */
+            }
         }
         return res;
+    }
+
+    yato::any json_config::do_get_by_index(config_type type, size_t idx) const noexcept
+    {
+        assert(m_impl != nullptr);
+        yato::any res{};
+
+        const auto & json = m_impl->get();
+        if(json.is_array() && idx < json.size()) {
+            try {
+                const auto it = std::next(json.cbegin(), idx);
+                if(it != json.end()) {
+                    res = get_impl(m_impl.get(), type, it);
+                }
+            }
+            catch(...) {
+                // ToDo (a.gruzdev): Report error somehow
+                /* In case of error return empty result */
+            }
+        }
+        return res;
+    }
+
+    bool json_config::do_is_array() const noexcept
+    {
+        assert(m_impl != nullptr);
+
+        const auto & json = m_impl->get();
+        return json.is_array();
+    }
+
+    size_t json_config::do_get_size() const noexcept
+    {
+        assert(m_impl != nullptr);
+
+        const auto & json = m_impl->get();
+        return json.size();
     }
 
     std::unique_ptr<json_config> json_factory::create(const std::string & json) const

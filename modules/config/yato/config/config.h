@@ -64,7 +64,7 @@ namespace conf {
         template <typename Ty_>
         struct config_choose_stored_type <
             Ty_,
-            std::enable_if_t<std::is_integral<Ty_>::value>
+            std::enable_if_t<std::is_integral<Ty_>::value && !std::is_same<Ty_, bool>::value>
         >
         {
             using type = int64_t;
@@ -372,7 +372,13 @@ namespace conf {
     class basic_config
     {
     private:
+        virtual bool do_is_object() const noexcept = 0;
         virtual yato::any do_get_by_name(config_type type, const std::string & name) const noexcept = 0;
+
+        virtual bool do_is_array() const noexcept = 0;
+        virtual yato::any do_get_by_index(config_type type, size_t index) const noexcept = 0;
+
+        virtual size_t do_get_size() const noexcept = 0;
 
         template <typename ToType_, typename FromType_>
         static
@@ -390,6 +396,31 @@ namespace conf {
         basic_config() = default;
         virtual ~basic_config() = default;
 
+        /**
+         * Return true if config is an object, i.e. contains named values.
+         */
+        bool is_object() const {
+            return do_is_object();
+        }
+
+        /**
+         * Return true if config is an array, i.e. contains indexed values.
+         */
+        bool is_array() const {
+            return do_is_array();
+        }
+
+        /**
+         * Return number of entires in the config, if config is an array.
+         */
+        size_t size() const {
+            return do_get_size();
+        }
+
+        /**
+         * Get named value.
+         * Valid only if is_object() returned `true`
+         */
         template <typename Ty_>
         yato::optional<Ty_> value(const std::string & name) const {
             constexpr config_type type = details::config_choose_stored_type<Ty_>::ctype;
@@ -406,14 +437,37 @@ namespace conf {
         }
 
         /**
-         * Alias for config
+         * Get value of array by index.
+         * Valid only if is_array() returned `true`
          */
-        yato::optional<config_ptr> config(const std::string & name) const {
-            return value<config_ptr>(name);
+        template <typename Ty_>
+        yato::optional<Ty_> value(size_t idx) const {
+            constexpr config_type type = details::config_choose_stored_type<Ty_>::ctype;
+            using return_type = typename details::config_type_trait<type>::return_type;
+
+            auto val = do_get_by_index(type, idx);
+            if(val.type() == typeid(return_type)) {
+                using cast_tag = typename details::config_choose_stored_type<Ty_>::cast_tag;
+                return yato::make_optional(
+                    cast_result_<Ty_>(cast_tag{}, std::move(val.get_as_unsafe<return_type>()))
+                );
+            }
+            return yato::nullopt_t{};
         }
 
+        /**
+         * Alias for value<config_ptr>
+         */
+        config_ptr config(const std::string & name) const {
+            return value<config_ptr>(name).get_or(nullptr);
+        }
 
-
+        /**
+         * Alias for value<config_ptr>
+         */
+        config_ptr config(size_t idx) const {
+            return value<config_ptr>(idx).get_or(nullptr);
+        }
     };
 
 
