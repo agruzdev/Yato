@@ -332,3 +332,24 @@ TEST(Yato_Optional, visit)
     opt.visit([](int & x) { ++x; });
     EXPECT_EQ(2, opt.get_or(0));
 }
+
+TEST(Yato_Optional, filter) 
+{
+    const auto opt1 = yato::make_optional(1);
+    
+    const auto opt2 = opt1.filter([](int x) { return x > 0; });
+    EXPECT_TRUE(static_cast<bool>(opt2));
+
+    const auto opt3 = opt1.filter([](int x) { return x < 0; });
+    EXPECT_FALSE(static_cast<bool>(opt3));
+
+    double y = 42.0;
+    auto opt4 = yato::make_optional(&y);
+
+    const auto opt5 = std::move(opt4).filter([](double* x) { return *x > 0.0; });
+    EXPECT_TRUE(static_cast<bool>(opt5));
+
+    const auto opt6 = yato::make_optional(std::make_unique<int>(10)).filter([](const std::unique_ptr<int> & p) { return *p < 0; });
+    EXPECT_FALSE(static_cast<bool>(opt6));
+}
+

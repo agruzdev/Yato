@@ -479,6 +479,9 @@ namespace yato
             template <typename Function_>
             auto map(Function_ && transform) const &;
 
+            template <typename Predicate_>
+            this_type filter(Predicate_ && predicate) &&;
+
             template <typename Ptr_>
             friend class optional_ptr;
         };
@@ -727,6 +730,14 @@ namespace yato
                     : nullopt_t{};
             }
 
+            template <typename Predicate_>
+            this_type filter(Predicate_ && predicate) const &
+            {
+                return (!super_type::empty() && predicate(super_type::get_unsafe()))
+                    ? *this
+                    : nullopt_t{};
+            }
+
             auto flatten() const &
             {
                 return flatten_op<value_type>::apply(*this);
@@ -841,6 +852,22 @@ namespace yato
             {
                 return (!super_type::empty())
                     ? make_optional_(transform(std::move(super_type::get_unsafe())))
+                    : nullopt_t{};
+            }
+
+            template <typename Predicate_>
+            this_type filter(Predicate_ && predicate) const &
+            {
+                return (!super_type::empty() && predicate(super_type::get_unsafe()))
+                    ? *this
+                    : nullopt_t{};
+            }
+
+            template <typename Predicate_>
+            this_type filter(Predicate_ && predicate) &&
+            {
+                return (!super_type::empty() && predicate(super_type::get_unsafe()))
+                    ? this_type(std::move(*this))
                     : nullopt_t{};
             }
 
@@ -980,6 +1007,22 @@ namespace yato
                     : nullopt_t{};
             }
 
+            template <typename Predicate_>
+            this_type filter(Predicate_ && predicate) const &
+            {
+                return (!super_type::empty() && predicate(super_type::get_unsafe()))
+                    ? *this
+                    : nullopt_t{};
+            }
+
+            template <typename Predicate_>
+            this_type filter(Predicate_ && predicate) &&
+            {
+                return (!super_type::empty() && predicate(super_type::get_unsafe()))
+                    ? this_type(std::move(*this))
+                    : nullopt_t{};
+            }
+
             auto flatten() const &
             {
                 return flatten_op<value_type>::apply(*this);
@@ -1002,6 +1045,14 @@ namespace yato
                 : nullopt_t{};
         }
         
+        template <typename Ty_>
+        template <typename Predicate_>
+        optional_ptr<Ty_> optional_ptr<Ty_>::filter(Predicate_ && predicate) &&
+        {
+            return (!empty() && predicate(get_unsafe()))
+                ? optional_ptr<Ty_>(std::move(*this))
+                : nullopt_t{};
+        }
     }
 
     /**
