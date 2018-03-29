@@ -60,10 +60,10 @@ namespace conf {
         std::unique_ptr<json_object_state> m_impl;
 
         bool do_is_object() const noexcept override;
-        yato::any do_get_by_name(config_type type, const std::string & name) const noexcept override;
+        details::value_variant do_get_by_name(config_type type, const std::string & name) const noexcept override;
 
         bool do_is_array() const noexcept override;
-        yato::any do_get_by_index(config_type type, size_t index) const noexcept override;
+        details::value_variant do_get_by_index(config_type type, size_t index) const noexcept override;
 
         size_t do_get_size() const noexcept override;
 

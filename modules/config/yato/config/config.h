@@ -164,7 +164,18 @@ namespace conf {
         {
             using return_type = yato::conf::config_ptr;
         };
+
+
+        using value_variant = yato::variant<
+            void,
+            typename config_type_trait<config_type::integer>::return_type,
+            typename config_type_trait<config_type::floating>::return_type,
+            typename config_type_trait<config_type::boolean>::return_type,
+            typename config_type_trait<config_type::string>::return_type,
+            typename config_type_trait<config_type::config>::return_type
+        >;
     }
+
 
     class config_array;
     class config_object;
@@ -373,10 +384,10 @@ namespace conf {
     {
     private:
         virtual bool do_is_object() const noexcept = 0;
-        virtual yato::any do_get_by_name(config_type type, const std::string & name) const noexcept = 0;
+        virtual details::value_variant do_get_by_name(config_type type, const std::string & name) const noexcept = 0;
 
         virtual bool do_is_array() const noexcept = 0;
-        virtual yato::any do_get_by_index(config_type type, size_t index) const noexcept = 0;
+        virtual details::value_variant do_get_by_index(config_type type, size_t index) const noexcept = 0;
 
         virtual size_t do_get_size() const noexcept = 0;
 
@@ -425,15 +436,11 @@ namespace conf {
         yato::optional<Ty_> value(const std::string & name) const {
             constexpr config_type type = details::config_choose_stored_type<Ty_>::ctype;
             using return_type = typename details::config_type_trait<type>::return_type;
+            using cast_tag = typename details::config_choose_stored_type<Ty_>::cast_tag;
 
-            auto val = do_get_by_name(type, name);
-            if(val.type() == typeid(return_type)) {
-                using cast_tag = typename details::config_choose_stored_type<Ty_>::cast_tag;
-                return yato::make_optional(
-                    cast_result_<Ty_>(cast_tag{}, std::move(val.get_as_unsafe<return_type>()))
-                );
-            }
-            return yato::nullopt_t{};
+            return do_get_by_name(type, name).get_opt<return_type>().map(
+                [](return_type && val){ return cast_result_<Ty_>(cast_tag{}, std::move(val)); }
+            );
         }
 
         /**
@@ -444,15 +451,11 @@ namespace conf {
         yato::optional<Ty_> value(size_t idx) const {
             constexpr config_type type = details::config_choose_stored_type<Ty_>::ctype;
             using return_type = typename details::config_type_trait<type>::return_type;
+            using cast_tag = typename details::config_choose_stored_type<Ty_>::cast_tag;
 
-            auto val = do_get_by_index(type, idx);
-            if(val.type() == typeid(return_type)) {
-                using cast_tag = typename details::config_choose_stored_type<Ty_>::cast_tag;
-                return yato::make_optional(
-                    cast_result_<Ty_>(cast_tag{}, std::move(val.get_as_unsafe<return_type>()))
-                );
-            }
-            return yato::nullopt_t{};
+            return do_get_by_index(type, idx).get_opt<return_type>().map(
+                [](return_type && val){ return cast_result_<Ty_>(cast_tag{}, std::move(val)); }
+            );
         }
 
         /**
