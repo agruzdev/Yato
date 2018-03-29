@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include <atomic>
+#include <memory>
 
 #include <yato/variant.h>
 
@@ -46,8 +47,9 @@ TEST(Yato_Variant, common)
 
 TEST(Yato_Variant, copy)
 {
+    //static_assert(yato::variant<void, int>::is_copy_constructible, "yato::variant<void, int> must be copyable");
     yato::variant<void, int> v1(1);
-    yato::variant<void, int> v2(v1);
+    yato::variant<void, int> v2 = yato::variant<void, int>(v1);
 
     yato::variant<float, void> v3;
     yato::variant<float, void> v4(v3);
@@ -305,3 +307,18 @@ TEST(Yato_Variant, cast7)
 
     EXPECT_EQ(42,  v2.get_as<int>(0));
 }
+
+TEST(Yato_Variant, non_copy)
+{
+    using ptr_variant =  yato::variant<std::unique_ptr<int>, std::unique_ptr<float>>;
+    ptr_variant v1(std::make_unique<int>(42));
+    ptr_variant v2(std::make_unique<int>(23));
+
+    // v2 = v1; // no copy
+    v2 = std::move(v1);
+
+    std::vector<ptr_variant> vec;
+    vec.push_back(std::move(v2));
+    vec.emplace_back(std::make_unique<int>(7));
+}
+
