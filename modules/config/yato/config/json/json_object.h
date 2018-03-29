@@ -75,9 +75,10 @@ namespace conf {
 
 
     class json_factory
+        : public config_factory
     {
     public:
-        std::unique_ptr<json_config> create(const std::string & json) const;
+        std::unique_ptr<basic_config> create(const std::string & json) const override;
     };
 
 } // namespace conf

@@ -281,7 +281,7 @@ namespace conf {
         return json.size();
     }
 
-    std::unique_ptr<json_config> json_factory::create(const std::string & json) const
+    std::unique_ptr<basic_config> json_factory::create(const std::string & json) const
     {
         auto impl = std::make_unique<json_object_state>(nlohmann::json::parse(json, nullptr, false));
         if(impl->get().is_discarded()) {

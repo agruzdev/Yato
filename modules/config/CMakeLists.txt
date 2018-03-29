@@ -17,6 +17,7 @@ if(YATO_CONFIG_MANUAL)
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/manual/*.cpp"
     )
     list(APPEND config_sources ${manual_sources})
+    set(CONFIG_NON_EMPTY_TEST ON)
 endif()
 
 option(YATO_CONFIG_JSON "Enable json config backend" OFF)
@@ -28,8 +29,8 @@ if(YATO_CONFIG_JSON)
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/json/*.cpp"
     )
     list(APPEND config_sources ${json_sources})
+    set(CONFIG_NON_EMPTY_TEST ON)
 endif()
-
 
 include_directories(${YATO_INCLUDE_DIRS})
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
@@ -45,12 +46,16 @@ endif()
 #===========================================
 # Tests
 
+if(CONFIG_NON_EMPTY_TEST)
+    list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/include")
+endif()
 if(YATO_CONFIG_MANUAL)
     list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/manual")
 endif()
 if(YATO_CONFIG_JSON)
     list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/json")
 endif()
+
 set(Yato_TEST_DIRS ${Yato_TEST_DIRS} PARENT_SCOPE)
 
 list(APPEND Yato_TEST_LIBS YatoConfig)

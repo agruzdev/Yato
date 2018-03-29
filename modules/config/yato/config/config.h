@@ -470,6 +470,17 @@ namespace conf {
         }
     };
 
+    /**
+     * Abstract factory for creating config
+     */
+    class config_factory
+    {
+    public:
+        virtual ~config_factory() = default;
+
+        virtual std::unique_ptr<basic_config> create(const std::string & json) const = 0;
+    };
+
 
 } // namespace conf
 
