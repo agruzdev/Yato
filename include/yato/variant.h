@@ -877,8 +877,8 @@ namespace yato
             basic_variant& operator = (const basic_variant & other) = default;
 
             /**
-             *  If stored types of both variants are same, then calls copy assignment operator
-             *  If the types are different or copy assignment is not available, then destroys current instance and creates copy
+             *  If stored types of both variants are same, then calls move assignment operator
+             *  If the types are different or copy assignment is not available, then destroys current instance and creates moved copy
              */
             basic_variant& operator = (basic_variant && other) = default;
 
