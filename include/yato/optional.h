@@ -1076,12 +1076,21 @@ namespace yato
         lhs.swap(rhs);
     }
 
+    /**
+     * Create optional from value
+     */
     template <typename Ty_>
     optional<std::decay_t<Ty_>> make_optional(Ty_ && val) {
         return optional<std::decay_t<Ty_>>(std::forward<Ty_>(val));
     }
 
-
+    /**
+     * Create optional from value
+     */
+    template <typename Ty_>
+    optional<std::decay_t<Ty_>> some(Ty_ && val) {
+        return optional<std::decay_t<Ty_>>(std::forward<Ty_>(val));
+    }
 
 } // namespace yato
 
