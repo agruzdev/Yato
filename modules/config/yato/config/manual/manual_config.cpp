@@ -167,16 +167,15 @@ namespace conf {
 
         details::value_variant get(const std::string & key, config_type type)
         {
-            details::value_variant nullvar{};
             if(!is_object()) {
-                return nullvar;
+                return yato::nullvar_t{};
             }
 
             const manual_object_type & object = m_node.get_as_unsafe<manual_object_type>();
             const auto it = object.find(key);
             if(it == object.cend()) {
                 // No such key
-                return nullvar;
+                return yato::nullvar_t{};
             }
 
             const manual_value_type & value = (*it).second;
@@ -185,14 +184,13 @@ namespace conf {
 
         details::value_variant get(size_t idx, config_type type)
         {
-            details::value_variant nullvar{};
             if(!is_array()) {
-                return nullvar;
+                return yato::nullvar_t{};
             }
 
             const manual_array_type & arr = m_node.get_as_unsafe<manual_array_type>();
             if(idx >= arr.size()) {
-                return nullvar;
+                return yato::nullvar_t{};
             }
 
             return get_impl_(arr[idx], type);

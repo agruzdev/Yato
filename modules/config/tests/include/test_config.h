@@ -7,7 +7,29 @@
 
 #include <yato/config/config.h>
 
-static
+inline
+void TestConfig_PlainObject(const yato::conf::config_ptr & conf)
+{
+    ASSERT_NE(nullptr, conf);
+    EXPECT_TRUE(conf->is_object());
+
+    const auto i = conf->value<int32_t>("int");
+    EXPECT_EQ(42, i.get_or(0));
+
+    const auto str = conf->value<std::string>("message");
+    EXPECT_EQ("somestr", str.get_or(""));
+
+    const auto f1 = conf->value<bool>("flag1");
+    EXPECT_EQ(false, f1.get_or(true));
+
+    const auto f2 = conf->value<bool>("flag2");
+    EXPECT_EQ(true, f2.get_or(false));
+
+    const auto v = conf->value<float>("flt").get_or(-1.0f);
+    EXPECT_FLOAT_EQ(7.0f, v);
+}
+
+inline
 void TestConfig_Object(const yato::conf::config_ptr & conf)
 {
     ASSERT_NE(nullptr, conf);
@@ -27,7 +49,7 @@ void TestConfig_Object(const yato::conf::config_ptr & conf)
     EXPECT_FLOAT_EQ(7.0f, v);
 }
 
-static
+inline
 void TestConfig_Array(const yato::conf::config_ptr & conf)
 {
     ASSERT_NE(nullptr, conf);

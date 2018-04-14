@@ -53,7 +53,7 @@ namespace conf {
 
     bool json_config::do_is_object() const noexcept
     {
-        assert(m_impl != nullptr);
+        YATO_REQUIRES(m_impl != nullptr);
         const auto & json = m_impl->get();
         return json.is_object();
     }
@@ -104,7 +104,7 @@ namespace conf {
 
     details::value_variant json_config::do_get_by_name(const std::string & name, config_type type) const noexcept
     {
-        assert(m_impl != nullptr);
+        YATO_REQUIRES(m_impl != nullptr);
         details::value_variant res{};
 
         const auto & json = m_impl->get();
@@ -125,7 +125,7 @@ namespace conf {
 
     details::value_variant json_config::do_get_by_index(size_t index, config_type type) const noexcept
     {
-        assert(m_impl != nullptr);
+        YATO_REQUIRES(m_impl != nullptr);
         details::value_variant res{};
 
         const auto & json = m_impl->get();
@@ -146,7 +146,7 @@ namespace conf {
 
     bool json_config::do_is_array() const noexcept
     {
-        assert(m_impl != nullptr);
+        YATO_REQUIRES(m_impl != nullptr);
 
         const auto & json = m_impl->get();
         return json.is_array();
@@ -154,7 +154,7 @@ namespace conf {
 
     size_t json_config::do_get_size() const noexcept
     {
-        assert(m_impl != nullptr);
+        YATO_REQUIRES(m_impl != nullptr);
 
         const auto & json = m_impl->get();
         return json.size();

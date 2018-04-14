@@ -10,6 +10,7 @@ file(GLOB config_sources
     "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/*.cpp"
 )
 
+# Manual
 option(YATO_CONFIG_MANUAL "Enable manual config" OFF)
 if(YATO_CONFIG_MANUAL)
     file(GLOB manual_sources
@@ -17,9 +18,11 @@ if(YATO_CONFIG_MANUAL)
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/manual/*.cpp"
     )
     list(APPEND config_sources ${manual_sources})
+    list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/manual")
     set(CONFIG_NON_EMPTY_TEST ON)
 endif()
 
+# Json
 option(YATO_CONFIG_JSON "Enable json config backend" OFF)
 if(YATO_CONFIG_JSON)
     include(${CMAKE_SOURCE_DIR}/cmake/dependency.json.cmake)
@@ -29,6 +32,21 @@ if(YATO_CONFIG_JSON)
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/json/*.cpp"
     )
     list(APPEND config_sources ${json_sources})
+    list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/json")
+    set(CONFIG_NON_EMPTY_TEST ON)
+endif()
+
+# Command line
+option(YATO_CONFIG_CMD "Enable command line config background" OFF)
+if(YATO_CONFIG_CMD)
+    include(${CMAKE_SOURCE_DIR}/cmake/dependency.tclap.cmake)
+    include_directories(${DEPENDS_TCLAP_INCLUDE_DIR})
+    file(GLOB cmd_sources
+        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/cmd/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/cmd/*.cpp"
+    )
+    list(APPEND config_sources ${cmd_sources})
+    list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/cmd")
     set(CONFIG_NON_EMPTY_TEST ON)
 endif()
 
@@ -49,13 +67,6 @@ endif()
 if(CONFIG_NON_EMPTY_TEST)
     list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/include")
 endif()
-if(YATO_CONFIG_MANUAL)
-    list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/manual")
-endif()
-if(YATO_CONFIG_JSON)
-    list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/json")
-endif()
-
 set(Yato_TEST_DIRS ${Yato_TEST_DIRS} PARENT_SCOPE)
 
 list(APPEND Yato_TEST_LIBS YatoConfig)

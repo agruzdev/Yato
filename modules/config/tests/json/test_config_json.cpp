@@ -1,8 +1,22 @@
 #include "../include/test_config.h"
 #include <yato/config/json/json_config.h>
 
-
 TEST(Yato_Config, json_object)
+{
+    yato::conf::json_factory factory{};
+    const yato::conf::config_ptr conf = factory.create(R"JSON(
+        {
+            "int": 42,
+            "message": "somestr",
+            "flt" : 7.0,
+            "flag1" : false,
+            "flag2" : true
+        }
+    )JSON");
+    TestConfig_PlainObject(conf);
+}
+
+TEST(Yato_Config, json_object2)
 {
     yato::conf::json_factory factory{};
     const yato::conf::config_ptr conf = factory.create(R"JSON(
