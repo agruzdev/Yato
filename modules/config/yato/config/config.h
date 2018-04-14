@@ -42,11 +42,8 @@ namespace conf {
         config
     };
 
-    
-    
     class basic_config;
-    
-    using config_ptr = std::unique_ptr<basic_config>;
+    using config_ptr = std::shared_ptr<const basic_config>;
 
     namespace details
     {
@@ -384,10 +381,10 @@ namespace conf {
     {
     private:
         virtual bool do_is_object() const noexcept = 0;
-        virtual details::value_variant do_get_by_name(config_type type, const std::string & name) const noexcept = 0;
+        virtual details::value_variant do_get_by_name(const std::string & name, config_type type) const noexcept = 0;
 
         virtual bool do_is_array() const noexcept = 0;
-        virtual details::value_variant do_get_by_index(config_type type, size_t index) const noexcept = 0;
+        virtual details::value_variant do_get_by_index(size_t index, config_type type) const noexcept = 0;
 
         virtual size_t do_get_size() const noexcept = 0;
 
@@ -438,7 +435,7 @@ namespace conf {
             using return_type = typename details::config_type_trait<type>::return_type;
             using cast_tag = typename details::config_choose_stored_type<Ty_>::cast_tag;
 
-            return do_get_by_name(type, name).get_opt<return_type>().map(
+            return do_get_by_name(name, type).get_opt<return_type>().map(
                 [](return_type && val){ return cast_result_<Ty_>(cast_tag{}, std::move(val)); }
             );
         }
@@ -453,7 +450,7 @@ namespace conf {
             using return_type = typename details::config_type_trait<type>::return_type;
             using cast_tag = typename details::config_choose_stored_type<Ty_>::cast_tag;
 
-            return do_get_by_index(type, idx).get_opt<return_type>().map(
+            return do_get_by_index(idx, type).get_opt<return_type>().map(
                 [](return_type && val){ return cast_result_<Ty_>(cast_tag{}, std::move(val)); }
             );
         }
@@ -471,6 +468,20 @@ namespace conf {
         config_ptr config(size_t idx) const {
             return value<config_ptr>(idx).get_or(nullptr);
         }
+
+        /**
+         * Alias for value<config_ptr>
+         */
+        config_ptr array(const std::string & name) const {
+            return value<config_ptr>(name).get_or(nullptr);
+        }
+
+        /**
+         * Alias for value<config_ptr>
+         */
+        config_ptr array(size_t idx) const {
+            return value<config_ptr>(idx).get_or(nullptr);
+        }
     };
 
     /**
@@ -481,7 +492,7 @@ namespace conf {
     public:
         virtual ~config_factory() = default;
 
-        virtual std::unique_ptr<basic_config> create(const std::string & json) const = 0;
+        virtual config_ptr create(const std::string & json) const = 0;
     };
 
 

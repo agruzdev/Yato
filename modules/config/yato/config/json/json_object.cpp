@@ -13,11 +13,6 @@ namespace yato {
 
 namespace conf {
 
-    using element_type = yato::variant<void, config_value, /*manual_array, */ json_object>;
-
-    struct json_object_impl {
-        nlohmann::json object;
-    };
 
     /**
      * Store read-only iterator
@@ -45,127 +40,7 @@ namespace conf {
         }
     };
 
-    //template <typename Ty_>
-    //const Ty_* get_field_impl_(const manual_object_impl & self, const std::string & key)
-    //{
-    //    const auto it = self.data.find(key);
-    //    if (it == self.data.cend()) {
-    //        return nullptr;
-    //    }
-    //    if(it->second.type() != typeid(Ty_)) {
-    //        return nullptr;
-    //    }
-    //    return &it->second.get_as_unsafe<Ty_>();
-    //}
-    //
-    //template <typename Ty_>
-    //void put_impl_(manual_object_impl & self, const std::string & key, Ty_ && obj) 
-    //{
-    //    self.data[key] = static_cast<element_type>(std::forward<Ty_>(obj));
-    //}
-
-    std::vector<std::string> json_object::do_get_keys() const noexcept
-    {
-        //YATO_ASSERT(m_pimpl != nullptr, "null impl");
-        //std::vector<std::string> keys;
-        //keys.reserve(m_pimpl->data.size());
-        //for(auto it : m_pimpl->data) {
-        //    keys.push_back(it.first);
-        //}
-        //return keys;
-        return {};
-    }
-
-    
-    yato::optional<config_value> json_object::do_get_value(const std::string & key) const noexcept
-    {
-        YATO_ASSERT(m_pimpl != nullptr, "null impl");
-        const auto it = m_pimpl->object.find(key);
-        //if(it != m_pimpl->object.end()) {
-        //    if(it->is_primitive()) {
-        //        return yato::make_optional(config_value(json.get()));
-        //    }
-        //}
-        //return *get_field_impl_<config_value>(*m_pimpl, key);
-        return yato::nullopt_t{};
-    }
-
-    const config_object* json_object::do_get_object(const std::string & key) const noexcept
-    {
-        YATO_ASSERT(m_pimpl != nullptr, "null impl");
-        //return get_field_impl_<manual_object>(*m_pimpl, key);
-        return nullptr;
-    }
-
-    const config_array* json_object::do_get_array(const std::string & key) const noexcept
-    {
-        YATO_ASSERT(m_pimpl != nullptr, "null impl");
-        //return get_field_impl_<manual_array>(*m_pimpl, key);
-        return nullptr;
-    }
-
-    void* json_object::do_get_underlying_type() noexcept
-    {
-        YATO_ASSERT(m_pimpl != nullptr, "null impl");
-        return &m_pimpl->object;
-    }
-
-    json_object::json_object(std::unique_ptr<json_object_impl> && impl)
-        : m_pimpl(std::move(impl))
-    { }
-
-    json_object::~json_object() = default;
-
-    json_object::json_object(json_object&&) noexcept = default;
-
-    json_object& json_object::operator =(json_object&&) noexcept = default;
-
-#if 0
-    void json_object::put(const std::string & key, const config_value & val) 
-    {
-        YATO_ASSERT(m_pimpl != nullptr, "null impl");
-        //put_impl_(*m_pimpl, key, val);
-    }
-
-    void json_object::put(const std::string & key, config_value && val) 
-    {
-        YATO_ASSERT(m_pimpl != nullptr, "null impl");
-        //put_impl_(*m_pimpl, key, std::move(val));
-    }
-
-    void json_object::put(const std::string & key, const manual_array & val)
-    {
-        YATO_ASSERT(m_pimpl != nullptr, "null impl");
-        //put_impl_(*m_pimpl, key, val);
-    }
-
-    void json_object::put(const std::string & key, manual_array && val)
-    {
-        YATO_ASSERT(m_pimpl != nullptr, "null impl");
-        //put_impl_(*m_pimpl, key, std::move(val));
-    }
-
-    void json_object::put(const std::string & key, const manual_object & val)
-    {
-        YATO_ASSERT(m_pimpl != nullptr, "null impl");
-        //put_impl_(*m_pimpl, key, val);
-    }
-
-    void manual_object::put(const std::string & key, manual_object && val)
-    {
-        YATO_ASSERT(m_pimpl != nullptr, "null impl");
-        put_impl_(*m_pimpl, key, std::move(val));
-    }
-#endif
-
-    void json_object::swap(json_object & other) noexcept
-    {
-        m_pimpl.swap(other.m_pimpl);
-    }
-
-
-
-
+ 
 
 
     json_config::json_config(std::unique_ptr<json_object_state> && impl)
@@ -223,7 +98,7 @@ namespace conf {
         return res;
     }
 
-    details::value_variant json_config::do_get_by_name(config_type type, const std::string & name) const noexcept
+    details::value_variant json_config::do_get_by_name(const std::string & name, config_type type) const noexcept
     {
         assert(m_impl != nullptr);
         details::value_variant res{};
@@ -244,7 +119,7 @@ namespace conf {
         return res;
     }
 
-    details::value_variant json_config::do_get_by_index(config_type type, size_t index) const noexcept
+    details::value_variant json_config::do_get_by_index(size_t index, config_type type) const noexcept
     {
         assert(m_impl != nullptr);
         details::value_variant res{};
@@ -281,13 +156,13 @@ namespace conf {
         return json.size();
     }
 
-    std::unique_ptr<basic_config> json_factory::create(const std::string & json) const
+    config_ptr json_factory::create(const std::string & json) const
     {
         auto impl = std::make_unique<json_object_state>(nlohmann::json::parse(json, nullptr, false));
         if(impl->get().is_discarded()) {
             return nullptr;
         }
-        return std::make_unique<json_config>(std::move(impl));
+        return std::make_shared<json_config>(std::move(impl));
     }
 
 } // namespace conf
