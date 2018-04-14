@@ -1,5 +1,5 @@
 #include "../include/test_config.h"
-#include <yato/config/manual/manual_object.h>
+#include <yato/config/manual/manual_config.h>
 
 
 TEST(Yato_Config, manual_object)

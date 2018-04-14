@@ -8,7 +8,7 @@
 #include <map>
 #include <vector>
 
-#include "manual_object.h"
+#include "manual_config.h"
 
 namespace yato {
 
@@ -204,6 +204,12 @@ namespace conf {
     {
         YATO_ENSURES(m_impl != nullptr);
     }
+
+    manual_config::~manual_config() = default;
+
+    manual_config::manual_config(manual_config&&) noexcept = default;
+
+    manual_config& manual_config::operator=(manual_config&&) noexcept = default;
 
     bool manual_config::do_is_object() const noexcept
     {

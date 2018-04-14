@@ -1,5 +1,5 @@
 #include "../include/test_config.h"
-#include <yato/config/json/json_object.h>
+#include <yato/config/json/json_config.h>
 
 
 TEST(Yato_Config, json_object)

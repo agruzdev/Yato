@@ -7,7 +7,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "json_object.h"
+#include "json_config.h"
 
 namespace yato {
 
@@ -18,18 +18,18 @@ namespace conf {
      * Store read-only iterator
      * Root is shared between all configs
      */
-    class json_object_state
+    class json_config_state
     {
         std::shared_ptr<nlohmann::json> m_root;
         yato::optional<nlohmann::json::const_iterator> m_iter;
 
     public:
-        json_object_state(nlohmann::json && json)
+        json_config_state(nlohmann::json && json)
             : m_root(std::make_shared<nlohmann::json>(std::move(json)))
             , m_iter(yato::nullopt_t{})
         { }
 
-        json_object_state(const json_object_state & parent, const nlohmann::json::const_iterator & iter)
+        json_config_state(const json_config_state & parent, const nlohmann::json::const_iterator & iter)
             : m_root(parent.m_root)
             , m_iter(iter)
         { }
@@ -40,12 +40,16 @@ namespace conf {
         }
     };
 
- 
+    //-------------------------------------------------------------------------
 
 
-    json_config::json_config(std::unique_ptr<json_object_state> && impl)
+    json_config::json_config(std::unique_ptr<json_config_state> && impl)
         : m_impl(std::move(impl))
     { }
+
+    json_config::json_config(json_config&&) noexcept = default;
+
+    json_config& json_config::operator=(json_config&&) noexcept = default;
 
     bool json_config::do_is_object() const noexcept
     {
@@ -55,7 +59,7 @@ namespace conf {
     }
 
     static
-    details::value_variant get_impl(const json_object_state* self, config_type type, const nlohmann::json::const_iterator & it)
+    details::value_variant get_impl(const json_config_state* self, config_type type, const nlohmann::json::const_iterator & it)
     {
         details::value_variant res{};
         switch (type)
@@ -87,7 +91,7 @@ namespace conf {
         case yato::conf::config_type::config:
             if(it->is_object() || it->is_array()) {
                 using return_type = typename details::config_type_trait<config_type::config>::return_type;
-                auto impl = std::make_unique<json_object_state>(*self, it);
+                auto impl = std::make_unique<json_config_state>(*self, it);
                 return_type subconfig = std::make_unique<json_config>(std::move(impl));
                 res.emplace<return_type>(std::move(subconfig));
             }
@@ -158,7 +162,7 @@ namespace conf {
 
     config_ptr json_factory::create(const std::string & json) const
     {
-        auto impl = std::make_unique<json_object_state>(nlohmann::json::parse(json, nullptr, false));
+        auto impl = std::make_unique<json_config_state>(nlohmann::json::parse(json, nullptr, false));
         if(impl->get().is_discarded()) {
             return nullptr;
         }
