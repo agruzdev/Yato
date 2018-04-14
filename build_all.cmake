@@ -220,6 +220,7 @@ foreach(CURRENT_TARGET ${all_build_targers})
             list(APPEND configure_flags -DYATO_BUILD_CONFIG=ON)
             list(APPEND configure_flags -DYATO_CONFIG_MANUAL=ON)
             list(APPEND configure_flags -DYATO_CONFIG_JSON=ON)
+            list(APPEND configure_flags -DYATO_CONFIG_CMD=ON)
         endif()
 
         message(STATUS "configure_flags=${configure_flags}")
