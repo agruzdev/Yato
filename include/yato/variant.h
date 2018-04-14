@@ -825,10 +825,11 @@ namespace yato
              *  Creates empty variant
              *  As is void is stored
              */
-            template <typename Types_ = alternativies_list>
-            explicit
-            basic_variant(typename std::enable_if<meta::list_find<Types_, void>::value != yato::meta::list_npos,
-                    details::construct_empty_t>::type = details::construct_empty_t()) YATO_NOEXCEPT_KEYWORD
+            template <typename Types_ = alternativies_list, typename = 
+                std::enable_if_t<meta::list_find<Types_, void>::value != yato::meta::list_npos>
+            >
+            YATO_CONSTEXPR_FUNC
+            basic_variant(details::construct_empty_t = details::construct_empty_t{}) YATO_NOEXCEPT_KEYWORD
                 : m_storage(meta::list_find<Types_, void>::value)
             { }
 
@@ -1154,12 +1155,12 @@ namespace yato
     }
 
     /**
-     *  Exception used to indicate variant access error
+     * Exception used to indicate variant access error
      */
     using details::bad_variant_access;
 
     /**
-     *  Exception used to indicate variant_cast error
+     * Exception used to indicate variant_cast error
      */
     using details::bad_variant_cast;
 
@@ -1169,6 +1170,14 @@ namespace yato
     template <typename... Alts_>
     using variant = details::basic_variant<yato::meta::list<Alts_...>>;
 
+    /**
+     * Construct empty variant, if void state is supported
+     */
+    using nullvar_t = details::construct_empty_t;
+
+#ifndef YATO_MSVC_2013
+    YATO_INLINE_VARIABLE constexpr nullvar_t nullvar{};
+#endif
 
     /**
      * Cast variants with different alternatives lists
