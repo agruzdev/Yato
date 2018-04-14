@@ -911,6 +911,16 @@ namespace yato
             }
 
             /**
+             * Check stored type
+             */
+            template <typename Ty_>
+            YATO_CONSTEXPR_FUNC
+            bool is_type() const noexcept
+            {
+                return (meta::list_find<alternativies_list, Ty_>::value == m_storage.type_index());
+            }
+
+            /**
              *  Get value by type index
              *  On error throws bad_variant_access
              */
@@ -1015,7 +1025,7 @@ namespace yato
             template <typename Ty>
             yato::optional<Ty> get_opt() &&
             {
-                if(meta::list_find<alternativies_list, Ty>::value == m_storage.type_index()) {
+                if(is_type<Ty>()) {
                     return yato::make_optional(std::move(*yato::pointer_cast<Ty*>(m_storage.data())));
                 } else {
                     return yato::nullopt_t{};
@@ -1029,7 +1039,7 @@ namespace yato
             template <typename Ty>
             yato::optional<Ty> get_opt() const &
             {
-                if(meta::list_find<alternativies_list, Ty>::value == m_storage.type_index()) {
+                if(is_type<Ty>()) {
                     return yato::make_optional(*yato::pointer_cast<const Ty*>(m_storage.data()));
                 } else {
                     return yato::nullopt_t{};
