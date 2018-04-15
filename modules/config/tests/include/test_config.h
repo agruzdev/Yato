@@ -7,6 +7,15 @@
 
 #include <yato/config/config.h>
 
+/**
+ *  JSON {
+ *      "int": 42,
+ *      "message": "somestr",
+ *      "flt" : 7.0,
+ *      "flag1" : false,
+ *      "flag2" : true
+ *  }
+ */
 inline
 void TestConfig_PlainObject(const yato::conf::config_ptr & conf)
 {
@@ -29,6 +38,15 @@ void TestConfig_PlainObject(const yato::conf::config_ptr & conf)
     EXPECT_FLOAT_EQ(7.0f, v);
 }
 
+/**
+ * JSON {
+ *     "int": 42,
+ *     "str": "test",
+ *     "subobj" : {
+ *         "val": 7.0
+ *     }
+ * }
+ */
 inline
 void TestConfig_Object(const yato::conf::config_ptr & conf)
 {
@@ -49,6 +67,12 @@ void TestConfig_Object(const yato::conf::config_ptr & conf)
     EXPECT_FLOAT_EQ(7.0f, v);
 }
 
+/**
+ * JSON
+ *     [10, 20, 30, true, 4, {
+ *         "arr": []
+ *     }]
+ */
 inline
 void TestConfig_Array(const yato::conf::config_ptr & conf)
 {

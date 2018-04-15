@@ -33,12 +33,6 @@ TEST(Yato_Config, manual_object2)
 
 TEST(Yato_Config, manual_array)
 {
-    //JSON
-    //    [10, 20, 30, true, 4, {
-    //        "arr": []
-    //    }]
-    //
-
     const auto conf = yato::conf::manual_builder::array()
         .add(10)
         .add(20)

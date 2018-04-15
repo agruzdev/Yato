@@ -43,12 +43,30 @@ namespace conf {
     };
 
 
-
-    class json_factory
-        : public config_factory
+    /**
+     * Builder for Json config
+     */
+    class json_builder
     {
     public:
-        config_ptr create(const std::string & json) const override;
+        json_builder();
+        ~json_builder();
+
+        json_builder(const json_builder&) = delete;
+        json_builder(json_builder&&) noexcept;
+
+        json_builder& operator = (const json_builder&) = delete;
+        json_builder& operator = (json_builder&&) noexcept;
+
+        /**
+         * Parse Json from string
+         */
+        config_ptr parse(const char* json) const;
+
+        /**
+         * Parse Json from string
+         */
+        config_ptr parse(const std::string & json) const;
     };
 
 } // namespace conf

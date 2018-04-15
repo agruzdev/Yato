@@ -3,8 +3,7 @@
 
 TEST(Yato_Config, json_object)
 {
-    yato::conf::json_factory factory{};
-    const yato::conf::config_ptr conf = factory.create(R"JSON(
+    const auto conf = yato::conf::json_builder().parse(R"JSON(
         {
             "int": 42,
             "message": "somestr",
@@ -18,8 +17,7 @@ TEST(Yato_Config, json_object)
 
 TEST(Yato_Config, json_object2)
 {
-    yato::conf::json_factory factory{};
-    const yato::conf::config_ptr conf = factory.create(R"JSON(
+    const auto conf = yato::conf::json_builder().parse(R"JSON(
         {
             "int": 42,
             "str": "test",
@@ -33,8 +31,7 @@ TEST(Yato_Config, json_object2)
 
 TEST(Yato_Config, json_array)
 {
-    yato::conf::json_factory factory{};
-    const yato::conf::config_ptr conf = factory.create(R"JSON(
+    const auto conf = yato::conf::json_builder().parse(R"JSON(
         [10, 20, 30, true, 4, {
             "arr": []
         }]

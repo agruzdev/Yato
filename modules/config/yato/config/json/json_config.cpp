@@ -160,13 +160,33 @@ namespace conf {
         return json.size();
     }
 
-    config_ptr json_factory::create(const std::string & json) const
+    //--------------------------------------------------------------------------
+    // Json builder
+
+    json_builder::json_builder() = default;
+    json_builder::~json_builder() = default;
+
+    json_builder::json_builder(json_builder&&) noexcept = default;
+    json_builder& json_builder::operator=(json_builder&&) noexcept = default;
+
+    inline
+    config_ptr parse_impl_(const nlohmann::detail::input_adapter & input)
     {
-        auto impl = std::make_unique<json_config_state>(nlohmann::json::parse(json, nullptr, false));
+        auto impl = std::make_unique<json_config_state>(nlohmann::json::parse(input, nullptr, false));
         if(impl->get().is_discarded()) {
             return nullptr;
         }
         return std::make_shared<json_config>(std::move(impl));
+    }
+
+    config_ptr json_builder::parse(const char* json) const
+    {
+        return parse_impl_({ json });
+    }
+
+    config_ptr json_builder::parse(const std::string & json) const
+    {
+        return parse_impl_({ json });
     }
 
 } // namespace conf
