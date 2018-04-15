@@ -49,3 +49,23 @@ TEST(Yato_Config, manual_array)
 
     TestConfig_Array(conf);
 }
+
+TEST(Yato_Config, manual_example)
+{
+    const auto conf = yato::conf::manual_builder::object()
+        .put("answer", 42)
+        .put("comment", "everything")
+        .put("precision", 0.01f)
+        .put("manual_mode", true)
+        .put("fruits", yato::conf::manual_builder::array()
+            .add("apple")
+            .add("banana")
+            .add("kiwi")
+            .create())
+        .put("location", yato::conf::manual_builder::object()
+            .put("x", 174)
+            .put("y", 34)
+            .create())
+        .create();
+    TestConfig_Example(conf);
+}

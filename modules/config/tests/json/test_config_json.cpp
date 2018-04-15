@@ -39,3 +39,27 @@ TEST(Yato_Config, json_array)
     TestConfig_Array(conf);
 }
 
+TEST(Yato_Config, json_example)
+{
+    const char* json = R"JSON(
+        {
+            "answer": 42,
+            "comment": "everything",
+            "precision" : 0.01,
+    
+            "manual_mode" : true,
+
+            "fruits" : [
+                "apple", "banana", "kiwi"
+            ],
+
+            "location" : {
+                "x" : 174,
+                "y" : 34
+            }
+        }
+    )JSON";
+    const auto conf = yato::conf::json_builder().parse(json);
+    TestConfig_Example(conf);
+}
+

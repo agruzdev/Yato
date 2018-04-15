@@ -8,7 +8,8 @@
 #include <yato/config/config.h>
 
 /**
- *  JSON {
+ *  JSON 
+ *  {
  *      "int": 42,
  *      "message": "somestr",
  *      "flt" : 7.0,
@@ -39,7 +40,8 @@ void TestConfig_PlainObject(const yato::conf::config_ptr & conf)
 }
 
 /**
- * JSON {
+ * JSON 
+ * {
  *     "int": 42,
  *     "str": "test",
  *     "subobj" : {
@@ -93,6 +95,70 @@ void TestConfig_Array(const yato::conf::config_ptr & conf)
 
     EXPECT_TRUE(arr->is_array());
     EXPECT_EQ(0U, arr->size());
+}
+
+/**
+ * More soft test, since not all backends can support full functionality
+ * 
+ * JSON
+ * {
+ *     "answer": 42,
+ *     "comment": "everything",
+ *     "precision" : 0.01,
+ * 
+ *     "manual_mode" : true,
+ *
+ *     "fruits" : [
+ *         "apple", "banana", "kiwi"
+ *     ]
+ *
+ *     "location" : {
+ *         "x" : 174
+ *         "y" : 34
+ *     }
+ * }
+ */
+inline
+void TestConfig_Example(const yato::conf::config_ptr & conf)
+{
+    ASSERT_NE(nullptr, conf);
+
+    const int answer = conf->value<int>("answer").get_or(-1);
+    EXPECT_EQ(42, answer);
+
+    const int answer2 = conf->value<int>("answer2").get_or(-1);
+    EXPECT_EQ(-1, answer2);
+
+    EXPECT_NO_THROW(
+        const auto comment = conf->value<std::string>("comment").get();
+        EXPECT_EQ(std::string("everything"), comment);
+    );
+
+    const float precision = conf->value<float>("precision").get_or(0.0f);
+    EXPECT_EQ(0.01f, precision);
+
+    const bool is_manual = conf->value<bool>("manual_mode").get_or(false);
+    EXPECT_EQ(true, is_manual);
+
+    const yato::conf::config_ptr arr = conf->array("fruits");
+    if(arr != nullptr) {
+        ASSERT_TRUE(arr->is_array());
+        EXPECT_EQ(3U, arr->size());
+        EXPECT_NO_THROW(
+            EXPECT_EQ(std::string("apple"),  arr->value<std::string>(0).get());
+            EXPECT_EQ(std::string("banana"), arr->value<std::string>(1).get());
+            EXPECT_EQ(std::string("kiwi"),   arr->value<std::string>(2).get());
+        );
+    }
+
+    const yato::conf::config_ptr point = conf->config("location");
+    if(point != nullptr) {
+        ASSERT_TRUE(point->is_object());
+        const int x = point->value<int>("x").get_or(-1);
+        const int y = point->value<int>("y").get_or(-1);
+        EXPECT_EQ(174, x);
+        EXPECT_EQ(34,  y);
+    }
 }
 
 #endif // _YATO_CONFIG_TEST_CONFIG_COMMON_H_
