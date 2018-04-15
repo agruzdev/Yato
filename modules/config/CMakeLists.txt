@@ -33,6 +33,7 @@ if(YATO_CONFIG_JSON)
     )
     list(APPEND config_sources ${json_sources})
     list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/json")
+    list(APPEND config_dependency_targets Json)
     set(CONFIG_NON_EMPTY_TEST ON)
 endif()
 
@@ -47,6 +48,7 @@ if(YATO_CONFIG_CMD)
     )
     list(APPEND config_sources ${cmd_sources})
     list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/cmd")
+    list(APPEND config_dependency_targets Tclap)
     set(CONFIG_NON_EMPTY_TEST ON)
 endif()
 
@@ -57,9 +59,13 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${config_sources})
 
 add_library(YatoConfig STATIC ${config_sources})
 
-if(YATO_CONFIG_JSON)
-    add_dependencies(YatoConfig Json)
-endif()
+#============================================
+# Dependencies
+
+foreach(target ${config_dependency_targets})
+    message(STATUS "YatoConf: added dependency ${target}")
+    add_dependencies(YatoConfig ${target})
+endforeach()
 
 #===========================================
 # Tests
