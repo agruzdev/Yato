@@ -15,11 +15,37 @@ namespace yato {
 
 namespace conf {
 
+    /**
+     * Wrapper class as workaround for TCLAP issue with long long trait redefinition.
+     */
+    struct integer_wrapper
+    {
+        int64_t val;
+
+        YATO_CONSTEXPR_FUNC
+        integer_wrapper(int64_t val) 
+            : val(val)
+        { }
+    };
+
+    inline
+    std::istream & operator >> (std::istream & is, integer_wrapper & wrapper)
+    {
+        is >> wrapper.val;
+        return is;
+    }
+
+    //--------------------------------------------------------------------------------------
+
+
     struct argument_info
     {
         std::unique_ptr<TCLAP::Arg> value;
         config_type type;
     };
+
+    //--------------------------------------------------------------------------------------
+
 
     class cmd_config_state
     {
@@ -85,10 +111,10 @@ namespace conf {
         switch (type)
         {
         case yato::conf::config_type::integer: {
-                auto value = dynamic_cast<TCLAP::ValueArg<int64_t>*>(arg);
+                auto value = dynamic_cast<TCLAP::ValueArg<integer_wrapper>*>(arg);
                 if(value != nullptr) {
                     using return_type = typename details::config_type_trait<config_type::integer>::return_type;
-                    res.emplace<return_type>(yato::narrow_cast<return_type>(value->getValue()));
+                    res.emplace<return_type>(yato::narrow_cast<return_type>(value->getValue().val));
                 }
             }
             break;
@@ -167,7 +193,7 @@ namespace conf {
 
         argument_info arg;
         arg.type  = config_type::integer;
-        arg.value = std::make_unique<TCLAP::ValueArg<int64_t>>(flag, name, description, default_value.empty(), default_value.get_or(0), "Integer type", nullptr);
+        arg.value = std::make_unique<TCLAP::ValueArg<integer_wrapper>>(flag, name, description, default_value.empty(), default_value.get_or(0), "Integer type", nullptr);
 
         m_impl->add(std::move(arg));
 
@@ -257,7 +283,7 @@ namespace conf {
 namespace TCLAP
 {
     template<>
-    struct ArgTraits<int64_t> {
+    struct ArgTraits<yato::conf::integer_wrapper> {
         typedef ValueLike ValueCategory;
     };
 }
