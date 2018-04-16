@@ -143,11 +143,6 @@ namespace yato
 #endif
         //---------------------------------------------------
 
-    private:
-        using aligned_storage = typename std::aligned_storage<sizeof(value_type), alignment>::type;
-        //---------------------------------------------------
-
-    public:
         YATO_CONSTEXPR_FUNC
         aligning_allocator() YATO_NOEXCEPT_KEYWORD
         { }

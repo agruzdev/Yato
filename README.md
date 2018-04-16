@@ -26,9 +26,14 @@ Currently the library can be successfully built by the following compilers:
 * MSVC 2017
 * MSVC 2015
 * MinGW 7.1
-* Clang 4.0
+* Clang 5.0
 * GCC 6.2
-* Google Android NDK 13, llvm toolchain
+* Android (llvm)
+
+### Android:
+
+Use Clang toolchain with libc++ runtime.
+The library is tested on NDK 13
 
 ## Description
 
