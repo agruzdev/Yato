@@ -61,7 +61,7 @@ void TestConfig_Object(const yato::conf::config_ptr & conf)
     const auto str = conf->value<std::string>("str");
     EXPECT_EQ("test", str.get_or(""));
 
-    const yato::conf::config_ptr c2 = conf->config("subobj");
+    const yato::conf::config_ptr c2 = conf->object("subobj");
     ASSERT_NE(nullptr, c2);
     EXPECT_TRUE(c2->is_object());
 
@@ -87,7 +87,7 @@ void TestConfig_Array(const yato::conf::config_ptr & conf)
     EXPECT_EQ(30U, conf->value<unsigned long long>(2).get_or(-1));
     EXPECT_EQ(true, conf->value<bool>(3).get_or(false));
 
-    const auto c2 = conf->config(5);
+    const auto c2 = conf->object(5);
     ASSERT_NE(nullptr, c2);
 
     const auto arr = c2->array("arr");
@@ -151,7 +151,7 @@ void TestConfig_Example(const yato::conf::config_ptr & conf)
         );
     }
 
-    const yato::conf::config_ptr point = conf->config("location");
+    const yato::conf::config_ptr point = conf->object("location");
     if(point != nullptr) {
         ASSERT_TRUE(point->is_object());
         const int x = point->value<int>("x").get_or(-1);

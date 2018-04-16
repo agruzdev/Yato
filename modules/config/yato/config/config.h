@@ -186,11 +186,14 @@ namespace conf {
             return yato::narrow_cast<ToType_>(std::forward<FromType_>(val));
         }
 
+        /**
+         * Assumes that FromType_ is wider than ToType_
+         */
         template <typename ToType_, typename FromType_>
         static
         ToType_ cast_result_(details::config_check_bounds_tag, FromType_ && val) {
-            YATO_REQUIRES(static_cast<ToType_>(val) <= std::numeric_limits<ToType_>::max());
-            YATO_REQUIRES(static_cast<ToType_>(val) >= std::numeric_limits<ToType_>::min());
+            YATO_REQUIRES(val <= static_cast<FromType_>(std::numeric_limits<ToType_>::max()));
+            YATO_REQUIRES(val >= static_cast<FromType_>(std::numeric_limits<ToType_>::min()));
             return static_cast<ToType_>(val);
         }
 
@@ -250,31 +253,43 @@ namespace conf {
         }
 
         /**
+         * Get nested object config.
          * Alias for value<config_ptr>
          */
-        config_ptr config(const std::string & name) const {
-            return value<config_ptr>(name).get_or(nullptr);
+        config_ptr object(const std::string & name) const {
+            config_ptr conf = value<config_ptr>(name).get_or(nullptr);
+            YATO_ENSURES(!conf || conf->is_object());
+            return conf;
         }
 
         /**
-         * Alias for value<config_ptr>
+         * Get nested object config.
+         * Alias for value<config_ptr>.
          */
-        config_ptr config(size_t idx) const {
-            return value<config_ptr>(idx).get_or(nullptr);
+        config_ptr object(size_t idx) const {
+            config_ptr conf = value<config_ptr>(idx).get_or(nullptr);
+            YATO_ENSURES(!conf || conf->is_object());
+            return conf;
         }
 
         /**
-         * Alias for value<config_ptr>
+         * Get nested array config.
+         * Alias for value<config_ptr>.
          */
         config_ptr array(const std::string & name) const {
-            return value<config_ptr>(name).get_or(nullptr);
+            config_ptr conf = value<config_ptr>(name).get_or(nullptr);
+            YATO_ENSURES(!conf || conf->is_array());
+            return conf;
         }
 
         /**
-         * Alias for value<config_ptr>
+         * Get nested array config.
+         * Alias for value<config_ptr>.
          */
         config_ptr array(size_t idx) const {
-            return value<config_ptr>(idx).get_or(nullptr);
+            config_ptr conf = value<config_ptr>(idx).get_or(nullptr);
+            YATO_ENSURES(!conf || conf->is_array());
+            return conf;
         }
     };
 
