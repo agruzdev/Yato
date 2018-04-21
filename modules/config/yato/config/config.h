@@ -8,171 +8,19 @@
 #ifndef _YATO_CONFIG_H_
 #define _YATO_CONFIG_H_
 
-#include <cstdint>
-#include <limits>
-#include <string>
+#include <memory>
 
-#include <yato/optional.h>
-#include <yato/variant.h>
-#include <yato/assert.h>
-#include "yato/any.h"
+#include "config_backend.h"
 
 namespace yato {
 
 namespace conf {
 
-    class config_error
-        : public yato::runtime_error
-    {
-    public:
-        config_error(const std::string & err)
-            : yato::runtime_error(err)
-        { }
-    
-        config_error(const char* err)
-            : yato::runtime_error(err)
-        { }
-    };
-
-    enum class config_type
-    {
-        integer,
-        floating,
-        boolean,
-        string,
-        config
-    };
-
-    class basic_config;
-    using config_ptr = std::shared_ptr<const basic_config>;
-
-    namespace details
-    {
-        struct config_no_cast_tag {};
-        struct config_narrow_cast_tag {};
-        struct config_check_bounds_tag {};
-
-        template <typename Ty_, typename = void>
-        struct config_choose_stored_type
-        { };
-    
-        template <typename Ty_>
-        struct config_choose_stored_type <
-            Ty_,
-            std::enable_if_t<std::is_integral<Ty_>::value && !std::is_same<Ty_, bool>::value>
-        >
-        {
-            using cast_tag = config_narrow_cast_tag;
-            static constexpr config_type ctype = config_type::integer;
-        };
-    
-        template <typename Ty_>
-        struct config_choose_stored_type <
-            Ty_,
-            std::enable_if_t<std::is_floating_point<Ty_>::value>
-        >
-        {
-            using cast_tag = config_check_bounds_tag;
-            static constexpr config_type ctype = config_type::floating;
-        };
-    
-        template <typename Ty_>
-        struct config_choose_stored_type <
-            Ty_,
-            std::enable_if_t<std::is_same<bool, Ty_>::value>
-        >
-        {
-            using cast_tag = config_no_cast_tag;
-            static constexpr config_type ctype = config_type::boolean;
-        };
-
-        template <typename Ty_>
-        struct config_choose_stored_type <
-            Ty_,
-            std::enable_if_t<std::is_same<std::string, Ty_>::value>
-        >
-        {
-            using cast_tag = config_no_cast_tag;
-            static constexpr config_type ctype = config_type::string;
-        };
-
-        template <typename Ty_>
-        struct config_choose_stored_type <
-            Ty_,
-            std::enable_if_t<std::is_same<yato::conf::config_ptr, Ty_>::value>
-        >
-        {
-            using cast_tag = config_no_cast_tag;
-            static constexpr config_type ctype = config_type::config;
-        };
-
-        template <config_type Type_>
-        struct config_type_trait
-        { };
-
-        template <>
-        struct config_type_trait <
-            config_type::integer
-        >
-        {
-            using return_type = int64_t;
-        };
-
-        template <>
-        struct config_type_trait <
-            config_type::floating
-        >
-        {
-            using return_type = double;
-        };
-
-        template <>
-        struct config_type_trait <
-            config_type::boolean
-        >
-        {
-            using return_type = bool;
-        };
-
-        template <>
-        struct config_type_trait <
-            config_type::string
-        >
-        {
-            using return_type = std::string;
-        };
-
-        template <>
-        struct config_type_trait <
-            config_type::config
-        >
-        {
-            using return_type = yato::conf::config_ptr;
-        };
-
-
-        using value_variant = yato::variant<
-            void,
-            typename config_type_trait<config_type::integer>::return_type,
-            typename config_type_trait<config_type::floating>::return_type,
-            typename config_type_trait<config_type::boolean>::return_type,
-            typename config_type_trait<config_type::string>::return_type,
-            typename config_type_trait<config_type::config>::return_type
-        >;
-    }
-
-
-
-    class basic_config
+    class config
     {
     private:
-        virtual bool do_is_object() const noexcept = 0;
-        virtual details::value_variant do_get_by_name(const std::string & name, config_type type) const noexcept = 0;
-
-        virtual bool do_is_array() const noexcept = 0;
-        virtual details::value_variant do_get_by_index(size_t index, config_type type) const noexcept = 0;
-
-        virtual size_t do_get_size() const noexcept = 0;
+        backend_ptr m_backend{ nullptr };
+        //---------------------------------------------------------------------
 
         template <typename ToType_, typename FromType_>
         static
@@ -197,29 +45,65 @@ namespace conf {
             return static_cast<ToType_>(val);
         }
 
+        /**
+         * Creates config from backend pointer
+         */
+        template <typename ToType_, typename FromType_>
+        static
+        ToType_ cast_result_(details::config_create_tag, FromType_ && val) {
+            return ToType_(std::forward<FromType_>(val));
+        }
+        //---------------------------------------------------------------------
+
     public:
-        basic_config() = default;
-        virtual ~basic_config() = default;
+        /**
+         * Creates an empty config
+         */
+        config() = default;
+
+        explicit
+        config(backend_ptr backend) 
+            : m_backend(std::move(backend))
+        { }
+
+        ~config() = default;
+
+        config(const config&) = default;
+        config(config&&) noexcept = default;
+
+        config& operator = (const config&) = default;
+        config& operator = (config&&) noexcept = default;
+
+        /**
+         * Check is config is empty
+         */
+        bool empty() const {
+            return !static_cast<bool>(m_backend);
+        }
+
+        operator bool () const {
+            return static_cast<bool>(m_backend);
+        }
 
         /**
          * Return true if config is an object, i.e. contains named values.
          */
         bool is_object() const {
-            return do_is_object();
+            return m_backend ? m_backend->do_is_object() : false;
         }
 
         /**
          * Return true if config is an array, i.e. contains indexed values.
          */
         bool is_array() const {
-            return do_is_array();
+            return m_backend ? m_backend->do_is_array() : false;
         }
 
         /**
          * Return number of entires in the config, if config is an array.
          */
         size_t size() const {
-            return do_get_size();
+            return m_backend ? m_backend->do_get_size() : 0u;
         }
 
         /**
@@ -228,13 +112,16 @@ namespace conf {
          */
         template <typename Ty_>
         yato::optional<Ty_> value(const std::string & name) const {
-            constexpr config_type type = details::config_choose_stored_type<Ty_>::ctype;
-            using return_type = typename details::config_type_trait<type>::return_type;
-            using cast_tag = typename details::config_choose_stored_type<Ty_>::cast_tag;
+            if(m_backend) {
+                constexpr config_type type = details::config_choose_stored_type<Ty_>::ctype;
+                using return_type = typename details::config_type_trait<type>::return_type;
+                using cast_tag = typename details::config_choose_stored_type<Ty_>::cast_tag;
 
-            return do_get_by_name(name, type).get_opt<return_type>().map(
-                [](return_type && val){ return cast_result_<Ty_>(cast_tag{}, std::move(val)); }
-            );
+                return m_backend->do_get_by_name(name, type).get_opt<return_type>().map(
+                    [](return_type && val){ return cast_result_<Ty_>(cast_tag{}, std::move(val)); }
+                );
+            }
+            return yato::nullopt_t{};
         }
 
         /**
@@ -243,22 +130,25 @@ namespace conf {
          */
         template <typename Ty_>
         yato::optional<Ty_> value(size_t idx) const {
-            constexpr config_type type = details::config_choose_stored_type<Ty_>::ctype;
-            using return_type = typename details::config_type_trait<type>::return_type;
-            using cast_tag = typename details::config_choose_stored_type<Ty_>::cast_tag;
+            if(m_backend) {
+                constexpr config_type type = details::config_choose_stored_type<Ty_>::ctype;
+                using return_type = typename details::config_type_trait<type>::return_type;
+                using cast_tag = typename details::config_choose_stored_type<Ty_>::cast_tag;
 
-            return do_get_by_index(idx, type).get_opt<return_type>().map(
-                [](return_type && val){ return cast_result_<Ty_>(cast_tag{}, std::move(val)); }
-            );
+                return m_backend->do_get_by_index(idx, type).get_opt<return_type>().map(
+                    [](return_type && val){ return cast_result_<Ty_>(cast_tag{}, std::move(val)); }
+                );
+            }
+            return yato::nullopt_t{};
         }
 
         /**
          * Get nested object config.
          * Alias for value<config_ptr>
          */
-        config_ptr object(const std::string & name) const {
-            config_ptr conf = value<config_ptr>(name).get_or(nullptr);
-            YATO_ENSURES(!conf || conf->is_object());
+        config object(const std::string & name) const {
+            config conf = value<config>(name).get_or(config{});
+            YATO_ENSURES(conf.empty() || conf.is_object());
             return conf;
         }
 
@@ -266,9 +156,9 @@ namespace conf {
          * Get nested object config.
          * Alias for value<config_ptr>.
          */
-        config_ptr object(size_t idx) const {
-            config_ptr conf = value<config_ptr>(idx).get_or(nullptr);
-            YATO_ENSURES(!conf || conf->is_object());
+        config object(size_t idx) const {
+            config conf = value<config>(idx).get_or(config{});
+            YATO_ENSURES(conf.empty() || conf.is_object());
             return conf;
         }
 
@@ -276,9 +166,9 @@ namespace conf {
          * Get nested array config.
          * Alias for value<config_ptr>.
          */
-        config_ptr array(const std::string & name) const {
-            config_ptr conf = value<config_ptr>(name).get_or(nullptr);
-            YATO_ENSURES(!conf || conf->is_array());
+        config array(const std::string & name) const {
+            config conf = value<config>(name).get_or(config{});
+            YATO_ENSURES(conf.empty() || conf.is_array());
             return conf;
         }
 
@@ -286,14 +176,43 @@ namespace conf {
          * Get nested array config.
          * Alias for value<config_ptr>.
          */
-        config_ptr array(size_t idx) const {
-            config_ptr conf = value<config_ptr>(idx).get_or(nullptr);
-            YATO_ENSURES(!conf || conf->is_array());
+        config array(size_t idx) const {
+            config conf = value<config>(idx).get_or(config{});
+            YATO_ENSURES(conf.empty() || conf.is_array());
             return conf;
+        }
+
+        /**
+         * For internal usage.
+         * Use it only if you are sure what you are doing.
+         */
+        const backend_ptr & get_backend() const {
+            return m_backend;
+        }
+
+        /**
+         * For internal usage.
+         * Use it only if you are sure what you are doing.
+         */
+        backend_ptr & get_backend() {
+            return m_backend;
         }
     };
 
+    namespace details
+    {
 
+        template <typename Ty_>
+        struct config_choose_stored_type <
+            Ty_,
+            std::enable_if_t<std::is_same<yato::conf::config, Ty_>::value>
+        >
+        {
+            using cast_tag = details::config_create_tag;
+            static constexpr config_type ctype = config_type::config;
+        };
+
+    }
 } // namespace conf
 
 } // namespace yato

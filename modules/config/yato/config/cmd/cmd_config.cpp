@@ -38,7 +38,7 @@ namespace conf {
     //--------------------------------------------------------------------------------------
 
 
-    struct argument_info
+    struct argument_info  // NOLINT
     {
         std::unique_ptr<TCLAP::Arg> value;
         config_type type;
@@ -245,17 +245,16 @@ namespace conf {
         return *this;
     }
 
-    config_ptr cmd_builder::parse(int argc, const char* const* argv)
+    config cmd_builder::parse(int argc, const char* const* argv)
     {
         if(m_impl == nullptr) {
             throw config_error("cmd_builder is empty after creating config.");
         }
         m_impl->parse(argc, argv);
-        config_ptr conf = std::make_unique<cmd_config>(std::move(m_impl));
-        return conf;
+        return config(std::make_shared<cmd_config>(std::move(m_impl)));
     }
 
-    config_ptr cmd_builder::parse(const yato::array_view_1d<std::string> & args)
+    config cmd_builder::parse(const yato::array_view_1d<std::string> & args)
     {
         if(m_impl == nullptr) {
             throw config_error("cmd_builder is empty after creating config.");
@@ -268,9 +267,8 @@ namespace conf {
             argv.push_back(str.c_str());
         }
         m_impl->parse(argc, argv.data());
-        
-        config_ptr conf = std::make_unique<cmd_config>(std::move(m_impl));
-        return conf;
+
+        return config(std::make_shared<cmd_config>(std::move(m_impl)));
     }
 
 } // namespace conf

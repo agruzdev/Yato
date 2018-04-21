@@ -10,17 +10,17 @@ Read scalar values:
 
 ```c++
 
-const yato::conf::config_ptr conf = /* backend dependent initialization */;
+const yato::conf::config conf = /* backend dependent initialization */;
 
 // answer is -1 if not found
-int answer = conf->value<int>("answer").get_or(-1);
+int answer = conf.value<int>("answer").get_or(-1);
 
 // throws excaption if not found
-auto comment = conf->value<std::string>("comment").get();
+auto comment = conf.value<std::string>("comment").get();
 
-float precision = conf->value<float>("precision").get_or(0.0f);
+float precision = conf.value<float>("precision").get_or(0.0f);
 
-bool is_manual = conf->value<bool>("manual_mode").get_or(false);
+bool is_manual = conf.value<bool>("manual_mode").get_or(false);
 
 ```
 
@@ -29,11 +29,11 @@ Read array
 ```c++
 
 // Returns nullptr if not found
-yato::conf::config_ptr arr = conf->array("fruits");
+yato::conf::config arr = conf.array("fruits");
 
 std::cout << "My fruits:" << std::endl;
-for(size_t i = 0; i < arr->size(); ++i) {
-    std::cout << arr->value<std::string>(i).get() << std::endl;
+for(size_t i = 0; i < arr.size(); ++i) {
+    std::cout << arr.value<std::string>(i).get() << std::endl;
 }
 
 ```
@@ -43,9 +43,9 @@ Read nested config
 ```c++
 
 // Returns nullptr if not found
-yato::conf::config_ptr point = conf->config("location");
-const int x = point->value<int>("x").get_or(-1);
-const int y = point->value<int>("y").get_or(-1);
+yato::conf::config point = conf.object("location");
+const int x = point.value<int>("x").get_or(-1);
+const int y = point.value<int>("y").get_or(-1);
 
 ```
 
@@ -112,7 +112,7 @@ Current implementation of the command line backend supports only plain object co
 
 ```c++
 
-const yato::conf::config_ptr conf = yato::conf::cmd_builder("Test")
+const yato::conf::config conf = yato::conf::cmd_builder("Test")
     .integer("", "answer", "integer argument with default value", yato::some(0))
     .string("c", "comment", "required string argument with one-letter alias")
     .floating("", "precision", "required floating-point argument")

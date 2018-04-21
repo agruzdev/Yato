@@ -18,7 +18,7 @@ namespace conf {
     class json_config_state;
 
     class json_config
-        : public basic_config
+        : public config_backend
     {
     private:
         std::unique_ptr<json_config_state> m_impl;
@@ -61,12 +61,12 @@ namespace conf {
         /**
          * Parse Json from string
          */
-        config_ptr parse(const char* json) const;
+        config parse(const char* json) const;
 
         /**
          * Parse Json from string
          */
-        config_ptr parse(const std::string & json) const;
+        config parse(const std::string & json) const;
     };
 
 } // namespace conf

@@ -14,7 +14,7 @@ TEST(Yato_Config, cmd_object)
     args.emplace_back("7.0");
     args.emplace_back("--flag2");
 
-    const yato::conf::config_ptr conf = yato::conf::cmd_builder("Test")
+    const yato::conf::config conf = yato::conf::cmd_builder("Test")
         .integer("i", "int", "test int value", yato::some(1))
         .floating("", "flt", "test float value")
         .string("m", "message", "test string", yato::some<std::string>("somestr"))
@@ -38,7 +38,7 @@ TEST(Yato_Config, cmd_example)
     args.emplace_back("0.01");
     args.emplace_back("--manual_mode");
 
-    const yato::conf::config_ptr conf = yato::conf::cmd_builder("Test")
+    const yato::conf::config conf = yato::conf::cmd_builder("Test")
         .integer("", "answer", "integer argument with default value", yato::some(0))
         .string("c", "comment", "required string argument with one-letter alias")
         .floating("", "precision", "required floating-point argument")

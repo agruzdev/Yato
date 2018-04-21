@@ -10,9 +10,6 @@ TEST(Yato_Config, manual_object)
         .put("flag1", false)
         .put("flag2", true)
         .create();
-
-    ASSERT_NE(nullptr, conf);
-
     TestConfig_PlainObject(conf);
 }
 
@@ -25,9 +22,6 @@ TEST(Yato_Config, manual_object2)
             .put("val", 7.0f)
             .create())
         .create();
-
-    ASSERT_NE(nullptr, conf);
-
     TestConfig_Object(conf);
 }
 
@@ -44,9 +38,6 @@ TEST(Yato_Config, manual_array)
                 .create())
             .create())
         .create();
-
-    ASSERT_NE(nullptr, conf);
-
     TestConfig_Array(conf);
 }
 

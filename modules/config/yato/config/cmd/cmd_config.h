@@ -18,7 +18,7 @@ namespace conf {
     class cmd_config_state;
 
     class cmd_config
-        : public basic_config
+        : public config_backend
     {
     private:
         std::unique_ptr<cmd_config_state> m_impl;
@@ -105,12 +105,12 @@ namespace conf {
         /**
          * Parce command line
          */
-        config_ptr parse(int argc, const char* const* argv);
+        config parse(int argc, const char* const* argv);
 
         /**
          * Parce command line
          */
-        config_ptr parse(const yato::array_view_1d<std::string> & args);
+        config parse(const yato::array_view_1d<std::string> & args);
     };
 
 } // namespace conf

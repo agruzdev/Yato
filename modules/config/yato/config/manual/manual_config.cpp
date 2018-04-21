@@ -17,7 +17,7 @@ namespace conf {
     /**
      * Each object/array stores either scalar value or object
      */
-    using manual_value_type = yato::variant<void, details::manual_scalar, config_ptr>;
+    using manual_value_type = yato::variant<void, details::manual_scalar, backend_ptr>;
 
     /**
      * Implements object
@@ -105,9 +105,9 @@ namespace conf {
                 }
                 break;
             case config_type::config:
-                if(value.is_type<config_ptr>()) {
+                if(value.is_type<backend_ptr>()) {
                     using return_type = typename details::config_type_trait<config_type::config>::return_type;
-                    res.emplace<return_type>(value.get_as_unsafe<config_ptr>());
+                    res.emplace<return_type>(value.get_as_unsafe<backend_ptr>());
                 }
                 break;
             }
@@ -150,7 +150,7 @@ namespace conf {
             put_impl_(key, manual_value_type(std::move(val)));
         }
 
-        void put(const std::string & key, config_ptr && val)
+        void put(const std::string & key, backend_ptr && val)
         {
             put_impl_(key, manual_value_type(std::move(val)));
         }
@@ -160,7 +160,7 @@ namespace conf {
             append_impl_(manual_value_type(std::move(val)));
         }
 
-        void append(config_ptr && val)
+        void append(backend_ptr && val)
         {
             append_impl_(manual_value_type(std::move(val)));
         }
@@ -260,14 +260,14 @@ namespace conf {
 
     manual_builder& manual_builder::operator=(manual_builder&&) noexcept = default;
 
-    config_ptr manual_builder::create() noexcept
+    config manual_builder::create() noexcept
     {
-        config_ptr conf = nullptr;
+        backend_ptr backend = nullptr;
         if(m_impl != nullptr) {
-            conf = std::make_unique<manual_config>(std::move(m_impl));
+            backend = std::make_unique<manual_config>(std::move(m_impl));
             m_impl.reset();
         }
-        return conf;
+        return config(backend);
     }
 
     void manual_builder::put_scalar_(const std::string & key, details::manual_scalar && scalar)
@@ -278,7 +278,7 @@ namespace conf {
         m_impl->put(key, std::move(scalar));
     }
 
-    void manual_builder::put_object_(const std::string & key, config_ptr && conf)
+    void manual_builder::put_object_(const std::string & key, backend_ptr && conf)
     {
         if(m_impl == nullptr) {
             throw config_error("manual_builder is empty after creating config.");
@@ -294,7 +294,7 @@ namespace conf {
         m_impl->append(std::move(scalar));
     }
 
-    void manual_builder::append_object_(config_ptr && conf)
+    void manual_builder::append_object_(backend_ptr && conf)
     {
         if(m_impl == nullptr) {
             throw config_error("manual_builder is empty after creating config.");

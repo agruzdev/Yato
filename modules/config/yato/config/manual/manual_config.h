@@ -25,7 +25,7 @@ namespace conf {
     class manual_config_state;
 
     class manual_config
-        : public basic_config
+        : public config_backend
     {
     private:
         std::unique_ptr<manual_config_state> m_impl;
@@ -60,10 +60,10 @@ namespace conf {
         std::unique_ptr<manual_config_state> m_impl;
 
         void put_scalar_(const std::string & key, details::manual_scalar && scalar);
-        void put_object_(const std::string & key, config_ptr && conf);
+        void put_object_(const std::string & key, backend_ptr && conf);
 
         void append_scalar_(details::manual_scalar && scalar);
-        void append_object_(config_ptr && conf);
+        void append_object_(backend_ptr && conf);
 
         manual_builder(details::object_tag_t);
         manual_builder(details::array_tag_t);
@@ -237,9 +237,9 @@ namespace conf {
          * Add named value.
          * Is valid only for object.
          */
-        manual_builder & put(const std::string & name, const config_ptr & val)
+        manual_builder & put(const std::string & name, const config & val)
         {
-            put_object_(name, config_ptr(val));
+            put_object_(name, backend_ptr(val.get_backend()));
             return *this;
         }
 
@@ -247,9 +247,9 @@ namespace conf {
          * Add named value.
          * Is valid only for object.
          */
-        manual_builder & put(const std::string & name, config_ptr && val)
+        manual_builder & put(const std::string & name, config && val)
         {
-            put_object_(name, std::move(val));
+            put_object_(name, std::move(val.get_backend()));
             return *this;
         }
 
@@ -397,9 +397,9 @@ namespace conf {
          * Append value to array.
          * Is valid only for array.
          */
-        manual_builder & add(const config_ptr & val)
+        manual_builder & add(const config & val)
         {
-            append_object_(config_ptr(val));
+            append_object_(backend_ptr(val.get_backend()));
             return *this;
         }
 
@@ -407,16 +407,16 @@ namespace conf {
          * Append value to array.
          * Is valid only for array.
          */
-        manual_builder & add(config_ptr && val)
+        manual_builder & add(config && val)
         {
-            append_object_(std::move(val));
+            append_object_(std::move(val.get_backend()));
             return *this;
         }
 
         /**
          * Finish building of config object
          */
-        config_ptr create() noexcept;
+        config create() noexcept;
     };
 
 } // namespace yato

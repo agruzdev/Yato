@@ -170,21 +170,22 @@ namespace conf {
     json_builder& json_builder::operator=(json_builder&&) noexcept = default;
 
     inline
-    config_ptr parse_impl_(const nlohmann::detail::input_adapter & input)
+    config parse_impl_(const nlohmann::detail::input_adapter & input)
     {
+        backend_ptr backend = nullptr;
         auto impl = std::make_unique<json_config_state>(nlohmann::json::parse(input, nullptr, false));
-        if(impl->get().is_discarded()) {
-            return nullptr;
+        if(!impl->get().is_discarded()) {
+            backend = std::make_shared<json_config>(std::move(impl));
         }
-        return std::make_shared<json_config>(std::move(impl));
+        return config(backend);
     }
 
-    config_ptr json_builder::parse(const char* json) const
+    config json_builder::parse(const char* json) const
     {
         return parse_impl_({ json });
     }
 
-    config_ptr json_builder::parse(const std::string & json) const
+    config json_builder::parse(const std::string & json) const
     {
         return parse_impl_({ json });
     }
