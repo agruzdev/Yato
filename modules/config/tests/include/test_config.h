@@ -84,7 +84,7 @@ void TestConfig_Array(const yato::conf::config & conf)
 
     EXPECT_EQ(10, conf.value<int>(0).get_or(-1));
     EXPECT_EQ(20, conf.value<short>(1).get_or(-1));
-    EXPECT_EQ(30U, conf.value<unsigned long long>(2).get_or(-1));
+    EXPECT_EQ(30U, conf.value<uint64_t>(2).get_or(-1));
     EXPECT_EQ(true, conf.value<bool>(3).get_or(false));
 
     const auto c2 = conf.object(5);
@@ -159,6 +159,62 @@ void TestConfig_Example(const yato::conf::config & conf)
         EXPECT_EQ(174, x);
         EXPECT_EQ(34,  y);
     }
+}
+
+namespace
+{
+    enum class TestEnum : int32_t
+    {
+        eNull = 0,
+        eVal1 = 7,
+        eVal2 = 14,
+        eVal3 = 21
+    };
+
+    struct enum_converter
+    {
+        TestEnum operator()(int64_t value) const
+        {
+            return static_cast<TestEnum>(value);
+        }
+    };
+
+
+}
+
+namespace yato
+{
+    namespace conf
+    {
+        template<>
+        struct config_value_trait<TestEnum>
+        {
+            using return_type = int64_t;
+            using converter_type = enum_converter;
+            static constexpr config_type stored_type = config_type::integer;
+        };
+    }
+}
+
+/**
+ * JSON
+ * {
+ *      "enum1" : 7,
+ *      "enum2" : 14
+ * }
+ */
+inline
+void TestConfig_Conversion(const yato::conf::config & conf)
+{
+    EXPECT_FALSE(conf.empty());
+
+    const TestEnum e1 = conf.value<TestEnum>("enum1").get_or(TestEnum::eNull);
+    const TestEnum e2 = conf.value<TestEnum>("enum2").get_or(TestEnum::eNull);
+    const TestEnum e3 = conf.value<TestEnum>("enum3").get_or(TestEnum::eNull);
+
+    EXPECT_EQ(TestEnum::eVal1, e1);
+    EXPECT_EQ(TestEnum::eVal2, e2);
+    EXPECT_EQ(TestEnum::eNull, e3);
 }
 
 #endif // _YATO_CONFIG_TEST_CONFIG_COMMON_H_

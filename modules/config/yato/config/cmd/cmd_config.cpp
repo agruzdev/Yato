@@ -102,10 +102,10 @@ namespace conf {
         return true;
     }
 
-    details::value_variant cmd_config::do_get_by_name(const std::string & name, config_type type) const noexcept
+    stored_variant cmd_config::do_get_by_name(const std::string & name, config_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
-        details::value_variant res{};
+        stored_variant res{};
 
         TCLAP::Arg* arg = m_impl->find(name, type);
         switch (type)
@@ -113,7 +113,7 @@ namespace conf {
         case yato::conf::config_type::integer: {
                 auto value = dynamic_cast<TCLAP::ValueArg<integer_wrapper>*>(arg);
                 if(value != nullptr) {
-                    using return_type = typename details::config_type_trait<config_type::integer>::return_type;
+                    using return_type = stored_type_trait<config_type::integer>::return_type;
                     res.emplace<return_type>(yato::narrow_cast<return_type>(value->getValue().val));
                 }
             }
@@ -121,7 +121,7 @@ namespace conf {
         case yato::conf::config_type::boolean: {
                 auto value = dynamic_cast<TCLAP::SwitchArg*>(arg);
                 if(value != nullptr) {
-                    using return_type = typename details::config_type_trait<config_type::boolean>::return_type;
+                    using return_type = stored_type_trait<config_type::boolean>::return_type;
                     res.emplace<return_type>(value->getValue());
                 }
             }
@@ -129,7 +129,7 @@ namespace conf {
         case yato::conf::config_type::floating: {
                 auto value = dynamic_cast<TCLAP::ValueArg<double>*>(arg);
                 if(value != nullptr) {
-                    using return_type = typename details::config_type_trait<config_type::floating>::return_type;
+                    using return_type = stored_type_trait<config_type::floating>::return_type;
                     res.emplace<return_type>(yato::narrow_cast<return_type>(value->getValue()));
                 }
             }
@@ -137,7 +137,7 @@ namespace conf {
         case yato::conf::config_type::string: {
                 auto value = dynamic_cast<TCLAP::ValueArg<std::string>*>(arg);
                 if(value != nullptr) {
-                    using return_type = typename details::config_type_trait<config_type::string>::return_type;
+                    using return_type = stored_type_trait<config_type::string>::return_type;
                     res.emplace<return_type>(value->getValue());
                 }
             }
@@ -149,7 +149,7 @@ namespace conf {
         return res;
     }
 
-    details::value_variant cmd_config::do_get_by_index(size_t index, config_type type) const noexcept
+    stored_variant cmd_config::do_get_by_index(size_t index, config_type type) const noexcept
     {
         YATO_MAYBE_UNUSED(index);
         YATO_MAYBE_UNUSED(type);

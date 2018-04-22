@@ -63,3 +63,15 @@ TEST(Yato_Config, json_example)
     TestConfig_Example(conf);
 }
 
+TEST(Yato_Config, json_conversion)
+{
+    const char* json = R"JSON(
+        {
+            "enum1" : 7,
+            "enum2" : 14
+        }
+    )JSON";
+    const auto conf = yato::conf::json_builder().parse(json);
+    TestConfig_Conversion(conf);
+}
+

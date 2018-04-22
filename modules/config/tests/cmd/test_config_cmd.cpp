@@ -48,3 +48,20 @@ TEST(Yato_Config, cmd_example)
     TestConfig_Example(conf);
 }
 
+TEST(Yato_Config, cmd_conversion)
+{
+    std::vector<std::string> args;
+    args.emplace_back("TestApp");
+    args.emplace_back("--enum1");
+    args.emplace_back("7");
+    args.emplace_back("--enum2");
+    args.emplace_back("14");
+
+    const yato::conf::config conf = yato::conf::cmd_builder("Test")
+        .integer("", "enum1", "first", yato::some(0))
+        .integer("", "enum2", "second", yato::some(0))
+        .parse(yato::make_view(args.data(), args.size()));
+
+    TestConfig_Conversion(conf);
+}
+

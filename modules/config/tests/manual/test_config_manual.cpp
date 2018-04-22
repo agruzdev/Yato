@@ -60,3 +60,13 @@ TEST(Yato_Config, manual_example)
         .create();
     TestConfig_Example(conf);
 }
+
+TEST(Yato_Config, manual_conversion)
+{
+    const auto conf = yato::conf::manual_builder::object()
+        .put("enum1", static_cast<int32_t>(TestEnum::eVal1))
+        .put("enum2", static_cast<int32_t>(TestEnum::eVal2))
+        .create();
+    TestConfig_Conversion(conf);
+}
+

@@ -35,6 +35,7 @@ namespace conf {
     };
 
     enum class config_type
+        : int32_t
     {
         integer,
         floating,
@@ -46,110 +47,187 @@ namespace conf {
     class config_backend;
     using backend_ptr = std::shared_ptr<config_backend>;
 
+
+
+    template <config_type StoredTy_>
+    struct stored_type_trait
+    { };
+
+    template <>
+    struct stored_type_trait<config_type::integer>
+    {
+        using return_type = int64_t;
+    };
+
+    template <>
+    struct stored_type_trait<config_type::floating>
+    {
+        using return_type = double;
+    };
+
+    template <>
+    struct stored_type_trait<config_type::boolean>
+    {
+        using return_type = bool;
+    };
+
+    template <>
+    struct stored_type_trait<config_type::string>
+    {
+        using return_type = std::string;
+    };
+
+    template <>
+    struct stored_type_trait<config_type::config>
+    {
+        using return_type = backend_ptr;
+    };
+
+
     namespace details
     {
-        struct config_no_cast_tag {};
-        struct config_narrow_cast_tag {};
-        struct config_check_bounds_tag {};
-        struct config_create_tag {};
-
-        template <typename Ty_, typename = void>
-        struct config_choose_stored_type
-        { };
-    
-        template <typename Ty_>
-        struct config_choose_stored_type <
-            Ty_,
-            std::enable_if_t<std::is_integral<Ty_>::value && !std::is_same<Ty_, bool>::value>
-        >
+        template <typename ToType_, typename FromType_>
+        struct identity_converter
         {
-            using cast_tag = config_narrow_cast_tag;
-            static constexpr config_type ctype = config_type::integer;
-        };
-    
-        template <typename Ty_>
-        struct config_choose_stored_type <
-            Ty_,
-            std::enable_if_t<std::is_floating_point<Ty_>::value>
-        >
-        {
-            using cast_tag = config_check_bounds_tag;
-            static constexpr config_type ctype = config_type::floating;
-        };
-    
-        template <typename Ty_>
-        struct config_choose_stored_type <
-            Ty_,
-            std::enable_if_t<std::is_same<bool, Ty_>::value>
-        >
-        {
-            using cast_tag = config_no_cast_tag;
-            static constexpr config_type ctype = config_type::boolean;
+            constexpr
+            ToType_ operator()(FromType_ && val) const {
+                return static_cast<ToType_>(val);
+            }
         };
 
-        template <typename Ty_>
-        struct config_choose_stored_type <
-            Ty_,
-            std::enable_if_t<std::is_same<std::string, Ty_>::value>
-        >
+        template <typename ToType_, typename FromType_>
+        struct narrow_converter
         {
-            using cast_tag = config_no_cast_tag;
-            static constexpr config_type ctype = config_type::string;
+            constexpr
+            ToType_ operator()(FromType_ && val) const {
+                return yato::narrow_cast<ToType_>(std::forward<FromType_>(val));
+            }
         };
 
-        template <config_type Type_>
-        struct config_type_trait
-        { };
-
-        template <>
-        struct config_type_trait <
-            config_type::integer
-        >
+        /**
+         * Assumes that FromType_ is wider than ToType_
+         */
+        template <typename ToType_, typename FromType_>
+        struct checked_limits_converter
         {
-            using return_type = int64_t;
+            YATO_CONSTEXPR_FUNC_EX
+            ToType_ operator()(FromType_ && val) const {
+                YATO_REQUIRES(val <= static_cast<FromType_>(std::numeric_limits<ToType_>::max()));
+                YATO_REQUIRES(val >= static_cast<FromType_>(std::numeric_limits<ToType_>::min()));
+                return static_cast<ToType_>(val);
+            }
         };
-
-        template <>
-        struct config_type_trait <
-            config_type::floating
-        >
-        {
-            using return_type = double;
-        };
-
-        template <>
-        struct config_type_trait <
-            config_type::boolean
-        >
-        {
-            using return_type = bool;
-        };
-
-        template <>
-        struct config_type_trait <
-            config_type::string
-        >
-        {
-            using return_type = std::string;
-        };
-
-        template <>
-        struct config_type_trait <
-            config_type::config
-        >
-        {
-            using return_type = yato::conf::backend_ptr;
-        };
-
-        using value_variant = yato::variant<
-            void,
-            typename config_type_trait<config_type::integer>::return_type,
-            typename config_type_trait<config_type::floating>::return_type,
-            typename config_type_trait<config_type::boolean>::return_type,
-            typename config_type_trait<config_type::string>::return_type,
-            typename config_type_trait<config_type::config>::return_type
-        >;
     }
+
+    template <typename Ty_>
+    struct config_value_trait
+    { };
+
+    template <>
+    struct config_value_trait<uint8_t>
+    {
+        using converter_type = details::narrow_converter<uint8_t, int64_t>;
+        static constexpr config_type stored_type = config_type::integer;
+    };
+
+    template <>
+    struct config_value_trait<uint16_t>
+    {
+        using converter_type = details::narrow_converter<uint16_t, int64_t>;
+        static constexpr config_type stored_type = config_type::integer;
+    };
+
+    template <>
+    struct config_value_trait<uint32_t>
+    {
+        using converter_type = details::narrow_converter<uint32_t, int64_t>;
+        static constexpr config_type stored_type = config_type::integer;
+    };
+
+    template <>
+    struct config_value_trait<uint64_t>
+    {
+        using converter_type = details::narrow_converter<uint8_t, int64_t>;
+        static constexpr config_type stored_type = config_type::integer;
+    };
+
+    template <>
+    struct config_value_trait<int8_t>
+    {
+        using converter_type = details::narrow_converter<int8_t, int64_t>;
+        static constexpr config_type stored_type = config_type::integer;
+    };
+
+    template <>
+    struct config_value_trait<int16_t>
+    {
+        using converter_type = details::narrow_converter<int16_t, int64_t>;
+        static constexpr config_type stored_type = config_type::integer;
+    };
+
+    template <>
+    struct config_value_trait<int32_t>
+    {
+        using converter_type = details::narrow_converter<int32_t, int64_t>;
+        static constexpr config_type stored_type = config_type::integer;
+    };
+
+    template <>
+    struct config_value_trait<int64_t>
+    {
+        using converter_type = details::identity_converter<int64_t, int64_t>;
+        static constexpr config_type stored_type = config_type::integer;
+    };
+
+    template <>
+    struct config_value_trait<float>
+    {
+        using converter_type = details::checked_limits_converter<float, double>;
+        static constexpr config_type stored_type = config_type::floating;
+    };
+
+    template <>
+    struct config_value_trait<double>
+    {
+        using converter_type = details::identity_converter<double, double>;
+        static constexpr config_type stored_type = config_type::floating;
+    };
+
+    template <>
+    struct config_value_trait<long double>
+    {
+        using converter_type = details::identity_converter<long double, double>;
+        static constexpr config_type stored_type = config_type::floating;
+    };
+
+    template <>
+    struct config_value_trait<bool>
+    {
+        using converter_type = details::identity_converter<bool, bool>;
+        static constexpr config_type stored_type = config_type::boolean;
+    };
+
+    template <>
+    struct config_value_trait<std::string>
+    {
+        using converter_type = details::identity_converter<std::string, std::string>;
+        static constexpr config_type stored_type = config_type::string;
+    };
+
+
+
+    /**
+     * Represents any stored type
+     */
+    using stored_variant = yato::variant<
+        void,
+        typename stored_type_trait<config_type::integer>::return_type,
+        typename stored_type_trait<config_type::floating>::return_type,
+        typename stored_type_trait<config_type::boolean>::return_type,
+        typename stored_type_trait<config_type::string>::return_type,
+        typename stored_type_trait<config_type::config>::return_type
+    >;
+
 
     /**
      * Interface for config implementation
@@ -160,10 +238,10 @@ namespace conf {
         virtual ~config_backend() = default;
 
         virtual bool do_is_object() const noexcept = 0;
-        virtual details::value_variant do_get_by_name(const std::string & name, config_type type) const noexcept = 0;
+        virtual stored_variant do_get_by_name(const std::string & name, config_type type) const noexcept = 0;
 
         virtual bool do_is_array() const noexcept = 0;
-        virtual details::value_variant do_get_by_index(size_t index, config_type type) const noexcept = 0;
+        virtual stored_variant do_get_by_index(size_t index, config_type type) const noexcept = 0;
 
         virtual size_t do_get_size() const noexcept = 0;
     };
