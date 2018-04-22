@@ -189,7 +189,6 @@ namespace yato
         template<>
         struct config_value_trait<TestEnum>
         {
-            using return_type = int64_t;
             using converter_type = enum_converter;
             static constexpr config_type stored_type = config_type::integer;
         };
