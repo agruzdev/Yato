@@ -66,6 +66,12 @@ TEST(Yato_Config, manual_conversion)
     const auto conf = yato::conf::manual_builder::object()
         .put("enum1", static_cast<int32_t>(TestEnum::eVal1))
         .put("enum2", static_cast<int32_t>(TestEnum::eVal2))
+        .put("vec", yato::conf::manual_builder::array()
+            .add(20)
+            .add(98)
+            .add(-7)
+            .create()
+        )
         .create();
     TestConfig_Conversion(conf);
 }

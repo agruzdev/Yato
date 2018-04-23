@@ -179,7 +179,24 @@ namespace
         }
     };
 
+    struct TestVec3
+    {
+        int32_t x = 0;
+        int32_t y = 0;
+        int32_t z = 0;
+    };
 
+    struct vec3_converter
+    {
+        TestVec3 operator()(const yato::conf::config & arr) const
+        {
+            TestVec3 v;
+            v.x = arr.value<int32_t>(0).get_or(-1);
+            v.y = arr.value<int32_t>(1).get_or(-1);
+            v.z = arr.value<int32_t>(2).get_or(-1);
+            return v;
+        }
+    };
 }
 
 namespace yato
@@ -192,6 +209,13 @@ namespace yato
             using converter_type = enum_converter;
             static constexpr config_type stored_type = config_type::integer;
         };
+
+        template<>
+        struct config_value_trait<TestVec3>
+        {
+            using converter_type = vec3_converter;
+            static constexpr config_type stored_type = config_type::config;
+        };
     }
 }
 
@@ -199,7 +223,9 @@ namespace yato
  * JSON
  * {
  *      "enum1" : 7,
- *      "enum2" : 14
+ *      "enum2" : 14,
+ *      
+ *      "vec" : [20, 98, -7]
  * }
  */
 inline
@@ -214,6 +240,16 @@ void TestConfig_Conversion(const yato::conf::config & conf)
     EXPECT_EQ(TestEnum::eVal1, e1);
     EXPECT_EQ(TestEnum::eVal2, e2);
     EXPECT_EQ(TestEnum::eNull, e3);
+
+    // Not all configs support nested objects.
+    // Use string serialization for them.
+    if(conf.array("vec")) {
+        const auto vecOpt = conf.value<TestVec3>("vec");
+        ASSERT_FALSE(vecOpt.empty());
+        EXPECT_EQ(20, vecOpt.get().x);
+        EXPECT_EQ(98, vecOpt.get().y);
+        EXPECT_EQ(-7, vecOpt.get().z);
+    }
 }
 
 #endif // _YATO_CONFIG_TEST_CONFIG_COMMON_H_

@@ -16,11 +16,37 @@ namespace yato {
 
 namespace conf {
 
-
     class config
     {
     private:
         backend_ptr m_backend{ nullptr };
+        //---------------------------------------------------------------------
+
+        static constexpr
+        int64_t cast_result_(int64_t val) {
+            return val;
+        }
+
+        static constexpr
+        double cast_result_(double val) {
+            return val;
+        }
+
+        static constexpr
+        bool cast_result_(bool val) {
+            return val;
+        }
+
+        static constexpr
+        std::string && cast_result_(std::string && val) {
+            return std::move(val);
+        }
+
+        static
+        config cast_result_(backend_ptr && val) {
+            return config(std::move(val));
+        }
+
         //---------------------------------------------------------------------
 
     public:
@@ -133,7 +159,7 @@ namespace conf {
     template <>
     struct config_value_trait<yato::conf::config>
     {
-        using converter_type = details::identity_converter<yato::conf::config, backend_ptr>;
+        using converter_type = details::identity_converter<yato::conf::config, yato::conf::config>;
         static constexpr config_type stored_type = config_type::config;
     };
 
@@ -147,7 +173,7 @@ namespace conf {
             using return_type = typename stored_type_trait<trait::stored_type>::return_type;
 
             return m_backend->do_get_by_name(name, trait::stored_type).template get_opt<return_type>().map(
-                [&converter](return_type && val){ return converter(std::move(val)); }
+                [&converter](return_type && val){ return converter(cast_result_(std::move(val))); }
             );
         }
         return yato::nullopt_t{};
@@ -162,7 +188,7 @@ namespace conf {
             using return_type = typename stored_type_trait<trait::stored_type>::return_type;
 
             return m_backend->do_get_by_index(idx, trait::stored_type).template get_opt<return_type>().map(
-                [&converter](return_type && val){ return converter(std::move(val)); }
+                [&converter](return_type && val){ return converter(cast_result_(std::move(val))); }
             );
         }
         return yato::nullopt_t{};

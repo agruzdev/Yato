@@ -68,7 +68,8 @@ TEST(Yato_Config, json_conversion)
     const char* json = R"JSON(
         {
             "enum1" : 7,
-            "enum2" : 14
+            "enum2" : 14,
+            "vec" : [20, 98, -7]
         }
     )JSON";
     const auto conf = yato::conf::json_builder().parse(json);
