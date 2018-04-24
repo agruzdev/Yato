@@ -8,6 +8,8 @@
 #include <yato/actors/logger.h>
 #include <yato/stl_utility.h>
 
+#include "test_actors_common.h"
+
 namespace
 {
     const size_t ECHO_NUM   = 10;
@@ -64,10 +66,7 @@ namespace
 
 TEST(Yato_Actors, highload_spawn)
 {
-    auto conf = yato::actors::config::defaults();
-    conf.log_filter = yato::actors::log_level::info;
-
-    yato::actors::actor_system system("default", conf);
+    yato::actors::actor_system system("default");
 
     auto echoActor = system.create_actor<EchoActor>("Echo");
 

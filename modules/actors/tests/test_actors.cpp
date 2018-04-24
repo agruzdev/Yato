@@ -7,6 +7,8 @@
 #include <yato/any_match.h>
 #include <yato/stl_utility.h>
 
+#include "test_actors_common.h"
+
 namespace
 {
     class EchoActor
@@ -39,8 +41,7 @@ namespace
 
 TEST(Yato_Actors, common)
 {
-    auto conf = yato::actors::config::defaults();
-    conf.log_filter = yato::actors::log_level::debug;
+    const auto conf = actors_debug_config();
 
     yato::actors::actor_system system("default", conf);
 
@@ -103,8 +104,7 @@ namespace
 
 TEST(Yato_Actors, ping_pong) 
 {
-    auto conf = yato::actors::config::defaults();
-    conf.log_filter = yato::actors::log_level::verbose;
+    const auto conf = actors_verbose_config();
 
     yato::actors::actor_system system("default", conf);
 
@@ -193,8 +193,7 @@ namespace
 
 TEST(Yato_Actors, search) 
 {
-    auto conf = yato::actors::config::defaults();
-    conf.log_filter = yato::actors::log_level::verbose;
+    const auto conf = actors_verbose_config();
 
     yato::actors::actor_system system("default", conf);
 
@@ -214,8 +213,7 @@ TEST(Yato_Actors, search)
 
 TEST(Yato_Actors, search_2) 
 {
-    auto conf = yato::actors::config::defaults();
-    conf.log_filter = yato::actors::log_level::verbose;
+    const auto conf = actors_verbose_config();
 
     yato::actors::actor_system system("default", conf);
 
@@ -286,8 +284,7 @@ namespace
 
 TEST(Yato_Actors, forward)
 {
-    auto conf = yato::actors::config::defaults();
-    conf.log_filter = yato::actors::log_level::info;
+    const auto conf = actors_debug_config();
 
     yato::actors::actor_system system("default", conf);
 

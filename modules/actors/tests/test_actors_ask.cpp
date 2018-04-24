@@ -7,6 +7,8 @@
 #include <yato/actors/logger.h>
 #include <yato/any_match.h>
 
+#include "test_actors_common.h"
+
 namespace
 {
     class TestActor
@@ -29,7 +31,6 @@ namespace
 
 TEST(Yato_Actors, ask)
 {
-
     yato::actors::actor_system system("default");
     system.logger()->set_filter(yato::actors::log_level::verbose);
 

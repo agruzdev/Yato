@@ -228,6 +228,11 @@ namespace conf {
 
 } // namespace conf
 
+    // import names
+    using conf::config;
+    using conf::config_type;
+    using conf::config_error;
+
 } // namespace yato
 
 #endif // _YATO_CONFIG_H_

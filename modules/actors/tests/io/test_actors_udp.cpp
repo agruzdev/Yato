@@ -9,6 +9,8 @@
 
 #include <yato/actors/io/udp.h>
 
+#include "../test_actors_common.h"
+
 namespace
 {
 
@@ -46,11 +48,11 @@ TEST(Yato_Actors, io_udp_server)
 {
     using namespace yato::actors;
 
-    auto conf = config::defaults();
-    conf.log_filter = log_level::verbose;
-    conf.enable_io = true;
+    auto conf_builder = yato::conf::manual_builder::object();
+    conf_builder.put("log_level", "verbose");
+    conf_builder.put("enable_io", true);
 
-    actor_system system("default", conf);
+    actor_system system("default", conf_builder.create());
 
     actor_ref manager;
     ASSERT_NO_THROW(manager = io::udp::get_for(system));

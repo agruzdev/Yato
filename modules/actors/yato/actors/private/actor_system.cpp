@@ -51,7 +51,7 @@ namespace actors
         m_dead_letters.reset(new actor_ref(this, actor_path(m_name, actor_scope::dead, DEAD_LETTERS)));
 
         m_logger = logger_factory::create(std::string("ActorSystem[") + m_name + "]");
-        m_logger->set_filter(conf.log_filter);
+        m_logger->set_filter(conf.value<log_level>("log_level").get_or(log_level::info));
 
         //m_executor = std::make_unique<pinned_executor>(this);
         m_executor = std::make_unique<dynamic_executor>(this, 4, 5);
@@ -63,7 +63,7 @@ namespace actors
         m_root_stopped = false;
 
         // System actors
-        if(conf.enable_io) {
+        if(conf.value<bool>("enable_io").get_or(false)) {
 #ifdef YATO_ACTORS_WITH_IO
             io::facade::init(*this);
 #else
@@ -76,7 +76,7 @@ namespace actors
     //-------------------------------------------------------
 
     actor_system::actor_system(const std::string & name)
-        : actor_system(name, config::defaults())
+        : actor_system(name, config())
     { }
     //-------------------------------------------------------
 

@@ -121,7 +121,7 @@ namespace actors
         void notify_on_stop_(const actor_ref & ref);
 
     public:
-        actor_system(const std::string & name, const config & conf);
+        actor_system(const std::string & name, const yato::config & conf);
 
         explicit
         actor_system(const std::string & name);
