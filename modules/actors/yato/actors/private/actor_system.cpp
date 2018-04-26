@@ -5,16 +5,14 @@
 * Copyright (c) 2018 Alexey Gruzdev
 */
 
-#include <atomic>
-#include <iostream>
+#include <condition_variable>
+#include <memory>
 
 #include <yato/assert.h>
-#include <yato/any_match.h>
 
 #include "../actor.h"
 #include "../actor_system.h"
 
-#include "actor_system_ex.h"
 #include "actor_cell.h"
 #include "mailbox.h"
 #include "pinned_executor.h"
@@ -42,25 +40,47 @@ namespace yato
 namespace actors
 {
 
-    actor_system::actor_system(const std::string & name, const config & conf)
-        : m_name(name)
+    struct system_context
     {
-        if(!actor_path::is_valid_system_name(m_name)) {
+        std::string name;
+        logger_ptr log;
+
+        std::unique_ptr<actor_cell> root;
+        actor_ref dead_letters;
+
+        std::mutex terminate_mutex;
+        std::condition_variable terminate_cv;
+        bool root_stopped;
+
+        name_generator name_generator;
+
+        std::unique_ptr<scheduler> scheduler;
+        std::unique_ptr<abstract_executor> executor;
+    };
+
+    //-------------------------------------------------------------------------
+
+
+
+    actor_system::actor_system(const std::string & name, const config & conf)
+        : m_context(new system_context())
+    {
+        if(!actor_path::is_valid_system_name(name)) {
             throw yato::argument_error("actor_system[actor_system]: Invalid name!");
         }
-        m_dead_letters.reset(new actor_ref(this, actor_path(m_name, actor_scope::dead, DEAD_LETTERS)));
+        m_context->name = name;
+        m_context->dead_letters = actor_ref(this, actor_path(name, actor_scope::dead, DEAD_LETTERS));
 
-        m_logger = logger_factory::create(std::string("ActorSystem[") + m_name + "]");
-        m_logger->set_filter(conf.value<log_level>("log_level").get_or(log_level::info));
+        m_context->log = logger_factory::create(std::string("ActorSystem[") + name + "]");
+        m_context->log->set_filter(conf.value<log_level>("log_level").get_or(log_level::info));
 
         //m_executor = std::make_unique<pinned_executor>(this);
-        m_executor = std::make_unique<dynamic_executor>(this, 4, 5);
+        m_context->executor = std::make_unique<dynamic_executor>(this, 4, 5);
 
-        m_scheduler = std::make_unique<scheduler>();
-        m_name_generator = std::make_unique<name_generator>();
+        m_context->scheduler = std::make_unique<scheduler>();
 
-        m_root = std::make_unique<actor_cell>(*this, actor_path("yato://" + m_name), std::make_unique<actors::root>());
-        m_root_stopped = false;
+        m_context->root = std::make_unique<actor_cell>(*this, actor_path("yato://" + name), std::make_unique<actors::root>());
+        m_context->root_stopped = false;
 
         // System actors
         if(conf.value<bool>("enable_io").get_or(false)) {
@@ -70,8 +90,11 @@ namespace actors
             throw yato::argument_error("actor_system[actor_system]: IO can't be enabled. Build with flag YATO_ACTORS_WITH_IO");
 #endif
         }
-        YATO_ENSURES(m_root != nullptr);
-        send_system_message(m_root->ref(), system_message::start());
+        YATO_ENSURES(m_context->root != nullptr);
+        send_system_message(m_context->root->ref(), system_message::start());
+
+        YATO_ENSURES(m_context->executor != nullptr);
+        YATO_ENSURES(m_context->scheduler != nullptr);
     }
     //-------------------------------------------------------
 
@@ -82,20 +105,27 @@ namespace actors
 
     actor_system::~actor_system()
     {
+        YATO_REQUIRES(m_context != nullptr);
+
         shutdown_impl_(false);
 
         // Important to destroy executor first, so all messages are processed.
-        m_executor.reset();
+        m_context->executor.reset();
     }
+    //-------------------------------------------------------
+
+    actor_system::actor_system(actor_system&&) noexcept = default;
+    actor_system& actor_system::operator=(actor_system&&) noexcept = default;
     //-------------------------------------------------------
 
     void actor_system::shutdown_impl_(bool forced)
     {
-        send_message(m_root->ref(), root_terminate(forced));
+        YATO_REQUIRES(m_context != nullptr);
 
+        send_message(m_context->root->ref(), root_terminate(forced));
         {
-            std::unique_lock<std::mutex> lock(m_terminate_mutex);
-            m_terminate_cv.wait(lock, [this]() { return m_root_stopped; });
+            std::unique_lock<std::mutex> lock(m_context->terminate_mutex);
+            m_context->terminate_cv.wait(lock, [this]() { return m_context->root_stopped; });
         }
         // Now all actors are stopped
         //m_scheduler->stop();
@@ -108,17 +138,38 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    const actor_ref & actor_system::root() const {
-        YATO_REQUIRES(m_root != nullptr);
-        return m_root->ref();
+    const actor_ref & actor_system::root() const
+    {
+        YATO_REQUIRES(m_context != nullptr);
+        return m_context->root->ref();
+    }
+    //-------------------------------------------------------
+
+    const std::string & actor_system::name() const
+    {
+        YATO_REQUIRES(m_context != nullptr);
+        return m_context->name;
+    }
+    //-------------------------------------------------------
+
+    const logger_ptr & actor_system::logger() const
+    {
+        YATO_REQUIRES(m_context != nullptr);
+        return m_context->log;
+    }
+    //-------------------------------------------------------
+
+    const actor_ref & actor_system::dead_letters() const
+    {
+        YATO_REQUIRES(m_context != nullptr);
+        return m_context->dead_letters;
     }
     //-------------------------------------------------------
 
     template <typename Ty_, typename ... Args_>
-    inline
     bool enqueue_system_message_(const std::shared_ptr<mailbox> & mbox, const actor_ref & sender, Args_ && ... args)
     {
-        assert(mbox != nullptr);
+        YATO_REQUIRES(mbox != nullptr);
         bool success = false;
         auto payload = yato::any(yato::in_place_type_t<Ty_>{}, std::forward<Args_>(args)...);
         {
@@ -135,6 +186,8 @@ namespace actors
 
     actor_ref actor_system::create_actor_impl_(const details::cell_builder & builder, const actor_path & path, const actor_ref & parent)
     {
+        YATO_REQUIRES(m_context != nullptr);
+
         path_elements elems;
         path.parce(elems);
 
@@ -146,7 +199,7 @@ namespace actors
         auto ref  = cell->ref();
 
         if(parent.empty()) {
-            send_message(m_root->ref(), root_add(std::move(cell)));
+            send_message(m_context->root->ref(), root_add(std::move(cell)));
         } else {
             send_system_message(parent, system_message::attach_child(std::move(cell)));
         }
@@ -157,14 +210,16 @@ namespace actors
 
     void actor_system::send_impl_(const actor_ref & addressee, const actor_ref & sender, yato::any && userMessage) const
     {
+        YATO_REQUIRES(m_context != nullptr);
+
         if(addressee.empty() || addressee == dead_letters()) {
-            m_logger->verbose("A message was delivered to DeadLetters.");
+            logger()->verbose("A message was delivered to DeadLetters.");
             return;
         }
 
         std::shared_ptr<mailbox> mbox = addressee.get_mailbox().lock();
         if(mbox == nullptr) {
-            m_logger->verbose("Failed to send a message. Actor %s is not found!", addressee.get_path().c_str());
+            logger()->verbose("Failed to send a message. Actor %s is not found!", addressee.get_path().c_str());
             return;
         }
 
@@ -176,20 +231,22 @@ namespace actors
                 mbox->condition.notify_one();
             }
         }
-        m_executor->execute(mbox);
+        m_context->executor->execute(mbox);
     }
     //-------------------------------------------------------
 
     void actor_system::send_system_impl_(const actor_ref & addressee, const actor_ref & sender, yato::any && userMessage) const
     {
+        YATO_REQUIRES(m_context != nullptr);
+
         if (addressee.empty() || addressee == dead_letters()) {
-            m_logger->verbose("A system message was delivered to DeadLetters.");
+            logger()->verbose("A system message was delivered to DeadLetters.");
             return;
         }
 
         std::shared_ptr<mailbox> mbox = addressee.get_mailbox().lock();
         if (mbox == nullptr) {
-            m_logger->verbose("Failed to send a message. Actor %s is not found!", addressee.get_path().c_str());
+            logger()->verbose("Failed to send a message. Actor %s is not found!", addressee.get_path().c_str());
             return;
         }
 
@@ -201,20 +258,22 @@ namespace actors
                 mbox->condition.notify_one();
             }
         }
-        m_executor->execute(mbox);
+        m_context->executor->execute(mbox);
     }
     //-------------------------------------------------------
 
     std::future<yato::any> actor_system::ask_impl_(const actor_ref & addressee, yato::any && message, const timeout_type & timeout) const
     {
+        YATO_REQUIRES(m_context != nullptr);
+
         std::promise<yato::any> response;
         auto result = response.get_future();
 
-        const auto ask_actor_path = actor_path(*this, actor_scope::temp, m_name_generator->next_indexed("ask"));
+        const auto ask_actor_path = actor_path(*this, actor_scope::temp, m_context->name_generator.next_indexed("ask"));
         const auto ask_actor = const_cast<actor_system*>(this)->create_actor_impl_(details::make_cell_builder<asking_actor>(std::move(response)), ask_actor_path, actor_ref{});
         send_impl_(addressee, ask_actor, std::move(message));
 
-        m_scheduler->enqueue(std::chrono::high_resolution_clock::now() + timeout, [ask_actor]{ ask_actor.stop(); });
+        m_context->scheduler->enqueue(std::chrono::high_resolution_clock::now() + timeout, [ask_actor]{ ask_actor.stop(); });
 
         return result;
     }
@@ -222,18 +281,22 @@ namespace actors
 
     void actor_system::stop_impl_(const std::shared_ptr<mailbox> & mbox) const 
     {
-        assert(mbox != nullptr);
+        YATO_REQUIRES(m_context != nullptr);
+        YATO_REQUIRES(mbox != nullptr);
+
         if(enqueue_system_message_<system_message::stop>(mbox, dead_letters())) {
-            m_executor->execute(mbox);
+            m_context->executor->execute(mbox);
         }
     }
     //-------------------------------------------------------
 
     void actor_system::stop(const actor_ref & addressee) const 
     {
+        YATO_REQUIRES(m_context != nullptr);
+
         const std::shared_ptr<mailbox> mbox = addressee.get_mailbox().lock();
         if (mbox == nullptr) {
-            m_logger->verbose("Failed to stop actor. Actor %s is not found!", addressee.get_path().c_str());
+            logger()->verbose("Failed to stop actor. Actor %s is not found!", addressee.get_path().c_str());
             return;
         }
         stop_impl_(mbox);
@@ -242,13 +305,15 @@ namespace actors
 
     std::future<actor_ref> actor_system::find_impl_(const actor_path & path, const timeout_type & timeout) const
     {
+        YATO_REQUIRES(m_context != nullptr);
+
         std::promise<actor_ref> promise;
         auto result = promise.get_future();
 
-        const auto selector_path = actor_path(*this, actor_scope::temp, m_name_generator->next_indexed("find"));
+        const auto selector_path = actor_path(*this, actor_scope::temp, m_context->name_generator.next_indexed("find"));
         const auto select_actor  = const_cast<actor_system*>(this)->create_actor_impl_(details::make_cell_builder<selector>(path, std::move(promise)), selector_path, actor_ref{});
 
-        m_scheduler->enqueue(std::chrono::high_resolution_clock::now() + timeout, [select_actor]{ select_actor.stop(); });
+        m_context->scheduler->enqueue(std::chrono::high_resolution_clock::now() + timeout, [select_actor]{ select_actor.stop(); });
 
         return result;
     }
@@ -256,54 +321,60 @@ namespace actors
 
     void actor_system::watch(const actor_ref & watchee, const actor_ref & watcher) const
     {
+        YATO_REQUIRES(m_context != nullptr);
+
         if(watchee == dead_letters() || watcher == dead_letters()) {
-            m_logger->error("DeadLetters can't be used in watching");
+            logger()->error("DeadLetters can't be used in watching");
             return;
         }
         const std::shared_ptr<mailbox> mbox = watchee.get_mailbox().lock();
         if (mbox == nullptr) {
-            m_logger->warning("Failed to find watchee. Actor %s is not found!", watchee.get_path().c_str());
+            logger()->warning("Failed to find watchee. Actor %s is not found!", watchee.get_path().c_str());
             watcher.tell(terminated(watchee)); // Already terminated
             return;
         }
         if (enqueue_system_message_<system_message::watch>(mbox, watcher, watcher)) {
-            m_executor->execute(mbox);
+            m_context->executor->execute(mbox);
         }
     }
     //--------------------------------------------------------
     
     void actor_system::unwatch(const actor_ref & watchee, const actor_ref & watcher) const
     {
+        YATO_REQUIRES(m_context != nullptr);
+
         if (watchee == dead_letters() || watcher == dead_letters()) {
-            m_logger->error("DeadLetters can't be used in watching");
+            logger()->error("DeadLetters can't be used in watching");
             return;
         }
         const std::shared_ptr<mailbox> mbox = watchee.get_mailbox().lock();
         if (mbox == nullptr) {
-            m_logger->error("Failed to find watchee. Actor %s is not found!", watchee.get_path().c_str());
+            logger()->error("Failed to find watchee. Actor %s is not found!", watchee.get_path().c_str());
             return;
         }
         if (enqueue_system_message_<system_message::unwatch>(mbox, watcher, watcher)) {
-            m_executor->execute(mbox);
+            m_context->executor->execute(mbox);
         }
     }
     //--------------------------------------------------------
 
     void actor_system::notify_on_stop_(const actor_ref & ref)
     {
-        if(ref == m_root->ref()) {
-            m_root_stopped = true;
-            std::unique_lock<std::mutex> lock(m_terminate_mutex);
-            m_terminate_cv.notify_one();
-            m_logger->verbose("The root is stopped.", ref.get_path().c_str());
+        YATO_REQUIRES(m_context != nullptr);
+
+        if(ref == m_context->root->ref()) {
+            m_context->root_stopped = true;
+            std::unique_lock<std::mutex> lock(m_context->terminate_mutex);
+            m_context->terminate_cv.notify_one();
+            logger()->verbose("The root is stopped.", ref.get_path().c_str());
         }
         // ToDo (a.gruzdev): Consider better scheduler implementation
         else if(ref.get_path() == actor_path::join(root().get_path(), actor_path::scope_to_str(actor_scope::user))) {
             // Stop after all user actors
-            m_scheduler->stop();
+            m_context->scheduler->stop();
         }
         else {
-            m_logger->verbose("Actor %s is stopped.", ref.get_path().c_str());
+            logger()->verbose("Actor %s is stopped.", ref.get_path().c_str());
         }
     }
     //--------------------------------------------------------

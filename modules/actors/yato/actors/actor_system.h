@@ -9,11 +9,8 @@
 #define _YATO_ACTOR_SYSTEM_H_
 
 #include <chrono>
-#include <condition_variable>
 #include <future>
-#include <map>
 #include <memory>
-#include <mutex>
 
 #include <yato/any.h>
 
@@ -26,34 +23,15 @@ namespace yato
 namespace actors
 {
 
-    class actor_cell;
     struct mailbox;
-
-    class abstract_executor;
-    class actor_system;
-    class scheduler;
-    class name_generator;
+    struct system_context;
 
     class actor_system
     {
     private:
         using timeout_type = std::chrono::microseconds;
 
-        std::string m_name;
-        logger_ptr m_logger;
-
-        std::unique_ptr<actor_cell> m_root;
-        std::unique_ptr<actor_ref> m_dead_letters;
-
-        std::mutex m_terminate_mutex;
-        std::condition_variable m_terminate_cv;
-        bool m_root_stopped;
-
-        std::unique_ptr<name_generator> m_name_generator;
-
-        std::unique_ptr<scheduler> m_scheduler;
-        std::unique_ptr<abstract_executor> m_executor;
-        
+        std::unique_ptr<system_context> m_context;
         //-------------------------------------------------------
 
         actor_ref create_actor_impl_(const details::cell_builder & builder, const actor_path & name, const actor_ref & parent);
@@ -133,6 +111,14 @@ namespace actors
          */
         ~actor_system();
 
+        actor_system(const actor_system&) = delete;
+
+        actor_system(actor_system&&) noexcept;
+
+        actor_system& operator=(const actor_system&) = delete;
+
+        actor_system& operator=(actor_system&&) noexcept;
+
         /**
          * Create a user actor
          */
@@ -159,18 +145,11 @@ namespace actors
             return ask_impl_(addressee, yato::any(std::forward<Ty_>(message)), std::chrono::duration_cast<timeout_type>(timeout));
         }
 
-        const std::string & name() const {
-            return m_name;
-        }
+        const std::string & name() const;
 
-        const logger_ptr & logger() const {
-            return m_logger;
-        }
+        const logger_ptr & logger() const;
 
-        const actor_ref & dead_letters() const {
-            assert(m_dead_letters != nullptr);
-            return *m_dead_letters;
-        }
+        const actor_ref & dead_letters() const;
 
         /**
          * Send stop signal to actor and terminate it right after the current message
