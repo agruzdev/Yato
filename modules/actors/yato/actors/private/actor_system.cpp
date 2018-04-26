@@ -52,9 +52,8 @@ namespace actors
         std::condition_variable terminate_cv;
         bool root_stopped;
 
-        name_generator name_generator;
-
-        std::unique_ptr<scheduler> scheduler;
+        name_generator names_gen;
+        scheduler global_scheduler;
         std::unique_ptr<abstract_executor> executor;
     };
 
@@ -77,8 +76,6 @@ namespace actors
         //m_executor = std::make_unique<pinned_executor>(this);
         m_context->executor = std::make_unique<dynamic_executor>(this, 4, 5);
 
-        m_context->scheduler = std::make_unique<scheduler>();
-
         m_context->root = std::make_unique<actor_cell>(*this, actor_path("yato://" + name), std::make_unique<actors::root>());
         m_context->root_stopped = false;
 
@@ -94,7 +91,6 @@ namespace actors
         send_system_message(m_context->root->ref(), system_message::start());
 
         YATO_ENSURES(m_context->executor != nullptr);
-        YATO_ENSURES(m_context->scheduler != nullptr);
     }
     //-------------------------------------------------------
 
@@ -269,11 +265,11 @@ namespace actors
         std::promise<yato::any> response;
         auto result = response.get_future();
 
-        const auto ask_actor_path = actor_path(*this, actor_scope::temp, m_context->name_generator.next_indexed("ask"));
+        const auto ask_actor_path = actor_path(*this, actor_scope::temp, m_context->names_gen.next_indexed("ask"));
         const auto ask_actor = const_cast<actor_system*>(this)->create_actor_impl_(details::make_cell_builder<asking_actor>(std::move(response)), ask_actor_path, actor_ref{});
         send_impl_(addressee, ask_actor, std::move(message));
 
-        m_context->scheduler->enqueue(std::chrono::high_resolution_clock::now() + timeout, [ask_actor]{ ask_actor.stop(); });
+        m_context->global_scheduler.enqueue(std::chrono::high_resolution_clock::now() + timeout, [ask_actor]{ ask_actor.stop(); });
 
         return result;
     }
@@ -310,10 +306,10 @@ namespace actors
         std::promise<actor_ref> promise;
         auto result = promise.get_future();
 
-        const auto selector_path = actor_path(*this, actor_scope::temp, m_context->name_generator.next_indexed("find"));
+        const auto selector_path = actor_path(*this, actor_scope::temp, m_context->names_gen.next_indexed("find"));
         const auto select_actor  = const_cast<actor_system*>(this)->create_actor_impl_(details::make_cell_builder<selector>(path, std::move(promise)), selector_path, actor_ref{});
 
-        m_context->scheduler->enqueue(std::chrono::high_resolution_clock::now() + timeout, [select_actor]{ select_actor.stop(); });
+        m_context->global_scheduler.enqueue(std::chrono::high_resolution_clock::now() + timeout, [select_actor]{ select_actor.stop(); });
 
         return result;
     }
@@ -371,7 +367,7 @@ namespace actors
         // ToDo (a.gruzdev): Consider better scheduler implementation
         else if(ref.get_path() == actor_path::join(root().get_path(), actor_path::scope_to_str(actor_scope::user))) {
             // Stop after all user actors
-            m_context->scheduler->stop();
+            m_context->global_scheduler.stop();
         }
         else {
             logger()->verbose("Actor %s is stopped.", ref.get_path().c_str());
