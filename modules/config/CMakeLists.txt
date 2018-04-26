@@ -11,7 +11,7 @@ file(GLOB config_sources
 )
 
 # Manual
-option(YATO_CONFIG_MANUAL "Enable manual config" OFF)
+option(YATO_CONFIG_MANUAL "Enable manual config" ON)
 if(YATO_CONFIG_MANUAL)
     file(GLOB manual_sources
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/manual/*.h"

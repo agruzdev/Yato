@@ -61,16 +61,12 @@ endforeach()
 
 add_definitions(-DYATO_ENABLE_TESTED_ASSERTIONS)
 
-add_executable(YatoTests ${all_sources})
-
-target_link_libraries(YatoTests gtest)
-target_link_libraries(YatoTests gtest_main)
-
-#if(YATO_BUILD_ACTORS)
-#    target_link_libraries(YatoTests YatoActors)
-#endif()
+link_libraries(gtest)
+link_libraries(gtest_main)
 foreach(test_lib ${Yato_TEST_LIBS})
-    target_link_libraries(YatoTests ${test_lib})
+    link_libraries(${test_lib})
 endforeach()
+
+add_executable(YatoTests ${all_sources})
 
 _gtest_add_definitions(YatoTests)
