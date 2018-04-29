@@ -32,7 +32,7 @@ namespace actors
                 return;
             }
 
-            if(!mbox->owner->context_().is_started()) {
+            if(!mbox->owner_node->is_started()) {
                 // ToDo (a.gruzdev): Quick solution
                 // dont process user messages untill started
                 reschedule = false;

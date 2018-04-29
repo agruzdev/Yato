@@ -51,6 +51,8 @@ namespace actors
         void stop_impl() noexcept;
 
         actor_ref create_child_impl_(const std::string & name, const details::cell_builder & builder);
+
+        actor_cell & context_();
         //-------------------------------------------------------
 
     protected:
@@ -180,9 +182,6 @@ namespace actors
          * Used by actor system to initialize the actor
          */
         void set_context_(actor_cell* cell);
-
-        // Temporal
-        actor_cell & context_();
     };
     //-------------------------------------------------------
 
