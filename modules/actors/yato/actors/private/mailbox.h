@@ -30,7 +30,10 @@ namespace actors
     };
 #endif
 
+    struct execution_context;
+
     // ToDo (a.gruzdev): simplest implementation. Queue + mutex
+    // ToDo (a.gruzdev) : make class
     struct mailbox
     {
         std::queue<std::unique_ptr<message>> queue;
@@ -39,6 +42,8 @@ namespace actors
         std::condition_variable condition;
 
         basic_actor* owner = nullptr;
+        actor_cell* owner_node = nullptr;
+
         //mailbox_status status = mailbox_status::opened;
         bool is_open = true;
         bool is_scheduled = false;

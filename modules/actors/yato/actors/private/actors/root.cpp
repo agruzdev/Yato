@@ -18,33 +18,21 @@ namespace yato
 namespace actors
 {
 
-    actor_ref root::create_guard_(const actor_path & path)
-    {
-        auto cell = std::make_unique<actor_cell>(system(), path, std::make_unique<guardian>());
-        auto ref  = cell->ref();
-
-        log().debug("Guard %s is created.", path.c_str());
-        actor_system_ex::send_system_message(system(), self(), system_message::attach_child(std::move(cell)));
-
-        return ref;
-    }
-    //-----------------------------------------------------------
-
     void root::pre_start()
     {
-        m_sys_guard = create_guard_(actor_path::join(self().get_path(), actor_path::scope_to_str(actor_scope::system)));
+        m_sys_guard = actor_system_ex::create_actor<guardian>(system(), self(), actor_path::scope_to_str(actor_scope::system));
         watch(m_sys_guard);
         m_sys_stopped = false;
 
-        m_tmp_guard = create_guard_(actor_path::join(self().get_path(), actor_path::scope_to_str(actor_scope::temp)));
+        m_tmp_guard = actor_system_ex::create_actor<guardian>(system(), self(), actor_path::scope_to_str(actor_scope::temp));
         watch(m_tmp_guard);
         m_tmp_stopped = false;
 
-        m_usr_guard = create_guard_(actor_path::join(self().get_path(), actor_path::scope_to_str(actor_scope::user)));
+        m_usr_guard = actor_system_ex::create_actor<guardian>(system(), self(), actor_path::scope_to_str(actor_scope::user));
         watch(m_usr_guard);
         m_usr_stopped = false;
 
-        m_rmt_guard = create_guard_(actor_path::join(self().get_path(), actor_path::scope_to_str(actor_scope::remote)));
+        m_rmt_guard = actor_system_ex::create_actor<guardian>(system(), self(), actor_path::scope_to_str(actor_scope::remote));
         watch(m_rmt_guard);
         m_rmt_stopped = false;
     }

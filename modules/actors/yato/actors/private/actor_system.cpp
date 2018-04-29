@@ -15,11 +15,10 @@
 
 #include "actor_cell.h"
 #include "mailbox.h"
-#include "pinned_executor.h"
-#include "dynamic_executor.h"
 #include "scheduler.h"
 #include "name_generator.h"
 #include "system_message.h"
+#include "execution_context.h"
 
 #ifdef YATO_ACTORS_WITH_IO
 #include "../io/facade.h"
@@ -45,21 +44,88 @@ namespace actors
         std::string name;
         logger_ptr log;
 
-        std::unique_ptr<actor_cell> root;
-        actor_ref dead_letters;
-
         std::mutex terminate_mutex;
         std::condition_variable terminate_cv;
         bool root_stopped;
 
         name_generator names_gen;
         scheduler global_scheduler;
-        std::unique_ptr<abstract_executor> executor;
+
+        std::vector<execution_context> executions;
+        std::string default_executor_name;
+
+        std::unique_ptr<actor_cell> root;
+        actor_ref dead_letters;
     };
 
     //-------------------------------------------------------------------------
 
+    inline
+    execution_context* find_execution_(system_context& context, const std::string & name)
+    {
+        const auto it = std::find_if(context.executions.begin(), context.executions.begin(), 
+            [&name](const execution_context & execution){ return execution.name == name; }
+        );
+        return (it != context.executions.cend()) ? &(*it) : nullptr;
+    }
+    //-------------------------------------------------------------------------
 
+    inline
+    void schedule_for_execution_(const std::shared_ptr<mailbox> & mbox)
+    {
+        YATO_REQUIRES(mbox != nullptr);
+        YATO_REQUIRES(mbox->owner_node != nullptr);
+        mbox->owner_node->executor().execute(mbox);
+    }
+    //-------------------------------------------------------------------------
+
+    inline
+    properties_internal resolve_props_(system_context& context, const properties & props)
+    {
+        properties_internal res;
+        res.execution = find_execution_(context, props.execution_name);
+        return res;
+    }
+    //-------------------------------------------------------------------------
+
+    inline
+    properties_internal default_properties_(system_context& context)
+    {
+        properties_internal res;
+        res.execution = find_execution_(context, context.default_executor_name);
+        return res;
+    }
+    //-------------------------------------------------------------------------
+
+    void actor_system::init_executors_(const yato::config & conf)
+    {
+        m_context->executions.clear();
+
+        // Put default executor first
+        const auto default_name = conf.value<std::string>("default_executor");
+        if(default_name) {
+            m_context->default_executor_name = default_name.get();
+        }
+        else {
+            m_context->default_executor_name = "default";
+            m_context->executions.push_back(execution_context::get_default(this, m_context->default_executor_name));
+        }
+
+        // Read custom executors
+        const auto executors_array = conf.array("execution_contexts");
+        if(executors_array && executors_array.is_array()) {
+            const execution_context_converter converter(this);
+            for(size_t i = 0; i < executors_array.size(); ++i) {
+                m_context->executions.push_back(executors_array.value<execution_context>(i, converter).get());
+            }
+        }
+
+        // Verify
+        if(find_execution_(*m_context, m_context->default_executor_name) == nullptr) {
+            throw yato::config_error("Default executor \"" + m_context->default_executor_name + "\" is not found!");
+        }
+    }
+    //-------------------------------------------------------------------------
 
     actor_system::actor_system(const std::string & name, const config & conf)
         : m_context(new system_context())
@@ -73,11 +139,13 @@ namespace actors
         m_context->log = logger_factory::create(std::string("ActorSystem[") + name + "]");
         m_context->log->set_filter(conf.value<log_level>("log_level").get_or(log_level::info));
 
-        //m_executor = std::make_unique<pinned_executor>(this);
-        m_context->executor = std::make_unique<dynamic_executor>(this, 4, 5);
+        init_executors_(conf);
 
-        m_context->root = std::make_unique<actor_cell>(*this, actor_path("yato://" + name), std::make_unique<actors::root>());
+        const auto root_builder = details::make_cell_builder<actors::root>();
+        m_context->root = root_builder(*this, actor_path("yato://" + name), default_properties_(*m_context));
         m_context->root_stopped = false;
+
+        //init_mailbox_(m_context.get(), m_context->root->mail(), actor_props());
 
         // System actors
         if(conf.value<bool>("enable_io").get_or(false)) {
@@ -90,7 +158,7 @@ namespace actors
         YATO_ENSURES(m_context->root != nullptr);
         send_system_message(m_context->root->ref(), system_message::start());
 
-        YATO_ENSURES(m_context->executor != nullptr);
+        YATO_ENSURES(!m_context->executions.empty());
     }
     //-------------------------------------------------------
 
@@ -106,7 +174,7 @@ namespace actors
         shutdown_impl_(false);
 
         // Important to destroy executor first, so all messages are processed.
-        m_context->executor.reset();
+        m_context->executions.clear();
     }
     //-------------------------------------------------------
 
@@ -162,25 +230,51 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    template <typename Ty_, typename ... Args_>
-    bool enqueue_system_message_(const std::shared_ptr<mailbox> & mbox, const actor_ref & sender, Args_ && ... args)
+    /**
+     * Returns true if mailbox should be scheduled for processing
+     */
+    bool enqueue_system_message_(const std::shared_ptr<mailbox> & mbox, std::unique_ptr<message> && msg)
     {
         YATO_REQUIRES(mbox != nullptr);
-        bool success = false;
-        auto payload = yato::any(yato::in_place_type_t<Ty_>{}, std::forward<Args_>(args)...);
+        bool need_process = false;
         {
             std::unique_lock<std::mutex> lock(mbox->mutex);
             if (mbox->is_open) {
-                mbox->sys_queue.push(std::make_unique<message>(std::move(payload), sender));
+                mbox->sys_queue.push(std::move(msg));
                 mbox->condition.notify_one();
-                success = true;
+                need_process = !mbox->is_scheduled;
             }
         }
-        return success;
+        return need_process;
     }
     //-------------------------------------------------------
 
-    actor_ref actor_system::create_actor_impl_(const details::cell_builder & builder, const actor_path & path, const actor_ref & parent)
+    template <typename Ty_, typename ... Args_>
+    bool create_and_enqueue_system_message_(const std::shared_ptr<mailbox> & mbox, const actor_ref & sender, Args_ && ... args)
+    {
+        yato::any payload(yato::in_place_type_t<Ty_>{}, std::forward<Args_>(args)...);
+        return enqueue_system_message_(mbox, std::make_unique<message>(std::move(payload), sender));
+    }
+    //-------------------------------------------------------
+
+    bool enqueue_user_message_(const std::shared_ptr<mailbox> & mbox, std::unique_ptr<message> && msg)
+    {
+        YATO_REQUIRES(mbox != nullptr);
+        bool need_process = false;
+        //auto msg = std::make_unique<message>(std::move(payload), sender);
+        {
+            std::unique_lock<std::mutex> lock(mbox->mutex);
+            if (mbox->is_open) {
+                mbox->queue.push(std::move(msg));
+                mbox->condition.notify_one();
+                need_process = !mbox->is_scheduled;
+            }
+        }
+        return need_process;
+    }
+    //-------------------------------------------------------
+
+    actor_ref actor_system::create_actor_impl_(const details::cell_builder & builder, const yato::optional<properties>& props, const actor_path & path, const actor_ref & parent)
     {
         YATO_REQUIRES(m_context != nullptr);
 
@@ -191,9 +285,13 @@ namespace actors
             throw yato::argument_error("Invalid actor path!");
         }
 
-        auto cell = builder(*this, path);
+        auto cell = builder(*this, path, props ? resolve_props_(*m_context, props.get()) : default_properties_(*m_context));
         auto ref  = cell->ref();
 
+        // Configure mailbox
+        //init_mailbox_(m_context.get(), cell->mail(), props);
+
+        // Add to the tree
         if(parent.empty()) {
             send_message(m_context->root->ref(), root_add(std::move(cell)));
         } else {
@@ -204,7 +302,7 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    void actor_system::send_impl_(const actor_ref & addressee, const actor_ref & sender, yato::any && userMessage) const
+    void actor_system::send_user_impl_(const actor_ref & addressee, const actor_ref & sender, yato::any && usrMessage) const
     {
         YATO_REQUIRES(m_context != nullptr);
 
@@ -213,25 +311,20 @@ namespace actors
             return;
         }
 
-        std::shared_ptr<mailbox> mbox = addressee.get_mailbox().lock();
+        const std::shared_ptr<mailbox> mbox = addressee.get_mailbox().lock();
         if(mbox == nullptr) {
             logger()->verbose("Failed to send a message. Actor %s is not found!", addressee.get_path().c_str());
             return;
         }
 
-        auto msg = std::make_unique<message>(std::move(userMessage), sender);
-        {
-            std::unique_lock<std::mutex> lock(mbox->mutex);
-            if (mbox->is_open) {
-                mbox->queue.push(std::move(msg));
-                mbox->condition.notify_one();
-            }
+        auto msg = std::make_unique<message>(std::move(usrMessage), sender);
+        if(enqueue_user_message_(mbox, std::move(msg))) {
+            schedule_for_execution_(mbox);
         }
-        m_context->executor->execute(mbox);
     }
     //-------------------------------------------------------
 
-    void actor_system::send_system_impl_(const actor_ref & addressee, const actor_ref & sender, yato::any && userMessage) const
+    void actor_system::send_system_impl_(const actor_ref & addressee, const actor_ref & sender, yato::any && sysMessage) const
     {
         YATO_REQUIRES(m_context != nullptr);
 
@@ -240,21 +333,16 @@ namespace actors
             return;
         }
 
-        std::shared_ptr<mailbox> mbox = addressee.get_mailbox().lock();
+        const std::shared_ptr<mailbox> mbox = addressee.get_mailbox().lock();
         if (mbox == nullptr) {
             logger()->verbose("Failed to send a message. Actor %s is not found!", addressee.get_path().c_str());
             return;
         }
 
-        auto msg = std::make_unique<message>(std::move(userMessage), sender);
-        {
-            std::unique_lock<std::mutex> lock(mbox->mutex);
-            if (mbox->is_open) {
-                mbox->sys_queue.push(std::move(msg));
-                mbox->condition.notify_one();
-            }
+        auto msg = std::make_unique<message>(std::move(sysMessage), sender);
+        if(enqueue_system_message_(mbox, std::move(msg))) {
+            schedule_for_execution_(mbox);
         }
-        m_context->executor->execute(mbox);
     }
     //-------------------------------------------------------
 
@@ -266,8 +354,9 @@ namespace actors
         auto result = response.get_future();
 
         const auto ask_actor_path = actor_path(*this, actor_scope::temp, m_context->names_gen.next_indexed("ask"));
-        const auto ask_actor = const_cast<actor_system*>(this)->create_actor_impl_(details::make_cell_builder<asking_actor>(std::move(response)), ask_actor_path, actor_ref{});
-        send_impl_(addressee, ask_actor, std::move(message));
+        const auto ask_actor = const_cast<actor_system*>(this)->create_actor_impl_(
+            details::make_cell_builder<asking_actor>(std::move(response)), yato::some(properties()), ask_actor_path, actor_ref{});
+        send_user_impl_(addressee, ask_actor, std::move(message));
 
         m_context->global_scheduler.enqueue(std::chrono::high_resolution_clock::now() + timeout, [ask_actor]{ ask_actor.stop(); });
 
@@ -280,8 +369,8 @@ namespace actors
         YATO_REQUIRES(m_context != nullptr);
         YATO_REQUIRES(mbox != nullptr);
 
-        if(enqueue_system_message_<system_message::stop>(mbox, dead_letters())) {
-            m_context->executor->execute(mbox);
+        if(create_and_enqueue_system_message_<system_message::stop>(mbox, dead_letters())) {
+            schedule_for_execution_(mbox);
         }
     }
     //-------------------------------------------------------
@@ -307,7 +396,8 @@ namespace actors
         auto result = promise.get_future();
 
         const auto selector_path = actor_path(*this, actor_scope::temp, m_context->names_gen.next_indexed("find"));
-        const auto select_actor  = const_cast<actor_system*>(this)->create_actor_impl_(details::make_cell_builder<selector>(path, std::move(promise)), selector_path, actor_ref{});
+        const auto select_actor  = const_cast<actor_system*>(this)->create_actor_impl_(
+            details::make_cell_builder<selector>(path, std::move(promise)), yato::some(properties()), selector_path, actor_ref{});
 
         m_context->global_scheduler.enqueue(std::chrono::high_resolution_clock::now() + timeout, [select_actor]{ select_actor.stop(); });
 
@@ -329,8 +419,8 @@ namespace actors
             watcher.tell(terminated(watchee)); // Already terminated
             return;
         }
-        if (enqueue_system_message_<system_message::watch>(mbox, watcher, watcher)) {
-            m_context->executor->execute(mbox);
+        if (create_and_enqueue_system_message_<system_message::watch>(mbox, watcher, watcher)) {
+            schedule_for_execution_(mbox);
         }
     }
     //--------------------------------------------------------
@@ -348,8 +438,8 @@ namespace actors
             logger()->error("Failed to find watchee. Actor %s is not found!", watchee.get_path().c_str());
             return;
         }
-        if (enqueue_system_message_<system_message::unwatch>(mbox, watcher, watcher)) {
-            m_context->executor->execute(mbox);
+        if (create_and_enqueue_system_message_<system_message::unwatch>(mbox, watcher, watcher)) {
+            schedule_for_execution_(mbox);
         }
     }
     //--------------------------------------------------------

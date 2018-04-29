@@ -13,6 +13,9 @@
 
 #include "../logger.h"
 
+#include "execution_context.h"
+#include "properties_internal.h"
+
 namespace yato
 {
 namespace actors
@@ -34,6 +37,11 @@ namespace actors
         actor_ref m_self;
         std::unique_ptr<basic_actor> m_actor;
         std::shared_ptr<mailbox> m_mailbox;
+
+        /**
+         * Context
+         */
+        execution_context* m_execution_context = nullptr;
 
         /**
          * Actor's logger
@@ -63,7 +71,7 @@ namespace actors
 
         //----------------------------------------------
     public:
-        actor_cell(actor_system & system, const actor_path & path, std::unique_ptr<basic_actor> && instance);
+        actor_cell(actor_system & system, const actor_path & path, const properties_internal & props, std::unique_ptr<basic_actor> && instance);
 
         ~actor_cell();
 
@@ -136,6 +144,14 @@ namespace actors
         const std::vector<std::unique_ptr<actor_cell>> & children() const {
             return m_children;
         }
+
+
+        abstract_executor & executor() const
+        {
+            YATO_REQUIRES(m_execution_context != nullptr);
+            return *(m_execution_context->executor);
+        }
+
     };
 
 

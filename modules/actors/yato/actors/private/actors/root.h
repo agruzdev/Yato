@@ -64,8 +64,6 @@ namespace actors
 
         //---------------------------------------
 
-        actor_ref create_guard_(const actor_path & path);
-
         void pre_start() override;
 
         void receive(yato::any && message) override;

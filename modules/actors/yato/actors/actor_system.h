@@ -17,6 +17,7 @@
 #include "actor.h"
 #include "config.h"
 #include "cell_builder.h"
+#include "actor_props.h"
 
 namespace yato
 {
@@ -34,10 +35,12 @@ namespace actors
         std::unique_ptr<system_context> m_context;
         //-------------------------------------------------------
 
-        actor_ref create_actor_impl_(const details::cell_builder & builder, const actor_path & name, const actor_ref & parent);
+        void init_executors_(const yato::config & conf);
 
-        void send_impl_(const actor_ref & toActor, const actor_ref & fromActor, yato::any && message) const;
-        void send_system_impl_(const actor_ref & addressee, const actor_ref & sender, yato::any && userMessage) const;
+        actor_ref create_actor_impl_(const details::cell_builder & builder, const yato::optional<properties> & props, const actor_path & name, const actor_ref & parent);
+
+        void send_user_impl_(const actor_ref & toActor, const actor_ref & fromActor, yato::any && usrMessage) const;
+        void send_system_impl_(const actor_ref & addressee, const actor_ref & sender, yato::any && sysMessage) const;
         void stop_impl_(const std::shared_ptr<mailbox> & mbox) const;
 
         std::future<yato::any> ask_impl_(const actor_ref & addressee, yato::any && message, const timeout_type & timeout) const;
@@ -64,7 +67,7 @@ namespace actors
             if(!actor_path::is_valid_actor_name(name)) {
                 throw yato::argument_error("Invalid actor name!");
             }
-            return create_actor_impl_(builder, actor_path(*this, scope, name), actor_ref{});
+            return create_actor_impl_(builder, yato::nullopt_t{}, actor_path(*this, scope, name), actor_ref{});
         }
 
         /**
@@ -76,7 +79,7 @@ namespace actors
                 throw yato::argument_error("Invalid actor name!");
             }
             const auto child_path = actor_path::join(parent.get_path(), name);
-            return create_actor_impl_(builder, child_path, parent);
+            return create_actor_impl_(builder,  yato::nullopt_t{}, child_path, parent);
         }
 
         /**
@@ -127,17 +130,28 @@ namespace actors
             if(!actor_path::is_valid_actor_name(name)) {
                 throw yato::argument_error("Invalid actor name!");
             }
-            return create_actor_impl_(details::make_cell_builder<ActorType_>(std::forward<Args_>(args)...), actor_path(*this, actor_scope::user, name), actor_ref{});
+            return create_actor_impl_(details::make_cell_builder<ActorType_>(std::forward<Args_>(args)...), yato::nullopt_t{}, actor_path(*this, actor_scope::user, name), actor_ref{});
+        }
+
+        /**
+         * Create a user actor
+         */
+        template <typename ActorType_, typename ... Args_>
+        actor_ref create_actor(const properties & props, const std::string & name, Args_ && ... args) {
+            if(!actor_path::is_valid_actor_name(name)) {
+                throw yato::argument_error("Invalid actor name!");
+            }
+            return create_actor_impl_(details::make_cell_builder<ActorType_>(std::forward<Args_>(args)...), yato::some(props), actor_path(*this, actor_scope::user, name), actor_ref{});
         }
 
         template <typename Ty_>
         void send_message(const actor_ref & addressee, Ty_ && message) const {
-            send_impl_(addressee, dead_letters(), yato::any(std::forward<Ty_>(message)));
+            send_user_impl_(addressee, dead_letters(), yato::any(std::forward<Ty_>(message)));
         }
 
         template <typename Ty_>
         void send_message(const actor_ref & addressee, Ty_ && message, const actor_ref & sender) const {
-            send_impl_(addressee, sender, yato::any(std::forward<Ty_>(message)));
+            send_user_impl_(addressee, sender, yato::any(std::forward<Ty_>(message)));
         }
 
         template <typename Ty_, typename Rep_, typename Period_>

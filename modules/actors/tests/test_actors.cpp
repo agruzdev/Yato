@@ -52,6 +52,18 @@ TEST(Yato_Actors, common)
 }
 
 
+TEST(Yato_Actors, common_pinned)
+{
+    const auto conf = actors_pinned_config();
+
+    yato::actors::actor_system system("default", conf);
+
+    auto actor = system.create_actor<EchoActor>("echo1");
+    actor.tell(std::string("Hello, Actor!"));
+
+    system.shutdown();
+}
+
 
 namespace
 {
@@ -293,3 +305,23 @@ TEST(Yato_Actors, forward)
     system.create_actor<actF2>("F2");
     system.create_actor<actF3>("F3");
 }
+
+
+TEST(Yato_Actors, executions)
+{
+    const auto conf = actors_all_contexts_config();
+
+    yato::actors::actor_system system("default", conf);
+
+    yato::actors::properties props_dyn;
+    props_dyn.execution_name = "dynamic";
+
+    yato::actors::properties props_pin;
+    props_pin.execution_name = "pinned";
+
+    system.create_actor<actF0>(props_dyn, "F0");
+    system.create_actor<actF1>(props_pin, "F1");
+    system.create_actor<actF2>(props_dyn, "F2");
+    system.create_actor<actF3>(props_pin, "F3");
+}
+

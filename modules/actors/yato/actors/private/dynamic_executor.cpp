@@ -83,7 +83,7 @@ namespace actors
 
     bool dynamic_executor::execute(const std::shared_ptr<mailbox> & mbox)
     {
-        assert(mbox != nullptr);
+        YATO_REQUIRES(mbox != nullptr);
         {
             std::unique_lock<std::mutex> lock(mbox->mutex);
             if (!mbox->is_scheduled) {

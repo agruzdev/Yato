@@ -17,11 +17,14 @@ namespace yato
 namespace actors
 {
 
-    actor_cell::actor_cell(actor_system & system, const actor_path & path, std::unique_ptr<basic_actor> && instance)
+    actor_cell::actor_cell(actor_system & system, const actor_path & path, const properties_internal & props, std::unique_ptr<basic_actor> && instance)
         : m_system(system), m_self(&system, path), m_started(false), m_stop(false)
     {
         m_log = logger_factory::create(std::string("Actor[") + m_self.name() + "]");
         m_log->set_filter(m_system.logger()->get_filter());
+
+        YATO_REQUIRES(props.execution != nullptr);
+        m_execution_context = props.execution;
 
         // setup actor
         m_actor = std::move(instance);
@@ -29,14 +32,14 @@ namespace actors
 
         // create mailbox
         m_mailbox = std::make_shared<mailbox>();
+        m_mailbox->owner_node = this;
         m_mailbox->owner = m_actor.get();
 
         m_self.set_mailbox(m_mailbox);
     }
     //--------------------------------------------
 
-    actor_cell::~actor_cell()
-    { }
+    actor_cell::~actor_cell() = default;
     //--------------------------------------------
 
     actor_ref actor_cell::add_child(std::unique_ptr<actor_cell> && child)

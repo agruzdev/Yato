@@ -20,6 +20,8 @@ namespace actors
     class actor_path;
     class actor_system;
 
+    struct properties_internal;
+
     namespace details 
     {
         /**
@@ -38,7 +40,7 @@ namespace actors
                 : m_ctor(std::move(ctor))
             { }
 
-            std::unique_ptr<actor_cell> operator()(actor_system & system, const actor_path & path) const noexcept;
+            std::unique_ptr<actor_cell> operator()(actor_system & system, const actor_path & path, const properties_internal & props) const noexcept;
         };
 
         template <typename Ty_, typename ... Args_>

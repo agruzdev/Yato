@@ -32,11 +32,12 @@ namespace actors
         actor_system* m_system;
         std::vector<std::thread> m_threads;
         logger_ptr m_logger;
+        uint32_t m_threads_limit;
 
         static void pinned_thread_function(pinned_executor* executor, const std::shared_ptr<mailbox> & mbox) noexcept;
 
     public:
-        pinned_executor(actor_system* system);
+        pinned_executor(actor_system* system, uint32_t max_threads);
         ~pinned_executor();
 
         pinned_executor(const pinned_executor&) = delete;

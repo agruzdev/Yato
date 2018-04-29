@@ -37,6 +37,7 @@ namespace actors
                 if (!mbox->owner->context_().is_started()) {
                     // ToDo (a.gruzdev): Quick solution
                     // dont process user messages untill started
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
                     continue;
                 }
 
@@ -71,8 +72,8 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    pinned_executor::pinned_executor(actor_system* system)
-        : m_system(system)
+    pinned_executor::pinned_executor(actor_system* system, uint32_t max_threads)
+        : m_system(system), m_threads_limit(max_threads)
     {
         m_logger = logger_factory::create("pinned_executor");
     }
@@ -89,6 +90,12 @@ namespace actors
         std::unique_lock<std::mutex> lock(mbox->mutex);
         if(!mbox->is_scheduled && mbox->is_open) {
             mbox->is_scheduled = true;
+            if(m_threads.size() >= m_threads_limit) {
+                YATO_REQUIRES(mbox->owner != nullptr);
+                m_logger->error("Failed to start thread for actor \"%s\". Threads limit in the pinned_executor is reached! Message was dropped!", 
+                    mbox->owner->self().get_path().c_str());
+                return false;
+            }
             m_threads.emplace_back(&pinned_thread_function, this, mbox);
         }
         mbox->condition.notify_one();

@@ -23,6 +23,7 @@ namespace actors
 
         /**
          * Execute full mailbox or a part of it
+         * @return false in the case of error
          */
         virtual bool execute(const std::shared_ptr<mailbox> & mbox) = 0;
     };

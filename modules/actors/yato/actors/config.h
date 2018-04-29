@@ -8,6 +8,22 @@
 * YatoActors config has the following structure:
 * 
 * JSON: {
+* 
+*   "execution_contexts" : [
+*       {
+*           "name" : "dynamic",
+*           "type" : "thread_pool",
+*           "threads_num": 4
+*           "throughput": 5
+*       },
+*       {
+*           "name" : "fixed",
+*           "type" : "pinned",
+*           "threads_limit": 8
+*       }
+*   ],
+*   "default_executor" : "dynamic",
+* 
 *   "log_level": "info",
 *   "enable_io": false
 * }
