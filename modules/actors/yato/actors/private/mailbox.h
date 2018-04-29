@@ -35,6 +35,7 @@ namespace actors
     // ToDo (a.gruzdev): simplest implementation. Queue + mutex
     // ToDo (a.gruzdev) : make class
     struct mailbox
+        : public std::enable_shared_from_this<mailbox>
     {
         std::queue<std::unique_ptr<message>> queue;
         std::queue<std::unique_ptr<message>> sys_queue;
@@ -47,6 +48,24 @@ namespace actors
         //mailbox_status status = mailbox_status::opened;
         bool is_open = true;
         bool is_scheduled = false;
+        //---------------------------------------------------------
+
+        /**
+         * Add message to user queue
+         * @return true if mailbox is ready to be scheduled
+         */
+        bool enqueue_user_message(std::unique_ptr<message> && msg);
+
+        /**
+         * Add message to system queue
+         * @return true if mailbox is ready to be scheduled
+         */
+        bool enqueue_system_message(std::unique_ptr<message> && msg);
+
+        /**
+         * Schedule mailbox to execution
+         */
+        void schedule_for_execution();
     };
 
 } // namespace actors

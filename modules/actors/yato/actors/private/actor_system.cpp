@@ -61,38 +61,29 @@ namespace actors
     //-------------------------------------------------------------------------
 
     inline
-    execution_context* find_execution_(system_context& context, const std::string & name)
+    execution_context* find_execution_(system_context& system, const std::string & name)
     {
-        const auto it = std::find_if(context.executions.begin(), context.executions.begin(), 
+        const auto it = std::find_if(system.executions.begin(), system.executions.begin(), 
             [&name](const execution_context & execution){ return execution.name == name; }
         );
-        return (it != context.executions.cend()) ? &(*it) : nullptr;
+        return (it != system.executions.cend()) ? &(*it) : nullptr;
     }
     //-------------------------------------------------------------------------
 
     inline
-    void schedule_for_execution_(const std::shared_ptr<mailbox> & mbox)
-    {
-        YATO_REQUIRES(mbox != nullptr);
-        YATO_REQUIRES(mbox->owner_node != nullptr);
-        mbox->owner_node->executor().execute(mbox);
-    }
-    //-------------------------------------------------------------------------
-
-    inline
-    properties_internal resolve_props_(system_context& context, const properties & props)
+    properties_internal resolve_props_(system_context& system, const properties & props)
     {
         properties_internal res;
-        res.execution = find_execution_(context, props.execution_name);
+        res.execution = find_execution_(system, props.execution_name);
         return res;
     }
     //-------------------------------------------------------------------------
 
     inline
-    properties_internal default_properties_(system_context& context)
+    properties_internal default_properties_(system_context& system)
     {
         properties_internal res;
-        res.execution = find_execution_(context, context.default_executor_name);
+        res.execution = find_execution_(system, system.default_executor_name);
         return res;
     }
     //-------------------------------------------------------------------------
@@ -144,8 +135,6 @@ namespace actors
         const auto root_builder = details::make_cell_builder<actors::root>();
         m_context->root = root_builder(*this, actor_path("yato://" + name), default_properties_(*m_context));
         m_context->root_stopped = false;
-
-        //init_mailbox_(m_context.get(), m_context->root->mail(), actor_props());
 
         // System actors
         if(conf.value<bool>("enable_io").get_or(false)) {
@@ -230,47 +219,11 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    /**
-     * Returns true if mailbox should be scheduled for processing
-     */
-    bool enqueue_system_message_(const std::shared_ptr<mailbox> & mbox, std::unique_ptr<message> && msg)
-    {
-        YATO_REQUIRES(mbox != nullptr);
-        bool need_process = false;
-        {
-            std::unique_lock<std::mutex> lock(mbox->mutex);
-            if (mbox->is_open) {
-                mbox->sys_queue.push(std::move(msg));
-                mbox->condition.notify_one();
-                need_process = !mbox->is_scheduled;
-            }
-        }
-        return need_process;
-    }
-    //-------------------------------------------------------
-
     template <typename Ty_, typename ... Args_>
     bool create_and_enqueue_system_message_(const std::shared_ptr<mailbox> & mbox, const actor_ref & sender, Args_ && ... args)
     {
         yato::any payload(yato::in_place_type_t<Ty_>{}, std::forward<Args_>(args)...);
-        return enqueue_system_message_(mbox, std::make_unique<message>(std::move(payload), sender));
-    }
-    //-------------------------------------------------------
-
-    bool enqueue_user_message_(const std::shared_ptr<mailbox> & mbox, std::unique_ptr<message> && msg)
-    {
-        YATO_REQUIRES(mbox != nullptr);
-        bool need_process = false;
-        //auto msg = std::make_unique<message>(std::move(payload), sender);
-        {
-            std::unique_lock<std::mutex> lock(mbox->mutex);
-            if (mbox->is_open) {
-                mbox->queue.push(std::move(msg));
-                mbox->condition.notify_one();
-                need_process = !mbox->is_scheduled;
-            }
-        }
-        return need_process;
+        return mbox->enqueue_system_message(std::make_unique<message>(std::move(payload), sender));
     }
     //-------------------------------------------------------
 
@@ -287,9 +240,6 @@ namespace actors
 
         auto cell = builder(*this, path, props ? resolve_props_(*m_context, props.get()) : default_properties_(*m_context));
         auto ref  = cell->ref();
-
-        // Configure mailbox
-        //init_mailbox_(m_context.get(), cell->mail(), props);
 
         // Add to the tree
         if(parent.empty()) {
@@ -317,9 +267,8 @@ namespace actors
             return;
         }
 
-        auto msg = std::make_unique<message>(std::move(usrMessage), sender);
-        if(enqueue_user_message_(mbox, std::move(msg))) {
-            schedule_for_execution_(mbox);
+        if(mbox->enqueue_user_message(std::make_unique<message>(std::move(usrMessage), sender))) {
+            mbox->schedule_for_execution();
         }
     }
     //-------------------------------------------------------
@@ -339,9 +288,8 @@ namespace actors
             return;
         }
 
-        auto msg = std::make_unique<message>(std::move(sysMessage), sender);
-        if(enqueue_system_message_(mbox, std::move(msg))) {
-            schedule_for_execution_(mbox);
+        if(mbox->enqueue_system_message(std::make_unique<message>(std::move(sysMessage), sender))) {
+            mbox->schedule_for_execution();
         }
     }
     //-------------------------------------------------------
@@ -370,7 +318,7 @@ namespace actors
         YATO_REQUIRES(mbox != nullptr);
 
         if(create_and_enqueue_system_message_<system_message::stop>(mbox, dead_letters())) {
-            schedule_for_execution_(mbox);
+            mbox->schedule_for_execution();
         }
     }
     //-------------------------------------------------------
@@ -420,7 +368,7 @@ namespace actors
             return;
         }
         if (create_and_enqueue_system_message_<system_message::watch>(mbox, watcher, watcher)) {
-            schedule_for_execution_(mbox);
+            mbox->schedule_for_execution();
         }
     }
     //--------------------------------------------------------
@@ -439,7 +387,7 @@ namespace actors
             return;
         }
         if (create_and_enqueue_system_message_<system_message::unwatch>(mbox, watcher, watcher)) {
-            schedule_for_execution_(mbox);
+            mbox->schedule_for_execution();
         }
     }
     //--------------------------------------------------------
