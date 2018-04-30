@@ -18,10 +18,11 @@ namespace actors
 
     void dynamic_executor::mailbox_function(dynamic_executor* executor, const std::shared_ptr<mailbox> & mbox, uint32_t throughput)
     {
+        using details::process_result;
         bool reschedule = true;
         const actor_ref ref = mbox->owner->self();
         for(uint32_t count = 0;;) {
-            if(process_all_system_messages(mbox)) {
+            if(process_result::request_stop == process_all_system_messages(mbox)) {
                 // Terminate actor
                 {
                     std::unique_lock<std::mutex> lock(mbox->mutex);
@@ -60,25 +61,47 @@ namespace actors
                 mbox->owner->receive_message_(std::move(*msg));
             }
         }
-        mbox->is_scheduled = false;
+
         if(reschedule) {
-            // Schedule again, moving to the end of the queue
-            executor->execute(mbox);
+            executor->reschedule(mbox);
+        }
+        else {
+            executor->unschedule(mbox);
         }
     }
     //----------------------------------------------------------
 
+    void dynamic_executor::reschedule(const std::shared_ptr<mailbox> & mbox)
+    {
+        YATO_REQUIRES(mbox != nullptr);
+        YATO_REQUIRES(mbox->is_scheduled);
+        std::unique_lock<std::mutex> lock(mbox->mutex);
+        if ((!mbox->queue.empty() && mbox->is_open) || (!mbox->sys_queue.empty())) {
+            m_tpool->enqueue(mailbox_function, this, mbox, m_throughput);
+        } else {
+            mbox->is_scheduled = false;
+        }
+    }
+    //----------------------------------------------------------
 
+    void dynamic_executor::unschedule(const std::shared_ptr<mailbox> & mbox)
+    {
+        YATO_REQUIRES(mbox != nullptr);
+        YATO_REQUIRES(mbox->is_scheduled);
+        std::unique_lock<std::mutex> lock(mbox->mutex);
+         mbox->is_scheduled = false;
+    }
+    //----------------------------------------------------------
 
     dynamic_executor::dynamic_executor(actor_system* system, uint32_t threads_num, uint32_t throughput)
-        : m_system(system), m_throughput(throughput)
+        : m_system(system)
     {
         m_tpool = std::make_unique<thread_pool>(threads_num);
+        m_throughput = std::max(1u, throughput);
     }
     //-----------------------------------------------------------
 
-    dynamic_executor::~dynamic_executor()
-    { }
+    dynamic_executor::~dynamic_executor() = default;
     //-----------------------------------------------------------
 
     bool dynamic_executor::execute(const std::shared_ptr<mailbox> & mbox)

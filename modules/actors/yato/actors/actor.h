@@ -21,6 +21,16 @@ namespace yato
 {
 namespace actors
 {
+
+    namespace details
+    {
+        enum class process_result
+        {
+            keep_running,
+            request_stop
+        };
+    }
+
     struct message;
     class actor_cell;
 
@@ -31,6 +41,9 @@ namespace actors
     class basic_actor
         : public message_consumer
     {
+    private:
+        using process_result = details::process_result;
+
         /**
          * Pointer to actor's context.
          * Becomes valid only after registraction in the actors system.
@@ -176,7 +189,7 @@ namespace actors
         /**
          * Handle system message
          */
-        bool receive_system_message_(message && msg) noexcept;
+        process_result receive_system_message_(message && msg) noexcept;
 
         /**
          * Used by actor system to initialize the actor

@@ -30,6 +30,9 @@ namespace actors
 
         static void mailbox_function(dynamic_executor* executor, const std::shared_ptr<mailbox> & mbox, uint32_t throughput);
 
+        void reschedule(const std::shared_ptr<mailbox> & mbox);
+        void unschedule(const std::shared_ptr<mailbox> & mbox);
+
     public:
         dynamic_executor(actor_system* system, uint32_t threads_num, uint32_t throughput);
         ~dynamic_executor();

@@ -158,11 +158,11 @@ namespace actors
         }
     }
     //-------------------------------------------------------
-    bool basic_actor::receive_system_message_(message && msg) noexcept
+    details::process_result basic_actor::receive_system_message_(message && msg) noexcept
     {
-        assert(m_context != nullptr);
+        YATO_REQUIRES(m_context != nullptr);
         // (a.gruzdev) static_cast for ReSharper's calmness
-        return static_cast<bool>(any_match(
+        return static_cast<process_result>(any_match(
             [this](const system_message::start &) {
                 bool success = false;
                 try {
@@ -181,28 +181,28 @@ namespace actors
                     // if failed to start, then terminate
                     self().stop();
                 }
-                return false;
+                return process_result::keep_running;
             },
             [this](const system_message::stop &) {
                 if(context_().children().empty()) {
                     stop_impl();
-                    return true;
+                    return process_result::request_stop;
                 } else {
                     // Wait and stop after children
                     context_().set_stop(true);
                     for(auto & child : context_().children()) {
                         child->ref().tell(poison_pill);
                     }
-                    return false;
+                    return process_result::keep_running;
                 }
             },
             [this](const system_message::stop_after_children &) {
                 if (context_().children().empty()) {
                     stop_impl();
-                    return true;
+                    return process_result::request_stop;
                 }
                 context_().set_stop(true);
-                return false;
+                return process_result::keep_running;
             },
             [this](const system_message::watch & watch) {
                 auto & watchers = m_context->watchers();
@@ -210,7 +210,7 @@ namespace actors
                 if(pos == watchers.end()) {
                     watchers.push_back(watch.watcher);
                 }
-                return false;
+                return process_result::keep_running;
             },
             [this](const system_message::unwatch & watch) {
                 auto & watchers = m_context->watchers();
@@ -218,27 +218,27 @@ namespace actors
                 if (pos != watchers.end()) {
                     watchers.erase(pos);
                 }
-                return false;
+                return process_result::keep_running;
             },
             [this](const system_message::attach_child & attach) {
                 if(context_().stopping()) {
                     context_().log().warning("Child can't be attached. Actor is going to stop.");
-                    return false;
+                    return process_result::keep_running;
                 }
                 auto child = std::move(const_cast<system_message::attach_child &>(attach).cell);
                 auto child_ref = context_().add_child(std::move(child));
                 actor_system_ex::send_system_message(system(), child_ref, system_message::start());
                 context_().log().verbose("Attached child %s", child_ref.get_path().c_str());
-                return false;
+                return process_result::keep_running;
             },
             [this](const system_message::detach_child & detach) {
                 context_().remove_child(detach.ref);
                 context_().log().verbose("Detached child %s", detach.ref.get_path().c_str());
                 if(context_().stopping() && context_().children().empty()) {
                     stop_impl();
-                    return true;
+                    return process_result::request_stop;
                 }
-                return false;
+                return process_result::keep_running;
             },
             [this](system_message::selection & select) {
                 auto & path = select.path;
@@ -260,12 +260,12 @@ namespace actors
                         select.sender.tell(selection_failure("Selection target is not found."));
                     }
                 }
-                return false;
+                return process_result::keep_running;
             },
             [this](match_default_t) {
-                assert(false);
+                YATO_ASSERT(false, "Unknown system message?!");
                 log().error("actor[system_signal]: Unknown system message!");
-                return false;
+                return process_result::keep_running;
             }
         )(std::move(msg.payload)));
     }

@@ -30,24 +30,21 @@ namespace actors
 
 
     inline 
-    bool process_all_system_messages(const std::shared_ptr<mailbox> & mbox) {
+    details::process_result process_all_system_messages(const std::shared_ptr<mailbox> & mbox) {
+        using details::process_result;
         for(;;) {
-            std::unique_ptr<message> sys_msg = nullptr;
-            {
-                std::unique_lock<std::mutex> lock(mbox->mutex);
-                if (mbox->sys_queue.empty()) {
-                    break;
+            auto sys_msg = mbox->pop_system_message();
+            if(sys_msg) {
+                const process_result res = mbox->owner->receive_system_message_(std::move(*sys_msg));
+                if(process_result::keep_running != res) {
+                    return res;
                 }
-                sys_msg = std::move(mbox->sys_queue.front());
-                mbox->sys_queue.pop();
-            }
-            if (sys_msg) {
-                if(mbox->owner->receive_system_message_(std::move(*sys_msg))) {
-                    return true;
-                }
+            } else {
+                // no messages anymore
+                break;
             }
         }
-        return false;
+        return process_result::keep_running;
     }
 
 }// namespace actors

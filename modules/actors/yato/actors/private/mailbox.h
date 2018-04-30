@@ -63,9 +63,27 @@ namespace actors
         bool enqueue_system_message(std::unique_ptr<message> && msg);
 
         /**
+         * Try taking message in priority order
+         * Firstly system message, then user message.
+         */
+        std::unique_ptr<message> pop_prioritized_message(bool* is_system);
+
+        /**
+         * Try taking message from the system queue
+         */
+        std::unique_ptr<message> pop_system_message();
+
+        /**
          * Schedule mailbox to execution
          */
         void schedule_for_execution();
+
+
+        /**
+         * Close mailbox for any new messages.
+         * Mailbox cant be reused after closing.
+         */
+        void close();
     };
 
 } // namespace actors

@@ -20,10 +20,11 @@ namespace actors
 
     void pinned_executor::pinned_thread_function(pinned_executor* executor, const std::shared_ptr<mailbox> & mbox) noexcept
     {
+        using details::process_result;
         try {
             const actor_ref ref = mbox->owner->self();
             for (;;) {
-                if(process_all_system_messages(mbox)) {
+                if(process_result::request_stop == process_all_system_messages(mbox)) {
                     // Terminate actor
                     {
                         std::unique_lock<std::mutex> lock(mbox->mutex);
