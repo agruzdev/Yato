@@ -289,7 +289,9 @@ namespace actors
         }
 
         if(mbox->enqueue_system_message(std::make_unique<message>(std::move(sysMessage), sender))) {
-            mbox->schedule_for_execution();
+            const bool scheduled = mbox->schedule_for_execution();
+            YATO_MAYBE_UNUSED(scheduled);
+            YATO_ENSURES(scheduled);
         }
     }
     //-------------------------------------------------------

@@ -50,14 +50,19 @@ namespace actors
         bool is_scheduled = false;
         //---------------------------------------------------------
 
+        std::unique_ptr<message> try_pop_prioritized_message_(bool* is_system);
+        //---------------------------------------------------------
+
         /**
          * Add message to user queue
+         * This methos is locking. Do not call during schduling.
          * @return true if mailbox is ready to be scheduled
          */
         bool enqueue_user_message(std::unique_ptr<message> && msg);
 
         /**
          * Add message to system queue
+         * This methos is locking. Do not call during schduling.
          * @return true if mailbox is ready to be scheduled
          */
         bool enqueue_system_message(std::unique_ptr<message> && msg);
@@ -65,25 +70,37 @@ namespace actors
         /**
          * Try taking message in priority order
          * Firstly system message, then user message.
+         * This methos is locking. Do not call during schduling.
          */
         std::unique_ptr<message> pop_prioritized_message(bool* is_system);
 
         /**
+         * Blocking version of pop_prioritized_message.
+         * Waits until there is a message to pop.
+         */
+        std::unique_ptr<message> pop_prioritized_message_sync(bool* is_system);
+
+        /**
          * Try taking message from the system queue
+         * This methos is locking. Do not call during schduling.
          */
         std::unique_ptr<message> pop_system_message();
 
         /**
-         * Schedule mailbox to execution
+         * Schedule mailbox to execution.
+         * @param reschedule Execute mailbox even if is already in teh scheduled state.
+         *                   This flag is used for rescheduing mailbox inside executor without releasing it.
+         * @return flag if mailbox is added to execution schedule
          */
-        void schedule_for_execution();
-
+        bool schedule_for_execution(bool reschedule = false);
 
         /**
          * Close mailbox for any new messages.
          * Mailbox cant be reused after closing.
+         * This methos is locking. Do not call during schduling.
          */
         void close();
+
     };
 
 } // namespace actors

@@ -9,9 +9,12 @@
 
 #include "../actor_system.h"
 #include "../logger.h"
-#include "actor_system_ex.h"
-#include "actor_cell.h"
+
 #include "pinned_executor.h"
+
+#include "actor_cell.h"
+#include "actor_system_ex.h"
+#include "mailbox.h"
 
 namespace yato
 {
@@ -22,47 +25,22 @@ namespace actors
     {
         using details::process_result;
         try {
-            const actor_ref ref = mbox->owner->self();
             for (;;) {
-                if(process_result::request_stop == process_all_system_messages(mbox)) {
-                    // Terminate actor
-                    {
-                        std::unique_lock<std::mutex> lock(mbox->mutex);
-                        mbox->is_open = false;
-                        mbox->is_scheduled = false;
-                    }
-                    actor_system_ex::notify_on_stop(*executor->m_system, ref);
-                    return;
-                }
-
-                if (!mbox->owner_node->is_started()) {
-                    // ToDo (a.gruzdev): Quick solution
-                    // dont process user messages untill started
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                    continue;
-                }
-
-                std::unique_ptr<message> msg = nullptr;
-                {
-                    std::unique_lock<std::mutex> lock(mbox->mutex);
-
-                    while (mbox->queue.empty() && mbox->sys_queue.empty()) {
-                        mbox->condition.wait(lock);
-                    }
-
-                    if(!mbox->sys_queue.empty()) {
-                        continue;
-                    }
-
-                    if (!mbox->queue.empty()) {
-                        msg = std::move(mbox->queue.front());
-                        mbox->queue.pop();
+                bool is_system_message = false;
+                std::unique_ptr<message> message = mbox->pop_prioritized_message_sync(&is_system_message);
+                YATO_ASSERT(message != nullptr, "Sync pop cant return null!");
+                if(is_system_message) {
+                    if(process_result::request_stop == mbox->owner->receive_system_message_(std::move(*message))) {
+                        // Terminate loop
+                        break;
                     }
                 }
-                if (msg) {
-                    mbox->owner->receive_message_(std::move(*msg));
+                else {
+                    mbox->owner->receive_message_(std::move(*message));
                 }
             }
+            mbox->close();
+            actor_system_ex::notify_on_stop(*executor->m_system, mbox->owner->self());
         }
         catch(std::exception & e) {
             executor->m_logger->error("pinned_executor[pinned_thread_function]: Thread failed with exception: %s", e.what());
@@ -87,19 +65,15 @@ namespace actors
     }
     //-------------------------------------------------------
 
-    bool pinned_executor::execute(const std::shared_ptr<mailbox> & mbox) {
-        std::unique_lock<std::mutex> lock(mbox->mutex);
-        if(!mbox->is_scheduled && mbox->is_open) {
-            mbox->is_scheduled = true;
-            if(m_threads.size() >= m_threads_limit) {
-                YATO_REQUIRES(mbox->owner != nullptr);
-                m_logger->error("Failed to start thread for actor \"%s\". Threads limit in the pinned_executor is reached! Message was dropped!", 
-                    mbox->owner->self().get_path().c_str());
-                return false;
-            }
-            m_threads.emplace_back(&pinned_thread_function, this, mbox);
+    bool pinned_executor::execute(const std::shared_ptr<mailbox> & mbox)
+    {
+        if(m_threads.size() >= m_threads_limit) {
+            YATO_REQUIRES(mbox->owner != nullptr);
+            m_logger->error("Failed to start thread for actor \"%s\". Threads limit in the pinned_executor is reached!", 
+                mbox->owner->self().get_path().c_str());
+            return false;
         }
-        mbox->condition.notify_one();
+        m_threads.emplace_back(&pinned_thread_function, this, mbox);
         return true;
     }
     //-------------------------------------------------------

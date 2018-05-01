@@ -8,44 +8,28 @@
 #ifndef _YATO_ABSTRACT_EXECUTOR_H_
 #define _YATO_ABSTRACT_EXECUTOR_H_
 
-#include "mailbox.h"
+#include <memory>
 
 namespace yato
 {
 namespace actors
 {
+    struct mailbox;
 
-    class abstract_executor
+    class abstract_executor  // NOLINT
     {
     public:
-
         virtual ~abstract_executor() = default;
 
         /**
-         * Execute full mailbox or a part of it
-         * @return false in the case of error
+         * Execute full mailbox or a part of it.
+         * This method is to be called inside mailbox critical section.
+         * It may not call any locking methods of the mailbox to avoid deadlocks.
+         * The only thing it should do - to save mbox shared pointer for further processing.
+         * @return true if mailbox was scheduled
          */
         virtual bool execute(const std::shared_ptr<mailbox> & mbox) = 0;
     };
-
-
-    inline 
-    details::process_result process_all_system_messages(const std::shared_ptr<mailbox> & mbox) {
-        using details::process_result;
-        for(;;) {
-            auto sys_msg = mbox->pop_system_message();
-            if(sys_msg) {
-                const process_result res = mbox->owner->receive_system_message_(std::move(*sys_msg));
-                if(process_result::keep_running != res) {
-                    return res;
-                }
-            } else {
-                // no messages anymore
-                break;
-            }
-        }
-        return process_result::keep_running;
-    }
 
 }// namespace actors
 

@@ -50,10 +50,24 @@ namespace actors
     }
     //-------------------------------------------------------------------------
 
-    void mailbox::schedule_for_execution()
+    bool mailbox::schedule_for_execution(bool reschedule)
     {
         YATO_REQUIRES(owner_node != nullptr);
-        owner_node->executor().execute(shared_from_this());
+        std::unique_lock<std::mutex> lock(mutex);
+        if (!is_scheduled || reschedule) {
+            // User messages can't be processed before actor start, 
+            // so if actor is not started, then postpone all user messages
+            const bool has_something_to_process = owner_node->is_started()
+                ? (!queue.empty() && is_open) || (!sys_queue.empty())
+                : !sys_queue.empty();
+            if(has_something_to_process) {
+                is_scheduled = owner_node->executor().execute(shared_from_this());
+            }
+            else {
+                is_scheduled = false;
+            }
+        }
+        return is_scheduled;
     }
     //-------------------------------------------------------------------------
 
@@ -79,17 +93,20 @@ namespace actors
     }
     //-------------------------------------------------------------------------
 
-    std::unique_ptr<message> mailbox::pop_prioritized_message(bool* is_system)
+    std::unique_ptr<message> mailbox::try_pop_prioritized_message_(bool* is_system)
     {
         YATO_REQUIRES(is_system != nullptr);
         std::unique_ptr<message> msg = nullptr;
         do
         {
-            std::unique_lock<std::mutex> lock(mutex);
             if (!sys_queue.empty()) {
                 msg = std::move(sys_queue.front());
                 sys_queue.pop();
                 *is_system = true;
+                break;
+            }
+            if(!owner_node->is_started()) {
+                // dont process user messages until started
                 break;
             }
             if(!queue.empty()) {
@@ -98,6 +115,28 @@ namespace actors
                 *is_system = false;
             }
         } while(false);
+        return msg;
+    }
+    //-------------------------------------------------------------------------
+
+    std::unique_ptr<message> mailbox::pop_prioritized_message(bool* is_system)
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        return try_pop_prioritized_message_(is_system);
+    }
+    //-------------------------------------------------------------------------
+
+    std::unique_ptr<message> mailbox::pop_prioritized_message_sync(bool* is_system)
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        std::unique_ptr<message> msg = nullptr;
+        for(;;) {
+            msg = try_pop_prioritized_message_(is_system);
+            if(msg != nullptr) {
+                break;
+            }
+            condition.wait(lock);
+        }
         return msg;
     }
     //-------------------------------------------------------------------------

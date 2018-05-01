@@ -126,6 +126,18 @@ TEST(Yato_Actors, ping_pong)
     system.send_message(actor1, 1, actor2);
 }
 
+TEST(Yato_Actors, ping_pong_pinned) 
+{
+    const auto conf = actors_pinned_config("verbose");
+
+    yato::actors::actor_system system("default", conf);
+
+    auto actor1 = system.create_actor<PongActor>("PongActor");
+    auto actor2 = system.create_actor<PingActor>("PingActor");
+
+    system.send_message(actor1, 1, actor2);
+}
+
 
 
 

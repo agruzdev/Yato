@@ -27,10 +27,10 @@ namespace actors
         actor_system* m_system;
         std::unique_ptr<thread_pool> m_tpool;
         uint32_t m_throughput;
+        //------------------------------------------------------------
 
         static void mailbox_function(dynamic_executor* executor, const std::shared_ptr<mailbox> & mbox, uint32_t throughput);
-
-        void reschedule(const std::shared_ptr<mailbox> & mbox, bool ignore_user);
+        //------------------------------------------------------------
 
     public:
         dynamic_executor(actor_system* system, uint32_t threads_num, uint32_t throughput);
