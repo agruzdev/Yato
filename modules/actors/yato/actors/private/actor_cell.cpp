@@ -31,10 +31,7 @@ namespace actors
         m_actor->set_context_(this);
 
         // create mailbox
-        m_mailbox = std::make_shared<mailbox>();
-        m_mailbox->owner_node = this;
-        m_mailbox->owner = m_actor.get();
-
+        m_mailbox = std::make_shared<mailbox>(this);
         m_self.set_mailbox(m_mailbox);
     }
     //--------------------------------------------

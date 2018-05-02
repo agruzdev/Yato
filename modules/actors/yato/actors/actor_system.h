@@ -15,6 +15,7 @@
 #include <yato/any.h>
 
 #include "actor.h"
+#include "actor_common.h"
 #include "config.h"
 #include "cell_builder.h"
 #include "actor_props.h"
@@ -24,14 +25,11 @@ namespace yato
 namespace actors
 {
 
-    struct mailbox;
+    class mailbox;
     struct system_context;
 
     class actor_system
     {
-    private:
-        using timeout_type = std::chrono::microseconds;
-
         std::unique_ptr<system_context> m_context;
         //-------------------------------------------------------
 

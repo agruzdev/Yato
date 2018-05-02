@@ -31,15 +31,15 @@ namespace actors
                 break;
             }
             if(is_system_message) {
-                if(process_result::request_stop == mbox->owner->receive_system_message_(std::move(*message))) {
+                if(process_result::request_stop == mbox->owner_actor()->receive_system_message_(std::move(*message))) {
                     // Terminate actor
                     mbox->close();
-                    actor_system_ex::notify_on_stop(*executor->m_system, mbox->owner->self());
+                    actor_system_ex::notify_on_stop(*executor->m_system, mbox->owner_actor()->self());
                     return;
                 }
             }
             else { // user message
-                mbox->owner->receive_message_(std::move(*message));
+                mbox->owner_actor()->receive_message_(std::move(*message));
                 if(++count >= throughput) {
                     // Terminate batch
                     break;

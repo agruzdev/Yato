@@ -22,7 +22,7 @@ namespace yato
 namespace actors
 {
     class actor_system;
-    struct mailbox;
+    class mailbox;
 
     /**
      * Special message type for graceful stopping of actor

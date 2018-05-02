@@ -14,7 +14,7 @@ namespace yato
 {
 namespace actors
 {
-    struct mailbox;
+    class mailbox;
 
     class abstract_executor  // NOLINT
     {

@@ -20,6 +20,7 @@ namespace actors
 {
 
     struct thread_context;
+    class actor_system;
 
     /**
      * Simplest thread pool.

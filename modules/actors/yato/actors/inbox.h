@@ -10,6 +10,7 @@
 
 #include <chrono>
 
+#include "actor_common.h"
 #include "actor_ref.h"
 
 namespace yato
@@ -17,7 +18,7 @@ namespace yato
 namespace actors
 {
 
-    struct mailbox;
+    class mailbox;
     class actor_system;
 
     /**
@@ -27,9 +28,6 @@ namespace actors
      */
     class inbox
     {
-    private:
-        using timeout_type = std::chrono::microseconds;
-
         std::shared_ptr<mailbox> m_mailbox;
         actor_ref m_ref;
         //--------------------------------------------------

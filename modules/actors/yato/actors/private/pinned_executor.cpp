@@ -30,17 +30,17 @@ namespace actors
                 std::unique_ptr<message> message = mbox->pop_prioritized_message_sync(&is_system_message);
                 YATO_ASSERT(message != nullptr, "Sync pop cant return null!");
                 if(is_system_message) {
-                    if(process_result::request_stop == mbox->owner->receive_system_message_(std::move(*message))) {
+                    if(process_result::request_stop == mbox->owner_actor()->receive_system_message_(std::move(*message))) {
                         // Terminate loop
                         break;
                     }
                 }
                 else {
-                    mbox->owner->receive_message_(std::move(*message));
+                    mbox->owner_actor()->receive_message_(std::move(*message));
                 }
             }
             mbox->close();
-            actor_system_ex::notify_on_stop(*executor->m_system, mbox->owner->self());
+            actor_system_ex::notify_on_stop(*executor->m_system, mbox->owner_actor()->self());
         }
         catch(std::exception & e) {
             executor->m_logger->error("pinned_executor[pinned_thread_function]: Thread failed with exception: %s", e.what());
@@ -68,9 +68,9 @@ namespace actors
     bool pinned_executor::execute(const std::shared_ptr<mailbox> & mbox)
     {
         if(m_threads.size() >= m_threads_limit) {
-            YATO_REQUIRES(mbox->owner != nullptr);
+            YATO_REQUIRES(mbox->owner_actor() != nullptr);
             m_logger->error("Failed to start thread for actor \"%s\". Threads limit in the pinned_executor is reached!", 
-                mbox->owner->self().get_path().c_str());
+                mbox->owner_actor()->self().get_path().c_str());
             return false;
         }
         m_threads.emplace_back(&pinned_thread_function, this, mbox);

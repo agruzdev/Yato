@@ -22,7 +22,7 @@ namespace actors
 {
     class basic_actor;
     class actor_ref;
-    struct mailbox;
+    class mailbox;
 
     class actor_cell
     {
