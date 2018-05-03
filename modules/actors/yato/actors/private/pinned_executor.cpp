@@ -24,6 +24,7 @@ namespace actors
     void pinned_executor::pinned_thread_function(pinned_executor* executor, const std::shared_ptr<mailbox> & mbox) noexcept
     {
         using details::process_result;
+        const actor_ref ref = mbox->owner_actor()->self();
         try {
             for (;;) {
                 bool is_system_message = false;
@@ -40,7 +41,7 @@ namespace actors
                 }
             }
             mbox->close();
-            actor_system_ex::notify_on_stop(*executor->m_system, mbox->owner_actor()->self());
+            actor_system_ex::notify_on_stop(*executor->m_system, ref);
         }
         catch(std::exception & e) {
             executor->m_logger->error("pinned_executor[pinned_thread_function]: Thread failed with exception: %s", e.what());

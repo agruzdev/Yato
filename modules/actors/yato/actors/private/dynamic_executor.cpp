@@ -22,6 +22,7 @@ namespace actors
     void dynamic_executor::mailbox_function(dynamic_executor* executor, const std::shared_ptr<mailbox> & mbox, uint32_t throughput)
     {
         using details::process_result;
+        const actor_ref ref = mbox->owner_actor()->self();
         for(uint32_t count = 0;;) {
             bool is_system_message = false;
             std::unique_ptr<message> message = mbox->pop_prioritized_message(&is_system_message);
@@ -34,7 +35,7 @@ namespace actors
                 if(process_result::request_stop == mbox->owner_actor()->receive_system_message_(std::move(*message))) {
                     // Terminate actor
                     mbox->close();
-                    actor_system_ex::notify_on_stop(*executor->m_system, mbox->owner_actor()->self());
+                    actor_system_ex::notify_on_stop(*executor->m_system, ref);
                     return;
                 }
             }
