@@ -80,6 +80,9 @@ endif()
 set(TOOLCHAIN_clang "cmake/clang.toolchain.cmake")
 set(TOOLCHAIN_android "cmake/android.toolchain.cmake")
 
+list(APPEND CONFIGURE_PARAMETERS_Debug_gcc "-DYATO_WITH_ADDRESS_SANITIZER=ON")
+list(APPEND CONFIGURE_PARAMETERS_Relase_gcc "")
+
 list(APPEND MAKE_ARGUMENTS_mingw "")
 list(APPEND MAKE_ARGUMENTS_vc12x32 "")
 list(APPEND MAKE_ARGUMENTS_vc12x64 "")
@@ -224,7 +227,12 @@ foreach(CURRENT_TARGET ${all_build_targers})
         endif()
 
         message(STATUS "configure_flags=${configure_flags}")
-        execute_process(COMMAND cmake "-G${GENERATOR_${CURRENT_TARGET}}" ${CUSTOM_TOOLCHAIN_ARG} -DBIN_OUTPUT_DIR=${CURRENT_BIN_DIR} -DCMAKE_BUILD_TYPE=${CURRENT_CONFIGURATION} ${configure_flags} ${_SOURCE_DIR}
+        execute_process(COMMAND cmake "-G${GENERATOR_${CURRENT_TARGET}}" ${CUSTOM_TOOLCHAIN_ARG}
+                -DBIN_OUTPUT_DIR=${CURRENT_BIN_DIR}
+                -DCMAKE_BUILD_TYPE=${CURRENT_CONFIGURATION}
+                ${CONFIGURE_PARAMETERS_${CURRENT_CONFIGURATION}_${CURRENT_TARGET}}
+                ${configure_flags}
+                ${_SOURCE_DIR}
             WORKING_DIRECTORY ${CURRENT_BUILD_DIR}
             OUTPUT_FILE ${CURRENT_BUILD_DIR}/config_log.stdout.txt
             ERROR_FILE ${CURRENT_BUILD_DIR}/config_log.stderr.txt
