@@ -312,10 +312,21 @@ TEST(Yato_Actors, forward)
 
     yato::actors::actor_system system("default", conf);
 
-    system.create_actor<actF0>("F0");
-    system.create_actor<actF1>("F1");
-    system.create_actor<actF2>("F2");
     system.create_actor<actF3>("F3");
+    system.create_actor<actF2>("F2");
+    system.create_actor<actF1>("F1");
+
+    // wait until all actors are attached
+    uint32_t attempts = 100;
+    do {
+        const auto ref = system.find("F1", std::chrono::seconds(1)).get();
+        if(ref) {
+            break;
+        }
+    } while(--attempts);
+    ASSERT_NE(0u, attempts);
+
+    system.create_actor<actF0>("F0");
 }
 
 
@@ -331,9 +342,20 @@ TEST(Yato_Actors, executions)
     yato::actors::properties props_pin;
     props_pin.execution_name = "pinned";
 
-    system.create_actor<actF0>(props_dyn, "F0");
-    system.create_actor<actF1>(props_pin, "F1");
-    system.create_actor<actF2>(props_dyn, "F2");
     system.create_actor<actF3>(props_pin, "F3");
+    system.create_actor<actF2>(props_dyn, "F2");
+    system.create_actor<actF1>(props_pin, "F1");
+
+    // wait until all actors are attached
+    uint32_t attempts = 100;
+    do {
+        const auto ref = system.find("F1", std::chrono::seconds(1)).get();
+        if(ref) {
+            break;
+        }
+    } while(--attempts);
+    ASSERT_NE(0u, attempts);
+
+    system.create_actor<actF0>(props_dyn, "F0");
 }
 

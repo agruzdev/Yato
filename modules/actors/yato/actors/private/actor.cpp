@@ -179,7 +179,7 @@ namespace actors
                 context_().set_started(success);
                 if(!success) {
                     // if failed to start, then terminate
-                    self().stop();
+                    return process_result::request_stop;
                 }
                 return process_result::keep_running;
             },

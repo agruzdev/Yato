@@ -399,8 +399,8 @@ namespace actors
         YATO_REQUIRES(m_context != nullptr);
 
         if(ref == m_context->root->ref()) {
-            m_context->root_stopped = true;
             std::unique_lock<std::mutex> lock(m_context->terminate_mutex);
+            m_context->root_stopped = true;
             m_context->terminate_cv.notify_one();
             logger()->verbose("The root is stopped.", ref.get_path().c_str());
         }

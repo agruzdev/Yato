@@ -116,6 +116,11 @@ namespace actors
             return m_system == nullptr;
         }
 
+        operator bool() const 
+        {
+            return m_system != nullptr;
+        }
+
         friend
         bool operator == (const actor_ref & one, const actor_ref & another)
         {
