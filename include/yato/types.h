@@ -46,7 +46,7 @@ namespace yato
     }
 
     template<typename TypeTo_, typename TypeFrom_>
-    YATO_CONSTEXPR_FUNC
+    YATO_CONSTEXPR_FUNC YATO_FORCED_INLINE
     auto narrow_cast(const TypeFrom_ & val) YATO_NOEXCEPT_TESTED
         -> typename std::enable_if<std::is_arithmetic<TypeTo_>::value && std::is_arithmetic<TypeFrom_>::value, TypeTo_>::type
     {
@@ -57,28 +57,28 @@ namespace yato
 
 
     template<typename _TypeTo, typename _TypeFrom>
-    YATO_CONSTEXPR_FUNC 
+    YATO_CONSTEXPR_FUNC YATO_FORCED_INLINE
     _TypeTo pointer_cast(_TypeFrom* ptr) YATO_NOEXCEPT_KEYWORD
     {
         return static_cast<_TypeTo>(static_cast<void*>(ptr));
     }
 
     template<typename _TypeTo, typename _TypeFrom>
-    YATO_CONSTEXPR_FUNC
+    YATO_CONSTEXPR_FUNC YATO_FORCED_INLINE
     _TypeTo pointer_cast(const _TypeFrom* ptr) YATO_NOEXCEPT_KEYWORD
     {
         return static_cast<_TypeTo>(static_cast<const void*>(ptr));
     }
 
     template<typename _TypeTo, typename _TypeFrom>
-    YATO_CONSTEXPR_FUNC
+    YATO_CONSTEXPR_FUNC YATO_FORCED_INLINE
     _TypeTo pointer_cast(volatile _TypeFrom* ptr) YATO_NOEXCEPT_KEYWORD
     {
         return static_cast<_TypeTo>(static_cast<volatile void*>(ptr));
     }
 
     template<typename _TypeTo, typename _TypeFrom>
-    YATO_CONSTEXPR_FUNC
+    YATO_CONSTEXPR_FUNC YATO_FORCED_INLINE
     _TypeTo pointer_cast(const volatile _TypeFrom* ptr) YATO_NOEXCEPT_KEYWORD
     {
         return static_cast<_TypeTo>(static_cast<const volatile void*>(ptr));

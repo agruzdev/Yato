@@ -145,4 +145,12 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 #endif
 
 
+#if defined(YATO_MSVC)
+# define YATO_FORCED_INLINE __forceinline
+#elif defined(YATO_MINGW) || defined(YATO_GCC) || defined(YATO_CLANG)
+# define YATO_FORCED_INLINE inline __attribute__((__always_inline__))
+#else
+# define YATO_FORCED_INLINE inline
+#endif
+
 #endif
