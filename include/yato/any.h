@@ -374,7 +374,7 @@ namespace yato
     template <class Ty_, class... Args_>
     yato::any make_any(Args_ && ... args)
     {
-        return yato::any(yato::in_place_type<Ty_>, std::forward<Args_>(args)...);
+        return yato::any(yato::in_place_type_t<Ty_>{}, std::forward<Args_>(args)...);
     }
 }
 

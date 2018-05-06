@@ -239,7 +239,7 @@ namespace yato
         using this_type = compressed_pair<FirstTy_, SecondTy_>;
         //--------------------------------------------------------------------
 
-        second_type m_second;
+        second_type m_second{};
         //--------------------------------------------------------------------
 
     public:
