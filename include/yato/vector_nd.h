@@ -14,11 +14,20 @@
 #include "array_view.h"
 #include "range.h"
 
+#include "compressed_pair.h"
+
 namespace yato
 {
-   
+    /**
+     * Tag type for allocating uninitialized vector
+     */
+    struct uninitialized_t {};
+
+
     namespace details
     {
+        struct move_reshape_tag {};
+
         /*
          * Make type of multidimensional initializer list
          */
@@ -45,13 +54,14 @@ namespace yato
             /*
              * Public traits of the multidimensional vector
              */
-            using my_type = vector_nd_impl<_DataType, _DimensionsNum, _Allocator>;
+            using this_type = vector_nd_impl<_DataType, _DimensionsNum, _Allocator>;
             using dimensions_type = dimensionality<_DimensionsNum, size_t>;
             using data_type = _DataType;
+            using value_type = _DataType;
             using allocator_type = _Allocator;
             using container_type = std::vector<data_type, allocator_type>;
-            using data_iterator = typename container_type::iterator;
-            using const_data_iterator = typename container_type::const_iterator;
+            using data_iterator = _DataType*;
+            using const_data_iterator = const _DataType*;
             using reference = decltype(*std::declval<data_iterator>());
             using const_reference = decltype(*std::declval<const_data_iterator>());
             using size_type = size_t;
@@ -63,6 +73,10 @@ namespace yato
             //-------------------------------------------------------
 
         private:
+            using raw_pointer = _DataType*;
+            using compressed_storage_type = yato::compressed_pair<allocator_type, raw_pointer>;
+            using alloc_traits = std::allocator_traits<allocator_type>;
+
             using size_iterator = typename dimensions_type::iterator;
             using size_const_iterator = typename dimensions_type::const_iterator;
 
@@ -83,12 +97,397 @@ namespace yato
 
         private:
             std::array<dim_descriptor::type, dimensions_number> m_descriptors = {};
-            container_type  m_plain_vector;
+            //container_type  m_plain_vector;
+            compressed_storage_type m_data;
+            size_t m_allocated_size = 0;
             //-------------------------------------------------------
+
+
+            YATO_FORCED_INLINE
+            raw_pointer & raw_ptr_()
+            {
+                return m_data.second();
+            }
+
+            YATO_FORCED_INLINE
+            const raw_pointer & raw_ptr_() const
+            {
+                return m_data.second();
+            }
+
+            YATO_FORCED_INLINE
+            allocator_type & allocator_()
+            {
+                return m_data.first();
+            }
+
+            YATO_FORCED_INLINE
+            const allocator_type & allocator_() const
+            {
+                return m_data.first();
+            }
+
+            void raw_init_(size_t plain_size, const value_type & init_value)
+            {
+                YATO_REQUIRES(plain_size != 0);
+                YATO_REQUIRES(plain_size <= alloc_traits::max_size(allocator_()));
+                m_allocated_size = plain_size;
+                allocator_type& alloc = allocator_();
+                value_type* p = alloc_traits::allocate(alloc, plain_size);
+                raw_ptr_() = p;
+                size_t size = plain_size;
+                while(size > 0) {
+                    alloc_traits::construct(alloc, p++, init_value);
+                    --size;
+                }
+            }
+
+            template <typename IterTy_>
+            void raw_init_from_range_(size_t plain_size, IterTy_ first, IterTy_ last)
+            {
+                YATO_REQUIRES(plain_size != 0);
+                YATO_REQUIRES(plain_size <= alloc_traits::max_size(allocator_()));
+                YATO_REQUIRES(yato::narrow_cast<std::ptrdiff_t>(plain_size) == std::distance(first, last));
+                m_allocated_size = plain_size;
+                allocator_type& alloc = allocator_();
+                value_type* p = alloc_traits::allocate(alloc, plain_size);
+                raw_ptr_() = p;
+                while(first != last) {
+                    alloc_traits::construct(alloc, p++, *first++);
+                }
+            }
+
+            void raw_init_from_list_(size_t plain_size, const initilizer_type<dimensions_number> & init_list)
+            {
+                YATO_REQUIRES(plain_size != 0);
+                YATO_REQUIRES(plain_size <= alloc_traits::max_size(allocator_()));
+                m_allocated_size = plain_size;
+                allocator_type& alloc = allocator_();
+                value_type* p = alloc_traits::allocate(alloc, plain_size);
+                raw_ptr_() = p;
+                // Recursively copy values from the initializser list
+                raw_init_values_<dimensions_number>(init_list, p);
+            }
+
+            void raw_destroy_range_(value_type* first, value_type* last)
+            {
+                allocator_type& alloc = allocator_();
+                while(first != last) {
+                    alloc_traits::destroy(alloc, first++);
+                }
+            }
+
+            void raw_destroy_range_backward_(value_type* first, value_type* last)
+            {
+                allocator_type& alloc = allocator_();
+                const value_type* rfirst = first - 1; // reverse iterator
+                const value_type* rlast  = last  - 1;
+                while(rfirst != rlast) {
+                    alloc_traits::destroy(alloc, rlast--);
+                }
+            }
+
+            void raw_downsize_(size_t old_size, size_t new_size)
+            {
+                YATO_REQUIRES(new_size <= old_size);
+                if(new_size != old_size) {
+                    raw_destroy_range_backward_(raw_ptr_() + new_size, raw_ptr_() + old_size);
+                }
+            }
+
+            /**
+             * Init raw memory with copied values
+             */
+            template <typename Iter_>
+            void raw_copy_to_uninitialized_(Iter_ src_first, Iter_ src_last, value_type* dst_first)
+            {
+                allocator_type& alloc = allocator_();
+                while(src_first != src_last) {
+                    alloc_traits::construct(alloc, dst_first++, *src_first++);
+                }
+            }
+
+            /**
+             * Init raw memory with moved values
+             */
+            template <typename Iter_>
+            void raw_move_to_uninitialized_(Iter_ src_first, Iter_ src_last, value_type* dst_first)
+            {
+                allocator_type& alloc = allocator_();
+                while(src_first != src_last) {
+                    alloc_traits::construct(alloc, dst_first++, std::move(*src_first++));
+                }
+            }
+
+            /**
+             * Init raw memory with copied or moved values
+             */
+            void raw_init_transfer_(const value_type* src_first, size_t size, value_type* dst_first)
+            {
+                YATO_REQUIRES(src_first != nullptr);
+                YATO_REQUIRES(dst_first != nullptr);
+            
+                allocator_type& alloc = allocator_();
+                const value_type* src_last  = src_first + size;
+                while(src_first != src_last) {
+                    alloc_traits::construct(alloc, dst_first++, std::move_if_noexcept(*src_first++));
+                }
+            }
+
+            /**
+             * Init raw memory with copied or moved values in backward order
+             */
+            void raw_init_transfer_backward_(const value_type* src_first, size_t size, value_type* dst_last)
+            {
+                YATO_REQUIRES(src_first != nullptr);
+                YATO_REQUIRES(dst_last  != nullptr);
+            
+                allocator_type& alloc = allocator_();
+                const value_type* src_rfirst = src_first - 1;
+                const value_type* src_rlast  = (src_first + size) - 1;
+                value_type* dst_rlast  = dst_last - 1;
+                while(src_rfirst != src_rlast) {
+                    alloc_traits::construct(alloc, dst_rlast--, std::move_if_noexcept(*src_rlast--));
+                }
+            }
+
+
+            /**
+             * Transfer a block of values to the left. Destroys values vefore rewriting.
+             * [XXXX][YYYY][ZZZZ]
+             * [XXXX][ZZZZ][____]
+             *       dst   src   
+             */
+            void raw_transfer_to_left_(const value_type* src_first, size_t size, value_type* dst_first)
+            {
+                YATO_REQUIRES(src_first != nullptr);
+                YATO_REQUIRES(dst_first != nullptr);
+            
+                allocator_type& alloc = allocator_();
+                const value_type* src_last  = src_first + size;
+                while(src_first != src_last) {
+                    alloc_traits::destroy(alloc, dst_first);
+                    alloc_traits::construct(alloc, dst_first, std::move_if_noexcept(*src_first));
+                    ++dst_first;
+                    ++src_first;
+                }
+            }
+
+            /**
+             * Transfer a block of values to the right in backward order. Destroys values vefore rewriting.
+             * [XXXX][YYYY][ZZZZ]
+             * [XXXX][____][YYYY]
+             *       src   dst   
+             */
+            void raw_transfer_to_right_(const value_type* src_first, size_t size, value_type* dst_last)
+            {
+                YATO_REQUIRES(src_first != nullptr);
+                YATO_REQUIRES(dst_last  != nullptr);
+            
+                allocator_type& alloc = allocator_();
+                const value_type* src_rfirst = src_first - 1;
+                const value_type* src_rlast  = (src_first + size) - 1;
+                value_type* dst_rlast  = dst_last - 1;
+                while(src_rfirst != src_rlast) {
+                    alloc_traits::destroy(alloc, dst_rlast);
+                    alloc_traits::construct(alloc, dst_rlast, std::move_if_noexcept(*src_rlast));
+                    --dst_rlast;
+                    --src_rlast;
+                }
+            }
+
+            template <typename ... Args_>
+            void raw_resize_(size_t old_size, size_t new_size, Args_ && ... init_args)
+            {
+                if(new_size < old_size) {
+                    raw_downsize_(old_size, new_size);
+                }
+                else if(new_size > old_size) {
+                    YATO_REQUIRES(new_size <= alloc_traits::max_size(allocator_()));
+                    allocator_type& alloc = allocator_();
+                    if(new_size > m_allocated_size) {
+                        value_type* new_data = alloc_traits::allocate(alloc, new_size);
+                        value_type* old_data = raw_ptr_();
+                        if(old_data != nullptr) {
+                            raw_init_transfer_(old_data, old_size, new_data);
+                            raw_destroy_range_backward_(old_data, old_data + old_size);
+                            alloc_traits::deallocate(alloc, old_data, m_allocated_size);
+                        }
+                        raw_ptr_() = new_data;
+                        m_allocated_size = new_size;
+                    }
+                    // Init added space
+                    value_type* first = raw_ptr_() + old_size;
+                    value_type* last  = raw_ptr_() + new_size;
+                    while(first != last) {
+                        alloc_traits::construct(alloc, first++, std::forward<Args_>(init_args)...);
+                    }
+                }
+            }
+
+            YATO_FORCED_INLINE
+            size_t raw_offset_checked_(const const_iterator & position) const
+            {
+                const std::ptrdiff_t offset = std::distance<const_data_iterator>(raw_ptr_(), position.plain_cbegin());
+#if YATO_DEBUG
+                if (offset < 0) {
+                    throw yato::argument_error("yato::vector_nd[insert]: position iterator doesn't belong to this vector!");
+                }
+#endif
+                return yato::narrow_cast<size_t>(offset);
+            }
+
+            template <typename SizeIterator_>
+            yato::range<value_type*> raw_prepare_push_back(const yato::range<SizeIterator_> & sub_dims)
+            {
+                auto current_sub_dims = dimensions_ref_range_().tail();
+                if(sub_dims.distance() != current_sub_dims.distance()) {
+                    throw yato::argument_error("yato::vector_nd[push_back]: Subvector dimensions number mismatch!");
+                }
+                const size_t old_size = total_size();
+                if(old_size > 0) {
+                    if(!std::equal(sub_dims.begin(), sub_dims.end(), current_sub_dims.begin())) {
+                        throw yato::argument_error("yato::vector_nd[push_back]: Subvector dimensions mismatch!");
+                    }
+                    update_top_dimension_(get_top_dimension_() + 1);
+                } else {
+                    std::get<dim_descriptor::idx_size>(m_descriptors[0]) = 1;
+                    std::copy(sub_dims.begin(), sub_dims.end(), current_sub_dims.begin());
+                    init_subsizes_();
+                }
+                const size_t new_size = total_size();
+                if(new_size > m_allocated_size) {
+                    allocator_type& alloc = allocator_();
+                    value_type* new_data = alloc_traits::allocate(alloc, new_size);
+                    value_type* old_data = raw_ptr_();
+                    if(old_data != nullptr) {
+                        raw_init_transfer_(old_data, old_size, new_data);
+                        raw_destroy_range_backward_(old_data, old_data + old_size);
+                        alloc_traits::deallocate(alloc, old_data, m_allocated_size);
+                    }
+                    raw_ptr_() = new_data;
+                    m_allocated_size = new_size;
+                }
+                return yato::make_range(std::next(raw_ptr_(), old_size), std::next(raw_ptr_(), new_size));
+            }
+
+            template <typename SizeIterator_>
+            yato::range<value_type*> raw_prepare_insert_(const yato::range<SizeIterator_> & sub_dims, const const_iterator & position, size_t length)
+            {
+                YATO_REQUIRES(length > 0);
+                auto current_sub_dims = dimensions_ref_range_().tail();
+                if(sub_dims.distance() != current_sub_dims.distance()) {
+                    throw yato::argument_error("yato::vector_nd[push_back]: Subvector dimensions number mismatch!");
+                }
+                const size_t old_size = total_size();
+                if(old_size > 0) {
+                    if(!std::equal(sub_dims.begin(), sub_dims.end(), current_sub_dims.begin())) {
+                        throw yato::argument_error("yato::vector_nd[push_back]: Subvector dimensions mismatch!");
+                    }
+                    update_top_dimension_(get_top_dimension_() + length);
+                } else {
+                    std::get<dim_descriptor::idx_size>(m_descriptors[0]) = length;
+                    std::copy(sub_dims.begin(), sub_dims.end(), current_sub_dims.begin());
+                    init_subsizes_();
+                }
+                const size_t new_size = total_size();
+                YATO_ASSERT(new_size > old_size, "Invalid size");
+
+                const size_t insert_offset = raw_offset_checked_(position);
+                const size_t insert_size = yato::narrow_cast<size_t>(length * std::get<dim_descriptor::idx_total>(m_descriptors[1]));
+                YATO_ASSERT(old_size + insert_size == new_size, "Invalid size");
+
+                if(new_size > m_allocated_size) {
+                    allocator_type& alloc = allocator_();
+                    value_type* new_data = alloc_traits::allocate(alloc, new_size);
+                    value_type* old_data = raw_ptr_();
+                    if(old_data != nullptr) {
+                        // transfer left part
+                        raw_init_transfer_(old_data, insert_offset, new_data);
+                        // transfer right part
+                        raw_init_transfer_(old_data + insert_offset, old_size - insert_offset, new_data + insert_offset + insert_size);
+                        // destroy old
+                        raw_destroy_range_backward_(old_data, old_data + old_size);
+                        alloc_traits::deallocate(alloc, old_data, m_allocated_size);
+                    }
+                    raw_ptr_() = new_data;
+                    m_allocated_size = new_size;
+                } else {
+                    // enough of allocated size
+                    value_type* old_data = raw_ptr_();
+                    // uninitialized data size
+                    const size_t right_size = old_size - insert_offset;
+                    if(insert_size >= right_size) {
+                        // no overlap
+                        raw_init_transfer_(old_data + insert_offset, right_size, old_data + insert_offset + insert_size);
+                        raw_destroy_range_(old_data + insert_offset, old_data + old_size);
+                    } else {
+                        // tail
+                        const size_t tail_size = new_size - old_size;
+                        raw_init_transfer_(old_data + old_size - tail_size, tail_size, old_data + new_size - tail_size);
+                        // overlapped
+                        raw_transfer_to_right_(old_data + insert_offset, right_size - tail_size, old_data + old_size);
+                        raw_destroy_range_(old_data + insert_offset, old_data + insert_size);
+                    }
+                }
+                return yato::make_range(std::next(raw_ptr_(), insert_offset), std::next(raw_ptr_(), insert_offset + insert_size));
+            }
+
+            value_type* raw_erase_(const const_iterator & position, size_t count)
+            {
+                YATO_REQUIRES(count != 0);
+                YATO_REQUIRES(get_top_dimension_() >= count);
+
+                const size_t erase_size = yato::narrow_cast<size_t>(count * std::get<dim_descriptor::idx_total>(m_descriptors[1]));
+                const size_t erase_offset = raw_offset_checked_(position);
+
+                const size_t old_size = total_size();
+                update_top_dimension_(get_top_dimension_() - count);
+                const size_t new_size = total_size();
+
+                YATO_ASSERT(new_size < old_size, "Invalid offsets");
+                value_type* old_data = raw_ptr_();
+                // transfer right part
+                raw_transfer_to_left_(old_data + erase_offset + erase_size, erase_size, old_data + erase_offset);
+                // destroy tail
+                raw_destroy_range_(old_data + new_size, old_data + old_size);
+
+                return old_data + erase_offset;
+            }
+
+            template<size_t _Depth, typename _Iter>
+            auto raw_init_values_(const initilizer_type<_Depth> & init_list, _Iter & iter) YATO_NOEXCEPT_KEYWORD
+                -> typename std::enable_if < (_Depth > 1), void > ::type
+            {
+                for (const auto & init_sub_list : init_list) {
+                    raw_init_values_<_Depth - 1>(init_sub_list, iter);
+                }
+            }
+
+            template<size_t _Depth, typename _Iter>
+            auto raw_init_values_(const initilizer_type<_Depth> & init_list, _Iter & iter) YATO_NOEXCEPT_KEYWORD
+                -> typename std::enable_if<(_Depth == 1), void>::type
+            {
+                allocator_type & alloc = allocator_();
+                for (const auto & value : init_list) {
+                    alloc_traits::construct(alloc, iter++, value);
+                }
+            }
+
+            void swap_allocator_(this_type & other, std::true_type)
+            {
+                using std::swap;
+                swap(allocator_(), other.allocator_());
+            }
+
+            void swap_allocator_(this_type & other, std::false_type)
+            {
+                YATO_MAYBE_UNUSED(other);
+            }
 
             proxy create_proxy_(size_t offset) YATO_NOEXCEPT_KEYWORD
             {
-                return proxy(std::next(m_plain_vector.begin(), offset * std::get<dim_descriptor::idx_total>(m_descriptors[1])), &m_descriptors[1]);
+                return proxy(std::next(raw_ptr_(), offset * std::get<dim_descriptor::idx_total>(m_descriptors[1])), &m_descriptors[1]);
             }
 
             proxy create_proxy_(data_iterator plain_position) YATO_NOEXCEPT_KEYWORD
@@ -98,7 +497,7 @@ namespace yato
 
             const_proxy create_const_proxy_(size_t offset) const YATO_NOEXCEPT_KEYWORD
             {
-                return const_proxy(std::next(m_plain_vector.cbegin(), offset * std::get<dim_descriptor::idx_total>(m_descriptors[1])), &m_descriptors[1]);
+                return const_proxy(std::next(raw_ptr_(), offset * std::get<dim_descriptor::idx_total>(m_descriptors[1])), &m_descriptors[1]);
             }
 
             const_proxy create_const_proxy_(const_data_iterator plain_position) const YATO_NOEXCEPT_KEYWORD
@@ -152,24 +551,6 @@ namespace yato
                 init_subsizes_();
             }
 
-            template<size_t _Depth, typename _Iter>
-            auto init_values_(const initilizer_type<_Depth> & init_list, _Iter & iter) YATO_NOEXCEPT_KEYWORD
-                -> typename std::enable_if < (_Depth > 1), void > ::type
-            {
-                for (const auto & init_sub_list : init_list) {
-                    init_values_<_Depth - 1>(init_sub_list, iter);
-                }
-            }
-
-            template<size_t _Depth, typename _Iter>
-            auto init_values_(const initilizer_type<_Depth> & init_list, _Iter & iter) YATO_NOEXCEPT_KEYWORD
-                -> typename std::enable_if<(_Depth == 1), void>::type
-            {
-                for (const auto & value : init_list) {
-                    *iter++ = value;
-                }
-            }
-
             void update_top_dimension_(size_t new_size) YATO_NOEXCEPT_KEYWORD
             {
                 std::get<dim_descriptor::idx_size>(m_descriptors[0])  = new_size;
@@ -181,90 +562,21 @@ namespace yato
                 return std::get<dim_descriptor::idx_size>(m_descriptors[0]);
             }
 
-            template<typename _SizeIterator>
-            yato::range<data_iterator> prepare_push_back_(const yato::range<_SizeIterator> & sub_dims)
-            {
-                const size_t old_size = m_plain_vector.size();
-                auto current_sub_dims = dimensions_ref_range_().tail();
-                if (old_size > 0) {
-                    //if (!std::equal(std::next(m_dimensions.cbegin()), m_dimensions.cend(), sub_dims.begin())) {
-                    if (!std::equal(current_sub_dims.begin(), current_sub_dims.end(), sub_dims.begin())) {
-                        throw yato::argument_error("yato::vector_nd[push_back]: Cannot push subvector with a different shape");
-                    }
-                }
-                else {
-                    std::copy(sub_dims.begin(), sub_dims.end(), current_sub_dims.begin());
-                    init_subsizes_();
-                }
-                update_top_dimension_(get_top_dimension_() + 1);
-                m_plain_vector.resize(total_size());
-                return yato::make_range(std::next(m_plain_vector.begin(), old_size), m_plain_vector.end());
-            }
-
-            template<typename _SizeIterator, typename _Iterator>
-            yato::range<data_iterator> prepare_insert_(const yato::range<_SizeIterator> & sub_dims, const _Iterator & position, size_t length)
-            {
-                const size_t old_size = m_plain_vector.size();
-                auto current_sub_dims = dimensions_ref_range_().tail();
-                if (old_size > 0) {
-                    //if (!std::equal(std::next(m_dimensions.cbegin()), m_dimensions.cend(), sub_dims.begin())) {
-                    if (!std::equal(current_sub_dims.begin(), current_sub_dims.end(), sub_dims.begin())) {
-                        throw yato::argument_error("yato::vector_nd[insert]: Cannot insert sub-vector with a different shape");
-                    }
-                }
-                else {
-                    std::copy(sub_dims.begin(), sub_dims.end(), current_sub_dims.begin());
-                    init_subsizes_();
-                }
-                // Compute offsets because iterators may be destroyed
-                auto insert_begin_offset = std::distance<const_data_iterator>(m_plain_vector.cbegin(), position.plain_cbegin());
-                if (insert_begin_offset < 0) {
-                    throw yato::argument_error("yato::vector_nd[insert]: position iterator doesn't belong to this vector!");
-                }
-                //auto insert_end_offset = insert_begin_offset + length * m_dimensions[1];
-                auto insert_end_offset = insert_begin_offset + length * std::get<dim_descriptor::idx_total>(m_descriptors[1]);
-                //Allocate new memory
-                update_top_dimension_(get_top_dimension_() + length);
-                m_plain_vector.resize(total_size());
-                //Shift stored elements to the end
-                std::move_backward(std::next(m_plain_vector.cbegin(), insert_begin_offset), std::next(m_plain_vector.cbegin(), old_size), m_plain_vector.end());
-                //Return range for new elements
-                return yato::make_range(std::next(m_plain_vector.begin(), insert_begin_offset), std::next(m_plain_vector.begin(), insert_end_offset));
-            }
-
-            iterator erase_impl_(const const_iterator & first, const const_iterator & last)
-            {
-                auto count = std::distance(first, last);
-                if (count < 0) {
-                    throw yato::argument_error("yato::vector_nd[insert]: invalid iterators range!");
-                }
-                size_t erase_size = count * first.total_size();
-                size_t erase_offset = std::distance(plain_cbegin(), first.plain_cbegin());
-                std::move(std::next(plain_cbegin(), erase_offset + erase_size), plain_cend(), std::next(plain_begin(), erase_offset));
-                resize(get_top_dimension_() - count);
-                return create_proxy_(std::next(plain_begin(), erase_offset));
-            }
-
-            vector_nd_impl(container_type && plain_vector, const dimensions_type & sizes)
-                : m_plain_vector(std::move(plain_vector))
-            {
-                init_sizes_(yato::make_range(sizes.cbegin(), sizes.cend()));
-            }
-
-            //-------------------------------------------------------
-
         public:
             /**
              *  Create empty vector
              */
-            vector_nd_impl() = default;
+            YATO_CONSTEXPR_FUNC
+            vector_nd_impl()
+                : m_data(yato::zero_arg_then_variadic_t{}, nullptr)
+            { }
 
             /**
-             *	Create empty vector
+             *  Create empty vector
              */
             explicit
-            vector_nd_impl(const allocator_type & alloc) YATO_NOEXCEPT_KEYWORD
-                :  m_plain_vector(alloc)
+            vector_nd_impl(const allocator_type & alloc)
+                : m_data(yato::one_arg_then_variadic_t{}, alloc, nullptr)
             { }
 
             /**
@@ -272,19 +584,26 @@ namespace yato
              */
             explicit
             vector_nd_impl(const dimensions_type & sizes, const allocator_type & alloc = allocator_type())
-                : m_plain_vector(alloc)
+                : m_data(yato::one_arg_then_variadic_t{}, alloc, nullptr)
             {
                 init_sizes_(sizes);
-                m_plain_vector.resize(total_size());
+                const size_t plain_size = total_size();
+                if(plain_size != 0) {
+                    raw_init_(plain_size, value_type());
+                }
             }
 
             /**
              *  Create with initialization
              */
             vector_nd_impl(const dimensions_type & sizes, const data_type & value, const allocator_type & alloc = allocator_type())
-                : m_plain_vector(alloc)
+                : m_data(yato::one_arg_then_variadic_t{}, alloc, nullptr)
             {
-                assign(sizes, value);
+                init_sizes_(sizes);
+                const size_t plain_size = total_size();
+                if(plain_size != 0) {
+                    raw_init_(plain_size, value);
+                }
             }
 
             /**
@@ -293,12 +612,17 @@ namespace yato
              */
             template <typename InputIt>
             vector_nd_impl(const dimensions_type & sizes, const InputIt & first, const InputIt & last, const allocator_type & alloc = allocator_type())
-                : m_plain_vector(alloc)
+                : m_data(yato::one_arg_then_variadic_t{}, alloc, nullptr)
             {
-                YATO_REQUIRES(sizes.total_size() == narrow_cast<size_t>(std::distance(first, last)));
+
                 init_sizes_(sizes);
-                m_plain_vector.resize(total_size());
-                std::copy(first, last, plain_begin());
+                const size_t plain_size = total_size();
+                if(yato::narrow_cast<std::ptrdiff_t>(plain_size) != std::distance(first, last)) {
+                    throw yato::argument_error("yato::vector_nd[ctor]: Range size doesn't match dimensions.");
+                }
+                if(plain_size != 0) {
+                    raw_init_from_range_(plain_size, first, last);
+                }
             }
 
             /**
@@ -313,14 +637,15 @@ namespace yato
             /**
              *  Create from initializer list
              */
+            // ToDo: Add Support for initializer with different sizes
             vector_nd_impl(const initilizer_type<dimensions_number> & init_list)
-                : m_plain_vector()
             {
                 init_sizes_<dimensions_number>(init_list);
                 if (get_top_dimension_() > 0) {
-                    m_plain_vector.reserve(total_size());
-                    auto iter = std::back_inserter(m_plain_vector);
-                    init_values_<dimensions_number>(init_list, iter);
+                    const size_t plain_size = total_size();
+                    if(plain_size != 0) {
+                        raw_init_from_list_(plain_size, init_list);
+                    }
                 }
             }
 
@@ -329,11 +654,14 @@ namespace yato
              */
             template<typename _IteratorType>
             vector_nd_impl(const yato::range<_IteratorType> & range, const allocator_type & alloc = allocator_type())
-                : m_plain_vector(alloc)
+                : m_data(yato::one_arg_then_variadic_t{}, alloc, nullptr)
             {
                 YATO_REQUIRES(range.distance() == dimensions_number); // "Constructor takes the amount of arguments equal to dimensions number"
                 init_sizes_(range);
-                m_plain_vector.resize(total_size());
+                const size_t plain_size = total_size();
+                if(plain_size != 0) {
+                    raw_init_(plain_size, value_type());
+                }
             }
 
             /**
@@ -341,35 +669,70 @@ namespace yato
              */
             template<typename _IteratorType>
             vector_nd_impl(const yato::range<_IteratorType> & range, const data_type & value, const allocator_type & alloc = allocator_type())
-                : m_plain_vector(alloc)
+                : m_data(yato::one_arg_then_variadic_t{}, alloc, nullptr)
             {
                 YATO_REQUIRES(range.distance() == dimensions_number); // "Constructor takes the amount of arguments equal to dimensions number"
                 init_sizes_(range);
-                m_plain_vector.assign(total_size(), value);
+                const size_t plain_size = total_size();
+                if(plain_size != 0) {
+                    raw_init_(plain_size, value);
+                }
             }
 
             /**
              *  Copy constructor
              */
-            vector_nd_impl(const my_type &) = default;
+            vector_nd_impl(const vector_nd_impl & other)
+                : m_descriptors(other.m_descriptors)
+                , m_data(yato::one_arg_then_variadic_t{}, alloc_traits::select_on_container_copy_construction(other.allocator_()), nullptr)
+            {
+                const size_t plain_size = total_size();
+                if(plain_size != 0) {
+                    raw_init_from_range_(plain_size, other.raw_ptr_(), other.raw_ptr_() + plain_size);
+                }
+            }
 
             /**
-             * Move-copy constructor
+             *  Move-copy constructor
              */
-#ifndef YATO_MSVC_2013
-            vector_nd_impl(my_type &&) = default;
-#else
-            vector_nd_impl(my_type && other)
-                : m_dimensions(std::move(other.m_dimensions)), m_sub_sizes(std::move(other.m_sub_sizes)), m_plain_vector(std::move(other.m_plain_vector))
-            { }
-#endif
+            vector_nd_impl(vector_nd_impl && other) YATO_NOEXCEPT_KEYWORD
+                : m_descriptors(std::move(other.m_descriptors))
+                , m_data(std::move(other.m_data))
+                , m_allocated_size(other.m_allocated_size)
+            {
+                // Steal content
+                other.raw_ptr_() = nullptr;
+                other.m_allocated_size = 0;
+                other.update_top_dimension_(0);
+            }
+
             /**
-             *	Copy assign
+             *  Move-reshape
              */
-            my_type & operator= (const my_type & other)
+            template <size_t NewDimsNum_>
+            vector_nd_impl(const dimensions_type & sizes, vector_nd_impl<data_type, NewDimsNum_, allocator_type> && other) YATO_NOEXCEPT_KEYWORD
+                : m_data(yato::one_arg_then_variadic_t{}, alloc_traits::select_on_container_copy_construction(other.allocator_()), nullptr)
+                , m_allocated_size()
+            {
+                if(sizes.total_size() != other.total_size()) {
+                    throw yato::argument_error("yato::vector_nd[move-reshape]: Total size mismatch.");
+                }
+                init_sizes_(sizes);
+                raw_ptr_() = other.raw_ptr_();
+                m_allocated_size = other.m_allocated_size;
+                // Steal content
+                other.raw_ptr_() = nullptr;
+                other.m_allocated_size = 0;
+                other.update_top_dimension_(0);
+            }
+
+            /**
+             *  Copy assign
+             */
+            vector_nd_impl & operator= (const vector_nd_impl & other)
             {
                 YATO_REQUIRES(this != &other);
-                my_type tmp(other);
+                this_type tmp{ other };
                 tmp.swap(*this);
                 return *this;
             }
@@ -377,11 +740,19 @@ namespace yato
             /**
              *  Move assign
              */
-            my_type & operator= (my_type && other) YATO_NOEXCEPT_KEYWORD
+            vector_nd_impl & operator= (vector_nd_impl && other) YATO_NOEXCEPT_KEYWORD
             {
                 YATO_REQUIRES(this != &other);
+                
                 m_descriptors  = std::move(other.m_descriptors);
-                m_plain_vector = std::move(other.m_plain_vector);
+                m_data = std::move(other.m_data);
+                m_allocated_size = other.m_allocated_size;
+                
+                // Steal content
+                other.raw_ptr_() = nullptr;
+                other.m_allocated_size = 0;
+                other.update_top_dimension_(0);
+
                 return *this;
             }
 
@@ -393,75 +764,139 @@ namespace yato
             vector_nd_impl(const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & other)
             {
                 init_sizes_(other.dimensions_range());
-                m_plain_vector.resize(total_size());
-                std::copy(other.plain_cbegin(), other.plain_cend(), plain_begin());
+                const size_t plain_size = total_size();
+                if(plain_size != 0) {
+                    raw_init_from_range_(plain_size, other.plain_cbegin(), other.plain_cend());
+                }
             }
 
             /**
              *  Assign from proxy
              */
             template<typename _DataIterator, typename _SizeIterator>
-            my_type & operator = (const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & other)
+            vector_nd_impl& operator = (const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & other)
             {
-                my_type tmp(other);
-                tmp.swap(*this);
+                this_type{ other }.swap(*this);
                 return *this;
             }
 
             /**
              *  Destructor
              */
-            ~vector_nd_impl() = default;
+            ~vector_nd_impl()
+            {
+                if(raw_ptr_()) {
+                    YATO_ASSERT(m_allocated_size > 0, "Invalid allocated size");
+                    raw_destroy_range_backward_(raw_ptr_(), raw_ptr_() + total_size());
+                    alloc_traits::deallocate(allocator_(), raw_ptr_(), m_allocated_size);
+                }
+            }
 
             /**
              *  Replaces the contents of the container
              */
             void assign(const dimensions_type & sizes, const data_type & value)
             {
+                const size_t old_size = total_size();
                 init_sizes_(sizes);
-                m_plain_vector.assign(total_size(), value);
+                const size_t plain_size = total_size();
+                if(m_allocated_size >= plain_size) {
+                    std::fill_n(raw_ptr_(), plain_size, value);
+                    raw_downsize_(old_size, plain_size);
+                } else {
+                    value_type* const new_data = alloc_traits::allocate(allocator_(), plain_size);
+                    value_type* first = new_data;
+                    value_type* last  = new_data + plain_size;
+                    while(first != last) {
+                        alloc_traits::construct(allocator_(), first++, value);
+                    }
+                    raw_ptr_() = new_data;
+                    m_allocated_size = plain_size;
+                }
             }
 
             /**
              * Create a new vector with another shape
              * All data will be copied to the new vector
              */
-            template <size_t NewDimsNum, typename NewAllocatorType = allocator_type>
-            vector_nd_impl<data_type, NewDimsNum, NewAllocatorType> reshape(const dimensionality<NewDimsNum, size_t> & extents, const NewAllocatorType & alloc = NewAllocatorType()) const
+            template <size_t NewDimsNum_>
+            vector_nd_impl<data_type, NewDimsNum_, allocator_type> reshape(const dimensionality<NewDimsNum_, size_t> & extents) const &
             {
-                YATO_REQUIRES(extents.total_size() == total_size());
-                return vector_nd_impl<data_type, NewDimsNum, NewAllocatorType>(extents, plain_crange(), alloc);
+                if(extents.total_size() != total_size()) {
+                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
+                }
+                return vector_nd_impl<data_type, NewDimsNum_, allocator_type>(extents, plain_cbegin(), plain_cend());
             }
 
-#ifndef YATO_MSVC_2013
+            /**
+             * Create a new vector with another shape
+             * All data will be copied to the new vector
+             */
+            template <size_t NewDimsNum_, typename NewAllocatorType_>
+            vector_nd_impl<data_type, NewDimsNum_, NewAllocatorType_> reshape(const dimensionality<NewDimsNum_, size_t> & extents, const NewAllocatorType_ & alloc) const &
+            {
+                if(extents.total_size() != total_size()) {
+                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
+                }
+                return vector_nd_impl<data_type, NewDimsNum_, NewAllocatorType_>(extents, plain_cbegin(), plain_cend(), alloc);
+            }
+
             /**
              * Create a new vector with another shape
              * All data will be moved to the new vector
              */
-            template <size_t NewDimsNum>
-            vector_nd_impl<data_type, NewDimsNum, allocator_type> reshape(const dimensionality<NewDimsNum, size_t> & extents) &&
+            template <size_t NewDimsNum_>
+            vector_nd_impl<data_type, NewDimsNum_, allocator_type> reshape(const dimensionality<NewDimsNum_, size_t> & extents) &&
             {
-                YATO_REQUIRES(extents.total_size() == total_size());
-                update_top_dimension_(0); // make "empty"
-                return vector_nd_impl<data_type, NewDimsNum, allocator_type>(std::move(m_plain_vector), extents);
+                if(extents.total_size() != total_size()) {
+                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
+                }
+                return vector_nd_impl<data_type, NewDimsNum_, allocator_type>(extents, std::make_move_iterator(plain_cbegin()), std::make_move_iterator(plain_cend()));
             }
-#endif
+
+            /**
+             * Create a new vector with another shape
+             * All data will be moved to the new vector
+             */
+            template <size_t NewDimsNum_, typename NewAllocatorType_>
+            vector_nd_impl<data_type, NewDimsNum_, NewAllocatorType_> reshape(const dimensionality<NewDimsNum_, size_t> & extents, const NewAllocatorType_ & alloc) &&
+            {
+                if(extents.total_size() != total_size()) {
+                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
+                }
+                return vector_nd_impl<data_type, NewDimsNum_, NewAllocatorType_>(extents, std::make_move_iterator(plain_cbegin()), std::make_move_iterator(plain_cend()), alloc);
+            }
+
+            /**
+             * Reshapes vector stealing content
+             */
+            template <size_t NewDimsNum_>
+            vector_nd_impl<data_type, NewDimsNum_, allocator_type> move_reshape(const dimensionality<NewDimsNum_, size_t> & extents) &&
+            {
+                if(extents.total_size() != total_size()) {
+                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
+                }
+                return vector_nd_impl<data_type, NewDimsNum_, allocator_type>(extents, std::move(*this));
+            }
+
             /**
              *  Returns the allocator associated with the container
              */
             allocator_type get_allocator() const YATO_NOEXCEPT_KEYWORD
             {
-                return m_plain_vector.get_allocator();
+                return allocator_();
             }
 
             /**
              *  Save swap
              */
-            void swap(my_type & other) YATO_NOEXCEPT_KEYWORD
+            void swap(this_type & other) YATO_NOEXCEPT_KEYWORD
             {
                 using std::swap;
                 swap(m_descriptors, other.m_descriptors);
-                swap(m_plain_vector, other.m_plain_vector);
+                swap(raw_ptr_(), other.raw_ptr_());
+                swap(m_allocated_size, other.m_allocated_size);
+                swap_allocator_(other, typename alloc_traits::propagate_on_container_swap{});
             }
             /**
              *  Element access without bounds check in release
@@ -512,7 +947,7 @@ namespace yato
              */
             const_iterator cbegin() const YATO_NOEXCEPT_KEYWORD
             {
-                return create_const_proxy_(0);
+                return create_const_proxy_(static_cast<size_t>(0));
             }
 
             /**
@@ -520,7 +955,7 @@ namespace yato
              */
             iterator begin() YATO_NOEXCEPT_KEYWORD
             {
-                return create_proxy_(0);
+                return create_proxy_(static_cast<size_t>(0));
             }
 
             /**
@@ -544,7 +979,7 @@ namespace yato
              */
             const_data_iterator plain_cbegin() const YATO_NOEXCEPT_KEYWORD
             {
-                return m_plain_vector.cbegin();
+                return raw_ptr_();
             }
 
             /**
@@ -552,7 +987,7 @@ namespace yato
              */
             data_iterator plain_begin() YATO_NOEXCEPT_KEYWORD
             {
-                return m_plain_vector.begin();
+                return raw_ptr_();
             }
 
             /**
@@ -560,7 +995,7 @@ namespace yato
              */
             const_data_iterator plain_cend() const YATO_NOEXCEPT_KEYWORD
             {
-                return m_plain_vector.cend();
+                return raw_ptr_() + total_size();
             }
 
             /**
@@ -568,7 +1003,7 @@ namespace yato
              */
             data_iterator plain_end() YATO_NOEXCEPT_KEYWORD
             {
-                return m_plain_vector.end();
+                return raw_ptr_() + total_size();
             }
 
             /**
@@ -608,7 +1043,7 @@ namespace yato
              */
             data_type* data() YATO_NOEXCEPT_KEYWORD
             {
-                return m_plain_vector.data();
+                return raw_ptr_();
             }
 
             /**
@@ -616,7 +1051,7 @@ namespace yato
              */
             const data_type* data() const YATO_NOEXCEPT_KEYWORD
             {
-                return const_cast<my_type*>(this)->data();
+                return raw_ptr_();
             }
 
             /**
@@ -674,7 +1109,7 @@ namespace yato
              */
             size_t capacity() const YATO_NOEXCEPT_KEYWORD
             {
-                return m_plain_vector.capacity();
+                return m_allocated_size;
             }
 
             /**
@@ -682,7 +1117,19 @@ namespace yato
              */
             void reserve(size_t new_capacity)
             {
-                m_plain_vector.reserve(new_capacity);
+                if(new_capacity > m_allocated_size) {
+                    allocator_type & alloc = allocator_();
+                    value_type* new_data = alloc_traits::allocate(alloc, new_capacity);
+                    value_type* old_data = raw_ptr_();
+                    if(old_data != nullptr) {
+                        const size_t old_size = total_size();
+                        raw_init_transfer_(old_data, old_size, new_data);
+                        raw_destroy_range_backward_(old_data, old_data + old_size);
+                        alloc_traits::deallocate(alloc, old_data, m_allocated_size);
+                    }
+                    m_allocated_size = new_capacity;
+                    raw_ptr_() = new_data;
+                }
             }
 
             /**
@@ -690,7 +1137,20 @@ namespace yato
              */
             void shrink_to_fit()
             {
-                m_plain_vector.shrink_to_fit();
+                value_type* old_data = raw_ptr_();
+                const size_t plain_size = total_size();
+                if((old_data != nullptr) && (plain_size != m_allocated_size)) {
+                    allocator_type & alloc = allocator_();
+                    value_type* new_data = nullptr;
+                    if(plain_size > 0) {
+                        new_data = alloc_traits::allocate(alloc, plain_size);
+                        raw_init_transfer_(old_data, plain_size, new_data);
+                    }
+                    raw_destroy_range_backward_(old_data, old_data + plain_size);
+                    alloc_traits::deallocate(alloc, old_data, m_allocated_size);
+                    m_allocated_size = plain_size;
+                    raw_ptr_() = new_data;
+                }
             }
 
             /**
@@ -700,8 +1160,9 @@ namespace yato
              */
             void resize(size_t length)
             {
+                const size_t old_size = total_size();
                 update_top_dimension_(length);
-                m_plain_vector.resize(total_size());
+                raw_resize_(old_size, total_size());
             }
 
             /**
@@ -712,8 +1173,9 @@ namespace yato
              */
             void resize(size_t length, const data_type & value)
             {
+                const size_t old_size = total_size();
                 update_top_dimension_(length);
-                m_plain_vector.resize(total_size(), value);
+                raw_resize_(old_size, total_size(), value);
             }
 
             /**
@@ -723,8 +1185,9 @@ namespace yato
              */
             void resize(const dimensions_type & extents)
             {
+                const size_t old_size = total_size();
                 init_sizes_(extents);
-                m_plain_vector.resize(total_size());
+                raw_resize_(old_size, total_size());
             }
 
             /**
@@ -735,8 +1198,9 @@ namespace yato
              */
             void resize(const dimensions_type & extents, const data_type & value)
             {
+                const size_t old_size = total_size();
                 init_sizes_(extents);
-                m_plain_vector.resize(total_size(), value);
+                raw_resize_(old_size, total_size(), value);
             }
 
             /**
@@ -805,8 +1269,8 @@ namespace yato
             template<typename _OtherDataType, typename _OtherAllocator>
             void push_back(const vector_nd_impl<_OtherDataType, dimensions_number - 1, _OtherAllocator> & sub_vector)
             {
-                auto insert_range = prepare_push_back_(sub_vector.dimensions_range());
-                std::copy(sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
+                const auto insert_range = raw_prepare_push_back(sub_vector.dimensions_range());
+                raw_copy_to_uninitialized_(sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
             }
 
             /**
@@ -814,8 +1278,8 @@ namespace yato
              */
             void push_back(vector_nd_impl<data_type, dimensions_number - 1, allocator_type> && sub_vector)
             {
-                auto insert_range = prepare_push_back_(sub_vector.dimensions_range());
-                std::move(sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
+                const auto insert_range = raw_prepare_push_back(sub_vector.dimensions_range());
+                raw_move_to_uninitialized_(sub_vector.plain_begin(), sub_vector.plain_end(), insert_range.begin());
             }
 
             /**
@@ -828,19 +1292,20 @@ namespace yato
                     throw yato::out_of_range_error("yato::vector_nd[pop_back]: vector is already empty!");
                 }
 #endif
+                const size_t old_size = total_size();
                 update_top_dimension_(size(0) - 1);
-                m_plain_vector.resize(total_size());
+                raw_downsize_(old_size, total_size());
             }
 
             /**
              *  Insert sub-vector element
              *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
              */
-            template<typename _OtherDataType, typename _OtherAllocator>
-            iterator insert(const const_iterator & position, const vector_nd_impl<_OtherDataType, dimensions_number - 1, _OtherAllocator> & sub_vector)
+            template<typename OtherTy_, typename OtherAllocator_>
+            iterator insert(const const_iterator & position, const vector_nd_impl<OtherTy_, dimensions_number - 1, OtherAllocator_> & sub_vector)
             {
-                auto insert_range = prepare_insert_(sub_vector.dimensions_range(), position, 1);
-                std::copy(sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
+                auto insert_range = raw_prepare_insert_(sub_vector.dimensions_range(), position, 1);
+                raw_copy_to_uninitialized_(sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
                 return create_proxy_(insert_range.begin());
             }
 
@@ -850,8 +1315,8 @@ namespace yato
              */
             iterator insert(const const_iterator & position, vector_nd_impl<data_type, dimensions_number - 1, allocator_type> && sub_vector)
             {
-                auto insert_range = prepare_insert_(sub_vector.dimensions_range(), position, 1);
-                std::move(sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
+                auto insert_range = raw_prepare_insert_(sub_vector.dimensions_range(), position, 1);
+                raw_move_to_uninitialized_(sub_vector.plain_begin(), sub_vector.plain_end(), insert_range.begin());
                 return create_proxy_(insert_range.begin());
             }
 
@@ -859,32 +1324,42 @@ namespace yato
              *  Insert count copies of sub-vector element
              *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
              */
-            template<typename _OtherDataType, typename _OtherAllocator>
-            iterator insert(const const_iterator & position, size_t count, const vector_nd_impl<_OtherDataType, dimensions_number - 1, _OtherAllocator> & sub_vector)
+            template<typename OtherTy_, typename OtherAllocator_>
+            iterator insert(const const_iterator & position, size_t count, const vector_nd_impl<OtherTy_, dimensions_number - 1, OtherAllocator_> & sub_vector)
             {
-                auto insert_range = prepare_insert_(sub_vector.dimensions_range(), position, count);
-                const size_t copy_size = sub_vector.total_size();
-                auto copy_dst = insert_range.begin();
-                for (size_t i = 0; i < count; ++i, std::advance(copy_dst, copy_size)) {
-                    std::copy(sub_vector.plain_cbegin(), sub_vector.plain_cend(), copy_dst);
+                if(count > 0) {
+                    auto insert_range = raw_prepare_insert_(sub_vector.dimensions_range(), position, count);
+                    const size_t copy_size = sub_vector.total_size();
+                    auto copy_dst = insert_range.begin();
+                    for (size_t i = 0; i < count; ++i, std::advance(copy_dst, copy_size)) {
+                        raw_copy_to_uninitialized_(sub_vector.plain_cbegin(), sub_vector.plain_cend(), copy_dst);
+                    }
+                    return create_proxy_(insert_range.begin());
+                } else {
+                    const size_t insert_offset = raw_offset_checked_(position);
+                    return create_proxy_(insert_offset);
                 }
-                return create_proxy_(insert_range.begin());
             }
 
             /**
              *  Inserts sub-vector elements from range [first, last) before 'position'
              *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
              */
-            template<typename _OtherDataIterator, typename _SizeIterator>
-            iterator insert(const const_iterator & position, const proxy_tmpl<_OtherDataIterator, _SizeIterator> & first, const proxy_tmpl<_OtherDataIterator, _SizeIterator> & last)
+            template<typename OtherTy_, typename OtherSizeIterator_>
+            iterator insert(const const_iterator & position, const proxy_tmpl<OtherTy_, OtherSizeIterator_> & first, const proxy_tmpl<OtherTy_, OtherSizeIterator_> & last)
             {
                 auto count = std::distance(first, last);
                 if (count < 0) {
                     throw yato::argument_error("yato::vector_nd[insert]: invalid iterators range!");
                 }
-                auto insert_range = prepare_insert_(first.dimensions_range(), position, count);
-                std::copy(first.plain_cbegin(), last.plain_cbegin(), insert_range.begin());
-                return create_proxy_(insert_range.begin());
+                if(count > 0) {
+                    auto insert_range = raw_prepare_insert_(first.dimensions_range(), position, static_cast<size_t>(count));
+                    raw_copy_to_uninitialized_(first.plain_cbegin(), last.plain_cbegin(), insert_range.begin());
+                    return create_proxy_(insert_range.begin());
+                } else {
+                    const size_t insert_offset = raw_offset_checked_(position);
+                    return create_proxy_(insert_offset);
+                }
             }
 
             /**
@@ -902,7 +1377,7 @@ namespace yato
              */
             iterator erase(const const_iterator & position)
             {
-                return erase_impl_(position, std::next(position));
+                return create_proxy_(raw_erase_(position, 1));
             }
 
             /**
@@ -910,7 +1385,20 @@ namespace yato
              */
             iterator erase(const const_iterator & first, const const_iterator & last)
             {
-                return erase_impl_(first, last);
+                const std::ptrdiff_t count = std::distance(first, last);
+                if(count < 0) {
+                    throw yato::argument_error("yato::vector_nd[erase]: Invalid range iterators!");
+                }
+                if(count != 0) {
+                    const size_t ucount = yato::narrow_cast<size_t>(count);
+                    if(ucount > size(0)) {
+                        throw yato::argument_error("yato::vector_nd[erase]: Invalid range iterators!");
+                    }
+                    return create_proxy_(raw_erase_(first, ucount));
+                } else {
+                    const size_t insert_offset = raw_offset_checked_(first);
+                    return create_proxy_(insert_offset);
+                }
             }
 
             //------------------------------------------------------------
@@ -954,11 +1442,6 @@ namespace yato
 
         private:
             container_type m_plain_vector;
-            //-------------------------------------------------------
-
-            vector_nd_impl(container_type && plain_vector, const dimensions_type &)
-                : m_plain_vector(std::move(plain_vector))
-            { }
             //-------------------------------------------------------
 
         public:
@@ -1186,25 +1669,65 @@ namespace yato
              * Create a new vector with another shape
              * All data will be copied to the new vector
              */
-            template <size_t NewDimsNum, typename NewAllocatorType = allocator_type>
-            vector_nd_impl<data_type, NewDimsNum, NewAllocatorType> reshape(const dimensionality<NewDimsNum, size_t> & extents, const NewAllocatorType & alloc = NewAllocatorType()) const
+            template <size_t NewDimsNum_>
+            vector_nd_impl<data_type, NewDimsNum_, allocator_type> reshape(const dimensionality<NewDimsNum_, size_t> & extents) const &
             {
-                YATO_REQUIRES(extents.total_size() == total_size());
-                return vector_nd_impl<data_type, NewDimsNum, NewAllocatorType>(extents, plain_crange(), alloc);
+                if(extents.total_size() != total_size()) {
+                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
+                }
+                return vector_nd_impl<data_type, NewDimsNum_, allocator_type>(extents, plain_cbegin(), plain_cend());
             }
 
-#ifndef YATO_MSVC_2013
             /**
              * Create a new vector with another shape
-             * All data will be moved to the new vector
+             * All data will be copied to the new vector
              */
-            template <size_t NewDimsNum>
-            vector_nd_impl<data_type, NewDimsNum, allocator_type> reshape(const dimensionality<NewDimsNum, size_t> & extents) &&
+            template <size_t NewDimsNum_, typename NewAllocatorType_>
+            vector_nd_impl<data_type, NewDimsNum_, NewAllocatorType_> reshape(const dimensionality<NewDimsNum_, size_t> & extents, const NewAllocatorType_ & alloc) const &
             {
-                YATO_REQUIRES(extents.total_size() == total_size());
-                return vector_nd_impl<data_type, NewDimsNum, allocator_type>(std::move(m_plain_vector), extents);
+                if(extents.total_size() != total_size()) {
+                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
+                }
+                return vector_nd_impl<data_type, NewDimsNum_, NewAllocatorType_>(extents, plain_cbegin(), plain_cend(), alloc);
             }
-#endif
+
+            /**
+             * Create a new vector with another shape
+             * All data will be copied to the new vector
+             */
+            template <size_t NewDimsNum_>
+            vector_nd_impl<data_type, NewDimsNum_, allocator_type> reshape(const dimensionality<NewDimsNum_, size_t> & extents) &&
+            {
+                if(extents.total_size() != total_size()) {
+                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
+                }
+                return vector_nd_impl<data_type, NewDimsNum_, allocator_type>(extents, std::make_move_iterator(plain_cbegin()), std::make_move_iterator(plain_cend()));
+            }
+
+            /**
+             * Create a new vector with another shape
+             * All data will be copied to the new vector
+             */
+            template <size_t NewDimsNum_, typename NewAllocatorType_>
+            vector_nd_impl<data_type, NewDimsNum_, NewAllocatorType_> reshape(const dimensionality<NewDimsNum_, size_t> & extents, const NewAllocatorType_ & alloc) &&
+            {
+                if(extents.total_size() != total_size()) {
+                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
+                }
+                return vector_nd_impl<data_type, NewDimsNum_, NewAllocatorType_>(extents, std::make_move_iterator(plain_cbegin()), std::make_move_iterator(plain_cend()), alloc);
+            }
+
+            /**
+             * Reshapes vector stealing content
+             */
+            template <size_t NewDimsNum_>
+            vector_nd_impl<data_type, NewDimsNum_, allocator_type> move_reshape(const dimensionality<NewDimsNum_, size_t> & extents) &&
+            {
+                if(extents.total_size() != total_size()) {
+                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
+                }
+                return vector_nd_impl<data_type, NewDimsNum_, allocator_type>(extents, std::move(*this));
+            }
 
             /**
              *  Returns the allocator associated with the container
