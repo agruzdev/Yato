@@ -329,6 +329,31 @@ TEST(Yato_VectorND, reserve)
     EXPECT_EQ(0u, vec.capacity());
 }
 
+TEST(Yato_VectorND, reserve_usertype)
+{
+    FooCounted::reset_counters();
+    {
+        yato::vector_nd<int, 3> vec;
+        EXPECT_EQ(0u, vec.capacity());
+
+        vec.reserve(100);
+        EXPECT_EQ(100u, vec.capacity());
+
+        vec.reserve(10);
+        EXPECT_EQ(100u, vec.capacity());
+
+        vec.reserve(0);
+        EXPECT_EQ(100u, vec.capacity());
+
+        vec.reserve(101);
+        EXPECT_EQ(101u, vec.capacity());
+
+        vec.shrink_to_fit();
+        EXPECT_EQ(0u, vec.capacity());
+    }
+    EXPECT_EQ(FooCounted::ctors, FooCounted::dtors);
+}
+
 TEST(Yato_VectorND, assign)
 {
     yato::vector_nd<int, 3> vec = {};
@@ -352,6 +377,35 @@ TEST(Yato_VectorND, assign)
     for (const int & x : vec.plain_crange()) {
         EXPECT_EQ(42, x);
     }
+}
+
+TEST(Yato_VectorND, assign_usertype)
+{
+    FooCounted::reset_counters();
+    {
+        yato::vector_nd<FooCounted, 3> vec = {};
+    
+        EXPECT_TRUE(vec.empty());
+        for (const int & x : vec.plain_crange()) {
+            (void)x;
+            EXPECT_TRUE(false);
+        }
+
+        vec.assign(yato::dims(2, 2, 2), 1);
+    
+        EXPECT_FALSE(vec.empty());
+        for (const int & x : vec.plain_crange()) {
+            EXPECT_EQ(1, x);
+        }
+
+        vec.assign(yato::dims(1, 1, 1), 42);
+
+        EXPECT_FALSE(vec.empty());
+        for (const int & x : vec.plain_crange()) {
+            EXPECT_EQ(42, x);
+        }
+    }
+    EXPECT_EQ(FooCounted::ctors, FooCounted::dtors);
 }
 
 TEST(Yato_VectorND, proxy_iter)
