@@ -444,6 +444,14 @@ TEST(Yato_VectorND, assign)
     for (const int & x : vec.plain_crange()) {
         EXPECT_EQ(42, x);
     }
+
+    vec.assign(yato::dims(1, 2, 2), 10);
+
+    EXPECT_FALSE(vec.empty());
+    for (const int & x : vec.plain_crange()) {
+        EXPECT_EQ(10, x);
+    }
+
 }
 
 TEST(Yato_VectorND, assign_usertype)
@@ -470,6 +478,13 @@ TEST(Yato_VectorND, assign_usertype)
         EXPECT_FALSE(vec.empty());
         for (const int & x : vec.plain_crange()) {
             EXPECT_EQ(42, x);
+        }
+
+        vec.assign(yato::dims(1, 2, 2), 10);
+
+        EXPECT_FALSE(vec.empty());
+        for (const int & x : vec.plain_crange()) {
+            EXPECT_EQ(10, x);
         }
     }
     EXPECT_EQ(FooCounted::ctors, FooCounted::dtors);
@@ -1125,6 +1140,46 @@ TEST(Yato_VectorND, exception_safe_constructor_from_ilist_2)
     FooThrowing::reset_counters(10);
     try {
         yato::vector_nd<FooThrowing, 3> vec4 = { { { 1 }, { 2, 2, 2 }, { 3 } }, { { 10 }, { 30 }, { 40 } } };
+    }
+    catch(TestError &) {
+        // expected exception
+        thrown = true;
+    }
+    catch(...) {
+        // error
+        throw;
+    }
+    EXPECT_TRUE(thrown);
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
+}
+
+TEST(Yato_VectorND, exception_safe_assign)
+{
+    bool thrown = false;
+    FooThrowing::reset_counters(10);
+    try {
+        yato::vector_3d<FooThrowing> v(yato::dims(2, 2, 2), FooThrowing(1));
+        v.assign(yato::dims(2, 2, 1), 10);
+    }
+    catch(TestError &) {
+        // expected exception
+        thrown = true;
+    }
+    catch(...) {
+        // error
+        throw;
+    }
+    EXPECT_TRUE(thrown);
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
+}
+
+TEST(Yato_VectorND, exception_safe_assign_2)
+{
+    bool thrown = false;
+    FooThrowing::reset_counters(10);
+    try {
+        yato::vector_3d<FooThrowing> v(yato::dims(2, 2, 2), FooThrowing(1));
+        v.assign(yato::dims(2, 3, 3), 10);
     }
     catch(TestError &) {
         // expected exception

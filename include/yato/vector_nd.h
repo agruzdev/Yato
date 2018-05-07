@@ -620,6 +620,16 @@ namespace yato
                 return std::get<dim_descriptor::idx_size>(m_descriptors[0]);
             }
 
+            /**
+             * Clear pointer and sizes data, memory should be already deallocated.
+             */
+            void tidy_()
+            {
+                raw_ptr_() = nullptr;
+                m_allocated_size = 0;
+                update_top_dimension_(0);
+            }
+
         public:
             /**
              *  Create empty vector
@@ -755,9 +765,7 @@ namespace yato
                 , m_data(std::move(other.m_data))
             {
                 // Steal content
-                other.raw_ptr_() = nullptr;
-                other.m_allocated_size = 0;
-                other.update_top_dimension_(0);
+                other.tidy_();
             }
 
             /**
@@ -774,9 +782,7 @@ namespace yato
                 raw_ptr_() = other.raw_ptr_();
                 m_allocated_size = other.m_allocated_size;
                 // Steal content
-                other.raw_ptr_() = nullptr;
-                other.m_allocated_size = 0;
-                other.update_top_dimension_(0);
+                other.tidy_();
             }
 
             /**
@@ -801,9 +807,7 @@ namespace yato
                 m_allocated_size = other.m_allocated_size;
                 
                 // Steal content
-                other.raw_ptr_() = nullptr;
-                other.m_allocated_size = 0;
-                other.update_top_dimension_(0);
+                other.tidy_();
 
                 return *this;
             }
@@ -850,21 +854,43 @@ namespace yato
             void assign(const dimensions_type & sizes, const data_type & value)
             {
                 const size_t old_size = total_size();
-                init_sizes_(sizes);
-                const size_t new_size = total_size();
-                // destoy old content
+                const size_t new_size = sizes.total_size();
                 value_type* old_data = raw_ptr_();
-                raw_destroy_range_(old_data, old_data + old_size);
-                // fill
-                size_t filled_size = 0;
+                allocator_type & alloc = allocator_();
                 if(new_size <= m_allocated_size) {
-                    raw_fill_uninitialized_(filled_size, old_data, old_data + new_size, value);
+                    // destoy old content
+                    raw_destroy_range_(old_data, old_data + old_size);
+                    // fill new values
+                    size_t filled_size = 0;
+                    try {
+                        raw_fill_uninitialized_(filled_size, old_data, old_data + new_size, value);
+                    }
+                    catch(...) {
+                        raw_destroy_range_(old_data, old_data + filled_size);
+                        alloc_traits::deallocate(alloc, old_data, old_size);
+                        // cant recover, make empty
+                        tidy_();
+                        throw;
+                    }
                 } else {
-                    value_type* const new_data = alloc_traits::allocate(allocator_(), new_size);
-                    raw_fill_uninitialized_(filled_size, new_data, new_data + new_size, value);
+                    value_type* const new_data = alloc_traits::allocate(alloc, new_size);
+                    size_t filled_size = 0;
+                    try {
+                        raw_fill_uninitialized_(filled_size, new_data, new_data + new_size, value);
+                    }
+                    catch(...) {
+                        raw_destroy_range_(new_data, new_data + filled_size);
+                        alloc_traits::deallocate(alloc, new_data, new_size);
+                        throw;
+                    }
                     raw_ptr_() = new_data;
                     m_allocated_size = new_size;
+                    // destoy old content
+                    raw_destroy_range_(old_data, old_data + old_size);
+                    alloc_traits::deallocate(alloc, old_data, old_size);
                 }
+                // update sizes
+                init_sizes_(sizes);
             }
 
             /**
