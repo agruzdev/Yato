@@ -1060,7 +1060,11 @@ namespace
             ++ctors;
         }
 
-        FooThrowing(FooThrowing &&) = delete;
+        FooThrowing(FooThrowing && other) noexcept(false)
+            : m_val(other.m_val)
+        {
+            ++ctors;
+        }
 
         ~FooThrowing()
         {
@@ -1083,22 +1087,26 @@ namespace
 
 TEST(Yato_VectorND, exception_safe_constructor)
 {
+    bool thrown = false;
     FooThrowing::reset_counters(3);
     try {
          yato::vector_3d<FooThrowing> v(yato::dims(2, 2, 2), FooThrowing(1));
     }
     catch(TestError &) {
         // expected exception
+        thrown = true;
     }
     catch(...) {
         // error
         throw;
     }
+    EXPECT_TRUE(thrown);
     EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
 }
 
 TEST(Yato_VectorND, exception_safe_constructor_2)
 {
+    bool thrown = false;
     FooThrowing::reset_counters(3);
     try {
         std::array<FooThrowing, 8> arr {{ 1, 2, 3, 4, 5, 6, 7, 8 }};
@@ -1106,11 +1114,13 @@ TEST(Yato_VectorND, exception_safe_constructor_2)
     }
     catch(TestError &) {
         // expected exception
+        thrown = true;
     }
     catch(...) {
         // error
         throw;
     }
+    EXPECT_TRUE(thrown);
     EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
 }
 
@@ -1180,6 +1190,48 @@ TEST(Yato_VectorND, exception_safe_assign_2)
     try {
         yato::vector_3d<FooThrowing> v(yato::dims(2, 2, 2), FooThrowing(1));
         v.assign(yato::dims(2, 3, 3), 10);
+    }
+    catch(TestError &) {
+        // expected exception
+        thrown = true;
+    }
+    catch(...) {
+        // error
+        throw;
+    }
+    EXPECT_TRUE(thrown);
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
+}
+
+
+TEST(Yato_VectorND, exception_safe_reserve)
+{
+    bool thrown = false;
+    FooThrowing::reset_counters(12);
+    try {
+        yato::vector_3d<FooThrowing> v(yato::dims(2, 2, 2), FooThrowing(1));
+        v.reserve(16);
+    }
+    catch(TestError &) {
+        // expected exception
+        thrown = true;
+    }
+    catch(...) {
+        // error
+        throw;
+    }
+    EXPECT_TRUE(thrown);
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
+}
+
+TEST(Yato_VectorND, exception_safe_shrink_to_fit)
+{
+    bool thrown = false;
+    FooThrowing::reset_counters(20);
+    try {
+        yato::vector_3d<FooThrowing> v(yato::dims(2, 2, 2), FooThrowing(1));
+        v.reserve(16);
+        v.shrink_to_fit();
     }
     catch(TestError &) {
         // expected exception

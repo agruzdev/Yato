@@ -140,6 +140,21 @@ namespace yato
             }
 
             /**
+             * Fill raw memory with a value
+             */
+            template <typename ... InitArgs_>
+            void raw_fill_uninitialized_2_(value_type* & first, value_type* last, InitArgs_ && ... init_args)
+            {
+                YATO_REQUIRES(first != nullptr);
+                YATO_REQUIRES(last  != nullptr);
+                allocator_type& alloc = allocator_();
+                while(first != last) {
+                    alloc_traits::construct(alloc, first, std::forward<InitArgs_>(init_args)...);
+                    ++first;
+                }
+            }
+
+            /**
              * Init raw memory with copied values
              */
             template <typename Iter_>
@@ -236,6 +251,19 @@ namespace yato
             /**
              * Init raw memory with copied or moved values
              */
+            void raw_transfer_2_(const value_type* src_first, size_t size, value_type* & dst_first)
+            {
+                YATO_REQUIRES(src_first != nullptr);
+                YATO_REQUIRES(dst_first != nullptr);
+            
+                allocator_type& alloc = allocator_();
+                const value_type* src_last  = src_first + size;
+                while(src_first != src_last) {
+                    alloc_traits::construct(alloc, dst_first, std::move_if_noexcept(*src_first++));
+                    ++dst_first;
+                }
+            }
+
             void raw_transfer_(const value_type* src_first, size_t size, value_type* dst_first)
             {
                 YATO_REQUIRES(src_first != nullptr);
@@ -850,6 +878,7 @@ namespace yato
 
             /**
              *  Replaces the contents of the container
+             *  In the case of exception the vector remains unchanged if data is copied into new storage, or becomes empty if assign was in-place.
              */
             void assign(const dimensions_type & sizes, const data_type & value)
             {
@@ -861,12 +890,12 @@ namespace yato
                     // destoy old content
                     raw_destroy_range_(old_data, old_data + old_size);
                     // fill new values
-                    size_t filled_size = 0;
+                    value_type* dst = old_data;
                     try {
-                        raw_fill_uninitialized_(filled_size, old_data, old_data + new_size, value);
+                        raw_fill_uninitialized_2_(dst, old_data + new_size, value);
                     }
                     catch(...) {
-                        raw_destroy_range_(old_data, old_data + filled_size);
+                        raw_destroy_range_(old_data, dst);
                         alloc_traits::deallocate(alloc, old_data, old_size);
                         // cant recover, make empty
                         tidy_();
@@ -874,12 +903,12 @@ namespace yato
                     }
                 } else {
                     value_type* const new_data = alloc_traits::allocate(alloc, new_size);
-                    size_t filled_size = 0;
+                    value_type* dst = new_data;
                     try {
-                        raw_fill_uninitialized_(filled_size, new_data, new_data + new_size, value);
+                        raw_fill_uninitialized_2_(dst, new_data + new_size, value);
                     }
                     catch(...) {
-                        raw_destroy_range_(new_data, new_data + filled_size);
+                        raw_destroy_range_(new_data, dst);
                         alloc_traits::deallocate(alloc, new_data, new_size);
                         throw;
                     }
@@ -970,6 +999,7 @@ namespace yato
              */
             void swap(this_type & other) YATO_NOEXCEPT_KEYWORD
             {
+                YATO_REQUIRES(this != &other);
                 using std::swap;
                 swap(m_descriptors, other.m_descriptors);
                 swap(raw_ptr_(), other.raw_ptr_());
@@ -1151,6 +1181,7 @@ namespace yato
             /**
              *  Get number of dimensions
              */
+            YATO_CONSTEXPR_FUNC_EX
             size_t dimensions_num() const YATO_NOEXCEPT_KEYWORD
             {
                 return dimensions_number;
@@ -1177,6 +1208,7 @@ namespace yato
             /**
              *  Get the total size of the vector (number of all elements)
              */
+            YATO_CONSTEXPR_FUNC_EX
             size_t total_size() const YATO_NOEXCEPT_KEYWORD
             {
                 return std::get<dim_descriptor::idx_total>(m_descriptors[0]);
@@ -1192,16 +1224,25 @@ namespace yato
 
             /**
              *  Increase the capacity of the container to a value that's greater or equal to new_capacity
+             *  In the case of exception the vector remains unchanged.
              */
             void reserve(size_t new_capacity)
             {
                 if(new_capacity > m_allocated_size) {
                     allocator_type & alloc = allocator_();
-                    value_type* new_data = alloc_traits::allocate(alloc, new_capacity);
                     value_type* old_data = raw_ptr_();
+                    value_type* new_data = alloc_traits::allocate(alloc, new_capacity);
                     if(old_data != nullptr) {
                         const size_t old_size = total_size();
-                        raw_transfer_(old_data, old_size, new_data);
+                        value_type* dst = new_data;
+                        try {
+                            raw_transfer_2_(old_data, old_size, dst);
+                        }
+                        catch(...) {
+                            raw_destroy_range_(new_data, dst);
+                            alloc_traits::deallocate(alloc, new_data, new_capacity);
+                            throw;
+                        }
                         raw_destroy_range_(old_data, old_data + old_size);
                         alloc_traits::deallocate(alloc, old_data, m_allocated_size);
                     }
@@ -1211,7 +1252,8 @@ namespace yato
             }
 
             /**
-             *  Requests the removal of unused capacity
+             *  Requests the removal of unused capacity.
+             *  In case of exception the vector remains unchanged.
              */
             void shrink_to_fit()
             {
@@ -1222,7 +1264,15 @@ namespace yato
                     value_type* new_data = nullptr;
                     if(plain_size > 0) {
                         new_data = alloc_traits::allocate(alloc, plain_size);
-                        raw_transfer_(old_data, plain_size, new_data);
+                        value_type* dst = new_data;
+                        try {
+                            raw_transfer_2_(old_data, plain_size, dst);
+                        }
+                        catch(...) {
+                            raw_destroy_range_(new_data, dst);
+                            alloc_traits::deallocate(alloc, new_data, plain_size);
+                            throw;
+                        }
                     }
                     raw_destroy_range_(old_data, old_data + plain_size);
                     alloc_traits::deallocate(alloc, old_data, m_allocated_size);
