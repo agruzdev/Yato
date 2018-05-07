@@ -11,7 +11,7 @@ namespace
 {
     class FooCounted
     {
-        int m_val = 0;
+        int m_val;
 
     public:
         static size_t ctors;
@@ -24,7 +24,7 @@ namespace
         }
 
         FooCounted()
-            : m_val(0)
+            : m_val(42)
         {
             ++ctors;
         }
@@ -228,6 +228,73 @@ TEST(Yato_VectorND, ctor_from_range)
     EXPECT_EQ(4, v3[0][0][3]);
     EXPECT_EQ(5, v3[0][0][4]);
     EXPECT_EQ(6, v3[0][0][5]);
+}
+
+TEST(Yato_VectorND, construct_from_initializer_list)
+{
+    FooCounted::reset_counters();
+    {
+        yato::vector_nd<FooCounted, 2> vec0 = {};
+        EXPECT_EQ(0u, vec0.total_size());
+
+        yato::vector_nd<FooCounted, 2> vec00 = { {}, {} };
+        EXPECT_EQ(0u, vec00.total_size());
+
+        yato::vector_nd<FooCounted, 2> vec1 = { {1, 1, 1}, {2, 2, 2} };
+        EXPECT_EQ(6u, vec1.total_size());
+        EXPECT_EQ(1, vec1[0][0]);
+        EXPECT_EQ(1, vec1[0][1]);
+        EXPECT_EQ(1, vec1[0][2]);
+        EXPECT_EQ(2, vec1[1][0]);
+        EXPECT_EQ(2, vec1[1][1]);
+        EXPECT_EQ(2, vec1[1][2]);
+
+        yato::vector_nd<FooCounted, 2> vec2 = { {1, 1, 1}, {2, 4}, {3, 3} };
+        EXPECT_EQ(9u, vec2.total_size());
+        EXPECT_EQ(1, vec2[0][0]);
+        EXPECT_EQ(1, vec2[0][1]);
+        EXPECT_EQ(1, vec2[0][2]);
+        EXPECT_EQ(2, vec2[1][0]);
+        EXPECT_EQ(4, vec2[1][1]);
+        EXPECT_EQ(4, vec2[1][2]);
+        EXPECT_EQ(3, vec2[2][0]);
+        EXPECT_EQ(3, vec2[2][1]);
+        EXPECT_EQ(3, vec2[2][2]);
+
+        yato::vector_nd<FooCounted, 2> vec3 = { {1}, {2, 2, 2}, { 3, 4 } };
+        EXPECT_EQ(9u, vec3.total_size());
+        EXPECT_EQ(1, vec3[0][0]);
+        EXPECT_EQ(1, vec3[0][1]);
+        EXPECT_EQ(1, vec3[0][2]);
+        EXPECT_EQ(2, vec3[1][0]);
+        EXPECT_EQ(2, vec3[1][1]);
+        EXPECT_EQ(2, vec3[1][2]);
+        EXPECT_EQ(3, vec3[2][0]);
+        EXPECT_EQ(4, vec3[2][1]);
+        EXPECT_EQ(4, vec3[2][2]);
+
+        yato::vector_nd<FooCounted, 3> vec4 = { { {1}, {2, 2, 2}, { 3, 4 } }, { { 10 }, { 20 }, { 30 } } };
+        EXPECT_EQ(18u, vec4.total_size());
+        EXPECT_EQ(1, vec4[0][0][0]);
+        EXPECT_EQ(1, vec4[0][0][1]);
+        EXPECT_EQ(1, vec4[0][0][2]);
+        EXPECT_EQ(2, vec4[0][1][0]);
+        EXPECT_EQ(2, vec4[0][1][1]);
+        EXPECT_EQ(2, vec4[0][1][2]);
+        EXPECT_EQ(3, vec4[0][2][0]);
+        EXPECT_EQ(4, vec4[0][2][1]);
+        EXPECT_EQ(4, vec4[0][2][2]);
+        EXPECT_EQ(10, vec4[1][0][0]);
+        EXPECT_EQ(10, vec4[1][0][1]);
+        EXPECT_EQ(10, vec4[1][0][2]);
+        EXPECT_EQ(20, vec4[1][1][0]);
+        EXPECT_EQ(20, vec4[1][1][1]);
+        EXPECT_EQ(20, vec4[1][1][2]);
+        EXPECT_EQ(30, vec4[1][2][0]);
+        EXPECT_EQ(30, vec4[1][2][1]);
+        EXPECT_EQ(30, vec4[1][2][2]);
+    }
+    EXPECT_EQ(FooCounted::ctors, FooCounted::dtors);
 }
 
 TEST(Yato_VectorND, access)
@@ -776,6 +843,43 @@ TEST(Yato_VectorND, resize)
     EXPECT_EQ(7, vec1[1][1]);
 }
 
+TEST(Yato_VectorND, resize_usertype)
+{
+    FooCounted::reset_counters();
+    {
+        yato::vector_nd<int, 2> vec1 = { { 1, 2 },{ 3, 4 } };
+        EXPECT_EQ(2U, vec1.size(0));
+        EXPECT_EQ(2U, vec1.size(1));
+
+        vec1.resize(3);
+        EXPECT_EQ(3U, vec1.size(0));
+        EXPECT_EQ(2U, vec1.size(1));
+
+        EXPECT_EQ(1, vec1[0][0]);
+        EXPECT_EQ(2, vec1[0][1]);
+        EXPECT_EQ(3, vec1[1][0]);
+        EXPECT_EQ(4, vec1[1][1]);
+
+        vec1.resize(yato::dims(4, 3));
+        EXPECT_EQ(4U, vec1.size(0));
+        EXPECT_EQ(3U, vec1.size(1));
+
+        vec1.resize(yato::dims(1, 1));
+        EXPECT_EQ(1U, vec1.size(0));
+        EXPECT_EQ(1U, vec1.size(1));
+
+        vec1.resize(0);
+        EXPECT_EQ(0U, vec1.size(0));
+
+        vec1.resize(yato::dims(2, 2), 7);
+        EXPECT_EQ(7, vec1[0][0]);
+        EXPECT_EQ(7, vec1[0][1]);
+        EXPECT_EQ(7, vec1[1][0]);
+        EXPECT_EQ(7, vec1[1][1]);
+    }
+    EXPECT_EQ(FooCounted::ctors, FooCounted::dtors);
+}
+
 TEST(Yato_VectorND, reshape)
 {
     int raw[] = { 1, 2, 3, 4, 5, 6 };
@@ -889,4 +993,147 @@ TEST(Yato_VectorND, proxy_data)
     //EXPECT_EQ(5, foo(cplain.data())); // Error, const iterator
     EXPECT_EQ(5, cfoo(plain.data()));
     EXPECT_EQ(5, cfoo(cplain.data()));
+}
+
+
+namespace
+{
+    class TestError 
+        : public std::runtime_error
+    {
+    public:
+        TestError()
+            : std::runtime_error("TestError")
+        { }
+    };
+
+    class FooThrowing
+    {
+        int m_val = 0;
+
+        static size_t throw_delay;
+    public:
+        static size_t ctors;
+        static size_t dtors;
+
+        static void reset_counters(size_t throw_after)
+        {
+            ctors = 0;
+            dtors = 0;
+            throw_delay = throw_after;
+        }
+
+        FooThrowing()
+            : m_val(0)
+        {
+            ++ctors;
+        }
+
+        FooThrowing(int v)
+            : m_val(v)
+        {
+            ++ctors;
+        }
+
+        FooThrowing(const FooThrowing & other)
+            : m_val(other.m_val)
+        {
+            if(0 == throw_delay) {
+                throw TestError{};
+            }
+            --throw_delay;
+            ++ctors;
+        }
+
+        FooThrowing(FooThrowing &&) = delete;
+
+        ~FooThrowing()
+        {
+            ++dtors;
+        }
+
+        FooThrowing& operator= (const FooThrowing &) = delete;
+        FooThrowing& operator= (FooThrowing &&) = delete;
+
+        operator int() const
+        {
+            return m_val;
+        }
+    };
+
+    size_t FooThrowing::throw_delay = 0;
+    size_t FooThrowing::ctors = 0;
+    size_t FooThrowing::dtors = 0;
+}
+
+TEST(Yato_VectorND, exception_safe_constructor)
+{
+    FooThrowing::reset_counters(3);
+    try {
+         yato::vector_3d<FooThrowing> v(yato::dims(2, 2, 2), FooThrowing(1));
+    }
+    catch(TestError &) {
+        // expected exception
+    }
+    catch(...) {
+        // error
+        throw;
+    }
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
+}
+
+TEST(Yato_VectorND, exception_safe_constructor_2)
+{
+    FooThrowing::reset_counters(3);
+    try {
+        std::array<FooThrowing, 8> arr {{ 1, 2, 3, 4, 5, 6, 7, 8 }};
+        yato::vector_3d<FooThrowing> v(yato::dims(2, 2, 2), arr.cbegin(), arr.cend());
+    }
+    catch(TestError &) {
+        // expected exception
+    }
+    catch(...) {
+        // error
+        throw;
+    }
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
+}
+
+TEST(Yato_VectorND, exception_safe_constructor_from_ilist)
+{
+    bool thrown = false;
+    FooThrowing::reset_counters(10000);
+    try {
+        yato::vector_nd<FooThrowing, 3> vec4 = { { {1}, {2, 2, 2}, {3} }, { { 10 }, { 30 } } };
+    }
+    catch(yato::argument_error &) {
+        // expected exception
+        thrown = true;
+    }
+    catch(...) {
+        // error
+        throw;
+    }
+    EXPECT_TRUE(thrown);
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
+}
+
+
+TEST(Yato_VectorND, exception_safe_constructor_from_ilist_2)
+{
+    bool thrown = false;
+    FooThrowing::reset_counters(10);
+    try {
+        yato::vector_nd<FooThrowing, 3> vec4 = { { { 1 }, { 2, 2, 2 }, { 3 } }, { { 10 }, { 30 }, { 40 } } };
+    }
+    catch(TestError &) {
+        // expected exception
+        thrown = true;
+    }
+    catch(...) {
+        // error
+        throw;
+    }
+    EXPECT_TRUE(thrown);
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
 }

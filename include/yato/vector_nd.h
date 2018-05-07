@@ -127,14 +127,15 @@ namespace yato
             /**
              * Fill raw memory with a value
              */
-            template <typename ValTy_>
-            void raw_fill_uninitialized_(value_type* first, value_type* last, const ValTy_ & init_value)
+            template <typename ... InitArgs_>
+            void raw_fill_uninitialized_(size_t & count, value_type* first, value_type* last, InitArgs_ && ... init_args)
             {
                 YATO_REQUIRES(first != nullptr);
                 YATO_REQUIRES(last  != nullptr);
                 allocator_type& alloc = allocator_();
                 while(first != last) {
-                    alloc_traits::construct(alloc, first++, init_value);
+                    alloc_traits::construct(alloc, first++, std::forward<InitArgs_>(init_args)...);
+                    ++count;
                 }
             }
 
@@ -142,11 +143,12 @@ namespace yato
              * Init raw memory with copied values
              */
             template <typename Iter_>
-            void raw_copy_to_uninitialized_(Iter_ src_first, Iter_ src_last, value_type* dst_first)
+            void raw_copy_to_uninitialized_(size_t & count, Iter_ src_first, Iter_ src_last, value_type* dst_first)
             {
                 allocator_type& alloc = allocator_();
                 while(src_first != src_last) {
                     alloc_traits::construct(alloc, dst_first++, *src_first++);
+                    ++count;
                 }
             }
 
@@ -162,15 +164,24 @@ namespace yato
                 }
             }
 
-            void raw_init_(size_t plain_size, const value_type & init_value)
+            template <typename ... InitArgs_>
+            void raw_init_(size_t plain_size, InitArgs_ && ... init_args)
             {
                 YATO_REQUIRES(plain_size != 0);
                 YATO_REQUIRES(plain_size <= alloc_traits::max_size(allocator_()));
                 allocator_type& alloc = allocator_();
                 value_type* const new_data = alloc_traits::allocate(alloc, plain_size);
-                raw_fill_uninitialized_(new_data, new_data + plain_size, init_value);
-                raw_ptr_() = new_data;
-                m_allocated_size = plain_size;
+                size_t filled_size = 0;
+                try {
+                    raw_fill_uninitialized_(filled_size, new_data, new_data + plain_size, std::forward<InitArgs_>(init_args)...);
+                    raw_ptr_() = new_data;
+                    m_allocated_size = plain_size;
+                }
+                catch(...) {
+                    raw_destroy_range_(new_data, new_data + filled_size);
+                    alloc_traits::deallocate(alloc, new_data, plain_size);
+                    throw;
+                }
             }
 
             template <typename IterTy_>
@@ -181,22 +192,37 @@ namespace yato
                 YATO_REQUIRES(yato::narrow_cast<std::ptrdiff_t>(plain_size) == std::distance(src_first, src_last));
                 allocator_type& alloc = allocator_();
                 value_type* new_data = alloc_traits::allocate(alloc, plain_size);
-                raw_copy_to_uninitialized_(src_first, src_last, new_data);
-                raw_ptr_() = new_data;
-                m_allocated_size = plain_size;
+                size_t filled_size = 0;
+                try {
+                    raw_copy_to_uninitialized_(filled_size, src_first, src_last, new_data);
+                    raw_ptr_() = new_data;
+                    m_allocated_size = plain_size;
+                }
+                catch(...) {
+                    raw_destroy_range_(new_data, new_data + filled_size);
+                    alloc_traits::deallocate(alloc, new_data, plain_size);
+                    throw;
+                }
             }
 
-            void raw_init_from_list_(size_t plain_size, const initilizer_type<dimensions_number> & init_list)
+            void raw_init_from_ilist_(size_t plain_size, const initilizer_type<dimensions_number> & init_list)
             {
                 YATO_REQUIRES(plain_size != 0);
                 YATO_REQUIRES(plain_size <= alloc_traits::max_size(allocator_()));
                 allocator_type& alloc = allocator_();
                 value_type* new_data = alloc_traits::allocate(alloc, plain_size);
-                // Recursively copy values from the initializser list
-                value_type* tmp = new_data; // copy, that can be changed
-                raw_copy_initializer_list_<dimensions_number>(init_list, tmp);
-                raw_ptr_() = new_data;
-                m_allocated_size = plain_size;
+                value_type* dst = new_data; // copy, that can be changed
+                try {
+                    // Recursively copy values from the initializser list
+                    raw_copy_initializer_list_<dimensions_number>(init_list, dst);
+                    raw_ptr_() = new_data;
+                    m_allocated_size = plain_size;
+                }
+                catch(...) {
+                    raw_destroy_range_(new_data, dst);
+                    alloc_traits::deallocate(alloc, new_data, plain_size);
+                    throw;
+                }
             }
 
             void raw_destroy_range_(value_type* first, value_type* last)
@@ -296,20 +322,32 @@ namespace yato
                     allocator_type& alloc = allocator_();
                     if(new_size > m_allocated_size) {
                         value_type* new_data = alloc_traits::allocate(alloc, new_size);
-                        value_type* old_data = raw_ptr_();
-                        if(old_data != nullptr) {
-                            raw_transfer_(old_data, old_size, new_data);
-                            raw_destroy_range_(old_data, old_data + old_size);
-                            alloc_traits::deallocate(alloc, old_data, m_allocated_size);
+                        try {
+                            // transfer old
+                            value_type* old_data = raw_ptr_();
+                            if(old_data != nullptr) {
+                                raw_transfer_(old_data, old_size, new_data);
+                            }
+                            // fill added space
+                            size_t filled_size = 0;
+                            raw_fill_uninitialized_(filled_size, new_data + old_size, new_data + new_size, std::forward<Args_>(init_args)...);
+                            // delete old
+                            if(old_data != nullptr) {
+                                raw_destroy_range_(old_data, old_data + old_size);
+                                alloc_traits::deallocate(alloc, old_data, m_allocated_size);
+                            }
+                            raw_ptr_() = new_data;
+                            m_allocated_size = new_size;
                         }
-                        raw_ptr_() = new_data;
-                        m_allocated_size = new_size;
-                    }
-                    // Init added space
-                    value_type* first = raw_ptr_() + old_size;
-                    value_type* last  = raw_ptr_() + new_size;
-                    while(first != last) {
-                        alloc_traits::construct(alloc, first++, std::forward<Args_>(init_args)...);
+                        catch(...) {
+                            alloc_traits::deallocate(alloc, new_data, new_size);
+                            throw;
+                        }
+                    } else {
+                        // enough space
+                        value_type* old_data = raw_ptr_();
+                        size_t filled_size = 0;
+                        raw_fill_uninitialized_(filled_size, old_data + old_size, old_data + new_size, std::forward<Args_>(init_args)...);
                     }
                 }
             }
@@ -445,21 +483,40 @@ namespace yato
             }
 
             template<size_t _Depth, typename _Iter>
-            auto raw_copy_initializer_list_(const initilizer_type<_Depth> & init_list, _Iter & iter) YATO_NOEXCEPT_KEYWORD
+            auto raw_copy_initializer_list_(const initilizer_type<_Depth> & init_list, _Iter & dst)
                 -> typename std::enable_if < (_Depth > 1), void > ::type
             {
+                const size_t dim_size = std::get<dim_descriptor::idx_size>(m_descriptors[dimensions_number - _Depth]);
+                if(dim_size != init_list.size()) {
+                    throw yato::argument_error("yato::vector_nd[ctor]: Invalid form of the initializer list.");
+                }
                 for (const auto & init_sub_list : init_list) {
-                    raw_copy_initializer_list_<_Depth - 1>(init_sub_list, iter);
+                    raw_copy_initializer_list_<_Depth - 1>(init_sub_list, dst);
                 }
             }
 
             template<size_t _Depth, typename _Iter>
-            auto raw_copy_initializer_list_(const initilizer_type<_Depth> & init_list, _Iter & iter) YATO_NOEXCEPT_KEYWORD
+            auto raw_copy_initializer_list_(const initilizer_type<_Depth> & init_list, _Iter & dst)
                 -> typename std::enable_if<(_Depth == 1), void>::type
             {
+                const size_t dim_size = std::get<dim_descriptor::idx_size>(m_descriptors[dimensions_number - _Depth]);
+                YATO_ASSERT(dim_size >= init_list.size(), "Size was deduced incorrectly!");
                 allocator_type & alloc = allocator_();
                 for (const auto & value : init_list) {
-                    alloc_traits::construct(alloc, iter++, value);
+                    alloc_traits::construct(alloc, dst, value);
+                    ++dst; // increment after successful copy
+                }
+                size_t tail = dim_size - init_list.size();
+                if(tail != 0) {
+                    if(0 == init_list.size()) {
+                        throw yato::argument_error("yato::vector_nd[ctor]: Can't be constructed from empty initialaser sub-list.");
+                    }
+                    const value_type & init_val = *(std::next(init_list.begin(), init_list.size() - 1));
+                    while(tail) {
+                        alloc_traits::construct(alloc, dst, init_val); // copy the last one
+                        ++dst; // increment after successful copy
+                        --tail;
+                    }
                 }
             }
 
@@ -524,20 +581,32 @@ namespace yato
                 init_subsizes_();
             }
 
+            void init_sizes_(const initilizer_type<dimensions_number> & init_list)
+            {
+                for(size_t i = 0; i < dimensions_number; ++i) {
+                    std::get<dim_descriptor::idx_size>(m_descriptors[i]) = 0;
+                }
+                deduce_sizes_from_ilist_<dimensions_number>(init_list);
+                init_subsizes_();
+            }
+
             template<size_t _Depth>
-            auto init_sizes_(const initilizer_type<_Depth> & init_list) YATO_NOEXCEPT_KEYWORD
+            auto deduce_sizes_from_ilist_(const initilizer_type<_Depth> & init_list)
                 -> typename std::enable_if < (_Depth > 1), void > ::type
             {
-                std::get<dim_descriptor::idx_size>(m_descriptors[dimensions_number - _Depth]) = init_list.size();
-                init_sizes_<_Depth - 1>(*(init_list.begin()));
+                size_t & dim = std::get<dim_descriptor::idx_size>(m_descriptors[dimensions_number - _Depth]);
+                dim = std::max(dim, init_list.size());
+                for(const auto & sub_list : init_list) {
+                    deduce_sizes_from_ilist_<_Depth - 1>(sub_list);
+                }
             }
             
             template<size_t _Depth>
-            auto init_sizes_(const initilizer_type<_Depth> & init_list) YATO_NOEXCEPT_KEYWORD
+            auto deduce_sizes_from_ilist_(const initilizer_type<_Depth> & init_list)
                 -> typename std::enable_if<(_Depth == 1), void>::type
             {
-                std::get<dim_descriptor::idx_size>(m_descriptors[dimensions_number - _Depth]) = init_list.size();
-                init_subsizes_();
+                size_t & dim = std::get<dim_descriptor::idx_size>(m_descriptors[dimensions_number - _Depth]);
+                dim = std::max(dim, init_list.size());
             }
 
             void update_top_dimension_(size_t new_size) YATO_NOEXCEPT_KEYWORD
@@ -603,7 +672,6 @@ namespace yato
             vector_nd_impl(const dimensions_type & sizes, const InputIt & first, const InputIt & last, const allocator_type & alloc = allocator_type())
                 : m_data(yato::one_arg_then_variadic_t{}, alloc, nullptr)
             {
-
                 init_sizes_(sizes);
                 const size_t plain_size = total_size();
                 if(yato::narrow_cast<std::ptrdiff_t>(plain_size) != std::distance(first, last)) {
@@ -626,15 +694,12 @@ namespace yato
             /**
              *  Create from initializer list
              */
-            // ToDo: Add Support for initializer with different sizes
             vector_nd_impl(const initilizer_type<dimensions_number> & init_list)
             {
-                init_sizes_<dimensions_number>(init_list);
-                if (get_top_dimension_() > 0) {
-                    const size_t plain_size = total_size();
-                    if(plain_size != 0) {
-                        raw_init_from_list_(plain_size, init_list);
-                    }
+                init_sizes_(init_list);
+                const size_t plain_size = total_size();
+                if(plain_size != 0) {
+                    raw_init_from_ilist_(plain_size, init_list);
                 }
             }
 
@@ -649,7 +714,7 @@ namespace yato
                 init_sizes_(range);
                 const size_t plain_size = total_size();
                 if(plain_size != 0) {
-                    raw_init_(plain_size, value_type());
+                    raw_init_(plain_size);
                 }
             }
 
@@ -720,8 +785,7 @@ namespace yato
             vector_nd_impl & operator= (const vector_nd_impl & other)
             {
                 YATO_REQUIRES(this != &other);
-                this_type tmp{ other };
-                tmp.swap(*this);
+                this_type{ other }.swap(*this);
                 return *this;
             }
 
@@ -792,11 +856,12 @@ namespace yato
                 value_type* old_data = raw_ptr_();
                 raw_destroy_range_(old_data, old_data + old_size);
                 // fill
+                size_t filled_size = 0;
                 if(new_size <= m_allocated_size) {
-                    raw_fill_uninitialized_(old_data, old_data + new_size, value);
+                    raw_fill_uninitialized_(filled_size, old_data, old_data + new_size, value);
                 } else {
                     value_type* const new_data = alloc_traits::allocate(allocator_(), new_size);
-                    raw_fill_uninitialized_(new_data, new_data + new_size, value);
+                    raw_fill_uninitialized_(filled_size, new_data, new_data + new_size, value);
                     raw_ptr_() = new_data;
                     m_allocated_size = new_size;
                 }
@@ -1257,7 +1322,8 @@ namespace yato
             void push_back(const vector_nd_impl<_OtherDataType, dimensions_number - 1, _OtherAllocator> & sub_vector)
             {
                 const auto insert_range = raw_prepare_push_back(sub_vector.dimensions_range());
-                raw_copy_to_uninitialized_(sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
+                size_t filled_size = 0;
+                raw_copy_to_uninitialized_(filled_size, sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
             }
 
             /**
@@ -1294,7 +1360,8 @@ namespace yato
             iterator insert(const const_iterator & position, const vector_nd_impl<OtherTy_, dimensions_number - 1, OtherAllocator_> & sub_vector)
             {
                 auto insert_range = raw_prepare_insert_(sub_vector.dimensions_range(), position, 1);
-                raw_copy_to_uninitialized_(sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
+                size_t filled_size = 0;
+                raw_copy_to_uninitialized_(filled_size, sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
                 return create_proxy_(insert_range.begin());
             }
 
@@ -1321,7 +1388,8 @@ namespace yato
                     const size_t copy_size = sub_vector.total_size();
                     auto copy_dst = insert_range.begin();
                     for (size_t i = 0; i < count; ++i, std::advance(copy_dst, copy_size)) {
-                        raw_copy_to_uninitialized_(sub_vector.plain_cbegin(), sub_vector.plain_cend(), copy_dst);
+                        size_t filled_size = 0;
+                        raw_copy_to_uninitialized_(filled_size, sub_vector.plain_cbegin(), sub_vector.plain_cend(), copy_dst);
                     }
                     return create_proxy_(insert_range.begin());
                 } else {
@@ -1343,7 +1411,8 @@ namespace yato
                 }
                 if(count > 0) {
                     auto insert_range = raw_prepare_insert_(first.dimensions_range(), position, static_cast<size_t>(count));
-                    raw_copy_to_uninitialized_(first.plain_cbegin(), last.plain_cbegin(), insert_range.begin());
+                    size_t filled_size = 0;
+                    raw_copy_to_uninitialized_(filled_size, first.plain_cbegin(), last.plain_cbegin(), insert_range.begin());
                     return create_proxy_(insert_range.begin());
                 } else {
                     const size_t insert_offset = raw_offset_checked_(position);
