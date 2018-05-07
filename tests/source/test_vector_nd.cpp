@@ -1244,3 +1244,65 @@ TEST(Yato_VectorND, exception_safe_shrink_to_fit)
     EXPECT_TRUE(thrown);
     EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
 }
+
+
+TEST(Yato_VectorND, exception_safe_resize)
+{
+    bool thrown = false;
+    FooThrowing::reset_counters(12);
+    try {
+        yato::vector_3d<FooThrowing> v(yato::dims(2, 2, 2), FooThrowing(1));
+        v.resize(20, 1);
+    }
+    catch(TestError &) {
+        // expected exception
+        thrown = true;
+    }
+    catch(...) {
+        // error
+        throw;
+    }
+    EXPECT_TRUE(thrown);
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
+}
+
+TEST(Yato_VectorND, exception_safe_resize_2)
+{
+    bool thrown = false;
+    FooThrowing::reset_counters(12);
+    try {
+        yato::vector_3d<FooThrowing> v;
+        v.resize(yato::dims(3, 3, 3), 1);
+    }
+    catch(TestError &) {
+        // expected exception
+        thrown = true;
+    }
+    catch(...) {
+        // error
+        throw;
+    }
+    EXPECT_TRUE(thrown);
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
+}
+
+TEST(Yato_VectorND, exception_safe_resize_3)
+{
+    bool thrown = false;
+    FooThrowing::reset_counters(12);
+    try {
+        yato::vector_3d<FooThrowing> v;
+        v.reserve(27);
+        v.resize(yato::dims(3, 3, 3), 1);
+    }
+    catch(TestError &) {
+        // expected exception
+        thrown = true;
+    }
+    catch(...) {
+        // error
+        throw;
+    }
+    EXPECT_TRUE(thrown);
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
+}

@@ -154,6 +154,7 @@ namespace yato
                 }
             }
 
+
             /**
              * Init raw memory with copied values
              */
@@ -342,40 +343,48 @@ namespace yato
             void raw_resize_(size_t old_size, size_t new_size, Args_ && ... init_args)
             {
                 if(new_size < old_size) {
-                    value_type* old_data = raw_ptr_();
+                    value_type* const old_data = raw_ptr_();
                     raw_destroy_range_(old_data + new_size, old_data + old_size);
                 }
                 else if(new_size > old_size) {
                     YATO_REQUIRES(new_size <= alloc_traits::max_size(allocator_()));
                     allocator_type& alloc = allocator_();
                     if(new_size > m_allocated_size) {
-                        value_type* new_data = alloc_traits::allocate(alloc, new_size);
+                        value_type* const old_data = raw_ptr_();
+                        value_type* const new_data = alloc_traits::allocate(alloc, new_size);
+                        value_type* dst = new_data;
                         try {
                             // transfer old
-                            value_type* old_data = raw_ptr_();
                             if(old_data != nullptr) {
-                                raw_transfer_(old_data, old_size, new_data);
+                                raw_transfer_2_(old_data, old_size, dst);
                             }
                             // fill added space
-                            size_t filled_size = 0;
-                            raw_fill_uninitialized_(filled_size, new_data + old_size, new_data + new_size, std::forward<Args_>(init_args)...);
-                            // delete old
-                            if(old_data != nullptr) {
-                                raw_destroy_range_(old_data, old_data + old_size);
-                                alloc_traits::deallocate(alloc, old_data, m_allocated_size);
-                            }
-                            raw_ptr_() = new_data;
-                            m_allocated_size = new_size;
+                            raw_fill_uninitialized_2_(dst, new_data + new_size, std::forward<Args_>(init_args)...);
                         }
                         catch(...) {
+                            raw_destroy_range_(new_data, dst);
                             alloc_traits::deallocate(alloc, new_data, new_size);
                             throw;
                         }
+                        // delete old
+                        if(old_data != nullptr) {
+                            raw_destroy_range_(old_data, old_data + old_size);
+                            alloc_traits::deallocate(alloc, old_data, m_allocated_size);
+                        }
+                        raw_ptr_() = new_data;
+                        m_allocated_size = new_size;
                     } else {
                         // enough space
-                        value_type* old_data = raw_ptr_();
-                        size_t filled_size = 0;
-                        raw_fill_uninitialized_(filled_size, old_data + old_size, old_data + new_size, std::forward<Args_>(init_args)...);
+                        value_type* const old_data = raw_ptr_();
+                        value_type* dst = old_data + old_size;
+                        try {
+                            raw_fill_uninitialized_2_(dst, old_data + new_size, std::forward<Args_>(init_args)...);
+                        }
+                        catch(...) {
+                            // delete only new elements
+                            raw_destroy_range_(old_data + old_size, dst);
+                            throw;
+                        }
                     }
                 }
             }
@@ -635,6 +644,12 @@ namespace yato
             {
                 size_t & dim = std::get<dim_descriptor::idx_size>(m_descriptors[dimensions_number - _Depth]);
                 dim = std::max(dim, init_list.size());
+            }
+
+            YATO_FORCED_INLINE
+            size_t get_element_size_() const
+            {
+                return std::get<dim_descriptor::idx_total>(m_descriptors[1]);
             }
 
             void update_top_dimension_(size_t new_size) YATO_NOEXCEPT_KEYWORD
@@ -1284,51 +1299,59 @@ namespace yato
             /**
              *  Resize vector length along the top dimension
              *  If length is bigger than cirrent sze then all stored data will be preserved
+             *  In the case of exception the vector remains unchanged.
              *  @param length desired length in number of sub-vectors
              */
             void resize(size_t length)
             {
                 const size_t old_size = total_size();
+                const size_t new_size = length * get_element_size_();
+                raw_resize_(old_size, new_size);
                 update_top_dimension_(length);
-                raw_resize_(old_size, total_size());
             }
 
             /**
-             *  Resize vector length along the top dimension
-             *  If length is bigger than cirrent sze then all stored data will be preserved
-             *  @param length desired length in number of sub-vectors
-             *  @param value if length is bigger than current size new elements will be copy initialized from 'value'
+             *  Resize vector length along the top dimension.
+             *  If length is bigger than cirrent sze then all stored data will be preserved.
+             *  In the case of exception the vector remains unchanged.
+             *  @param length desired length in number of sub-vectors.
+             *  @param value if length is bigger than current size new elements will be copy initialized from 'value'.
              */
             void resize(size_t length, const data_type & value)
             {
                 const size_t old_size = total_size();
+                const size_t new_size = length * get_element_size_();
+                raw_resize_(old_size, new_size, value);
                 update_top_dimension_(length);
-                raw_resize_(old_size, total_size(), value);
             }
 
             /**
-             * Resize all vector's extents
-             * All stored data will become invalid
+             * Resize all vector's extents.
+             * All stored data will become invalid.
+             * In the case of exception the vector remains unchanged.
              * @param extents desired size of the vector
              */
             void resize(const dimensions_type & extents)
             {
                 const size_t old_size = total_size();
+                const size_t new_size = extents.total_size();
+                raw_resize_(old_size, new_size);
                 init_sizes_(extents);
-                raw_resize_(old_size, total_size());
             }
 
             /**
-             * Resize all vector's extents
-             * All stored data will become invalid
+             * Resize all vector's extents.
+             * All stored data will become invalid.
+             * In the case of exception the vector remains unchanged.
              * @param extents desired size of the vector
              * @param value if the new size is bigger than the current size new elements will be copy initialized from 'value'
              */
             void resize(const dimensions_type & extents, const data_type & value)
             {
                 const size_t old_size = total_size();
+                const size_t new_size = extents.total_size();
+                raw_resize_(old_size, new_size, value);
                 init_sizes_(extents);
-                raw_resize_(old_size, total_size(), value);
             }
 
             /**
