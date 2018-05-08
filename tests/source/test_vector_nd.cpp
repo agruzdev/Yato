@@ -648,9 +648,7 @@ namespace
 
         FooMoving(const FooMoving& other)
             : m_val(other.m_val)
-        {
-            int break_ = 0;
-        }
+        { }
 
         FooMoving(FooMoving&& other) noexcept
             : m_val(other.m_val)
@@ -1507,8 +1505,8 @@ TEST(Yato_VectorND, exception_safe_push)
             // error
             throw;
         }
-        EXPECT_EQ(2, v.size(0));
-        EXPECT_EQ(2, v.size(1));
+        EXPECT_EQ(2u, v.size(0));
+        EXPECT_EQ(2u, v.size(1));
         EXPECT_EQ(1, v[0][0]);
         EXPECT_EQ(2, v[0][1]);
         EXPECT_EQ(3, v[1][0]);
@@ -1537,8 +1535,8 @@ TEST(Yato_VectorND, exception_safe_push_2)
             // error
             throw;
         }
-        EXPECT_EQ(2, v.size(0));
-        EXPECT_EQ(2, v.size(1));
+        EXPECT_EQ(2u, v.size(0));
+        EXPECT_EQ(2u, v.size(1));
         EXPECT_EQ(1, v[0][0]);
         EXPECT_EQ(2, v[0][1]);
         EXPECT_EQ(3, v[1][0]);
