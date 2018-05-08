@@ -631,6 +631,86 @@ TEST(Yato_VectorND, push_usertype)
     EXPECT_EQ(FooCounted::ctors, FooCounted::dtors);
 }
 
+
+
+namespace
+{
+    class FooMoving
+    {
+        int m_val;
+
+    public:
+        FooMoving(int x)
+            : m_val(x)
+        { }
+
+        ~FooMoving() = default;
+
+        FooMoving(const FooMoving& other)
+            : m_val(other.m_val)
+        {
+            int break_ = 0;
+        }
+
+        FooMoving(FooMoving&& other) noexcept
+            : m_val(other.m_val)
+        {
+            other.m_val = -1;
+        }
+
+        FooMoving& operator= (const FooMoving& other) = default;
+
+        FooMoving& operator= (FooMoving&& other) noexcept
+        {
+            m_val = other.m_val;
+            other.m_val = -1;
+            return *this;
+        }
+
+        operator int() const
+        {
+            return m_val;
+        }
+    };
+}
+
+TEST(Yato_VectorND, push_2)
+{
+    yato::vector_nd<FooMoving, 1> vec1d_1 = { 1, 2 };
+    yato::vector_nd<FooMoving, 1> vec1d_2 = { 3, 4 };
+    yato::vector_nd<FooMoving, 1> vec1d_3 = { 5, 6 };
+    yato::vector_nd<FooMoving, 1> vec1d_4 = { 7, 8 };
+
+    yato::vector_nd<FooMoving, 2> vec2d_1;
+    EXPECT_EQ(0u, vec2d_1.size(0));
+    vec2d_1.push_back(std::move(vec1d_1));
+    EXPECT_EQ(1u, vec2d_1.size(0));
+    vec2d_1.push_back(std::move(vec1d_2));
+    EXPECT_EQ(2u, vec2d_1.size(0));
+    vec2d_1.push_back(std::move(vec1d_3));
+    EXPECT_EQ(3u, vec2d_1.size(0));
+    vec2d_1.push_back(std::move(vec1d_4));
+    EXPECT_EQ(4u, vec2d_1.size(0));
+
+    EXPECT_EQ(1, vec2d_1[0][0]);
+    EXPECT_EQ(2, vec2d_1[0][1]);
+    EXPECT_EQ(3, vec2d_1[1][0]);
+    EXPECT_EQ(4, vec2d_1[1][1]);
+    EXPECT_EQ(5, vec2d_1[2][0]);
+    EXPECT_EQ(6, vec2d_1[2][1]);
+    EXPECT_EQ(7, vec2d_1[3][0]);
+    EXPECT_EQ(8, vec2d_1[3][1]);
+
+    EXPECT_EQ(-1, vec1d_1[0]);
+    EXPECT_EQ(-1, vec1d_1[1]);
+    EXPECT_EQ(-1, vec1d_2[0]);
+    EXPECT_EQ(-1, vec1d_2[1]);
+    EXPECT_EQ(-1, vec1d_3[0]);
+    EXPECT_EQ(-1, vec1d_3[1]);
+    EXPECT_EQ(-1, vec1d_4[0]);
+    EXPECT_EQ(-1, vec1d_4[1]);
+}
+
 TEST(Yato_VectorND, push_pop)
 {
     yato::vector_nd<short, 1> vec1d_1 = { 1, 2 };
@@ -640,8 +720,8 @@ TEST(Yato_VectorND, push_pop)
     vec2d.clear();
     EXPECT_TRUE(vec2d.empty());
 
-    vec2d.push_back(std::move(vec1d_1));
-    vec2d.push_back(std::move(vec1d_2));
+    vec2d.push_back(vec1d_1);
+    vec2d.push_back(vec1d_2);
 
     yato::vector_nd<long, 3> vec3d = {};
 

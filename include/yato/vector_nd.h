@@ -192,6 +192,19 @@ namespace yato
                 }
             }
 
+            /**
+             * Init raw memory with moved values
+             */
+            template <typename Iter_>
+            void raw_move_to_uninitialized_2_(Iter_ src_first, Iter_ src_last, value_type* & dst_first)
+            {
+                allocator_type& alloc = allocator_();
+                while(src_first != src_last) {
+                    alloc_traits::construct(alloc, dst_first, std::move(*src_first++));
+                    ++dst_first;
+                }
+            }
+
             template <typename ... InitArgs_>
             void raw_init_(size_t plain_size, InitArgs_ && ... init_args)
             {
@@ -1476,10 +1489,27 @@ namespace yato
             /**
              *  Add sub-vector element to the back
              */
-            void push_back(vector_nd_impl<data_type, dimensions_number - 1, allocator_type> && sub_vector)
+            template<typename _OtherAllocator>
+            void push_back(vector_nd_impl<data_type, dimensions_number - 1, _OtherAllocator> && sub_vector)
             {
-                const auto insert_range = raw_prepare_push_back(sub_vector.dimensions_range());
-                raw_move_to_uninitialized_(sub_vector.plain_begin(), sub_vector.plain_end(), insert_range.begin());
+                const auto sub_dims = sub_vector.dimensions_range();
+                if(!match_sub_dimensions_(sub_dims)) {
+                    throw yato::argument_error("yato::vector_nd[push_back]: Subvector dimensions mismatch!");
+                }
+                const size_t old_size = total_size();
+                const size_t new_size = old_size + sub_vector.total_size();
+                const auto insert_range = raw_prepare_push_back_(old_size, new_size);
+                value_type* dst = insert_range.begin();
+                try {
+                    raw_move_to_uninitialized_2_(sub_vector.plain_begin(), sub_vector.plain_end(), dst);
+                }
+                catch(...) {
+                    // delete all, since sub-verctor was not inserted wholly.
+                    raw_destroy_range_(insert_range.begin(), dst);
+                    throw;
+                }
+                // update sizes
+                update_dimensions_after_insert_(sub_dims, 1);
             }
 
             /**
