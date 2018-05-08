@@ -469,6 +469,7 @@ namespace yato
                         }
                         catch(...) {
                             raw_destroy_range_(new_data, dst);
+                            alloc_traits::deallocate(alloc, new_data, new_size);
                             throw;
                         }
                         raw_destroy_range_(old_data, old_data + old_size);
