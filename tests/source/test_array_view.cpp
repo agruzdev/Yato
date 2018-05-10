@@ -351,7 +351,7 @@ TEST(Yato_ArrayView, array_view_nd_8)
     auto view_3d_1 = yato::make_view(arr_3d_1);
     auto view_3d_2 = yato::make_view(arr_3d_2);
 
-    for (auto & x : view_3d_1[1].plain_range()) {
+    for (auto && x : view_3d_1[1].plain_range()) {
         x = 2;
     }
     

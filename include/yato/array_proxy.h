@@ -36,7 +36,7 @@ namespace yato
             using this_type = sub_array_proxy <DataIterator, DimensionDescriptor, DimsNum>;
             using dim_descriptor = DimensionDescriptor;
             using desc_iterator  = const typename DimensionDescriptor::type*;
-            using data_iterator       = DataIterator;
+            using data_iterator  = DataIterator;
             static YATO_CONSTEXPR_VAR size_t dimensions_number = DimsNum;
 
             using sub_proxy = sub_array_proxy<data_iterator, dim_descriptor, dimensions_number - 1>;
@@ -45,12 +45,17 @@ namespace yato
             using iter_pointer_type   = typename std::iterator_traits<DataIterator>::pointer;
             using iter_reference_type = typename std::iterator_traits<DataIterator>::reference;
 
+            // iterator traits
             using size_type         = typename DimensionDescriptor::size_type;
-            using value_type        = typename std::conditional<(dimensions_number > 1), sub_proxy, iter_value_type>::type;
-            using pointer           = typename std::conditional<(dimensions_number > 1), sub_proxy, iter_pointer_type>::type;
-            using reference         = typename std::conditional<(dimensions_number > 1), sub_proxy, iter_reference_type>::type;
+            using value_type        = this_type; // dereferencing returns itself for stl compatibility
+            using pointer           = this_type*;
+            using reference         = this_type&;
             using difference_type   = std::ptrdiff_t;
             using iterator_category = std::random_access_iterator_tag;
+
+            using data_value_type        = typename std::conditional<(dimensions_number > 1), sub_proxy, iter_value_type>::type;
+            using data_pointer           = typename std::conditional<(dimensions_number > 1), sub_proxy, iter_pointer_type>::type;
+            using data_reference         = typename std::conditional<(dimensions_number > 1), sub_proxy, iter_reference_type>::type;
 
             using iterator       = sub_proxy;
 
@@ -118,7 +123,7 @@ namespace yato
             template<size_t MyDimsNum = dimensions_number>
             YATO_CONSTEXPR_FUNC_EX
             auto operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
-                -> typename std::enable_if<(MyDimsNum > 1), reference>::type
+                -> typename std::enable_if<(MyDimsNum > 1), data_reference>::type
             {
                 YATO_REQUIRES(idx < size(0));
                 return create_sub_proxy_(idx);
@@ -127,7 +132,7 @@ namespace yato
             template<size_t MyDimsNum = dimensions_number>
             YATO_CONSTEXPR_FUNC_EX
             auto operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
-                -> typename std::enable_if <(MyDimsNum == 1), reference>::type
+                -> typename std::enable_if <(MyDimsNum == 1), data_reference>::type
             {
                 YATO_REQUIRES(idx < size(0));
                 return *std::next(m_data_iter, idx);
@@ -223,7 +228,7 @@ namespace yato
              *  Get begin iterator for going through arrays of lower dimensionality
              */
             template<size_t MyDimsNum = dimensions_number>
-            auto begin() const YATO_NOEXCEPT_KEYWORD
+            auto begin() const &
                 -> typename std::enable_if<(MyDimsNum > 1), iterator>::type
             {
                 return create_sub_proxy_(0);
@@ -233,7 +238,7 @@ namespace yato
             *  Get begin iterator for going through arrays of lower dimensionality
             */
             template<size_t MyDimsNum = dimensions_number>
-            auto begin() const YATO_NOEXCEPT_KEYWORD
+            auto begin() const &
                 -> typename std::enable_if<(MyDimsNum == 1), data_iterator>::type
             {
                 return plain_begin();
@@ -243,7 +248,27 @@ namespace yato
              *  Get begin iterator for going through arrays of lower dimensionality
              */
             template<size_t MyDimsNum = dimensions_number>
-            auto cbegin() const YATO_NOEXCEPT_KEYWORD
+            auto begin() &&
+                -> typename std::enable_if<(MyDimsNum > 1), std::move_iterator<iterator>>::type
+            {
+                return std::make_move_iterator(create_sub_proxy_(0));
+            }
+
+            /**
+            *  Get begin iterator for going through arrays of lower dimensionality
+            */
+            template<size_t MyDimsNum = dimensions_number>
+            auto begin() const &&
+                -> typename std::enable_if<(MyDimsNum == 1), std::move_iterator<data_iterator>>::type
+            {
+                return std::make_move_iterator(plain_begin());
+            }
+
+            /**
+             *  Get begin iterator for going through arrays of lower dimensionality
+             */
+            template<size_t MyDimsNum = dimensions_number>
+            auto cbegin() const
                 -> typename std::enable_if<(MyDimsNum > 1), iterator>::type
             {
                 return create_sub_proxy_(0);
@@ -253,7 +278,7 @@ namespace yato
             *  Get begin iterator for going through arrays of lower dimensionality
             */
             template<size_t MyDimsNum = dimensions_number>
-            auto cbegin() const YATO_NOEXCEPT_KEYWORD
+            auto cbegin() const
                 -> typename std::enable_if<(MyDimsNum == 1), data_iterator>::type
             {
                 return plain_begin();
@@ -263,7 +288,7 @@ namespace yato
              *  Get end iterator for going through arrays of lower dimensionality
              */
             template<size_t MyDimsNum = dimensions_number>
-            auto end() const YATO_NOEXCEPT_KEYWORD
+            auto end() const &
                 -> typename std::enable_if<(MyDimsNum > 1), iterator>::type
             {
                 return create_sub_proxy_(size(0));
@@ -273,7 +298,7 @@ namespace yato
             *  Get end iterator for going through arrays of lower dimensionality
             */
             template<size_t MyDimsNum = dimensions_number>
-            auto end() const YATO_NOEXCEPT_KEYWORD
+            auto end() const &
                 -> typename std::enable_if<(MyDimsNum == 1), data_iterator>::type
             {
                 return plain_end();
@@ -283,7 +308,27 @@ namespace yato
              *  Get end iterator for going through arrays of lower dimensionality
              */
             template<size_t MyDimsNum = dimensions_number>
-            auto cend() const YATO_NOEXCEPT_KEYWORD
+            auto end() &&
+                -> typename std::enable_if<(MyDimsNum > 1), std::move_iterator<iterator>>::type
+            {
+                return std::make_move_iterator(create_sub_proxy_(size(0)));
+            }
+
+            /**
+            *  Get end iterator for going through arrays of lower dimensionality
+            */
+            template<size_t MyDimsNum = dimensions_number>
+            auto end() &&
+                -> typename std::enable_if<(MyDimsNum == 1), std::move_iterator<data_iterator>>::type
+            {
+                return std::make_move_iterator(plain_end());
+            }
+
+            /**
+             *  Get end iterator for going through arrays of lower dimensionality
+             */
+            template<size_t MyDimsNum = dimensions_number>
+            auto cend() const
                 -> typename std::enable_if<(MyDimsNum > 1), iterator>::type
             {
                 return create_sub_proxy_(size(0));
@@ -293,7 +338,7 @@ namespace yato
             *  Get end iterator for going through arrays of lower dimensionality
             */
             template<size_t MyDimsNum = dimensions_number>
-            auto cend() const YATO_NOEXCEPT_KEYWORD
+            auto cend() const
                 -> typename std::enable_if<(MyDimsNum == 1), data_iterator>::type
             {
                 return plain_end();
@@ -302,7 +347,7 @@ namespace yato
             /**
              *  Get begin iterator for going through all elements of all dimensions
              */
-            data_iterator plain_begin() const YATO_NOEXCEPT_KEYWORD
+            data_iterator plain_begin() const &
             {
                 return m_data_iter;
             }
@@ -310,7 +355,7 @@ namespace yato
             /**
              *  Get end iterator for going through all elements of all dimensions
              */
-            data_iterator plain_end() const YATO_NOEXCEPT_KEYWORD
+            data_iterator plain_end() const &
             {
                 return std::next(m_data_iter, total_stored());
             }
@@ -318,7 +363,23 @@ namespace yato
             /**
              *  Get begin iterator for going through all elements of all dimensions
              */
-            data_iterator plain_cbegin() const YATO_NOEXCEPT_KEYWORD
+            std::move_iterator<data_iterator> plain_begin() &&
+            {
+                return std::make_move_iterator(m_data_iter);
+            }
+
+            /**
+             *  Get end iterator for going through all elements of all dimensions
+             */
+            std::move_iterator<data_iterator> plain_end() &&
+            {
+                return std::make_move_iterator(std::next(m_data_iter, total_stored()));
+            }
+
+            /**
+             *  Get begin iterator for going through all elements of all dimensions
+             */
+            data_iterator plain_cbegin() const
             {
                 return m_data_iter;
             }
@@ -326,7 +387,7 @@ namespace yato
             /**
              *  Get end iterator for going through all elements of all dimensions
              */
-            data_iterator plain_cend() const YATO_NOEXCEPT_KEYWORD
+            data_iterator plain_cend() const
             {
                 return std::next(m_data_iter, total_stored());
             }
@@ -334,7 +395,7 @@ namespace yato
             /**
              *  Get range of iterators for going through the top dimension
              */
-            yato::range<iterator> range() const YATO_NOEXCEPT_KEYWORD
+            yato::range<iterator> range() const &
             {
                 return make_range(begin(), end());
             }
@@ -342,9 +403,25 @@ namespace yato
             /**
              *  Get range of iterators for going through all elements of all dimensions
              */
-            yato::range<data_iterator> plain_range() const YATO_NOEXCEPT_KEYWORD
+            yato::range<data_iterator> plain_range() const &
             {
                 return make_range(plain_begin(), plain_end());
+            }
+
+            /**
+             *  Get range of iterators for going through the top dimension
+             */
+            yato::range<std::move_iterator<iterator>> range() &&
+            {
+                return make_range(std::move(*this).begin(), std::move(*this).end());
+            }
+
+            /**
+             *  Get range of iterators for going through all elements of all dimensions
+             */
+            yato::range<std::move_iterator<data_iterator>> plain_range() &&
+            {
+                return make_range(std::move(*this).plain_begin(), std::move(*this).plain_end());
             }
 
             /**
@@ -360,18 +437,9 @@ namespace yato
              *  Is necessary for supporting ranged 'for' 
              */
             YATO_CONSTEXPR_FUNC
-            const this_type & operator* () const
+            reference operator* () const
             {
-                return *this;
-            }
-
-            /**
-             *  Return the current proxy
-             *  Is necessary for supporting ranged 'for'
-             */
-            this_type & operator* ()
-            {
-                return *this;
+                return const_cast<reference>(*this);
             }
 
             /**
