@@ -22,8 +22,10 @@ if(NOT ANDROID)
 endif()
 
 
-option(YATO_WITH_ADDRESS_SANITIZER "Enable address sanitizing" OFF)
-if(YATO_WITH_ADDRESS_SANITIZER)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -g -fsanitize=address")
+if(NOT ANDROID)
+    option(YATO_WITH_ADDRESS_SANITIZER "Enable address sanitizing" OFF)
+    if(YATO_WITH_ADDRESS_SANITIZER)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -g -fsanitize=address")
+    endif()
 endif()
 
