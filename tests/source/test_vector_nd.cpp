@@ -944,14 +944,55 @@ TEST(Yato_VectorND, insert_count)
     yato::vector_nd<short, 1> line = { 2, 2 };
     vec.insert(std::next(vec.begin()), 10, line);
 
+    EXPECT_EQ(12u, vec.size(0));
+
     int i = 0;
     for (const auto & row : vec) {
-        if (i > 0 && i < 11) {
-            EXPECT_EQ(2, row[0]);
-            EXPECT_EQ(2, row[1]);
-        }
+        if (i == 0) {
+                EXPECT_EQ(1, row[0]);
+                EXPECT_EQ(1, row[1]);
+            }
+            if (i > 0 && i < 11) {
+                EXPECT_EQ(2, row[0]);
+                EXPECT_EQ(2, row[1]);
+            }
+            if (i == 11) {
+                EXPECT_EQ(3, row[0]);
+                EXPECT_EQ(3, row[1]);
+            }
         ++i;
     }
+}
+
+TEST(Yato_VectorND, insert_count_usertype)
+{
+    FooCounted::reset_counters();
+    {
+        yato::vector_nd<FooCounted, 2> vec = { { 1, 1 },{ 3, 3 } };
+
+        yato::vector_nd<FooCounted, 1> line = { 2, 2 };
+        vec.insert(std::next(vec.begin()), 10, line);
+
+        EXPECT_EQ(12u, vec.size(0));
+
+        int i = 0;
+        for (const auto & row : vec) {
+            if (i == 0) {
+                EXPECT_EQ(1, row[0]);
+                EXPECT_EQ(1, row[1]);
+            }
+            if (i > 0 && i < 11) {
+                EXPECT_EQ(2, row[0]);
+                EXPECT_EQ(2, row[1]);
+            }
+            if (i == 11) {
+                EXPECT_EQ(3, row[0]);
+                EXPECT_EQ(3, row[1]);
+            }
+            ++i;
+        }
+    }
+    EXPECT_EQ(FooCounted::ctors, FooCounted::dtors);
 }
 
 
@@ -970,6 +1011,102 @@ TEST(Yato_VectorND, insert_range)
     }
 }
 
+
+TEST(Yato_VectorND, insert_range_usertype)
+{
+    FooCounted::reset_counters();
+    {
+        yato::vector_nd<FooCounted, 2> vec1 = { { 1, 1 },{ 4, 4 } };
+        yato::vector_nd<FooCounted, 2> vec2 = { { 2, 2 },{ 3, 3 } };
+
+        vec1.insert(std::next(vec1.begin()), vec2.begin(), vec2.end());
+
+        int i = 1;
+        for (const auto & row : vec1) {
+            EXPECT_EQ(i, row[0]);
+            EXPECT_EQ(i, row[1]);
+            ++i;
+        }
+    }
+    EXPECT_EQ(FooCounted::ctors, FooCounted::dtors);
+}
+
+TEST(Yato_VectorND, insert_move)
+{
+    yato::vector_nd<FooMoving, 2> vec1 = { { 1, 1 },{ 4, 4 } };
+    yato::vector_nd<FooMoving, 2> vec2 = { { 2, 2 },{ 3, 3 } };
+
+    vec1.insert(std::next(vec1.begin()), std::make_move_iterator(vec2.begin()), std::make_move_iterator(vec2.end()));
+
+    int i = 1;
+    for (const auto & row : vec1) {
+        EXPECT_EQ(i, row[0]);
+        EXPECT_EQ(i, row[1]);
+        ++i;
+    }
+    for (const auto & row : vec2) {
+        EXPECT_EQ(-1, row[0]);
+        EXPECT_EQ(-1, row[1]);
+    }
+}
+
+TEST(Yato_VectorND, insert_empty)
+{
+    yato::vector_nd<int, 2> vec = { };
+
+    yato::vector_nd<short, 1> line = { 2, 2 };
+    vec.insert(vec.begin(), line);
+
+    EXPECT_EQ(1u, vec.size(0));
+    EXPECT_EQ(2, vec[0][0]);
+    EXPECT_EQ(2, vec[0][1]);
+}
+
+TEST(Yato_VectorND, insert_empty_2)
+{
+    yato::vector_nd<int, 2> vec = { };
+    vec.reserve(2);
+
+    yato::vector_nd<short, 1> line = { 2, 2 };
+    vec.insert(vec.begin(), line);
+
+    EXPECT_EQ(1u, vec.size(0));
+    EXPECT_EQ(2, vec[0][0]);
+    EXPECT_EQ(2, vec[0][1]);
+}
+
+TEST(Yato_VectorND, insert_empty_usertype)
+{
+    FooCounted::reset_counters();
+    {
+        yato::vector_nd<int, 2> vec = { };
+
+        yato::vector_nd<short, 1> line = { 2, 2 };
+        vec.insert(vec.begin(), line);
+
+        EXPECT_EQ(1u, vec.size(0));
+        EXPECT_EQ(2, vec[0][0]);
+        EXPECT_EQ(2, vec[0][1]);
+    }
+    EXPECT_EQ(FooCounted::ctors, FooCounted::dtors);
+}
+
+TEST(Yato_VectorND, insert_empty_usertype_2)
+{
+    FooCounted::reset_counters();
+    {
+        yato::vector_nd<int, 2> vec = { };
+        vec.reserve(2);
+
+        yato::vector_nd<short, 1> line = { 2, 2 };
+        vec.insert(vec.begin(), line);
+
+        EXPECT_EQ(1u, vec.size(0));
+        EXPECT_EQ(2, vec[0][0]);
+        EXPECT_EQ(2, vec[0][1]);
+    }
+    EXPECT_EQ(FooCounted::ctors, FooCounted::dtors);
+}
 
 TEST(Yato_VectorND, erase)
 {
@@ -1545,3 +1682,216 @@ TEST(Yato_VectorND, exception_safe_push_2)
     EXPECT_TRUE(thrown);
     EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
 }
+
+
+TEST(Yato_VectorND, exception_safe_insert)
+{
+    FooThrowing::reset_counters(7);
+    bool thrown = false;
+    {
+        yato::vector_nd<FooThrowing, 2> vec  = { { 1, 1 },{ 3, 3 } };
+        yato::vector_nd<FooThrowing, 1> line = { 2, 2 };
+        try {
+            vec.insert(std::next(vec.begin()), line);
+        }
+        catch(TestError &) {
+            // expected exception
+            thrown = true;
+        }
+        catch(...) {
+            // error
+            throw;
+        }
+    }
+    EXPECT_TRUE(thrown);
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
+}
+
+TEST(Yato_VectorND, exception_safe_insert_2)
+{
+    FooThrowing::reset_counters(11);
+    bool thrown = false;
+    {
+        yato::vector_nd<FooThrowing, 2> vec  = { { 1, 1 },{ 3, 3 } };
+        yato::vector_nd<FooThrowing, 1> line = { 2, 2 };
+        vec.reserve(6);
+        try {
+            vec.insert(std::next(vec.begin()), line);
+        }
+        catch(TestError &) {
+            // expected exception
+            thrown = true;
+        }
+        catch(...) {
+            // error
+            throw;
+        }
+    }
+    EXPECT_TRUE(thrown);
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
+}
+
+TEST(Yato_VectorND, exception_safe_insert_3)
+{
+    FooThrowing::reset_counters(11);
+    bool thrown = false;
+    {
+        yato::vector_nd<FooThrowing, 2> vec  = { { 1, 1 },{ 3, 3 } };
+        yato::vector_nd<FooThrowing, 1> line = { 2, 2 };
+        vec.reserve(6);
+        try {
+            vec.insert(vec.cend(), line);
+        }
+        catch(TestError &) {
+            // expected exception
+            thrown = true;
+        }
+        catch(...) {
+            // error
+            throw;
+        }
+    }
+    EXPECT_TRUE(thrown);
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
+}
+
+TEST(Yato_VectorND, exception_safe_insert_4)
+{
+    FooThrowing::reset_counters(13);
+    bool thrown = false;
+    {
+        yato::vector_nd<FooThrowing, 2> vec  = { { 1, 1, 1 }, { 3, 3, 3 }, { 4, 4, 4 } };
+        yato::vector_nd<FooThrowing, 1> line = { 2, 2, 2 };
+        try {
+            vec.insert(std::next(vec.begin()), line);
+        }
+        catch(TestError &) {
+            // expected exception
+            thrown = true;
+        }
+        catch(...) {
+            // error
+            throw;
+        }
+    }
+    EXPECT_TRUE(thrown);
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
+}
+
+TEST(Yato_VectorND, exception_safe_insert_5)
+{
+    FooThrowing::reset_counters(11);
+    bool thrown = false;
+    {
+        yato::vector_nd<FooThrowing, 2> vec  = { { 1, 1 },{ 3, 3 } };
+        yato::vector_nd<FooThrowing, 1> line = { 0, 0 };
+        vec.reserve(6);
+        try {
+            vec.insert(vec.begin(), line);
+        }
+        catch(TestError &) {
+            // expected exception
+            thrown = true;
+        }
+        catch(...) {
+            // error
+            throw;
+        }
+    }
+    EXPECT_TRUE(thrown);
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
+}
+
+TEST(Yato_VectorND, exception_safe_insert_6)
+{
+    FooThrowing::reset_counters(17);
+    bool thrown = false;
+    {
+        yato::vector_nd<FooThrowing, 2> vec  = { { 1, 1, 1 },{ 3, 3, 3 } };
+        yato::vector_nd<FooThrowing, 1> line = { 2, 2, 2 };
+        vec.reserve(9);
+        try {
+            vec.insert(vec.cend(), line);
+        }
+        catch(TestError &) {
+            // expected exception
+            thrown = true;
+        }
+        catch(...) {
+            // error
+            throw;
+        }
+    }
+    EXPECT_TRUE(thrown);
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
+}
+
+TEST(Yato_VectorND, exception_safe_insert_7)
+{
+    FooThrowing::reset_counters(29);
+    bool thrown = false;
+    {
+        yato::vector_nd<FooThrowing, 2> vec1  = { { 1, 1 }, { 2, 2 }, { 3, 3 }, { 4, 4 }, { 5, 5 } };
+        yato::vector_nd<FooThrowing, 2> vec2 = { { 10, 10 } , { 11, 11 } };
+        vec1.reserve(14);
+        try {
+            vec1.insert(std::next(vec1.begin(), 2), vec2.begin(), vec2.end());
+        }
+        catch(TestError &) {
+            // expected exception
+            thrown = true;
+        }
+        catch(...) {
+            // error
+            throw;
+        }
+    }
+    EXPECT_TRUE(thrown);
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
+}
+
+TEST(Yato_VectorND, exception_safe_erase)
+{
+    FooThrowing::reset_counters(13);
+    bool thrown = false;
+    {
+        yato::vector_nd<FooThrowing, 2> vec1 = { { 1, 1 }, { 4, 4 }, { 5, 5 }, { 2, 2 }, { 3, 3 } };
+        try {
+            vec1.erase(std::next(vec1.begin(), 1), std::next(vec1.begin(), 3));
+        }
+        catch(TestError &) {
+            // expected exception
+            thrown = true;
+        }
+        catch(...) {
+            // error
+            throw;
+        }
+    }
+    EXPECT_TRUE(thrown);
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
+}
+
+TEST(Yato_VectorND, exception_safe_erase_2)
+{
+    FooThrowing::reset_counters(11);
+    bool thrown = false;
+    {
+        yato::vector_nd<FooThrowing, 2> vec1 = { { 1, 1 }, { 4, 4 }, { 5, 5 }, { 2, 2 }, { 3, 3 } };
+        try {
+            vec1.erase(std::next(vec1.begin(), 2));
+        }
+        catch(TestError &) {
+            // expected exception
+            thrown = true;
+        }
+        catch(...) {
+            // error
+            throw;
+        }
+    }
+    EXPECT_TRUE(thrown);
+    EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
+}
+
+

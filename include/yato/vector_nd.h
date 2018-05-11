@@ -128,21 +128,6 @@ namespace yato
              * Fill raw memory with a value
              */
             template <typename ... InitArgs_>
-            void raw_fill_uninitialized_(size_t & count, value_type* first, value_type* last, InitArgs_ && ... init_args)
-            {
-                YATO_REQUIRES(first != nullptr);
-                YATO_REQUIRES(last  != nullptr);
-                allocator_type& alloc = allocator_();
-                while(first != last) {
-                    alloc_traits::construct(alloc, first++, std::forward<InitArgs_>(init_args)...);
-                    ++count;
-                }
-            }
-
-            /**
-             * Fill raw memory with a value
-             */
-            template <typename ... InitArgs_>
             void raw_fill_uninitialized_2_(value_type* & first, value_type* last, InitArgs_ && ... init_args)
             {
                 YATO_REQUIRES(first != nullptr);
@@ -158,37 +143,12 @@ namespace yato
              * Init raw memory with copied values
              */
             template <typename Iter_>
-            void raw_copy_to_uninitialized_(size_t & count, Iter_ src_first, Iter_ src_last, value_type* dst_first)
-            {
-                allocator_type& alloc = allocator_();
-                while(src_first != src_last) {
-                    alloc_traits::construct(alloc, dst_first++, *src_first++);
-                    ++count;
-                }
-            }
-
-            /**
-             * Init raw memory with copied values
-             */
-            template <typename Iter_>
             void raw_copy_to_uninitialized_2_(Iter_ src_first, Iter_ src_last, value_type* & dst_first)
             {
                 allocator_type& alloc = allocator_();
                 while(src_first != src_last) {
                     alloc_traits::construct(alloc, dst_first, *src_first++);
                     ++dst_first;
-                }
-            }
-
-            /**
-             * Init raw memory with moved values
-             */
-            template <typename Iter_>
-            void raw_move_to_uninitialized_(Iter_ src_first, Iter_ src_last, value_type* dst_first)
-            {
-                allocator_type& alloc = allocator_();
-                while(src_first != src_last) {
-                    alloc_traits::construct(alloc, dst_first++, std::move(*src_first++));
                 }
             }
 
@@ -212,17 +172,17 @@ namespace yato
                 YATO_REQUIRES(plain_size <= alloc_traits::max_size(allocator_()));
                 allocator_type& alloc = allocator_();
                 value_type* const new_data = alloc_traits::allocate(alloc, plain_size);
-                size_t filled_size = 0;
+                value_type* dst = new_data;
                 try {
-                    raw_fill_uninitialized_(filled_size, new_data, new_data + plain_size, std::forward<InitArgs_>(init_args)...);
-                    raw_ptr_() = new_data;
-                    m_allocated_size = plain_size;
+                    raw_fill_uninitialized_2_(dst, new_data + plain_size, std::forward<InitArgs_>(init_args)...);
                 }
                 catch(...) {
-                    raw_destroy_range_(new_data, new_data + filled_size);
+                    raw_destroy_range_(new_data, dst);
                     alloc_traits::deallocate(alloc, new_data, plain_size);
                     throw;
                 }
+                raw_ptr_() = new_data;
+                m_allocated_size = plain_size;
             }
 
             template <typename IterTy_>
@@ -233,17 +193,17 @@ namespace yato
                 YATO_REQUIRES(yato::narrow_cast<std::ptrdiff_t>(plain_size) == std::distance(src_first, src_last));
                 allocator_type& alloc = allocator_();
                 value_type* new_data = alloc_traits::allocate(alloc, plain_size);
-                size_t filled_size = 0;
+                value_type* dst = new_data;
                 try {
-                    raw_copy_to_uninitialized_(filled_size, src_first, src_last, new_data);
-                    raw_ptr_() = new_data;
-                    m_allocated_size = plain_size;
+                    raw_copy_to_uninitialized_2_(src_first, src_last, dst);
                 }
                 catch(...) {
-                    raw_destroy_range_(new_data, new_data + filled_size);
+                    raw_destroy_range_(new_data, dst);
                     alloc_traits::deallocate(alloc, new_data, plain_size);
                     throw;
                 }
+                raw_ptr_() = new_data;
+                m_allocated_size = plain_size;
             }
 
             void raw_init_from_ilist_(size_t plain_size, const initilizer_type<dimensions_number> & init_list)
@@ -256,14 +216,14 @@ namespace yato
                 try {
                     // Recursively copy values from the initializser list
                     raw_copy_initializer_list_<dimensions_number>(init_list, dst);
-                    raw_ptr_() = new_data;
-                    m_allocated_size = plain_size;
                 }
                 catch(...) {
                     raw_destroy_range_(new_data, dst);
                     alloc_traits::deallocate(alloc, new_data, plain_size);
                     throw;
                 }
+                raw_ptr_() = new_data;
+                m_allocated_size = plain_size;
             }
 
             void raw_destroy_range_(value_type* first, value_type* last)
@@ -290,43 +250,14 @@ namespace yato
                 }
             }
 
-            void raw_transfer_(const value_type* src_first, size_t size, value_type* dst_first)
-            {
-                YATO_REQUIRES(src_first != nullptr);
-                YATO_REQUIRES(dst_first != nullptr);
-            
-                allocator_type& alloc = allocator_();
-                const value_type* src_last  = src_first + size;
-                while(src_first != src_last) {
-                    alloc_traits::construct(alloc, dst_first++, std::move_if_noexcept(*src_first++));
-                }
-            }
-
-            /**
-             * Init raw memory with copied or moved values in backward order
-             */
-            void raw_transfer_backward_(const value_type* src_first, size_t size, value_type* dst_last)
-            {
-                YATO_REQUIRES(src_first != nullptr);
-                YATO_REQUIRES(dst_last  != nullptr);
-            
-                allocator_type& alloc = allocator_();
-                const value_type* src_rfirst = src_first - 1;
-                const value_type* src_rlast  = (src_first + size) - 1;
-                value_type* dst_rlast  = dst_last - 1;
-                while(src_rfirst != src_rlast) {
-                    alloc_traits::construct(alloc, dst_rlast--, std::move_if_noexcept(*src_rlast--));
-                }
-            }
-
-
             /**
              * Transfer a block of values to the left. Destroys values vefore rewriting.
+             * 
              * [XXXX][YYYY][ZZZZ]
              * [XXXX][ZZZZ][____]
              *       dst   src   
              */
-            void raw_transfer_to_left_(const value_type* src_first, size_t size, value_type* dst_first)
+            void raw_transfer_to_left_2_(const value_type* src_first, size_t size, value_type* & dst_first)
             {
                 YATO_REQUIRES(src_first != nullptr);
                 YATO_REQUIRES(dst_first != nullptr);
@@ -342,12 +273,15 @@ namespace yato
             }
 
             /**
-             * Transfer a block of values to the right in backward order. Destroys values vefore rewriting.
+             * Transfer a block of values to the right in backward order.
+             * Copies the elements from the range, defined by [first, first + size), to another range ending at dst_last
+             * Destroys values on rewriting.
+             * 
              * [XXXX][YYYY][ZZZZ]
              * [XXXX][____][YYYY]
              *       src   dst   
              */
-            void raw_transfer_to_right_(const value_type* src_first, size_t size, value_type* dst_last)
+            void raw_transfer_to_right_2_(const value_type* src_first, size_t size, value_type* & dst_last)
             {
                 YATO_REQUIRES(src_first != nullptr);
                 YATO_REQUIRES(dst_last  != nullptr);
@@ -355,11 +289,10 @@ namespace yato
                 allocator_type& alloc = allocator_();
                 const value_type* src_rfirst = src_first - 1;
                 const value_type* src_rlast  = (src_first + size) - 1;
-                value_type* dst_rlast  = dst_last - 1;
                 while(src_rfirst != src_rlast) {
-                    alloc_traits::destroy(alloc, dst_rlast);
-                    alloc_traits::construct(alloc, dst_rlast, std::move_if_noexcept(*src_rlast));
-                    --dst_rlast;
+                    alloc_traits::destroy(alloc, dst_last);
+                    alloc_traits::construct(alloc, dst_last, std::move_if_noexcept(*src_rlast));
+                    --dst_last;
                     --src_rlast;
                 }
             }
@@ -420,7 +353,10 @@ namespace yato
                 const std::ptrdiff_t offset = std::distance<const_data_iterator>(raw_ptr_(), position.plain_cbegin());
 #if YATO_DEBUG
                 if (offset < 0) {
-                    throw yato::argument_error("yato::vector_nd[insert]: position iterator doesn't belong to this vector!");
+                    throw yato::argument_error("yato::vector_nd: position iterator doesn't belong to this vector!");
+                }
+                if (static_cast<size_t>(offset) > total_size()) {
+                    throw yato::argument_error("yato::vector_nd: position iterator doesn't belong to this vector!");
                 }
 #endif
                 return yato::narrow_cast<size_t>(offset);
@@ -442,12 +378,10 @@ namespace yato
             }
 
             template <typename SizeIterator_>
-            void update_dimensions_after_insert_(const yato::range<SizeIterator_> & sub_dims, size_t inserted_count)
+            void init_dimensions_if_empty_(const yato::range<SizeIterator_> & sub_dims)
             {
-                if(total_size() > 0) {
-                    update_top_dimension_(get_top_dimension_() + inserted_count);
-                } else {
-                    std::get<dim_descriptor::idx_size>(m_descriptors[0]) = inserted_count;
+                if(total_size() == 0) {
+                    std::get<dim_descriptor::idx_size>(m_descriptors[0]) = 0;
                     auto dim = sub_dims.begin();
                     for(size_t i = 0; i < dimensions_number - 1; ++i) {
                         std::get<dim_descriptor::idx_size>(m_descriptors[i + 1]) = *dim++;
@@ -481,41 +415,38 @@ namespace yato
                 return yato::make_range(std::next(raw_ptr_(), old_size), std::next(raw_ptr_(), new_size));
             }
 
-            template <typename SizeIterator_>
-            yato::range<value_type*> raw_prepare_insert_(const yato::range<SizeIterator_> & sub_dims, const const_iterator & position, size_t length)
+            yato::range<value_type*> raw_prepare_insert_(size_t insert_offset, size_t insert_size, size_t element_size)
             {
-                YATO_REQUIRES(length > 0);
-                auto current_sub_dims = dimensions_ref_range_().tail();
-                if(sub_dims.distance() != current_sub_dims.distance()) {
-                    throw yato::argument_error("yato::vector_nd[push_back]: Subvector dimensions number mismatch!");
-                }
                 const size_t old_size = total_size();
-                if(old_size > 0) {
-                    if(!std::equal(sub_dims.begin(), sub_dims.end(), current_sub_dims.begin())) {
-                        throw yato::argument_error("yato::vector_nd[push_back]: Subvector dimensions mismatch!");
-                    }
-                    update_top_dimension_(get_top_dimension_() + length);
-                } else {
-                    std::get<dim_descriptor::idx_size>(m_descriptors[0]) = length;
-                    std::copy(sub_dims.begin(), sub_dims.end(), current_sub_dims.begin());
-                    init_subsizes_();
-                }
-                const size_t new_size = total_size();
+                const size_t new_size = old_size + insert_size;
                 YATO_ASSERT(new_size > old_size, "Invalid size");
-
-                const size_t insert_offset = raw_offset_checked_(position);
-                const size_t insert_size = yato::narrow_cast<size_t>(length * std::get<dim_descriptor::idx_total>(m_descriptors[1]));
-                YATO_ASSERT(old_size + insert_size == new_size, "Invalid size");
-
                 if(new_size > m_allocated_size) {
                     allocator_type& alloc = allocator_();
                     value_type* new_data = alloc_traits::allocate(alloc, new_size);
                     value_type* old_data = raw_ptr_();
                     if(old_data != nullptr) {
                         // transfer left part
-                        raw_transfer_(old_data, insert_offset, new_data);
+                        value_type* dst_left = new_data;
+                        try {
+                            raw_transfer_2_(old_data, insert_offset, dst_left);
+                        }
+                        catch(...) {
+                            raw_destroy_range_(new_data, dst_left);
+                            alloc_traits::deallocate(alloc, new_data, new_size);
+                            throw;
+                        }
                         // transfer right part
-                        raw_transfer_(old_data + insert_offset, old_size - insert_offset, new_data + insert_offset + insert_size);
+                        value_type* dst_right = new_data + insert_offset + insert_size;
+                        try {
+                            raw_transfer_2_(old_data + insert_offset, old_size - insert_offset, dst_right);
+                        }
+                        catch(...) {
+                            // destroy both ranges
+                            raw_destroy_range_(new_data, dst_left);
+                            raw_destroy_range_(new_data + insert_offset + insert_size, dst_right);
+                            alloc_traits::deallocate(alloc, new_data, new_size);
+                            throw;
+                        }
                         // destroy old
                         raw_destroy_range_(old_data, old_data + old_size);
                         alloc_traits::deallocate(alloc, old_data, m_allocated_size);
@@ -529,39 +460,78 @@ namespace yato
                     const size_t right_size = old_size - insert_offset;
                     if(insert_size >= right_size) {
                         // no overlap
-                        raw_transfer_(old_data + insert_offset, right_size, old_data + insert_offset + insert_size);
+                        value_type* dst = old_data + insert_offset + insert_size;
+                        try {
+                            raw_transfer_2_(old_data + insert_offset, right_size, dst);
+                        }
+                        catch(...) {
+                            raw_destroy_range_(old_data + insert_offset + insert_size, dst);
+                            throw;
+                        }
                         raw_destroy_range_(old_data + insert_offset, old_data + old_size);
                     } else {
                         // tail
                         const size_t tail_size = new_size - old_size;
-                        raw_transfer_(old_data + old_size - tail_size, tail_size, old_data + new_size - tail_size);
-                        // overlapped
-                        raw_transfer_to_right_(old_data + insert_offset, right_size - tail_size, old_data + old_size);
+                        value_type* dst_tail = old_data + new_size - tail_size;
+                        try {
+                            raw_transfer_2_(old_data + old_size - tail_size, tail_size, dst_tail);
+                        }
+                        catch(...) {
+                            // delete only tail to keep old_size of constructed elements
+                            raw_destroy_range_(old_data + new_size - tail_size, dst_tail);
+                            throw;
+                        }
+                        // overlapped part
+                        YATO_ASSERT(old_size > 0, "Overlap case is not possible for empty vector");
+                        value_type* dst = old_data + old_size - 1;
+                        try {
+                            raw_transfer_to_right_2_(old_data + insert_offset, right_size - tail_size, dst);
+                        }
+                        catch(...) {
+                            // the only uninitialized element is at dst position
+                            const size_t valid_count = (dst - old_data) / element_size;
+                            raw_destroy_range_(old_data + valid_count * element_size, dst);
+                            raw_destroy_range_(dst + 1, dst_tail);
+                            update_top_dimension_(valid_count);
+                        }
                         raw_destroy_range_(old_data + insert_offset, old_data + insert_size);
                     }
                 }
                 return yato::make_range(std::next(raw_ptr_(), insert_offset), std::next(raw_ptr_(), insert_offset + insert_size));
             }
 
-            value_type* raw_erase_(const const_iterator & position, size_t count)
+            value_type* raw_erase_(const const_iterator & position, size_t count, size_t element_size)
             {
                 YATO_REQUIRES(count != 0);
                 YATO_REQUIRES(get_top_dimension_() >= count);
 
-                const size_t erase_size = yato::narrow_cast<size_t>(count * std::get<dim_descriptor::idx_total>(m_descriptors[1]));
+                const size_t erase_size = yato::narrow_cast<size_t>(count * element_size);
                 const size_t erase_offset = raw_offset_checked_(position);
 
                 const size_t old_size = total_size();
-                update_top_dimension_(get_top_dimension_() - count);
-                const size_t new_size = total_size();
+                YATO_ASSERT(old_size >= erase_size, "Invalid offsets");
+                const size_t new_size = old_size - erase_size;
 
-                YATO_ASSERT(new_size < old_size, "Invalid offsets");
                 value_type* old_data = raw_ptr_();
                 // transfer right part
-                raw_transfer_to_left_(old_data + erase_offset + erase_size, erase_size, old_data + erase_offset);
+                value_type* dst = old_data + erase_offset;
+                try {
+                    raw_transfer_to_left_2_(old_data + erase_offset + erase_size, erase_size, dst);
+                }
+                catch(...) {
+                    // the only uninitialized element is at dst position
+                    const size_t valid_count = (dst - old_data) / element_size;
+                    raw_destroy_range_(old_data + valid_count * element_size, dst);
+                    // dst + 1 is always valid because erase_size > 0
+                    raw_destroy_range_(dst + 1, old_data + old_size);
+                    update_top_dimension_(valid_count);
+                    throw;
+                }
                 // destroy tail
                 raw_destroy_range_(old_data + new_size, old_data + old_size);
-
+                // update size
+                update_top_dimension_(get_top_dimension_() - count);
+                // result position
                 return old_data + erase_offset;
             }
 
@@ -1471,6 +1441,8 @@ namespace yato
                 if(!match_sub_dimensions_(sub_dims)) {
                     throw yato::argument_error("yato::vector_nd[push_back]: Subvector dimensions mismatch!");
                 }
+                init_dimensions_if_empty_(sub_dims);
+
                 const size_t old_size = total_size();
                 const size_t new_size = old_size + sub_vector.total_size();
                 const auto insert_range = raw_prepare_push_back_(old_size, new_size);
@@ -1483,8 +1455,7 @@ namespace yato
                     raw_destroy_range_(insert_range.begin(), dst);
                     throw;
                 }
-                // update sizes
-                update_dimensions_after_insert_(sub_dims, 1);
+                update_top_dimension_(get_top_dimension_() + 1);
             }
 
             /**
@@ -1497,6 +1468,8 @@ namespace yato
                 if(!match_sub_dimensions_(sub_dims)) {
                     throw yato::argument_error("yato::vector_nd[push_back]: Subvector dimensions mismatch!");
                 }
+                init_dimensions_if_empty_(sub_dims);
+
                 const size_t old_size = total_size();
                 const size_t new_size = old_size + sub_vector.total_size();
                 const auto insert_range = raw_prepare_push_back_(old_size, new_size);
@@ -1509,8 +1482,7 @@ namespace yato
                     raw_destroy_range_(insert_range.begin(), dst);
                     throw;
                 }
-                // update sizes
-                update_dimensions_after_insert_(sub_dims, 1);
+                update_top_dimension_(get_top_dimension_() + 1);
             }
 
             /**
@@ -1531,15 +1503,42 @@ namespace yato
             }
 
             /**
-             *  Insert sub-vector element
+             *  Insert sub-vector element.
+             *  In the case of error only part of vector [0, position) will be kept.
              *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
              */
             template<typename OtherTy_, typename OtherAllocator_>
             iterator insert(const const_iterator & position, const vector_nd_impl<OtherTy_, dimensions_number - 1, OtherAllocator_> & sub_vector)
             {
-                auto insert_range = raw_prepare_insert_(sub_vector.dimensions_range(), position, 1);
-                size_t filled_size = 0;
-                raw_copy_to_uninitialized_(filled_size, sub_vector.plain_cbegin(), sub_vector.plain_cend(), insert_range.begin());
+                const auto sub_dims = sub_vector.dimensions_range();
+                if(!match_sub_dimensions_(sub_dims)) {
+                    throw yato::argument_error("yato::vector_nd[insert]: Subvector dimensions number mismatch!");
+                }
+                init_dimensions_if_empty_(sub_dims);
+
+                const size_t insert_offset = raw_offset_checked_(position);
+                const size_t element_size  = sub_vector.total_size();
+                if(element_size == 0) {
+                    throw yato::argument_error("yato::vector_nd[insert]: Insert value is empty!");
+                }
+
+                auto insert_range = raw_prepare_insert_(insert_offset, element_size, element_size);
+
+                value_type* dst = insert_range.begin();
+                try {
+                    raw_copy_to_uninitialized_2_(sub_vector.plain_cbegin(), sub_vector.plain_cend(), dst);
+                }
+                catch(...) {
+                    // destroy partially filled sub-vector
+                    raw_destroy_range_(insert_range.begin(), dst);
+                    // destroy the detached right part
+                    raw_destroy_range_(insert_range.end(), raw_ptr_() + total_size() + element_size);
+                    // adjust size
+                    update_top_dimension_(insert_offset / element_size);
+                    throw;
+                }
+                update_top_dimension_(get_top_dimension_() + 1);
+                // return position to newly inserted element
                 return create_proxy_(insert_range.begin());
             }
 
@@ -1549,8 +1548,35 @@ namespace yato
              */
             iterator insert(const const_iterator & position, vector_nd_impl<data_type, dimensions_number - 1, allocator_type> && sub_vector)
             {
-                auto insert_range = raw_prepare_insert_(sub_vector.dimensions_range(), position, 1);
-                raw_move_to_uninitialized_(sub_vector.plain_begin(), sub_vector.plain_end(), insert_range.begin());
+                const auto sub_dims = sub_vector.dimensions_range();
+                if(!match_sub_dimensions_(sub_dims)) {
+                    throw yato::argument_error("yato::vector_nd[insert]: Subvector dimensions number mismatch!");
+                }
+                init_dimensions_if_empty_(sub_dims);
+
+                const size_t insert_offset = raw_offset_checked_(position);
+                const size_t element_size  = sub_vector.total_size();
+                if(element_size == 0) {
+                    throw yato::argument_error("yato::vector_nd[insert]: Insert value is empty!");
+                }
+
+                auto insert_range = raw_prepare_insert_(insert_offset, element_size, element_size);
+
+                value_type* dst = insert_range.begin();
+                try {
+                    raw_move_to_uninitialized_2_(sub_vector.plain_begin(), sub_vector.plain_end(), dst);
+                }
+                catch(...) {
+                    // destroy partially filled sub-vector
+                    raw_destroy_range_(insert_range.begin(), dst);
+                    // destroy the detached right part
+                    raw_destroy_range_(insert_range.end(), raw_ptr_() + total_size() + element_size);
+                    // adjust size
+                    update_top_dimension_(insert_offset / element_size);
+                    throw;
+                }
+                update_top_dimension_(get_top_dimension_() + 1);
+                // return position to newly inserted element
                 return create_proxy_(insert_range.begin());
             }
 
@@ -1562,13 +1588,40 @@ namespace yato
             iterator insert(const const_iterator & position, size_t count, const vector_nd_impl<OtherTy_, dimensions_number - 1, OtherAllocator_> & sub_vector)
             {
                 if(count > 0) {
-                    auto insert_range = raw_prepare_insert_(sub_vector.dimensions_range(), position, count);
-                    const size_t copy_size = sub_vector.total_size();
-                    auto copy_dst = insert_range.begin();
-                    for (size_t i = 0; i < count; ++i, std::advance(copy_dst, copy_size)) {
-                        size_t filled_size = 0;
-                        raw_copy_to_uninitialized_(filled_size, sub_vector.plain_cbegin(), sub_vector.plain_cend(), copy_dst);
+                    const auto sub_dims = sub_vector.dimensions_range();
+                    if(!match_sub_dimensions_(sub_dims)) {
+                        throw yato::argument_error("yato::vector_nd[insert]: Subvector dimensions number mismatch!");
                     }
+                    init_dimensions_if_empty_(sub_dims);
+
+                    const size_t insert_offset = raw_offset_checked_(position);
+                    const size_t element_size  = sub_vector.total_size();
+                    if(element_size == 0) {
+                        throw yato::argument_error("yato::vector_nd[insert]: Insert value is empty!");
+                    }
+
+                    auto insert_range = raw_prepare_insert_(insert_offset, count * element_size, element_size);
+                    value_type* copy_first = insert_range.begin();
+                    value_type* copy_last  = insert_range.begin();
+                    size_t inserted_count = 0;
+                    try {
+                        while(inserted_count != count) {
+                            raw_copy_to_uninitialized_2_(sub_vector.plain_cbegin(), sub_vector.plain_cend(), copy_last);
+                            copy_first = copy_last;
+                            ++inserted_count;
+                        }
+                    }
+                    catch(...) {
+                        // destroy partially filled sub-vector
+                        raw_destroy_range_(copy_first, copy_last);
+                        // destroy the detached right part
+                        raw_destroy_range_(insert_range.end(), raw_ptr_() + total_size() + count * element_size);
+                        // adjust size
+                        update_top_dimension_(insert_offset / element_size + inserted_count);
+                        throw;
+                    }
+                    update_top_dimension_(get_top_dimension_() + count);
+                    // return position to newly inserted element
                     return create_proxy_(insert_range.begin());
                 } else {
                     const size_t insert_offset = raw_offset_checked_(position);
@@ -1578,19 +1631,47 @@ namespace yato
 
             /**
              *  Inserts sub-vector elements from range [first, last) before 'position'
-             *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
+             *  @param position Iterator to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
              */
-            template<typename OtherTy_, typename OtherSizeIterator_>
-            iterator insert(const const_iterator & position, const proxy_tmpl<OtherTy_, OtherSizeIterator_> & first, const proxy_tmpl<OtherTy_, OtherSizeIterator_> & last)
+            template<typename IteratorNd_, typename = 
+                // Check that iterator poits to something of lower dimensionality
+                std::enable_if_t<std::iterator_traits<IteratorNd_>::value_type::dimensions_number == dimensions_number - 1>
+            >
+            iterator insert(const const_iterator & position, const IteratorNd_ & first, const IteratorNd_ & last)
             {
-                auto count = std::distance(first, last);
-                if (count < 0) {
-                    throw yato::argument_error("yato::vector_nd[insert]: invalid iterators range!");
-                }
-                if(count > 0) {
-                    auto insert_range = raw_prepare_insert_(first.dimensions_range(), position, static_cast<size_t>(count));
-                    size_t filled_size = 0;
-                    raw_copy_to_uninitialized_(filled_size, first.plain_cbegin(), last.plain_cbegin(), insert_range.begin());
+                const auto icount = std::distance(first, last);
+                if(icount > 0) {
+                    const size_t count = yato::narrow_cast<size_t>(icount);
+                    const auto sub_dims = (*first).dimensions_range();
+                    if(!match_sub_dimensions_(sub_dims)) {
+                        throw yato::argument_error("yato::vector_nd[insert]: Subvector dimensions number mismatch!");
+                    }
+                    init_dimensions_if_empty_(sub_dims);
+
+                    const size_t insert_offset = raw_offset_checked_(position);
+                    const size_t element_size  = (*first).total_size();
+                    if(element_size == 0) {
+                        throw yato::argument_error("yato::vector_nd[insert]: Insert value is empty!");
+                    }
+
+                    auto insert_range = raw_prepare_insert_(insert_offset, count * element_size, element_size);
+                    value_type* dst = insert_range.begin();
+                    try {
+                        raw_copy_to_uninitialized_2_((*first).plain_begin(), (*last).plain_begin(), dst);
+                    }
+                    catch(...) {
+                        // number of whole elements
+                        const size_t inserted_count = (dst - insert_range.begin()) / element_size;
+                        // destroy partially filled sub-vector
+                        raw_destroy_range_(insert_range.begin() + inserted_count * element_size, dst);
+                        // destroy the detached right part
+                        raw_destroy_range_(insert_range.end(), raw_ptr_() + total_size() + count * element_size);
+                        // adjust size
+                        update_top_dimension_(insert_offset / element_size + inserted_count);
+                        throw;
+                    }
+                    update_top_dimension_(get_top_dimension_() + count);
+                    // return position to newly inserted element
                     return create_proxy_(insert_range.begin());
                 } else {
                     const size_t insert_offset = raw_offset_checked_(position);
@@ -1613,7 +1694,10 @@ namespace yato
              */
             iterator erase(const const_iterator & position)
             {
-                return create_proxy_(raw_erase_(position, 1));
+                if(empty()) {
+                    throw yato::argument_error("yato::vector_nd[erase]: Vector is empty!");
+                }
+                return create_proxy_(raw_erase_(position, 1, get_element_size_()));
             }
 
             /**
@@ -1630,7 +1714,7 @@ namespace yato
                     if(ucount > size(0)) {
                         throw yato::argument_error("yato::vector_nd[erase]: Invalid range iterators!");
                     }
-                    return create_proxy_(raw_erase_(first, ucount));
+                    return create_proxy_(raw_erase_(first, ucount, get_element_size_()));
                 } else {
                     const size_t insert_offset = raw_offset_checked_(first);
                     return create_proxy_(insert_offset);
