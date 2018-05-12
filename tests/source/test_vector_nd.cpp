@@ -1142,6 +1142,51 @@ TEST(Yato_VectorND, erase_usertype)
     EXPECT_EQ(FooCounted::ctors, FooCounted::dtors);
 }
 
+TEST(Yato_VectorND, erase_2)
+{
+    yato::vector_nd<int, 2> vec1 = { { 1, 1 },{ 4, 4 }, { 5, 5 }, { 6, 6 }, { 3, 3 } };
+
+    auto it = vec1.erase(vec1.begin() + 1, vec1.begin() + 4);
+    EXPECT_EQ(2U, vec1.size(0));
+    EXPECT_EQ(3, (*it)[0]);
+    EXPECT_EQ(3, (*it)[1]);
+}
+
+TEST(Yato_VectorND, erase_2_usertype)
+{
+    FooCounted::reset_counters();
+    {
+        yato::vector_nd<FooCounted, 2> vec1 = { { 1, 1 },{ 4, 4 }, { 5, 5 }, { 2, 2 }, { 3, 3 } };
+
+        auto it = vec1.erase(vec1.begin() + 1, vec1.begin() + 4);
+        EXPECT_EQ(2U, vec1.size(0));
+        EXPECT_EQ(3, (*it)[0]);
+        EXPECT_EQ(3, (*it)[1]);
+    }
+    EXPECT_EQ(FooCounted::ctors, FooCounted::dtors);
+}
+
+TEST(Yato_VectorND, erase_3)
+{
+    yato::vector_nd<int, 2> vec1 = { { 1, 1 },{ 4, 4 }, { 5, 5 }, { 6, 6 }, { 3, 3 } };
+
+    vec1.erase(vec1.begin(), vec1.end());
+    EXPECT_EQ(0U, vec1.size(0));
+}
+
+TEST(Yato_VectorND, erase_3_usertype)
+{
+    FooCounted::reset_counters();
+    {
+        yato::vector_nd<FooCounted, 2> vec1 = { { 1, 1 },{ 4, 4 }, { 5, 5 }, { 2, 2 }, { 3, 3 } };
+
+        vec1.erase(vec1.begin(), vec1.end());
+        EXPECT_EQ(0U, vec1.size(0));
+    }
+    EXPECT_EQ(FooCounted::ctors, FooCounted::dtors);
+}
+
+
 TEST(Yato_VectorND, resize)
 {
     yato::vector_nd<int, 2> vec1 = { { 1, 2 },{ 3, 4 } };

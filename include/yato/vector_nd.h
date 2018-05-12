@@ -10,11 +10,12 @@
 
 #include <array>
 #include <vector>
-#include "assert.h"
-#include "array_view.h"
-#include "range.h"
 
+#include "array_view.h"
+#include "assert.h"
 #include "compressed_pair.h"
+#include "memory_utility.h"
+#include "range.h"
 
 namespace yato
 {
@@ -124,61 +125,20 @@ namespace yato
                 return m_data.first();
             }
 
-            /**
-             * Fill raw memory with a value
-             */
-            template <typename ... InitArgs_>
-            void raw_fill_uninitialized_2_(value_type* & first, value_type* last, InitArgs_ && ... init_args)
-            {
-                YATO_REQUIRES(first != nullptr);
-                YATO_REQUIRES(last  != nullptr);
-                allocator_type& alloc = allocator_();
-                while(first != last) {
-                    alloc_traits::construct(alloc, first, std::forward<InitArgs_>(init_args)...);
-                    ++first;
-                }
-            }
-
-            /**
-             * Init raw memory with copied values
-             */
-            template <typename Iter_>
-            void raw_copy_to_uninitialized_2_(Iter_ src_first, Iter_ src_last, value_type* & dst_first)
-            {
-                allocator_type& alloc = allocator_();
-                while(src_first != src_last) {
-                    alloc_traits::construct(alloc, dst_first, *src_first++);
-                    ++dst_first;
-                }
-            }
-
-            /**
-             * Init raw memory with moved values
-             */
-            template <typename Iter_>
-            void raw_move_to_uninitialized_2_(Iter_ src_first, Iter_ src_last, value_type* & dst_first)
-            {
-                allocator_type& alloc = allocator_();
-                while(src_first != src_last) {
-                    alloc_traits::construct(alloc, dst_first, std::move(*src_first++));
-                    ++dst_first;
-                }
-            }
-
             template <typename ... InitArgs_>
             void raw_init_(size_t plain_size, InitArgs_ && ... init_args)
             {
                 YATO_REQUIRES(plain_size != 0);
-                YATO_REQUIRES(plain_size <= alloc_traits::max_size(allocator_()));
+
                 allocator_type& alloc = allocator_();
-                value_type* const new_data = alloc_traits::allocate(alloc, plain_size);
+                value_type* const new_data = memory::allocate(alloc, plain_size);
                 value_type* dst = new_data;
                 try {
-                    raw_fill_uninitialized_2_(dst, new_data + plain_size, std::forward<InitArgs_>(init_args)...);
+                    memory::fill_uninitialized(alloc, dst, new_data + plain_size, std::forward<InitArgs_>(init_args)...);
                 }
                 catch(...) {
-                    raw_destroy_range_(new_data, dst);
-                    alloc_traits::deallocate(alloc, new_data, plain_size);
+                    memory::destroy(alloc, new_data, dst);
+                    memory::deallocate(alloc, new_data, plain_size);
                     throw;
                 }
                 raw_ptr_() = new_data;
@@ -189,17 +149,17 @@ namespace yato
             void raw_init_from_range_(size_t plain_size, IterTy_ src_first, IterTy_ src_last)
             {
                 YATO_REQUIRES(plain_size != 0);
-                YATO_REQUIRES(plain_size <= alloc_traits::max_size(allocator_()));
                 YATO_REQUIRES(yato::narrow_cast<std::ptrdiff_t>(plain_size) == std::distance(src_first, src_last));
+
                 allocator_type& alloc = allocator_();
-                value_type* new_data = alloc_traits::allocate(alloc, plain_size);
+                value_type* new_data = memory::allocate(alloc, plain_size);
                 value_type* dst = new_data;
                 try {
-                    raw_copy_to_uninitialized_2_(src_first, src_last, dst);
+                    memory::copy_to_uninitialized(alloc, src_first, src_last, dst);
                 }
                 catch(...) {
-                    raw_destroy_range_(new_data, dst);
-                    alloc_traits::deallocate(alloc, new_data, plain_size);
+                    memory::destroy(alloc, new_data, dst);
+                    memory::deallocate(alloc, new_data, plain_size);
                     throw;
                 }
                 raw_ptr_() = new_data;
@@ -209,92 +169,21 @@ namespace yato
             void raw_init_from_ilist_(size_t plain_size, const initilizer_type<dimensions_number> & init_list)
             {
                 YATO_REQUIRES(plain_size != 0);
-                YATO_REQUIRES(plain_size <= alloc_traits::max_size(allocator_()));
+
                 allocator_type& alloc = allocator_();
-                value_type* new_data = alloc_traits::allocate(alloc, plain_size);
+                value_type* new_data = memory::allocate(alloc, plain_size);
                 value_type* dst = new_data; // copy, that can be changed
                 try {
                     // Recursively copy values from the initializser list
                     raw_copy_initializer_list_<dimensions_number>(init_list, dst);
                 }
                 catch(...) {
-                    raw_destroy_range_(new_data, dst);
-                    alloc_traits::deallocate(alloc, new_data, plain_size);
+                    memory::destroy(alloc, new_data, dst);
+                    memory::deallocate(alloc, new_data, plain_size);
                     throw;
                 }
                 raw_ptr_() = new_data;
                 m_allocated_size = plain_size;
-            }
-
-            void raw_destroy_range_(value_type* first, value_type* last)
-            {
-                allocator_type& alloc = allocator_();
-                while(first != last) {
-                    alloc_traits::destroy(alloc, first++);
-                }
-            }
-
-            /**
-             * Init raw memory with copied or moved values
-             */
-            void raw_transfer_2_(const value_type* src_first, size_t size, value_type* & dst_first)
-            {
-                YATO_REQUIRES(src_first != nullptr);
-                YATO_REQUIRES(dst_first != nullptr);
-            
-                allocator_type& alloc = allocator_();
-                const value_type* src_last  = src_first + size;
-                while(src_first != src_last) {
-                    alloc_traits::construct(alloc, dst_first, std::move_if_noexcept(*src_first++));
-                    ++dst_first;
-                }
-            }
-
-            /**
-             * Transfer a block of values to the left. Destroys values vefore rewriting.
-             * 
-             * [XXXX][YYYY][ZZZZ]
-             * [XXXX][ZZZZ][____]
-             *       dst   src   
-             */
-            void raw_transfer_to_left_2_(const value_type* src_first, size_t size, value_type* & dst_first)
-            {
-                YATO_REQUIRES(src_first != nullptr);
-                YATO_REQUIRES(dst_first != nullptr);
-            
-                allocator_type& alloc = allocator_();
-                const value_type* src_last  = src_first + size;
-                while(src_first != src_last) {
-                    alloc_traits::destroy(alloc, dst_first);
-                    alloc_traits::construct(alloc, dst_first, std::move_if_noexcept(*src_first));
-                    ++dst_first;
-                    ++src_first;
-                }
-            }
-
-            /**
-             * Transfer a block of values to the right in backward order.
-             * Copies the elements from the range, defined by [first, first + size), to another range ending at dst_last
-             * Destroys values on rewriting.
-             * 
-             * [XXXX][YYYY][ZZZZ]
-             * [XXXX][____][YYYY]
-             *       src   dst   
-             */
-            void raw_transfer_to_right_2_(const value_type* src_first, size_t size, value_type* & dst_last)
-            {
-                YATO_REQUIRES(src_first != nullptr);
-                YATO_REQUIRES(dst_last  != nullptr);
-            
-                allocator_type& alloc = allocator_();
-                const value_type* src_rfirst = src_first - 1;
-                const value_type* src_rlast  = (src_first + size) - 1;
-                while(src_rfirst != src_rlast) {
-                    alloc_traits::destroy(alloc, dst_last);
-                    alloc_traits::construct(alloc, dst_last, std::move_if_noexcept(*src_rlast));
-                    --dst_last;
-                    --src_rlast;
-                }
             }
 
             template <typename ... Args_>
@@ -302,32 +191,31 @@ namespace yato
             {
                 if(new_size < old_size) {
                     value_type* const old_data = raw_ptr_();
-                    raw_destroy_range_(old_data + new_size, old_data + old_size);
+                    memory::destroy(allocator_(), old_data + new_size, old_data + old_size);
                 }
                 else if(new_size > old_size) {
-                    YATO_REQUIRES(new_size <= alloc_traits::max_size(allocator_()));
                     allocator_type& alloc = allocator_();
                     if(new_size > m_allocated_size) {
                         value_type* const old_data = raw_ptr_();
-                        value_type* const new_data = alloc_traits::allocate(alloc, new_size);
+                        value_type* const new_data = memory::allocate(alloc, new_size);
                         value_type* dst = new_data;
                         try {
                             // transfer old
                             if(old_data != nullptr) {
-                                raw_transfer_2_(old_data, old_size, dst);
+                                memory::transfer_to_uninitialized(alloc, old_data, old_data + old_size, dst);
                             }
                             // fill added space
-                            raw_fill_uninitialized_2_(dst, new_data + new_size, std::forward<Args_>(init_args)...);
+                            memory::fill_uninitialized(alloc, dst, new_data + new_size, std::forward<Args_>(init_args)...);
                         }
                         catch(...) {
-                            raw_destroy_range_(new_data, dst);
-                            alloc_traits::deallocate(alloc, new_data, new_size);
+                            memory::destroy(alloc, new_data, dst);
+                            memory::deallocate(alloc, new_data, new_size);
                             throw;
                         }
                         // delete old
                         if(old_data != nullptr) {
-                            raw_destroy_range_(old_data, old_data + old_size);
-                            alloc_traits::deallocate(alloc, old_data, m_allocated_size);
+                            memory::destroy(alloc, old_data, old_data + old_size);
+                            memory::deallocate(alloc, old_data, m_allocated_size);
                         }
                         raw_ptr_() = new_data;
                         m_allocated_size = new_size;
@@ -336,11 +224,11 @@ namespace yato
                         value_type* const old_data = raw_ptr_();
                         value_type* dst = old_data + old_size;
                         try {
-                            raw_fill_uninitialized_2_(dst, old_data + new_size, std::forward<Args_>(init_args)...);
+                            memory::fill_uninitialized(alloc, dst, old_data + new_size, std::forward<Args_>(init_args)...);
                         }
                         catch(...) {
                             // delete only new elements
-                            raw_destroy_range_(old_data + old_size, dst);
+                            memory::destroy(alloc, old_data + old_size, dst);
                             throw;
                         }
                     }
@@ -394,20 +282,20 @@ namespace yato
             {
                 if(new_size > m_allocated_size) {
                     allocator_type& alloc = allocator_();
-                    value_type* new_data = alloc_traits::allocate(alloc, new_size);
+                    value_type* new_data = memory::allocate(alloc, new_size);
                     value_type* old_data = raw_ptr_();
                     if(old_data != nullptr) {
                         value_type* dst = new_data;
                         try {
-                            raw_transfer_2_(old_data, old_size, dst);
+                            memory::transfer_to_uninitialized(alloc, old_data, old_data + old_size, dst);
                         }
                         catch(...) {
-                            raw_destroy_range_(new_data, dst);
-                            alloc_traits::deallocate(alloc, new_data, new_size);
+                            memory::destroy(alloc, new_data, dst);
+                            memory::deallocate(alloc, new_data, new_size);
                             throw;
                         }
-                        raw_destroy_range_(old_data, old_data + old_size);
-                        alloc_traits::deallocate(alloc, old_data, m_allocated_size);
+                        memory::destroy(alloc, old_data, old_data + old_size);
+                        memory::deallocate(alloc, old_data, m_allocated_size);
                     }
                     raw_ptr_() = new_data;
                     m_allocated_size = new_size;
@@ -422,38 +310,39 @@ namespace yato
                 YATO_ASSERT(new_size > old_size, "Invalid size");
                 if(new_size > m_allocated_size) {
                     allocator_type& alloc = allocator_();
-                    value_type* new_data = alloc_traits::allocate(alloc, new_size);
+                    value_type* new_data = memory::allocate(alloc, new_size);
                     value_type* old_data = raw_ptr_();
                     if(old_data != nullptr) {
                         // transfer left part
                         value_type* dst_left = new_data;
                         try {
-                            raw_transfer_2_(old_data, insert_offset, dst_left);
+                            memory::transfer_to_uninitialized(alloc, old_data, old_data + insert_offset, dst_left);
                         }
                         catch(...) {
-                            raw_destroy_range_(new_data, dst_left);
-                            alloc_traits::deallocate(alloc, new_data, new_size);
+                            memory::destroy(alloc, new_data, dst_left);
+                            memory::deallocate(alloc, new_data, new_size);
                             throw;
                         }
                         // transfer right part
                         value_type* dst_right = new_data + insert_offset + insert_size;
                         try {
-                            raw_transfer_2_(old_data + insert_offset, old_size - insert_offset, dst_right);
+                            memory::transfer_to_uninitialized(alloc, old_data + insert_offset, old_data + old_size, dst_right);
                         }
                         catch(...) {
                             // destroy both ranges
-                            raw_destroy_range_(new_data, dst_left);
-                            raw_destroy_range_(new_data + insert_offset + insert_size, dst_right);
-                            alloc_traits::deallocate(alloc, new_data, new_size);
+                            memory::destroy(alloc, new_data, dst_left);
+                            memory::destroy(alloc, new_data + insert_offset + insert_size, dst_right);
+                            memory::deallocate(alloc, new_data, new_size);
                             throw;
                         }
                         // destroy old
-                        raw_destroy_range_(old_data, old_data + old_size);
-                        alloc_traits::deallocate(alloc, old_data, m_allocated_size);
+                        memory::destroy(alloc, old_data, old_data + old_size);
+                        memory::deallocate(alloc, old_data, m_allocated_size);
                     }
                     raw_ptr_() = new_data;
                     m_allocated_size = new_size;
                 } else {
+                    allocator_type& alloc = allocator_();
                     // enough of allocated size
                     value_type* old_data = raw_ptr_();
                     // uninitialized data size
@@ -462,39 +351,41 @@ namespace yato
                         // no overlap
                         value_type* dst = old_data + insert_offset + insert_size;
                         try {
-                            raw_transfer_2_(old_data + insert_offset, right_size, dst);
+                            // [old_data + insert_offset, old_data + insert_offset + right_size)
+                            memory::transfer_to_uninitialized(alloc, old_data + insert_offset, old_data + old_size, dst);
                         }
                         catch(...) {
-                            raw_destroy_range_(old_data + insert_offset + insert_size, dst);
+                            memory::destroy(alloc, old_data + insert_offset + insert_size, dst);
                             throw;
                         }
-                        raw_destroy_range_(old_data + insert_offset, old_data + old_size);
+                        memory::destroy(alloc, old_data + insert_offset, old_data + old_size);
                     } else {
                         // tail
                         const size_t tail_size = new_size - old_size;
                         value_type* dst_tail = old_data + new_size - tail_size;
                         try {
-                            raw_transfer_2_(old_data + old_size - tail_size, tail_size, dst_tail);
+                            memory::transfer_to_uninitialized(alloc, old_data + old_size - tail_size, old_data + old_size, dst_tail);
                         }
                         catch(...) {
                             // delete only tail to keep old_size of constructed elements
-                            raw_destroy_range_(old_data + new_size - tail_size, dst_tail);
+                            memory::destroy(alloc, old_data + new_size - tail_size, dst_tail);
                             throw;
                         }
                         // overlapped part
                         YATO_ASSERT(old_size > 0, "Overlap case is not possible for empty vector");
                         value_type* dst = old_data + old_size - 1;
                         try {
-                            raw_transfer_to_right_2_(old_data + insert_offset, right_size - tail_size, dst);
+                            // [old_data + insert_offset, old_data + insert_offset + right_size - tail_size)
+                            memory::transfer_to_right(alloc, old_data + insert_offset, old_data + old_size - tail_size, dst);
                         }
                         catch(...) {
                             // the only uninitialized element is at dst position
                             const size_t valid_count = (dst - old_data) / element_size;
-                            raw_destroy_range_(old_data + valid_count * element_size, dst);
-                            raw_destroy_range_(dst + 1, dst_tail);
+                            memory::destroy(alloc, old_data + valid_count * element_size, dst);
+                            memory::destroy(alloc, dst + 1, dst_tail);
                             update_top_dimension_(valid_count);
                         }
-                        raw_destroy_range_(old_data + insert_offset, old_data + insert_size);
+                        memory::destroy(alloc, old_data + insert_offset, old_data + insert_size);
                     }
                 }
                 return yato::make_range(std::next(raw_ptr_(), insert_offset), std::next(raw_ptr_(), insert_offset + insert_size));
@@ -512,23 +403,25 @@ namespace yato
                 YATO_ASSERT(old_size >= erase_size, "Invalid offsets");
                 const size_t new_size = old_size - erase_size;
 
+                allocator_type& alloc = allocator_();
+
                 value_type* old_data = raw_ptr_();
                 // transfer right part
                 value_type* dst = old_data + erase_offset;
                 try {
-                    raw_transfer_to_left_2_(old_data + erase_offset + erase_size, erase_size, dst);
+                    memory::transfer_to_left(alloc, old_data + erase_offset + erase_size, old_data + old_size, dst);
                 }
                 catch(...) {
                     // the only uninitialized element is at dst position
                     const size_t valid_count = (dst - old_data) / element_size;
-                    raw_destroy_range_(old_data + valid_count * element_size, dst);
+                    memory::destroy(alloc, old_data + valid_count * element_size, dst);
                     // dst + 1 is always valid because erase_size > 0
-                    raw_destroy_range_(dst + 1, old_data + old_size);
+                    memory::destroy(alloc, dst + 1, old_data + old_size);
                     update_top_dimension_(valid_count);
                     throw;
                 }
                 // destroy tail
-                raw_destroy_range_(old_data + new_size, old_data + old_size);
+                memory::destroy(alloc, old_data + new_size, old_data + old_size);
                 // update size
                 update_top_dimension_(get_top_dimension_() - count);
                 // result position
@@ -902,8 +795,9 @@ namespace yato
             {
                 if(raw_ptr_()) {
                     YATO_ASSERT(m_allocated_size > 0, "Invalid allocated size");
-                    raw_destroy_range_(raw_ptr_(), raw_ptr_() + total_size());
-                    alloc_traits::deallocate(allocator_(), raw_ptr_(), m_allocated_size);
+                    allocator_type & alloc = allocator_();
+                    memory::destroy(alloc, raw_ptr_(), raw_ptr_() + total_size());
+                    memory::deallocate(alloc, raw_ptr_(), m_allocated_size);
                 }
             }
 
@@ -917,37 +811,40 @@ namespace yato
                 const size_t new_size = sizes.total_size();
                 value_type* old_data = raw_ptr_();
                 allocator_type & alloc = allocator_();
-                if(new_size <= m_allocated_size) {
+                if((new_size <= m_allocated_size) && (m_allocated_size != 0)) {
+                    YATO_ASSERT(old_data != nullptr, "Invalid state");
                     // destoy old content
-                    raw_destroy_range_(old_data, old_data + old_size);
+                    memory::destroy(alloc, old_data, old_data + old_size);
                     // fill new values
                     value_type* dst = old_data;
                     try {
-                        raw_fill_uninitialized_2_(dst, old_data + new_size, value);
+                        memory::fill_uninitialized(alloc, dst, old_data + new_size, value);
                     }
                     catch(...) {
-                        raw_destroy_range_(old_data, dst);
-                        alloc_traits::deallocate(alloc, old_data, old_size);
+                        memory::destroy(alloc, old_data, dst);
+                        memory::deallocate(alloc, old_data, m_allocated_size);
                         // cant recover, make empty
                         tidy_();
                         throw;
                     }
                 } else {
-                    value_type* const new_data = alloc_traits::allocate(alloc, new_size);
+                    value_type* const new_data = memory::allocate(alloc, new_size);
                     value_type* dst = new_data;
                     try {
-                        raw_fill_uninitialized_2_(dst, new_data + new_size, value);
+                        memory::fill_uninitialized(alloc, dst, new_data + new_size, value);
                     }
                     catch(...) {
-                        raw_destroy_range_(new_data, dst);
-                        alloc_traits::deallocate(alloc, new_data, new_size);
+                        memory::destroy(alloc, new_data, dst);
+                        memory::deallocate(alloc, new_data, new_size);
                         throw;
+                    }
+                    // destoy old content
+                    if(old_data != nullptr) {
+                        memory::destroy(alloc, old_data, old_data + old_size);
+                        memory::deallocate(alloc, old_data, m_allocated_size);
                     }
                     raw_ptr_() = new_data;
                     m_allocated_size = new_size;
-                    // destoy old content
-                    raw_destroy_range_(old_data, old_data + old_size);
-                    alloc_traits::deallocate(alloc, old_data, old_size);
                 }
                 // update sizes
                 init_sizes_(sizes);
@@ -1267,15 +1164,15 @@ namespace yato
                         const size_t old_size = total_size();
                         value_type* dst = new_data;
                         try {
-                            raw_transfer_2_(old_data, old_size, dst);
+                            memory::transfer_to_uninitialized(alloc, old_data, old_data + old_size, dst);
                         }
                         catch(...) {
-                            raw_destroy_range_(new_data, dst);
-                            alloc_traits::deallocate(alloc, new_data, new_capacity);
+                            memory::destroy(alloc, new_data, dst);
+                            memory::deallocate(alloc, new_data, new_capacity);
                             throw;
                         }
-                        raw_destroy_range_(old_data, old_data + old_size);
-                        alloc_traits::deallocate(alloc, old_data, m_allocated_size);
+                        memory::destroy(alloc, old_data, old_data + old_size);
+                        memory::deallocate(alloc, old_data, m_allocated_size);
                     }
                     m_allocated_size = new_capacity;
                     raw_ptr_() = new_data;
@@ -1294,19 +1191,19 @@ namespace yato
                     allocator_type & alloc = allocator_();
                     value_type* new_data = nullptr;
                     if(plain_size > 0) {
-                        new_data = alloc_traits::allocate(alloc, plain_size);
+                        new_data = memory::allocate(alloc, plain_size);
                         value_type* dst = new_data;
                         try {
-                            raw_transfer_2_(old_data, plain_size, dst);
+                            memory::transfer_to_uninitialized(alloc, old_data, old_data + plain_size, dst);
                         }
                         catch(...) {
-                            raw_destroy_range_(new_data, dst);
-                            alloc_traits::deallocate(alloc, new_data, plain_size);
+                            memory::destroy(alloc, new_data, dst);
+                            memory::deallocate(alloc, new_data, plain_size);
                             throw;
                         }
                     }
-                    raw_destroy_range_(old_data, old_data + plain_size);
-                    alloc_traits::deallocate(alloc, old_data, m_allocated_size);
+                    memory::destroy(alloc, old_data, old_data + plain_size);
+                    memory::deallocate(alloc, old_data, m_allocated_size);
                     m_allocated_size = plain_size;
                     raw_ptr_() = new_data;
                 }
@@ -1448,11 +1345,11 @@ namespace yato
                 const auto insert_range = raw_prepare_push_back_(old_size, new_size);
                 value_type* dst = insert_range.begin();
                 try {
-                    raw_copy_to_uninitialized_2_(sub_vector.plain_cbegin(), sub_vector.plain_cend(), dst);
+                    memory::copy_to_uninitialized(allocator_(), sub_vector.plain_cbegin(), sub_vector.plain_cend(), dst);
                 }
                 catch(...) {
                     // delete all, since sub-verctor was not inserted wholly.
-                    raw_destroy_range_(insert_range.begin(), dst);
+                    memory::destroy(allocator_(), insert_range.begin(), dst);
                     throw;
                 }
                 update_top_dimension_(get_top_dimension_() + 1);
@@ -1475,11 +1372,11 @@ namespace yato
                 const auto insert_range = raw_prepare_push_back_(old_size, new_size);
                 value_type* dst = insert_range.begin();
                 try {
-                    raw_move_to_uninitialized_2_(sub_vector.plain_begin(), sub_vector.plain_end(), dst);
+                    memory::move_to_uninitialized(allocator_(), sub_vector.plain_begin(), sub_vector.plain_end(), dst);
                 }
                 catch(...) {
                     // delete all, since sub-verctor was not inserted wholly.
-                    raw_destroy_range_(insert_range.begin(), dst);
+                    memory::destroy(allocator_(), insert_range.begin(), dst);
                     throw;
                 }
                 update_top_dimension_(get_top_dimension_() + 1);
@@ -1499,7 +1396,7 @@ namespace yato
                 update_top_dimension_(get_top_dimension_() - 1);
                 const size_t new_size = total_size();
                 value_type* old_data = raw_ptr_();
-                raw_destroy_range_(old_data + new_size, old_data + old_size);
+                memory::destroy(allocator_(), old_data + new_size, old_data + old_size);
             }
 
             /**
@@ -1526,13 +1423,13 @@ namespace yato
 
                 value_type* dst = insert_range.begin();
                 try {
-                    raw_copy_to_uninitialized_2_(sub_vector.plain_cbegin(), sub_vector.plain_cend(), dst);
+                    memory::copy_to_uninitialized(allocator_(), sub_vector.plain_cbegin(), sub_vector.plain_cend(), dst);
                 }
                 catch(...) {
                     // destroy partially filled sub-vector
-                    raw_destroy_range_(insert_range.begin(), dst);
+                    memory::destroy(allocator_(), insert_range.begin(), dst);
                     // destroy the detached right part
-                    raw_destroy_range_(insert_range.end(), raw_ptr_() + total_size() + element_size);
+                    memory::destroy(allocator_(), insert_range.end(), raw_ptr_() + total_size() + element_size);
                     // adjust size
                     update_top_dimension_(insert_offset / element_size);
                     throw;
@@ -1564,13 +1461,13 @@ namespace yato
 
                 value_type* dst = insert_range.begin();
                 try {
-                    raw_move_to_uninitialized_2_(sub_vector.plain_begin(), sub_vector.plain_end(), dst);
+                    memory::move_to_uninitialized(allocator_(), sub_vector.plain_begin(), sub_vector.plain_end(), dst);
                 }
                 catch(...) {
                     // destroy partially filled sub-vector
-                    raw_destroy_range_(insert_range.begin(), dst);
+                    memory::destroy(allocator_(), insert_range.begin(), dst);
                     // destroy the detached right part
-                    raw_destroy_range_(insert_range.end(), raw_ptr_() + total_size() + element_size);
+                    memory::destroy(allocator_(), insert_range.end(), raw_ptr_() + total_size() + element_size);
                     // adjust size
                     update_top_dimension_(insert_offset / element_size);
                     throw;
@@ -1604,18 +1501,20 @@ namespace yato
                     value_type* copy_first = insert_range.begin();
                     value_type* copy_last  = insert_range.begin();
                     size_t inserted_count = 0;
+
+                    allocator_type& alloc = allocator_();
                     try {
                         while(inserted_count != count) {
-                            raw_copy_to_uninitialized_2_(sub_vector.plain_cbegin(), sub_vector.plain_cend(), copy_last);
+                            memory::copy_to_uninitialized(alloc, sub_vector.plain_cbegin(), sub_vector.plain_cend(), copy_last);
                             copy_first = copy_last;
                             ++inserted_count;
                         }
                     }
                     catch(...) {
                         // destroy partially filled sub-vector
-                        raw_destroy_range_(copy_first, copy_last);
+                        memory::destroy(alloc, copy_first, copy_last);
                         // destroy the detached right part
-                        raw_destroy_range_(insert_range.end(), raw_ptr_() + total_size() + count * element_size);
+                        memory::destroy(alloc, insert_range.end(), raw_ptr_() + total_size() + count * element_size);
                         // adjust size
                         update_top_dimension_(insert_offset / element_size + inserted_count);
                         throw;
@@ -1657,15 +1556,15 @@ namespace yato
                     auto insert_range = raw_prepare_insert_(insert_offset, count * element_size, element_size);
                     value_type* dst = insert_range.begin();
                     try {
-                        raw_copy_to_uninitialized_2_((*first).plain_begin(), (*last).plain_begin(), dst);
+                        memory::copy_to_uninitialized(allocator_(), (*first).plain_begin(), (*last).plain_begin(), dst);
                     }
                     catch(...) {
                         // number of whole elements
                         const size_t inserted_count = (dst - insert_range.begin()) / element_size;
                         // destroy partially filled sub-vector
-                        raw_destroy_range_(insert_range.begin() + inserted_count * element_size, dst);
+                        memory::destroy(allocator_(), insert_range.begin() + inserted_count * element_size, dst);
                         // destroy the detached right part
-                        raw_destroy_range_(insert_range.end(), raw_ptr_() + total_size() + count * element_size);
+                        memory::destroy(allocator_(), insert_range.end(), raw_ptr_() + total_size() + count * element_size);
                         // adjust size
                         update_top_dimension_(insert_offset / element_size + inserted_count);
                         throw;
