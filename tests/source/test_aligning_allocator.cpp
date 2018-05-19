@@ -52,7 +52,7 @@ namespace
     template<typename T, size_t Align>
     void make_vector_test()
     {
-        const int ITERS = 10000;
+        const int ITERS = 1000;
         for (int i = 0; i < 2; ++i) {
             std::vector<T, yato::aligning_allocator<T, Align>> v(10, 1);
             EXPECT_EQ(static_cast<T>(1), v[0]);
@@ -62,6 +62,8 @@ namespace
             EXPECT_EQ(0U, reinterpret_cast<size_t>(&v[0]) % Align);
             v.resize(100);
             EXPECT_EQ(0U, reinterpret_cast<size_t>(&v[0]) % Align);
+            v.clear();
+            v.shrink_to_fit();
             for (int j = 0; j < ITERS; ++j) {
                 v.push_back(2);
                 EXPECT_EQ(static_cast<T>(2), v.back());
@@ -73,7 +75,7 @@ namespace
     template<typename T, size_t Align>
     void make_vector_2d_test()
     {
-        const int ITERS = 10000;
+        const int ITERS = 1000;
         for (int i = 0; i < 2; ++i) {
             yato::vector_2d<T, yato::aligning_allocator<T, Align>> v(yato::dims(10, 10), 1);
             EXPECT_EQ(static_cast<T>(1), v[0][0]);
@@ -81,9 +83,12 @@ namespace
             v.resize(yato::dims(1, 1));
             EXPECT_EQ(static_cast<T>(1), v[0][0]);
             EXPECT_EQ(0U, reinterpret_cast<size_t>(v.data()) % Align);
-            v.resize(yato::dims(100, 100));
+            v.resize(yato::dims(32, 32));
             EXPECT_EQ(0U, reinterpret_cast<size_t>(v.data()) % Align);
-            auto v1(std::move(v).reshape(yato::dims(10000)));
+            auto v1(std::move(v).reshape(yato::dims(32*32)));
+            EXPECT_EQ(0U, reinterpret_cast<size_t>(v1.data()) % Align);
+            v1.clear();
+            v1.shrink_to_fit();
             for (int j = 0; j < ITERS; ++j) {
                 v1.push_back(2);
                 EXPECT_EQ(static_cast<T>(2), v1.back());
