@@ -80,6 +80,8 @@ TEST(Yato_VectorND, common)
         int m_val;
     public:
         A(int x): m_val(x) {};
+
+        int get() const { return m_val; }
     };
 
     try {

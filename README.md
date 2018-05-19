@@ -26,7 +26,7 @@ Currently the library can be successfully built by the following compilers:
 * MSVC 2017
 * MSVC 2015
 * MinGW 7.1
-* Clang 5.0
+* Clang 6.0
 * GCC 6.2
 * Android (llvm)
 
