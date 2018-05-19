@@ -958,7 +958,7 @@ namespace yato
              *  Move-reshape
              */
             template <size_t NewDimsNum_>
-            vector_nd_impl(const dimensions_type & sizes, vector_nd_impl<data_type, NewDimsNum_, allocator_type> && other) YATO_NOEXCEPT_KEYWORD
+            vector_nd_impl(const dimensions_type & sizes, vector_nd_impl<data_type, NewDimsNum_, allocator_type> && other)
                 : m_raw_vector()
             {
                 if(sizes.total_size() != other.total_size()) {
@@ -1078,36 +1078,10 @@ namespace yato
             }
 
             /**
-             * Create a new vector with another shape
-             * All data will be moved to the new vector
-             */
-            template <size_t NewDimsNum_>
-            vector_nd_impl<data_type, NewDimsNum_, allocator_type> reshape(const dimensionality<NewDimsNum_, size_t> & extents) &&
-            {
-                if(extents.total_size() != total_size()) {
-                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
-                }
-                return vector_nd_impl<data_type, NewDimsNum_, allocator_type>(extents, std::make_move_iterator(plain_cbegin()), std::make_move_iterator(plain_cend()));
-            }
-
-            /**
-             * Create a new vector with another shape
-             * All data will be moved to the new vector
-             */
-            template <size_t NewDimsNum_, typename NewAllocatorType_>
-            vector_nd_impl<data_type, NewDimsNum_, NewAllocatorType_> reshape(const dimensionality<NewDimsNum_, size_t> & extents, const NewAllocatorType_ & alloc) &&
-            {
-                if(extents.total_size() != total_size()) {
-                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
-                }
-                return vector_nd_impl<data_type, NewDimsNum_, NewAllocatorType_>(extents, std::make_move_iterator(plain_cbegin()), std::make_move_iterator(plain_cend()), alloc);
-            }
-
-            /**
              * Reshapes vector stealing content
              */
             template <size_t NewDimsNum_>
-            vector_nd_impl<data_type, NewDimsNum_, allocator_type> move_reshape(const dimensionality<NewDimsNum_, size_t> & extents) &&
+            vector_nd_impl<data_type, NewDimsNum_, allocator_type> reshape(const dimensionality<NewDimsNum_, size_t> & extents) &&
             {
                 if(extents.total_size() != total_size()) {
                     yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
@@ -1889,6 +1863,11 @@ namespace yato
                     memory::destroy(m_raw_vector.allocator(), ptr, ptr + m_size);
                 }
             }
+
+            void tidy_()
+            {
+                m_size = 0;
+            }
             //-------------------------------------------------------
 
         public:
@@ -2066,7 +2045,7 @@ namespace yato
                 , m_size(other.m_size)
             {
                 // steal
-                other.m_size = 0;
+                other.tidy_();
             }
 
             /**
@@ -2089,7 +2068,7 @@ namespace yato
                 m_raw_vector = std::move(other.m_raw_vector);
                 m_size = other.m_size;
                 // steal
-                other.m_size = 0;
+                other.tidy_();
                 return *this;
             }
 
@@ -2132,6 +2111,22 @@ namespace yato
             {
                 this_type{other}.swap(*this);
                 return *this;
+            }
+
+            /**
+             *  Move-reshape
+             */
+            template <size_t NewDimsNum_>
+            vector_nd_impl(const dimensions_type & sizes, vector_nd_impl<data_type, NewDimsNum_, allocator_type> && other)
+                : m_raw_vector()
+            {
+                if(sizes.total_size() != other.total_size()) {
+                    throw yato::argument_error("yato::vector_nd[move-reshape]: Total size mismatch.");
+                }
+                m_size = sizes.total_size();
+                m_raw_vector = std::move(other.m_raw_vector);
+                // Steal content
+                other.tidy_();
             }
 
             /**
@@ -2211,36 +2206,10 @@ namespace yato
             }
 
             /**
-             * Create a new vector with another shape
-             * All data will be copied to the new vector
-             */
-            template <size_t NewDimsNum_>
-            vector_nd_impl<data_type, NewDimsNum_, allocator_type> reshape(const dimensionality<NewDimsNum_, size_t> & extents) &&
-            {
-                if(extents.total_size() != total_size()) {
-                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
-                }
-                return vector_nd_impl<data_type, NewDimsNum_, allocator_type>(extents, std::make_move_iterator(plain_cbegin()), std::make_move_iterator(plain_cend()));
-            }
-
-            /**
-             * Create a new vector with another shape
-             * All data will be copied to the new vector
-             */
-            template <size_t NewDimsNum_, typename NewAllocatorType_>
-            vector_nd_impl<data_type, NewDimsNum_, NewAllocatorType_> reshape(const dimensionality<NewDimsNum_, size_t> & extents, const NewAllocatorType_ & alloc) &&
-            {
-                if(extents.total_size() != total_size()) {
-                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
-                }
-                return vector_nd_impl<data_type, NewDimsNum_, NewAllocatorType_>(extents, std::make_move_iterator(plain_cbegin()), std::make_move_iterator(plain_cend()), alloc);
-            }
-
-            /**
              * Reshapes vector stealing content
              */
             template <size_t NewDimsNum_>
-            vector_nd_impl<data_type, NewDimsNum_, allocator_type> move_reshape(const dimensionality<NewDimsNum_, size_t> & extents) &&
+            vector_nd_impl<data_type, NewDimsNum_, allocator_type> reshape(const dimensionality<NewDimsNum_, size_t> & extents) &&
             {
                 if(extents.total_size() != total_size()) {
                     yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
