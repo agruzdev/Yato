@@ -234,7 +234,7 @@ TEST(Yato_Vector1D, access_1)
     yato::vector_1d<short> vec_1d(size, val);
 
     for (size_t i = 0; i < size; ++i) {
-        short x;
+        short x{0};
         EXPECT_NO_THROW(x = vec_1d[i]);
         EXPECT_EQ(val, x);
     }
@@ -261,7 +261,7 @@ TEST(Yato_Vector1D, method_at_1)
     yato::vector_1d<short> vec_1d(size, val);
 
     for (size_t i = 0; i < size; ++i) {
-        short x;
+        short x{0};
         EXPECT_THROW(x = vec_1d.at(size + i / 2), yato::out_of_range_error);
         EXPECT_NO_THROW(x = vec_1d.at(i));
         EXPECT_EQ(val, x);
