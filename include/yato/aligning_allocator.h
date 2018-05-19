@@ -144,12 +144,10 @@ namespace yato
         //---------------------------------------------------
 
         YATO_CONSTEXPR_FUNC
-        aligning_allocator() YATO_NOEXCEPT_KEYWORD
-        { }
+        aligning_allocator() = default;
 
         YATO_CONSTEXPR_FUNC
-        aligning_allocator(const my_type &) YATO_NOEXCEPT_KEYWORD
-        { }
+        aligning_allocator(const my_type &) = default;
 
         template <typename U, size_t A>
         YATO_CONSTEXPR_FUNC
@@ -157,16 +155,13 @@ namespace yato
         { }
 
         YATO_CONSTEXPR_FUNC
-        aligning_allocator(my_type &&) YATO_NOEXCEPT_KEYWORD
-        { }
+        aligning_allocator(my_type &&) noexcept = default;
 
         ~aligning_allocator() = default;
 
-        aligning_allocator & operator = (const my_type &) YATO_NOEXCEPT_KEYWORD
-        { }
+        aligning_allocator & operator = (const my_type &) = default;
 
-        aligning_allocator & operator = (my_type &&) YATO_NOEXCEPT_KEYWORD
-        { }
+        aligning_allocator & operator = (my_type &&) noexcept = default;
 
         pointer allocate(size_type n)
         {
