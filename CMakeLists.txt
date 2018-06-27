@@ -1,4 +1,5 @@
 cmake_minimum_required (VERSION 3.8)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 project(Yato)
 
@@ -28,6 +29,7 @@ file(GLOB_RECURSE yato_sources "${YATO_INCLUDE_DIRS}/*.h")
 source_group(TREE "${CMAKE_SOURCE_DIR}" FILES ${yato_sources})
 
 add_custom_target(Yato SOURCES ${yato_sources})
+set_property(TARGET Yato PROPERTY FOLDER "Modules")
 
 #==========================================
 # Targets
@@ -61,3 +63,9 @@ option(YATO_BUILD_TESTS "Build unit tests" ON)
 if(YATO_BUILD_TESTS)
     add_subdirectory(./tests)
 endif()
+
+option(YATO_BUILD_PERFORMANCE_TESTS "Buidl performance tests" OFF)
+if(YATO_BUILD_PERFORMANCE_TESTS)
+    add_subdirectory(./perf_tests)
+endif()
+

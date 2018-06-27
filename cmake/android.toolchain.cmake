@@ -1,3 +1,10 @@
+#
+# YATO library
+#
+# The MIT License (MIT)
+# Copyright (c) 2018 Alexey Gruzdev
+#
+
 cmake_minimum_required(VERSION 3.0)
 
 if(DEFINED TOOLCHAIN_USED)

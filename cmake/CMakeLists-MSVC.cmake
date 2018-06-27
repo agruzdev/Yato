@@ -1,3 +1,10 @@
+#
+# YATO library
+#
+# The MIT License (MIT)
+# Copyright (c) 2018 Alexey Gruzdev
+#
+
 # MSVC
 
 # ===============================================
@@ -5,8 +12,11 @@
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D_SCL_SECURE_NO_WARNINGS")
 
+option(YATO_USE_SHARED_RUNTIME "Link dynamic runtime" ON)
+if(NOT YATO_USE_SHARED_RUNTIME)
+    set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+endif()
 

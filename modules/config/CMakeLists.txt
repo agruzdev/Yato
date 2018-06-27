@@ -26,14 +26,13 @@ endif()
 option(YATO_CONFIG_JSON "Enable json config backend" OFF)
 if(YATO_CONFIG_JSON)
     include(${CMAKE_SOURCE_DIR}/cmake/dependency.json.cmake)
-    include_directories(${DEPENDS_JSON_INCLUDE_DIR})
+    include_directories(${JSON_INCLUDE_DIR})
     file(GLOB json_sources
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/json/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/json/*.cpp"
     )
     list(APPEND config_sources ${json_sources})
     list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/json")
-    list(APPEND config_dependency_targets Json)
     set(CONFIG_NON_EMPTY_TEST ON)
 endif()
 
@@ -41,14 +40,13 @@ endif()
 option(YATO_CONFIG_CMD "Enable command line config background" OFF)
 if(YATO_CONFIG_CMD)
     include(${CMAKE_SOURCE_DIR}/cmake/dependency.tclap.cmake)
-    include_directories(${DEPENDS_TCLAP_INCLUDE_DIR})
+    include_directories(${TCLAP_INCLUDE_DIR})
     file(GLOB cmd_sources
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/cmd/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/cmd/*.cpp"
     )
     list(APPEND config_sources ${cmd_sources})
     list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/cmd")
-    list(APPEND config_dependency_targets Tclap)
     set(CONFIG_NON_EMPTY_TEST ON)
 endif()
 
@@ -58,6 +56,7 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${config_sources})
 
 add_library(YatoConfig STATIC ${config_sources})
+set_property(TARGET YatoConfig PROPERTY FOLDER "Modules")
 
 #============================================
 # Dependencies

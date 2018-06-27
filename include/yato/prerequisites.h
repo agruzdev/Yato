@@ -144,6 +144,14 @@ static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 # define YATO_GCC_WARNING_IGNORE(Flag)
 #endif
 
+#ifdef _WIN32
+# define YATO_EXPORT_ATTRIBUTE __declspec(dllexport)
+# define YATO_IMPORT_ATTRIBUTE __declspec(dllimport)
+#else
+# define YATO_EXPORT_ATTRIBUTE __attribute__((visibility("default")))
+# define YATO_IMPORT_ATTRIBUTE 
+#endif
+
 
 #if defined(YATO_MSVC)
 # define YATO_FORCED_INLINE __forceinline

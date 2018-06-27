@@ -1,28 +1,29 @@
+#
+# YATO library
+#
+# The MIT License (MIT)
+# Copyright (c) 2018 Alexey Gruzdev
+#
+
 # TCLAP dependency
 # https://sourceforge.net/projects/tclap/
 
-if(NOT TARGET Tclap)
+# Output variables:
+# TCLAP_INCLUDE_DIR - includes
+# TCLAP_LIBRARY_DIR - link directories
+# TCLAP_LIBRARIES   - link targets
 
-    include(ExternalProject)
+include(${CMAKE_SOURCE_DIR}/cmake/dependency.common.functions.cmake)
 
-    set(TCLAP_ROOT "${CMAKE_SOURCE_DIR}/dependencies/tclap")
+dependency_find_or_download(
+    NAME TCLAP
+    VERBOSE_NAME "TCLAP"
+    URL "https://sourceforge.net/projects/tclap/files/tclap-1.2.2.tar.gz"
+    HASH_MD5 "6f35665814dca292eceda007d7e13bcb"
+    FILE_NAME "tclap-1.2.2.tar.gz"
+    PREFIX "tclap-1.2.2"
+)
 
-    ExternalProject_Add(Tclap
-        PREFIX "${TCLAP_ROOT}"
-        URL "https://sourceforge.net/projects/tclap/files/tclap-1.2.2.tar.gz/download"
-        URL_HASH "SHA1=e07cb13a6849b21189865f74e447d373b325d577"
-        CONFIGURE_COMMAND ""  # Skip
-        BUILD_COMMAND ""      # Skip
-        INSTALL_COMMAND ""    # Skip
-        TEST_COMMAND ""       # Skip
-    )
-
-    ExternalProject_Get_Property(Tclap SOURCE_DIR)
-    set(DEPENDS_TCLAP_INCLUDE_DIR "${SOURCE_DIR}/include")
-
-    unset(SOURCE_DIR)
-    unset(TCLAP_ROOT)
-
-endif()
-
-
+set(TCLAP_INCLUDE_DIR ${TCLAP_FOUND_ROOT}/include CACHE INTERNAL "")
+set(TCLAP_LIBRARY_DIR "" CACHE INTERNAL "")
+set(TCLAP_LIBRARIES "" CACHE INTERNAL "")
