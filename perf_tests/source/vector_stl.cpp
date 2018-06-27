@@ -25,11 +25,9 @@ void Vector1D_Write_STL(benchmark::State & state)
     for (auto _ : state) {
         const int32_t* input = src.data();
         for(size_t i = 0; i < N; ++i) {
-            dst[i] = *input++;
+            benchmark::DoNotOptimize(dst[i] = *input++);
         }
     }
-
-    benchmark::DoNotOptimize(dst[std::rand() % dst.size()]);
 }
 
 
@@ -52,12 +50,10 @@ void Vector2D_Write_STL(benchmark::State & state)
         const int32_t* input = src.data();
         for(size_t y = 0; y < N; ++y) {
             for(size_t x = 0; x < N; ++x) {
-                dst[y * N + x] = *input++;
+                benchmark::DoNotOptimize(dst[y * N + x] = *input++);
             }
         }
     }
-
-    benchmark::DoNotOptimize(dst[std::rand() % dst.size()]);
 }
 
 BENCHMARK(Vector2D_Write_STL)->Arg(1000)->Arg(10000)->Arg(100000)->Arg(1000000);
@@ -80,13 +76,11 @@ void Vector3D_Write_STL(benchmark::State & state)
         for(size_t z = 0; z < N; ++z) {
             for(size_t y = 0; y < N; ++y) {
                 for(size_t x = 0; x < N; ++x) {
-                    dst[(z * N + y) * N + x] = *input++;
+                    benchmark::DoNotOptimize(dst[(z * N + y) * N + x] = *input++);
                 }
             }
         }
     }
-
-    benchmark::DoNotOptimize(dst[std::rand() % dst.size()]);
 }
 
 BENCHMARK(Vector3D_Write_STL)->Arg(1000)->Arg(10000)->Arg(100000)->Arg(1000000);

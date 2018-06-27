@@ -27,11 +27,9 @@ void Vector1D_Write_Yato(benchmark::State & state)
     for (auto _ : state) {
         const int32_t* input = src.data();
         for(size_t i = 0; i < N; ++i) {
-            dst[i] = *input++;
+            benchmark::DoNotOptimize(dst[i] = *input++);
         }
     }
-
-    benchmark::DoNotOptimize(dst[std::rand() % N]);
 }
 
 
@@ -54,12 +52,10 @@ void Vector2D_Write_Yato(benchmark::State & state)
         const int32_t* input = src.data();
         for(size_t y = 0; y < N; ++y) {
             for(size_t x = 0; x < N; ++x) {
-                dst[y][x] = *input++;
+                benchmark::DoNotOptimize(dst[y][x] = *input++);
             }
         }
     }
-
-    benchmark::DoNotOptimize(*(dst.data() + std::rand() % dst.total_size()));
 }
 
 BENCHMARK(Vector2D_Write_Yato)->Arg(1000)->Arg(10000)->Arg(100000)->Arg(1000000);
@@ -82,13 +78,11 @@ void Vector3D_Write_Yato(benchmark::State & state)
         for(size_t z = 0; z < N; ++z) {
             for(size_t y = 0; y < N; ++y) {
                 for(size_t x = 0; x < N; ++x) {
-                    dst[z][y][x] = *input++;
+                    benchmark::DoNotOptimize(dst[z][y][x] = *input++);
                 }
             }
         }
     }
-
-    benchmark::DoNotOptimize(*(dst.data() + std::rand() % dst.total_size()));
 }
 
 BENCHMARK(Vector3D_Write_Yato)->Arg(1000)->Arg(10000)->Arg(100000)->Arg(1000000);
