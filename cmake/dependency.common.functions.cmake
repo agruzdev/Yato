@@ -40,6 +40,8 @@ endfunction()
 #
 #    OUT_INVALIDATED       # Out flag. ON if dependency should be configured. OFF if cache is valid.
 #)
+#
+# Use global flag DOWNLOAD_ALL to enable downloading by default
 
 function(dependency_find_or_download)
     set(oneValueArgs
@@ -53,7 +55,7 @@ function(dependency_find_or_download)
     cmake_parse_arguments(DEPENDENCY "" "${oneValueArgs}" "" ${ARGN})
 
     option(${DEPENDENCY_NAME}_DOWNLOAD "Download ${DEPENDENCY_VERBOSE_NAME} sources" OFF)
-    if(${DEPENDENCY_NAME}_DOWNLOAD)
+    if(${DEPENDENCY_NAME}_DOWNLOAD OR DOWNLOAD_ALL)
         string(TOLOWER ${DEPENDENCY_NAME} folder_name_)
         if(DEPENDENCY_FILE_NAME)
             set(file_name_ ${DEPENDENCY_FILE_NAME})

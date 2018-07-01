@@ -7,6 +7,7 @@ cmake_minimum_required (VERSION 3.2)
 #   -D_MT=[ON/OFF] Multithreaded build
 #   -D_ACTORS=[ON/OFF] Build with whole actors module
 #   -D_CONFIG=[ON/OFF] Build with whole config module
+#   -D_DOWNLOAD_DEPENDENCIES=[ON/OFF] Automatically download all dependencies
 # Supported targets:
 #   vc12x32  - MSVC_2013 x32
 #   vc14x32  - MSVC_2015 x32
@@ -224,6 +225,10 @@ foreach(CURRENT_TARGET ${all_build_targers})
             list(APPEND configure_flags -DYATO_CONFIG_MANUAL=ON)
             list(APPEND configure_flags -DYATO_CONFIG_JSON=ON)
             list(APPEND configure_flags -DYATO_CONFIG_CMD=ON)
+        endif()
+
+        if(_DOWNLOAD_DEPENDENCIES)
+            list(APPEND configure_flags -DDOWNLOAD_ALL=ON)
         endif()
 
         message(STATUS "configure_flags=${configure_flags}")
