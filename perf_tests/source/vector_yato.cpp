@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numeric>
 
 #include <benchmark/benchmark.h>
 
@@ -86,3 +87,26 @@ void Vector3D_Write_Yato(benchmark::State & state)
 }
 
 BENCHMARK(Vector3D_Write_Yato)->Arg(1000)->Arg(10000)->Arg(100000)->Arg(1000000);
+
+
+
+void Vector1D_PushBack_Yato(benchmark::State & state)
+{
+    static const int RND_SEED = 3;
+    const size_t N = state.range(0);
+
+    yato::vector_1d<int32_t> test;
+    std::srand(RND_SEED);
+
+    for (auto _ : state) {
+        for(size_t i = 0; i < N; ++i) {
+            test.push_back(std::rand());
+        }
+    }
+
+    const int32_t sum = std::accumulate(test.cbegin(), test.cend(), 0);
+    benchmark::DoNotOptimize(sum);
+}
+
+BENCHMARK(Vector1D_PushBack_Yato)->Arg(1000)->Arg(10000)->Arg(100000)->Arg(1000000);
+

@@ -45,13 +45,38 @@ namespace yato
         //-------------------------------------------------------
         //
 
-        template <typename ValueTy_, typename Allocator_>
+        struct default_capacity_policy
+        {
+            /**
+             * Calculate new capacity size after reallocation.
+             * @param old_size Current capacity.
+             * @param new_size Required capacity.
+             * @return Capacity to be allocated, probably bigger than required.
+             */
+            static constexpr
+            size_t increase(size_t old_size, size_t new_size)
+            {
+                YATO_REQUIRES(new_size > old_size);
+                if(old_size < std::numeric_limits<size_t>::max() / 2) {
+                    return std::max(new_size, 2 * old_size);
+                }
+                else {
+                    return std::numeric_limits<size_t>::max();
+                }
+            }
+        };
+
+        //-------------------------------------------------------
+        //
+
+        template <typename ValueTy_, typename Allocator_, typename CapacityPolicy_>
         class raw_vector
         {
-            using this_type = raw_vector<ValueTy_, Allocator_>;
+            using this_type = raw_vector<ValueTy_, Allocator_, CapacityPolicy_>;
             using value_type = ValueTy_;
             using raw_pointer = ValueTy_*;
             using allocator_type = Allocator_;
+            using capacity_policy = CapacityPolicy_;
             //-----------------------------------------------------
 
             yato::compressed_pair<Allocator_, ValueTy_*> m_storage;
@@ -239,14 +264,15 @@ namespace yato
                         throw;
                     }
                 } else {
-                    value_type* const new_data = memory::allocate(alloc, new_size);
+                    const size_t new_capacity = capacity_policy::increase(m_allocated_size, new_size);
+                    value_type* const new_data = memory::allocate(alloc, new_capacity);
                     value_type* dst = new_data;
                     try {
                         memory::fill_uninitialized(alloc, dst, new_data + new_size, std::forward<InitArgs_>(init_args)...);
                     }
                     catch(...) {
                         memory::destroy(alloc, new_data, dst);
-                        memory::deallocate(alloc, new_data, new_size);
+                        memory::deallocate(alloc, new_data, new_capacity);
                         valid = true;
                         throw;
                     }
@@ -256,7 +282,7 @@ namespace yato
                         memory::deallocate(alloc, old_data, m_allocated_size);
                     }
                     ptr() = new_data;
-                    m_allocated_size = new_size;
+                    m_allocated_size = new_capacity;
                 }
             }
 
@@ -270,8 +296,9 @@ namespace yato
                 else if(new_size > old_size) {
                     allocator_type& alloc = allocator();
                     if(new_size > m_allocated_size) {
+                        const size_t new_capacity = capacity_policy::increase(m_allocated_size, new_size);
                         value_type* const old_data = ptr();
-                        value_type* const new_data = memory::allocate(alloc, new_size);
+                        value_type* const new_data = memory::allocate(alloc, new_capacity);
                         value_type* dst = new_data;
                         try {
                             // transfer old
@@ -283,7 +310,7 @@ namespace yato
                         }
                         catch(...) {
                             memory::destroy(alloc, new_data, dst);
-                            memory::deallocate(alloc, new_data, new_size);
+                            memory::deallocate(alloc, new_data, new_capacity);
                             throw;
                         }
                         // delete old
@@ -292,7 +319,7 @@ namespace yato
                             memory::deallocate(alloc, old_data, m_allocated_size);
                         }
                         ptr() = new_data;
-                        m_allocated_size = new_size;
+                        m_allocated_size = new_capacity;
                     } else {
                         // enough space
                         value_type* const old_data = ptr();
@@ -313,7 +340,8 @@ namespace yato
             {
                 if(new_size > m_allocated_size) {
                     allocator_type& alloc = allocator();
-                    value_type* new_data = memory::allocate(alloc, new_size);
+                    const size_t new_capacity = capacity_policy::increase(m_allocated_size, new_size);
+                    value_type* new_data = memory::allocate(alloc, new_capacity);
                     value_type* old_data = ptr();
                     if(old_data != nullptr) {
                         value_type* dst = new_data;
@@ -322,14 +350,14 @@ namespace yato
                         }
                         catch(...) {
                             memory::destroy(alloc, new_data, dst);
-                            memory::deallocate(alloc, new_data, new_size);
+                            memory::deallocate(alloc, new_data, new_capacity);
                             throw;
                         }
                         memory::destroy(alloc, old_data, old_data + old_size);
                         memory::deallocate(alloc, old_data, m_allocated_size);
                     }
                     ptr() = new_data;
-                    m_allocated_size = new_size;
+                    m_allocated_size = new_capacity;
                 }
                 return yato::make_range(std::next(ptr(), old_size), std::next(ptr(), new_size));
             }
@@ -344,7 +372,8 @@ namespace yato
                 YATO_ASSERT(new_size > old_size, "Invalid size");
                 if(new_size > m_allocated_size) {
                     allocator_type& alloc = allocator();
-                    value_type* new_data = memory::allocate(alloc, new_size);
+                    const size_t new_capacity = capacity_policy::increase(m_allocated_size, new_size);
+                    value_type* new_data = memory::allocate(alloc, new_capacity);
                     value_type* old_data = ptr();
                     if(old_data != nullptr) {
                         // transfer left part
@@ -355,7 +384,7 @@ namespace yato
                         catch(...) {
                             valid_count = old_size / element_size;
                             memory::destroy(alloc, new_data, dst_left);
-                            memory::deallocate(alloc, new_data, new_size);
+                            memory::deallocate(alloc, new_data, new_capacity);
                             throw;
                         }
                         // transfer right part
@@ -368,7 +397,7 @@ namespace yato
                             valid_count = old_size / element_size;
                             memory::destroy(alloc, new_data, dst_left);
                             memory::destroy(alloc, new_data + insert_offset + insert_size, dst_right);
-                            memory::deallocate(alloc, new_data, new_size);
+                            memory::deallocate(alloc, new_data, new_capacity);
                             throw;
                         }
                         // destroy old
@@ -376,7 +405,7 @@ namespace yato
                         memory::deallocate(alloc, old_data, m_allocated_size);
                     }
                     ptr() = new_data;
-                    m_allocated_size = new_size;
+                    m_allocated_size = new_capacity;
                 } else {
                     allocator_type& alloc = allocator();
                     // enough of allocated size
@@ -525,7 +554,9 @@ namespace yato
         //-------------------------------------------------------
         // Generic implementation
 
-        template <typename _DataType, size_t _DimensionsNum, typename _Allocator>
+        template <typename _DataType, size_t _DimensionsNum, typename _Allocator, 
+            typename CapacityPolicy_ = details::default_capacity_policy
+        >
         class vector_nd_impl
         {
         public:
@@ -569,7 +600,7 @@ namespace yato
 
         private:
             std::array<dim_descriptor::type, dimensions_number> m_descriptors = {};
-            raw_vector<value_type, allocator_type> m_raw_vector;
+            raw_vector<value_type, allocator_type, CapacityPolicy_> m_raw_vector;
             //-------------------------------------------------------
 
             template <typename InitTy_>
@@ -704,7 +735,7 @@ namespace yato
 
             proxy create_proxy_(size_t offset) YATO_NOEXCEPT_KEYWORD
             {
-                return proxy(std::next(m_raw_vector.ptr(), offset * std::get<dim_descriptor::idx_total>(m_descriptors[1])), &m_descriptors[1]);
+                return proxy(m_raw_vector.ptr() + offset * std::get<dim_descriptor::idx_total>(m_descriptors[1]), &m_descriptors[1]);
             }
 
             proxy create_proxy_(data_iterator plain_position) YATO_NOEXCEPT_KEYWORD
@@ -714,7 +745,7 @@ namespace yato
 
             const_proxy create_const_proxy_(size_t offset) const YATO_NOEXCEPT_KEYWORD
             {
-                return const_proxy(std::next(m_raw_vector.ptr(), offset * std::get<dim_descriptor::idx_total>(m_descriptors[1])), &m_descriptors[1]);
+                return const_proxy(m_raw_vector.ptr() + offset * std::get<dim_descriptor::idx_total>(m_descriptors[1]), &m_descriptors[1]);
             }
 
             const_proxy create_const_proxy_(const_data_iterator plain_position) const YATO_NOEXCEPT_KEYWORD
@@ -1766,7 +1797,7 @@ namespace yato
 
             //------------------------------------------------------------
 
-            template <typename, size_t, typename>
+            template <typename, size_t, typename, typename>
             friend class vector_nd_impl;
         };
 
@@ -1780,8 +1811,8 @@ namespace yato
         // Implementation of 1D case
         // More specific implementation with full std::vector interface
 
-        template <typename _DataType, typename _Allocator>
-        class vector_nd_impl<_DataType, 1, _Allocator>
+        template <typename _DataType, typename _Allocator, typename CapacityPolicy_>
+        class vector_nd_impl<_DataType, 1, _Allocator, CapacityPolicy_>
         {
         public:
             /*
@@ -1807,7 +1838,7 @@ namespace yato
         private:
             using alloc_traits = std::allocator_traits<allocator_type>;
 
-            raw_vector<value_type, allocator_type> m_raw_vector;
+            raw_vector<value_type, allocator_type, CapacityPolicy_> m_raw_vector;
             size_t m_size = 0;
             //-------------------------------------------------------
 
@@ -2805,29 +2836,47 @@ namespace yato
 
             //------------------------------------------------------------
 
-            template <typename, size_t, typename>
+            template <typename, size_t, typename, typename>
             friend class vector_nd_impl;
         };
 
     }
 
-    template <typename _DataType, size_t _DimensionsNum, typename _Allocator = std::allocator<_DataType> >
-    using vector_nd = details::vector_nd_impl<_DataType, _DimensionsNum, _Allocator>;
+    template <typename DataType_, size_t DimensionsNum_,
+        typename Allocator_ = std::allocator<DataType_>,
+        typename CapacityPolicy_ = details::default_capacity_policy
+    >
+    using vector_nd = details::vector_nd_impl<DataType_, DimensionsNum_, Allocator_, CapacityPolicy_>;
 
-    template <typename _DataType, typename _Allocator = std::allocator<_DataType> >
-    using vector_1d = vector_nd<_DataType, 1, _Allocator>;
+    template <typename DataType_,
+        typename Allocator_ = std::allocator<DataType_>,
+        typename CapacityPolicy_ = details::default_capacity_policy
+    >
+    using vector_1d = vector_nd<DataType_, 1, Allocator_, CapacityPolicy_>;
 
-    template <typename _DataType, typename _Allocator = std::allocator<_DataType> >
-    using vector = vector_1d<_DataType, _Allocator>;
+    template <typename DataType_,
+        typename Allocator_ = std::allocator<DataType_>,
+        typename CapacityPolicy_ = details::default_capacity_policy
+    >
+    using vector = vector_nd<DataType_, 1, Allocator_, CapacityPolicy_>;
 
-    template <typename _DataType, typename _Allocator = std::allocator<_DataType> >
-    using vector_2d = vector_nd<_DataType, 2, _Allocator>;
+    template <typename DataType_,
+        typename Allocator_ = std::allocator<DataType_>,
+        typename CapacityPolicy_ = details::default_capacity_policy
+    >
+    using vector_2d = vector_nd<DataType_, 2, Allocator_, CapacityPolicy_>;
 
-    template <typename _DataType, typename _Allocator = std::allocator<_DataType> >
-    using vector_3d = vector_nd<_DataType, 3, _Allocator>;
+    template <typename DataType_, 
+        typename Allocator_ = std::allocator<DataType_>,
+        typename CapacityPolicy_ = details::default_capacity_policy
+    >
+    using vector_3d = vector_nd<DataType_, 3, Allocator_, CapacityPolicy_>;
 
-    template <typename _DataType, typename _Allocator = std::allocator<_DataType> >
-    using vector_4d = vector_nd<_DataType, 4, _Allocator>;
+    template <typename DataType_,
+        typename Allocator_ = std::allocator<DataType_>,
+        typename CapacityPolicy_ = details::default_capacity_policy
+    >
+    using vector_4d = vector_nd<DataType_, 4, Allocator_, CapacityPolicy_>;
 }
 
 #endif
