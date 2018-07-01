@@ -71,8 +71,12 @@ if(YATO_ACTORS_WITH_IO)
     target_link_libraries(YatoActors PRIVATE optimized ${Boost_DATE_TIME_LIBRARY_RELEASE})
     target_link_libraries(YatoActors PRIVATE optimized ${Boost_REGEX_LIBRARY_RELEASE})
 
-    target_link_libraries(YatoActors PRIVATE wsock32)
-    target_link_libraries(YatoActors PRIVATE ws2_32)
+    if(WIN32)
+        target_link_libraries(YatoActors PRIVATE wsock32)
+        target_link_libraries(YatoActors PRIVATE ws2_32)
+    else()
+        target_link_libraries(YatoActors PRIVATE pthread)
+    endif()
 endif()
 
 #==========================================
