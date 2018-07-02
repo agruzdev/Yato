@@ -5,8 +5,8 @@
 * Copyright (c) 2018 Alexey Gruzdev
 */
 
-#ifndef _YATO_ARRAY_ND_H_
-#define _YATO_ARRAY_ND_H_
+#ifndef _YATO_VECTOR_ND_H_
+#define _YATO_VECTOR_ND_H_
 
 #include <array>
 #include <vector>
@@ -2879,4 +2879,4 @@ namespace yato
     using vector_4d = vector_nd<DataType_, 4, Allocator_, CapacityPolicy_>;
 }
 
-#endif
+#endif //_YATO_VECTOR_ND_H_
