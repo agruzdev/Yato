@@ -30,6 +30,7 @@ if(NOT TARGET benchmark)
     set(GMOCK_INCLUDE_DIRS ${GMOCK_INCLUDE_DIR})
 
     set(BENCHMARK_ENABLE_TESTING OFF)
+    set(HAVE_STD_REGEX ON)
 
     add_subdirectory(${GBENCH_FOUND_ROOT} ${CMAKE_BINARY_DIR}/dependency/gbench)
 
