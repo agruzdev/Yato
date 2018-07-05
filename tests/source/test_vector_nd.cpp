@@ -327,7 +327,46 @@ TEST(Yato_VectorND, access_1)
     }
 }
 
-TEST(Yato_VectorND, access_2)
+TEST(Yato_VectorND, access_view)
+{
+    yato::vector_nd<int, 2> vec1 = { {1, 2}, {3, 4} };
+    auto view1 = vec1.cview();
+    EXPECT_TRUE(view1[0][0] == 1);
+    EXPECT_TRUE(view1[0][1] == 2);
+    EXPECT_TRUE(view1[1][0] == 3);
+    EXPECT_TRUE(view1[1][1] == 4);
+
+    auto view2 = vec1.view();
+    view2[0][0] = 11;
+    view2[1][0] = 22;
+    EXPECT_TRUE(view1[0][0] == 11);
+    EXPECT_TRUE(view1[0][1] == 2);
+    EXPECT_TRUE(view1[1][0] == 22);
+    EXPECT_TRUE(view1[1][1] == 4);
+}
+
+TEST(Yato_VectorND, access_view_1)
+{
+    std::array<uint8_t, 3> dims;
+    std::generate(dims.begin(), dims.end(), []() { return static_cast<uint8_t>(std::rand() % 101); });
+
+    float val = (std::rand() % 1000) / 10.0f;
+    yato::vector_nd<float, 3> vec_nd(yato::make_range(dims.begin(), dims.end()), val);
+
+    auto view_nd = vec_nd.cview();
+
+    for (size_t i = 0; i < dims[0]; ++i) {
+        for (size_t j = 0; j < dims[1]; ++j) {
+            for (size_t k = 0; k < dims[2]; ++k) {
+                float x;
+                EXPECT_NO_THROW(x = view_nd[i][j][k]);
+                EXPECT_EQ(val, x);
+            }
+        }
+    }
+}
+
+TEST(Yato_VectorND, dims_1)
 {
     yato::vector_nd<int, 3> vec5 = { { { 1, 1 },{ 1, 2 },{ 1, 3 } },{ { 2, 4 },{ 2, 5 },{ 2, 6 } } };
     EXPECT_EQ(2U, vec5[0].dimensions_num());

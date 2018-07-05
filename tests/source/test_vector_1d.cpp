@@ -242,6 +242,41 @@ TEST(Yato_Vector1D, access_1)
     }
 }
 
+TEST(Yato_Vector1D, access_view)
+{
+    yato::vector_1d<int> vec1 = { 1, 2, 3, 4 };
+
+    auto view1 = vec1.cview();
+    EXPECT_TRUE(view1[0] == 1);
+    EXPECT_TRUE(view1[1] == 2);
+    EXPECT_TRUE(view1[2] == 3);
+    EXPECT_TRUE(view1[3] == 4);
+
+    auto view2 = vec1.view();
+    view2[1] = 14;
+    view2.at(3) = 24;
+
+    EXPECT_TRUE(view1[0] == 1);
+    EXPECT_TRUE(view1[1] == 14);
+    EXPECT_TRUE(view1[2] == 3);
+    EXPECT_TRUE(view1[3] == 24);
+}
+
+TEST(Yato_Vector1D, access_view_1)
+{
+    const size_t size = static_cast<uint8_t>(std::rand() % 101);
+
+    short val = static_cast<short>((std::rand() % 1000) / 10.0f);
+    yato::vector_1d<short> vec_1d(size, val);
+    auto view_1d = vec_1d.cview();
+
+    for (size_t i = 0; i < size; ++i) {
+        short x{0};
+        EXPECT_NO_THROW(x = view_1d[i]);
+        EXPECT_EQ(val, x);
+    }
+}
+
 TEST(Yato_Vector1D, method_at)
 {
     yato::vector_1d<int> vec1 = { 1, 2, 3, 4 };

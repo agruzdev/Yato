@@ -1287,6 +1287,22 @@ namespace yato
             }
 
             /**
+             * Construct view for the full vector
+             */
+            auto cview() const
+            {
+                return yato::array_view_nd<std::add_const_t<value_type>, dimensions_number>(data(), dimensions());
+            }
+
+            /**
+             * Construct view for the full vector
+             */
+            auto view()
+            {
+                return yato::array_view_nd<value_type, dimensions_number>(data(), dimensions());
+            }
+
+            /**
              * Get a raw pointer to stored data beginning
              */
             const data_type* data() const YATO_NOEXCEPT_KEYWORD
@@ -2417,6 +2433,22 @@ namespace yato
             const value_type* data() const
             {
                 return m_raw_vector.ptr();
+            }
+
+            /**
+             * Construct view for the full vector
+             */
+            auto cview() const
+            {
+                return yato::array_view_1d<std::add_const_t<value_type>>(data(), yato::dims(m_size));
+            }
+
+            /**
+             * Construct view for the full vector
+             */
+            auto view()
+            {
+                return yato::array_view_1d<value_type>(data(), yato::dims(m_size));
             }
 
             /**
