@@ -1,5 +1,10 @@
 cmake_minimum_required (VERSION 3.8)
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+if(NOT YATO_NO_PROJECT_FOLDERS)
+    set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+endif()
+
+set(YATO_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 project(Yato)
 
@@ -14,19 +19,19 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BIN_OUTPUT_DIR})
 # Determine target
 
 if(MSVC)
-    set(TARGET_CONFIG_LISTS ${CMAKE_SOURCE_DIR}/cmake/CMakeLists-MSVC.cmake)
+    set(TARGET_CONFIG_LISTS ${YATO_SOURCE_DIR}/cmake/CMakeLists-MSVC.cmake)
 elseif(UNIX OR MINGW OR ANDROID)
-    set(TARGET_CONFIG_LISTS ${CMAKE_SOURCE_DIR}/cmake/CMakeLists-GCC.cmake)
+    set(TARGET_CONFIG_LISTS ${YATO_SOURCE_DIR}/cmake/CMakeLists-GCC.cmake)
 endif()
 
 #==========================================
 # Core sources
 
-set(YATO_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/include")
+set(YATO_INCLUDE_DIRS "${YATO_SOURCE_DIR}/include")
 
 file(GLOB_RECURSE yato_sources "${YATO_INCLUDE_DIRS}/*.h")
 
-source_group(TREE "${CMAKE_SOURCE_DIR}" FILES ${yato_sources})
+source_group(TREE "${YATO_SOURCE_DIR}" FILES ${yato_sources})
 
 add_custom_target(Yato SOURCES ${yato_sources})
 set_property(TARGET Yato PROPERTY FOLDER "Modules")
@@ -45,7 +50,7 @@ message(STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
 option(YATO_BUILD_CONFIG "Build config module" OFF)
 if(YATO_BUILD_CONFIG)
     add_subdirectory(./modules/config)
-    list(APPEND YATO_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/modules/config")
+    list(APPEND YATO_INCLUDE_DIRS "${YATO_SOURCE_DIR}/modules/config")
 endif()
 
 option(YATO_BUILD_ACTORS "Build actors module" OFF)
@@ -53,7 +58,7 @@ if(YATO_BUILD_ACTORS)
     option(YATO_ACTORS_WITH_IO "Enable networking component" OFF)
 
     add_subdirectory(./modules/actors)
-    list(APPEND YATO_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/modules/actors")
+    list(APPEND YATO_INCLUDE_DIRS "${YATO_SOURCE_DIR}/modules/actors")
 endif()
 
 #==========================================

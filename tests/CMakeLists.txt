@@ -3,7 +3,7 @@ project(YatoTests)
 #==========================================
 # Dependencies
 
-include(${CMAKE_SOURCE_DIR}/cmake/dependency.gtest.cmake)
+include(${YATO_SOURCE_DIR}/cmake/dependency.gtest.cmake)
 
 include(${TARGET_CONFIG_LISTS})
 
@@ -22,7 +22,7 @@ foreach(test_dir ${Yato_TEST_DIRS})
     list(APPEND all_sources ${test_files})
 endforeach()
 
-source_group(TREE "${CMAKE_SOURCE_DIR}" FILES ${all_sources})
+source_group(TREE "${YATO_SOURCE_DIR}" FILES ${all_sources})
 
 #==========================================
 # Targets

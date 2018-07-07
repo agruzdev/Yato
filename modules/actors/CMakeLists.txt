@@ -12,7 +12,7 @@ endif()
 if(YATO_BUILD_TESTS AND NOT YATO_CONFIG_MANUAL)
     message(FATAL_ERROR "Manual config backend is required for testing! Please enable YATO_CONFIG_MANUAL")
 endif()
-include_directories(${CMAKE_SOURCE_DIR}/modules/config)
+include_directories(${YATO_SOURCE_DIR}/modules/config)
 
 #==========================================
 # Core sources

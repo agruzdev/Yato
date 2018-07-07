@@ -25,7 +25,7 @@ endif()
 # Json
 option(YATO_CONFIG_JSON "Enable json config backend" OFF)
 if(YATO_CONFIG_JSON)
-    include(${CMAKE_SOURCE_DIR}/cmake/dependency.json.cmake)
+    include(${YATO_SOURCE_DIR}/cmake/dependency.json.cmake)
     include_directories(${JSON_INCLUDE_DIR})
     file(GLOB json_sources
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/json/*.h"
@@ -39,7 +39,7 @@ endif()
 # Command line
 option(YATO_CONFIG_CMD "Enable command line config background" OFF)
 if(YATO_CONFIG_CMD)
-    include(${CMAKE_SOURCE_DIR}/cmake/dependency.tclap.cmake)
+    include(${YATO_SOURCE_DIR}/cmake/dependency.tclap.cmake)
     include_directories(${TCLAP_INCLUDE_DIR})
     file(GLOB cmd_sources
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/cmd/*.h"

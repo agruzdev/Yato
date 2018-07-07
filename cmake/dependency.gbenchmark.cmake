@@ -14,7 +14,7 @@
 # GBENCH_LIBRARIES   - link targets
 
 # Depends on Gtest
-include(${CMAKE_SOURCE_DIR}/cmake/dependency.gtest.cmake)
+include(${YATO_SOURCE_DIR}/cmake/dependency.gtest.cmake)
 
 dependency_find_or_download(
     NAME GBENCH

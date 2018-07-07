@@ -14,7 +14,7 @@
 # GMOCK_INCLUDE_DIR - includes
 
 
-include(${CMAKE_SOURCE_DIR}/cmake/dependency.common.functions.cmake)
+include(${YATO_SOURCE_DIR}/cmake/dependency.common.functions.cmake)
 
 macro(_gtest_fix_definitions _TARGET_NAME_)
     if(TARGET ${_TARGET_NAME_})

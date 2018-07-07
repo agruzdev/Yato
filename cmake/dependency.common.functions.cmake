@@ -63,9 +63,9 @@ function(dependency_find_or_download)
             set(file_name_ "package.zip")
         endif()
         dependency_download_and_unzip(${DEPENDENCY_URL} ${DEPENDENCY_HASH_MD5} 
-            "${CMAKE_SOURCE_DIR}/dependencies/${folder_name_}/${file_name_}"
+            "${YATO_SOURCE_DIR}/dependencies/${folder_name_}/${file_name_}"
         )
-        set(root_ ${CMAKE_SOURCE_DIR}/dependencies/${folder_name_})
+        set(root_ ${YATO_SOURCE_DIR}/dependencies/${folder_name_})
         if(DEPENDENCY_PREFIX)
             set(root_ ${root_}/${DEPENDENCY_PREFIX})
         endif()

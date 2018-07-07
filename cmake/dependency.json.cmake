@@ -13,7 +13,7 @@
 # JSON_LIBRARY_DIR - link directories
 # JSON_LIBRARIES   - link targets
 
-include(${CMAKE_SOURCE_DIR}/cmake/dependency.common.functions.cmake)
+include(${YATO_SOURCE_DIR}/cmake/dependency.common.functions.cmake)
 
 dependency_find_or_download(
     NAME JSON
