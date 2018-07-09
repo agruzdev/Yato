@@ -5,25 +5,55 @@
 # Copyright (c) 2018 Alexey Gruzdev
 #
 
-function(dependency_download_and_unzip URL_ HASH_MD5_ FILE_)
-    message(STATUS "Downloading: ${URL_}")
-    file(DOWNLOAD ${URL_} ${FILE_}
-        SHOW_PROGRESS
-        EXPECTED_MD5 ${HASH_MD5_}
-        STATUS ret_
-    )
-    if(NOT ret_)
-        message(FATAL_ERROR "Failed to download: ${URL_}")
+# Check that directory exists and is not empty
+function(dependency_folder_not_empty PATH_ RESULT_)
+    set(res_ FALSE)
+    if(EXISTS ${PATH_})
+        file(GLOB files_ "${PATH_}/*")
+        if(files_)
+            set(res_ TRUE)
+        endif()
+        unset(files_)
+    endif()
+    set(${RESULT_} ${res_} PARENT_SCOPE)
+endfunction()
+
+function(dependency_download_and_unzip URL_ HASH_MD5_ FILE_ UNZIPPED_DIR_)
+    set(download_required_ TRUE)
+    if(EXISTS ${FILE_})
+        file(MD5 ${FILE_} hash_)
+        if(${hash_} STREQUAL ${HASH_MD5_})
+            set(download_required_ FALSE)
+        endif()
     endif()
 
-    message(STATUS "Unzipping: ${FILE_}")
+    if(${download_required_})
+        message(STATUS "Downloading: ${URL_}")
+        file(DOWNLOAD ${URL_} ${FILE_}
+            SHOW_PROGRESS
+            EXPECTED_MD5 ${HASH_MD5_}
+            STATUS ret_
+        )
+        if(NOT ret_)
+            message(FATAL_ERROR "Failed to download: ${URL_}")
+        endif()
+    endif()
+
     get_filename_component(workdir_ ${FILE_} DIRECTORY)
-    execute_process(COMMAND "${CMAKE_COMMAND}" -E tar -xzf ${FILE_}
-        WORKING_DIRECTORY ${workdir_}
-        RESULT_VARIABLE ret_
-    )
-    if(ret_)
-        message(FATAL_ERROR "Failed to extract: ${FILE_}")
+    set(output_dir_ ${workdir_}/unzipped)
+    set(${UNZIPPED_DIR_} ${output_dir_} PARENT_SCOPE)
+
+    dependency_folder_not_empty(${output_dir_} unzip_exists_)
+    if(NOT ${unzip_exists_})
+        message(STATUS "Unzipping: ${FILE_}")
+        file(MAKE_DIRECTORY ${output_dir_})
+        execute_process(COMMAND "${CMAKE_COMMAND}" -E tar -xzf ${FILE_}
+            WORKING_DIRECTORY ${output_dir_}
+            RESULT_VARIABLE ret_
+        )
+        if(ret_)
+            message(FATAL_ERROR "Failed to extract: ${FILE_}")
+        endif()
     endif()
 endfunction()
 
@@ -64,8 +94,9 @@ function(dependency_find_or_download)
         endif()
         dependency_download_and_unzip(${DEPENDENCY_URL} ${DEPENDENCY_HASH_MD5} 
             "${YATO_SOURCE_DIR}/dependencies/${folder_name_}/${file_name_}"
+            unzipped_location_
         )
-        set(root_ ${YATO_SOURCE_DIR}/dependencies/${folder_name_})
+        set(root_ ${unzipped_location_})
         if(DEPENDENCY_PREFIX)
             set(root_ ${root_}/${DEPENDENCY_PREFIX})
         endif()
