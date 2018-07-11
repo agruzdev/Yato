@@ -113,9 +113,10 @@ Current implementation of the command line backend supports only plain object co
 ```c++
 
 const yato::conf::config conf = yato::conf::cmd_builder("Test")
-    .integer("", "answer", "integer argument with default value", yato::some(0))
-    .string("c", "comment", "required string argument with one-letter alias")
-    .floating("", "precision", "required floating-point argument")
+    .integer(yato::conf::cmd_argument::optional, "", "answer", "optional integer argument with default value", yato::some(0))
+    .integer(yato::conf::cmd_argument::optional, "", "answer", "optional integer argument without default value. If it was not set, then it will be missing from the config")
+    .string(yato::conf::cmd_argument::requred, "c", "comment", "required string argument with one-letter alias")
+    .floating(yato::conf::cmd_argument::required, "", "precision", "required floating-point argument")
     .boolean("", "manual_mode", "boolean flag")
     .parse(argc, argv);
 

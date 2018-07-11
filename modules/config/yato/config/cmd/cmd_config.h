@@ -42,6 +42,27 @@ namespace conf {
         cmd_config& operator=(cmd_config&&) noexcept;
     };
 
+    /**
+     * Types of supported arguments
+     */
+    enum class cmd_argument
+    {
+        /**
+         * Identified by their position in the command line. 
+         * Positional arguemnts are parsed in the same order, as added to the builder.
+         */
+        positional,
+        
+        /**
+         * Arguments required to be presented. If any of them is missing, then parsing excetion will be thrown.
+         */
+        required,
+
+        /**
+         * Optianally presended in the command line.
+         */
+        optional
+    };
 
     /**
      * Specifies required arguments and parces command line generating config instance.
@@ -66,36 +87,39 @@ namespace conf {
 
         /**
          * Add integer argument.
-         * @param flag One letter flag.
+         * @param kind Type of parameter, defining parsing requirements.
+         * @param flag One letter flag. In the case of positional argument, flag is ignored.
          * @param name Full argument name.
          * @param description Argumant description.
-         * @param default_value Default value. If empty, then value is required to be passed.
+         * @param default_value Default value for optional arguments, otherwise ignored.
          */
-        cmd_builder& integer(const std::string & flag, const std::string & name, const std::string & description,
+        cmd_builder& integer(cmd_argument kind, const std::string & flag, const std::string & name, const std::string & description,
             const yato::optional<int64_t> & default_value  = yato::nullopt_t{});
 
         /**
          * Add floating-point argument.
-         * @param flag One letter flag.
+         * @param kind Type of parameter, defining parsing requirements.
+         * @param flag One letter flag. In the case of positional argument, flag is ignored.
          * @param name Full argument name.
          * @param description Argumant description.
-         * @param default_value Default value. If empty, then value is required to be passed.
+         * @param default_value Default value for optional arguments, otherwise ignored.
          */
-        cmd_builder& floating(const std::string & flag, const std::string & name, const std::string & description,
+        cmd_builder& floating(cmd_argument kind, const std::string & flag, const std::string & name, const std::string & description,
             const yato::optional<double> & default_value  = yato::nullopt_t{});
 
         /**
          * Add string argument.
-         * @param flag One letter flag.
+         * @param kind Type of parameter, defining parsing requirements.
+         * @param flag One letter flag. In the case of positional argument, flag is ignored.
          * @param name Full argument name.
          * @param description Argumant description.
-         * @param default_value Default value. If empty, then value is required to be passed.
+         * @param default_value Default value for optional arguments, otherwise ignored.
          */
-        cmd_builder& string(const std::string & flag, const std::string & name, const std::string & description,
+        cmd_builder& string(cmd_argument kind, const std::string & flag, const std::string & name, const std::string & description,
             const yato::optional<std::string> & default_value  = yato::nullopt_t{});
 
         /**
-         * Add boolean flag.
+         * Add boolean flag. Always optional.
          * @param flag One letter flag.
          * @param name Full argument name.
          * @param description Argumant description.

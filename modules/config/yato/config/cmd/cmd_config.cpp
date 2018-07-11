@@ -42,6 +42,7 @@ namespace conf {
     {
         std::unique_ptr<TCLAP::Arg> value;
         config_type type;
+        bool has_default;
     };
 
     //--------------------------------------------------------------------------------------
@@ -70,11 +71,11 @@ namespace conf {
         }
 
         // Return not const pointer since ValueArg::getValue() is not const
-        TCLAP::Arg* find(const std::string & name, config_type type) const
+        const argument_info* find(const std::string & name, config_type type) const
         {
             const auto it = mArgs.find(name);
             if(it != mArgs.cend() && (*it).second.type == type) {
-                return (*it).second.value.get();
+                return &(*it).second;
             }
             return nullptr;
         }
@@ -107,43 +108,45 @@ namespace conf {
         YATO_REQUIRES(m_impl != nullptr);
         stored_variant res{};
 
-        TCLAP::Arg* arg = m_impl->find(name, type);
-        switch (type)
-        {
-        case yato::conf::config_type::integer: {
-                auto value = dynamic_cast<TCLAP::ValueArg<integer_wrapper>*>(arg);
-                if(value != nullptr) {
-                    using return_type = stored_type_trait<config_type::integer>::return_type;
-                    res.emplace<return_type>(yato::narrow_cast<return_type>(value->getValue().val));
+        const argument_info* arg = m_impl->find(name, type);
+        if((arg != nullptr) && (arg->value->isSet() || arg->has_default)) {
+            switch (type)
+            {
+            case yato::conf::config_type::integer: {
+                    auto value = dynamic_cast<TCLAP::ValueArg<integer_wrapper>*>(arg->value.get());
+                    if(value != nullptr) {
+                        using return_type = stored_type_trait<config_type::integer>::return_type;
+                        res.emplace<return_type>(yato::narrow_cast<return_type>(value->getValue().val));
+                    }
                 }
-            }
-            break;
-        case yato::conf::config_type::boolean: {
-                auto value = dynamic_cast<TCLAP::SwitchArg*>(arg);
-                if(value != nullptr) {
-                    using return_type = stored_type_trait<config_type::boolean>::return_type;
-                    res.emplace<return_type>(value->getValue());
+                break;
+            case yato::conf::config_type::boolean: {
+                    auto value = dynamic_cast<TCLAP::SwitchArg*>(arg->value.get());
+                    if(value != nullptr) {
+                        using return_type = stored_type_trait<config_type::boolean>::return_type;
+                        res.emplace<return_type>(value->getValue());
+                    }
                 }
-            }
-            break;
-        case yato::conf::config_type::floating: {
-                auto value = dynamic_cast<TCLAP::ValueArg<double>*>(arg);
-                if(value != nullptr) {
-                    using return_type = stored_type_trait<config_type::floating>::return_type;
-                    res.emplace<return_type>(yato::narrow_cast<return_type>(value->getValue()));
+                break;
+            case yato::conf::config_type::floating: {
+                    auto value = dynamic_cast<TCLAP::ValueArg<double>*>(arg->value.get());
+                    if(value != nullptr) {
+                        using return_type = stored_type_trait<config_type::floating>::return_type;
+                        res.emplace<return_type>(yato::narrow_cast<return_type>(value->getValue()));
+                    }
                 }
-            }
-            break;
-        case yato::conf::config_type::string: {
-                auto value = dynamic_cast<TCLAP::ValueArg<std::string>*>(arg);
-                if(value != nullptr) {
-                    using return_type = stored_type_trait<config_type::string>::return_type;
-                    res.emplace<return_type>(value->getValue());
+                break;
+            case yato::conf::config_type::string: {
+                    auto value = dynamic_cast<TCLAP::ValueArg<std::string>*>(arg->value.get());
+                    if(value != nullptr) {
+                        using return_type = stored_type_trait<config_type::string>::return_type;
+                        res.emplace<return_type>(value->getValue());
+                    }
                 }
+                break;
+            default:
+                break;
             }
-            break;
-        default:
-            break;
         }
 
         return res;
@@ -185,7 +188,7 @@ namespace conf {
 
     cmd_builder& cmd_builder::operator=(cmd_builder&&) noexcept = default;
 
-    cmd_builder& cmd_builder::integer(const std::string & flag, const std::string & name, const std::string & description, const yato::optional<int64_t> & default_value)
+    cmd_builder& cmd_builder::integer(cmd_argument kind, const std::string & flag, const std::string & name, const std::string & description, const yato::optional<int64_t> & default_value)
     {
         if(m_impl == nullptr) {
             throw config_error("cmd_builder is empty after creating config.");
@@ -193,14 +196,28 @@ namespace conf {
 
         argument_info arg;
         arg.type  = config_type::integer;
-        arg.value = std::make_unique<TCLAP::ValueArg<integer_wrapper>>(flag, name, description, default_value.empty(), default_value.get_or(0), "Integer type", nullptr);
-
+        switch(kind) {
+        case cmd_argument::positional:
+            arg.value = std::make_unique<TCLAP::UnlabeledValueArg<integer_wrapper>>(name, description, true, 0, "Integer type");
+            arg.has_default = false;
+            break;
+        case cmd_argument::required:
+            arg.value = std::make_unique<TCLAP::ValueArg<integer_wrapper>>(flag, name, description, true, 0, "Integer type", nullptr);
+            arg.has_default = false;
+            break;
+        case cmd_argument::optional:
+            arg.value = std::make_unique<TCLAP::ValueArg<integer_wrapper>>(flag, name, description, false, default_value.get_or(0), "Integer type", nullptr);
+            arg.has_default = !default_value.empty();
+            break;
+        default:
+            throw yato::argument_error("Invalid argument type");
+        }
         m_impl->add(std::move(arg));
 
         return *this;
     }
 
-    cmd_builder& cmd_builder::floating(const std::string & flag, const std::string & name, const std::string & description, const yato::optional<double> & default_value)
+    cmd_builder& cmd_builder::floating(cmd_argument kind, const std::string & flag, const std::string & name, const std::string & description, const yato::optional<double> & default_value)
     {
         if(m_impl == nullptr) {
             throw config_error("cmd_builder is empty after creating config.");
@@ -208,14 +225,28 @@ namespace conf {
 
         argument_info arg;
         arg.type  = config_type::floating;
-        arg.value = std::make_unique<TCLAP::ValueArg<double>>(flag, name, description, default_value.empty(), default_value.get_or(0.0), "Floating-point type", nullptr);
-
+        switch(kind) {
+        case cmd_argument::positional:
+            arg.value = std::make_unique<TCLAP::UnlabeledValueArg<double>>(name, description, true, 0.0, "Floating-point type");
+            arg.has_default = false;
+            break;
+        case cmd_argument::required:
+            arg.value = std::make_unique<TCLAP::ValueArg<double>>(flag, name, description, true, 0.0, "Floating-point type", nullptr);
+            arg.has_default = false;
+            break;
+        case cmd_argument::optional:
+            arg.value = std::make_unique<TCLAP::ValueArg<double>>(flag, name, description, false, default_value.get_or(0.0), "Floating-point type", nullptr);
+            arg.has_default = !default_value.empty();
+            break;
+        default:
+            throw yato::argument_error("Invalid argument type");
+        }
         m_impl->add(std::move(arg));
 
         return *this;
     }
 
-    cmd_builder& cmd_builder::string(const std::string & flag, const std::string & name, const std::string & description, const yato::optional<std::string> & default_value)
+    cmd_builder& cmd_builder::string(cmd_argument kind, const std::string & flag, const std::string & name, const std::string & description, const yato::optional<std::string> & default_value)
     {
         if(m_impl == nullptr) {
             throw config_error("cmd_builder is empty after creating config.");
@@ -223,8 +254,22 @@ namespace conf {
 
         argument_info arg;
         arg.type  = config_type::string;
-        arg.value = std::make_unique<TCLAP::ValueArg<std::string>>(flag, name, description, default_value.empty(), default_value.get_or(std::string()), "String", nullptr);
-
+        switch(kind) {
+        case cmd_argument::positional:
+            arg.value = std::make_unique<TCLAP::UnlabeledValueArg<std::string>>(name, description, true, std::string(), "String");
+            arg.has_default = false;
+            break;
+        case cmd_argument::required:
+            arg.value = std::make_unique<TCLAP::ValueArg<std::string>>(flag, name, description, true, std::string(), "String", nullptr);
+            arg.has_default = false;
+            break;
+        case cmd_argument::optional:
+            arg.value = std::make_unique<TCLAP::ValueArg<std::string>>(flag, name, description, false, default_value.get_or(std::string()), "String", nullptr);
+            arg.has_default = !default_value.empty();
+            break;
+        default:
+            throw yato::argument_error("Invalid argument type");
+        }
         m_impl->add(std::move(arg));
 
         return *this;
