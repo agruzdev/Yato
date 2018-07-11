@@ -284,6 +284,7 @@ namespace conf {
         argument_info arg;
         arg.type  = config_type::boolean;
         arg.value = std::make_unique<TCLAP::SwitchArg>(flag, name, description, false);
+        arg.has_default = true; // always false by default
 
         m_impl->add(std::move(arg));
 
