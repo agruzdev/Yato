@@ -35,6 +35,8 @@ void TestConfig_PlainObject(const yato::conf::config & conf)
     const auto f2 = conf.value<bool>("flag2");
     EXPECT_EQ(true, f2.get_or(false));
 
+    EXPECT_EQ(true, conf.flag("flag2"));
+
     const auto v = conf.value<float>("flt").get_or(-1.0f);
     EXPECT_FLOAT_EQ(7.0f, v);
 }
@@ -86,6 +88,7 @@ void TestConfig_Array(const yato::conf::config & conf)
     EXPECT_EQ(20, conf.value<short>(1).get_or(-1));
     EXPECT_EQ(30U, conf.value<uint64_t>(2).get_or(-1));
     EXPECT_EQ(true, conf.value<bool>(3).get_or(false));
+    EXPECT_EQ(true, conf.flag(3));
 
     const auto c2 = conf.object(5);
     ASSERT_FALSE(c2.empty());
@@ -139,6 +142,7 @@ void TestConfig_Example(const yato::conf::config & conf)
 
     const bool is_manual = conf.value<bool>("manual_mode").get_or(false);
     EXPECT_EQ(true, is_manual);
+    EXPECT_EQ(true, conf.flag("manual_mode"));
 
     const yato::conf::config arr = conf.array("fruits");
     if(arr) {

@@ -139,6 +139,18 @@ namespace conf {
         config array(size_t idx) const;
 
         /**
+         * Shortcut for checking boolean flags.
+         * Alias for value<bool>(name).get_or(false).
+         */
+        bool flag(const std::string & name) const;
+
+        /**
+         * Shortcut for checking boolean flags.
+         * Alias for value<bool>(name).get_or(false).
+         */
+        bool flag(size_t idx) const;
+
+        /**
          * For internal usage.
          * Use it only if you are sure what you are doing.
          */
@@ -224,6 +236,18 @@ namespace conf {
         config conf = value<config>(idx).get_or(config{});
         YATO_ENSURES(conf.empty() || conf.is_array());
         return conf;
+    }
+
+    inline
+    bool config::flag(const std::string & name) const
+    {
+        return value<bool>(name).get_or(false);
+    }
+
+    inline
+    bool config::flag(size_t idx) const
+    {
+        return value<bool>(idx).get_or(false);
     }
 
 } // namespace conf
