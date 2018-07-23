@@ -19,3 +19,17 @@ TEST(Yato_ConfigOps, manual_config_ops)
     TestConfig_Intersection(conf1, conf2);
 }
 
+TEST(Yato_ConfigOps, manual_array_ops)
+{
+    const auto conf1 = yato::conf::manual_builder::array()
+        .add(10)
+        .add(20)
+        .add(30)
+        .create();
+    const auto conf2 = yato::conf::manual_builder::array()
+        .add(400)
+        .add(500)
+        .create();
+    TestConfig_ArrayCat(conf1, conf2);
+}
+
