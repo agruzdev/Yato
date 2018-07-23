@@ -235,7 +235,7 @@ namespace conf {
     class config_backend  // NOLINT
     {
     public:
-        virtual ~config_backend() = default;
+        virtual ~config_backend() = 0;
 
         virtual bool do_is_object() const noexcept = 0;
         virtual stored_variant do_get_by_name(const std::string & name, config_type type) const noexcept = 0;
