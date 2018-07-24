@@ -20,7 +20,6 @@ namespace
     };
 
     template <typename T>
-    inline 
     void TestFunction(const yato::any & any)
     {
         if (any.type() == typeid(int)) {
@@ -34,6 +33,30 @@ namespace
         }
         else if (any.type() == typeid(Bar)) {
             EXPECT_TRUE((std::is_same<T, Bar>::value));
+        }
+        else {
+            // Unknown
+        }
+    }
+
+    template <typename T>
+    void TestFunction2(const yato::any & any)
+    {
+        if (any.is_type<int>()) {
+            EXPECT_TRUE((std::is_same<T, int>::value));
+            EXPECT_TRUE(static_cast<bool>(any.get_opt<int>()));
+        }
+        else if (any.is_type<float>()) {
+            EXPECT_TRUE((std::is_same<T, float>::value));
+            EXPECT_TRUE(static_cast<bool>(any.get_opt<float>()));
+        }
+        else if (any.is_type<Foo>()) {
+            EXPECT_TRUE((std::is_same<T, Foo>::value));
+            EXPECT_TRUE(static_cast<bool>(any.get_opt<Foo>()));
+        }
+        else if (any.is_type<Bar>()) {
+            EXPECT_TRUE((std::is_same<T, Bar>::value));
+            EXPECT_TRUE(static_cast<bool>(any.get_opt<std::reference_wrapper<Bar>>()));
         }
         else {
             // Unknown
@@ -61,6 +84,16 @@ TEST(Yato_Any, common)
     EXPECT_FALSE(static_cast<bool>(yato::any()));
 
     EXPECT_TRUE(static_cast<bool>(yato::make_any<float>(1.0f)));
+}
+
+TEST(Yato_Any, common_2)
+{
+    TestFunction2<int>(yato::any(1));
+    TestFunction2<int>(yato::any(1U));
+    TestFunction2<float>(yato::any(1.0f));
+    TestFunction2<float>(yato::any(1.0));
+    TestFunction2<double>(yato::any(1.0));
+    TestFunction2<Foo>(yato::any(Foo{}));
 }
 
 TEST(Yato_Any, bad_any_cast)

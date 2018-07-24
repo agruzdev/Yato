@@ -20,6 +20,7 @@
 #include <typeindex>
 
 #include "types.h"
+#include "optional.h"
 
 namespace yato
 {
@@ -280,6 +281,12 @@ namespace yato
             return m_content ? m_content->type() : typeid(void);
         }
 
+        template <typename Ty_>
+        bool is_type() const
+        {
+            return (type() == typeid(Ty_));
+        }
+
         template <typename Ty, typename ... Args>
         void emplace(Args && ... args)
         {
@@ -351,6 +358,22 @@ namespace yato
         {
             assert(m_content != nullptr);
             return static_cast<details::any_holder<Ty>*>(m_content.get())->m_payload;
+        }
+
+        template <typename Ty_>
+        yato::optional<Ty_> get_opt()
+        {
+            return is_type<Ty_>()
+                ? yato::some(get_as_unsafe<Ty_>())
+                : yato::nullopt_t{};
+        }
+
+        template <typename Ty_>
+        yato::optional<Ty_> get_opt() const
+        {
+            return is_type<Ty_>()
+                ? yato::some(get_as_unsafe<Ty_>())
+                : yato::nullopt_t{};
         }
     };
 
