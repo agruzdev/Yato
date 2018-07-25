@@ -56,7 +56,6 @@ namespace
         }
         else if (any.is_type<Bar>()) {
             EXPECT_TRUE((std::is_same<T, Bar>::value));
-            EXPECT_TRUE(static_cast<bool>(any.get_opt<std::reference_wrapper<Bar>>()));
         }
         else {
             // Unknown
