@@ -122,3 +122,29 @@ const yato::conf::config conf = yato::conf::cmd_builder("Test")
 
 ```
 
+#### XML
+
+```c++
+const char* xml = R"XML(
+    <root>
+        <answer>42</answer>
+        <comment>everything</comment>
+        <precision>0.01</precision>
+
+        <manual_mode>true</manual_mode>
+
+        <fruits is_array="true">
+            <i>apple</i>
+            <i>banana</i>
+            <i>kiwi</i>
+        </fruits>
+
+        <location>
+            <x>174</x>
+            <y>34</y>
+        </location>
+    </root>
+)XML";
+const auto conf = yato::conf::xml_builder().parse(xml);
+```
+

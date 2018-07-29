@@ -225,6 +225,7 @@ foreach(CURRENT_TARGET ${all_build_targers})
             list(APPEND configure_flags -DYATO_CONFIG_MANUAL=ON)
             list(APPEND configure_flags -DYATO_CONFIG_JSON=ON)
             list(APPEND configure_flags -DYATO_CONFIG_CMD=ON)
+            list(APPEND configure_flags -DYATO_CONFIG_XML=ON)
         endif()
 
         if(_DOWNLOAD_DEPENDENCIES)
