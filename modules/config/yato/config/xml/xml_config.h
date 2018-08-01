@@ -15,7 +15,6 @@ namespace yato {
 namespace conf {
     class json_builder;
 
-
     struct xml_config_state;
 
     class xml_config

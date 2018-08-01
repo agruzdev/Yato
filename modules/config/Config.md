@@ -127,21 +127,21 @@ const yato::conf::config conf = yato::conf::cmd_builder("Test")
 ```c++
 const char* xml = R"XML(
     <root>
-        <answer>42</answer>
-        <comment>everything</comment>
-        <precision>0.01</precision>
+        <answer value="42"/>
+        <comment value="everything"/>
+        <precision value="0.01"/>
 
-        <manual_mode>true</manual_mode>
+        <manual_mode value="true"/>
 
         <fruits is_array="true">
-            <i>apple</i>
-            <i>banana</i>
-            <i>kiwi</i>
+            <i value="apple"/>
+            <i value="banana"/>
+            <i value="kiwi"/>
         </fruits>
 
         <location>
-            <x>174</x>
-            <y>34</y>
+            <x value="174"/>
+            <y value="34"/>
         </location>
     </root>
 )XML";

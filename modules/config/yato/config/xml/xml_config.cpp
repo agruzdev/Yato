@@ -55,6 +55,34 @@ namespace conf {
         }
     }
 
+    template <typename ValueTy_, typename Converter_>
+    bool query_value_(const tinyxml2::XMLElement* elem, ValueTy_& out, Converter_ && converter)
+    {
+        const tinyxml2::XMLAttribute* attribute = elem->FindAttribute("value");
+        if(attribute != nullptr) {
+            const char* attr_text = attribute->Value();
+            if(attr_text != nullptr) {
+                return converter(attr_text, &out);
+            }
+        }
+        const auto text = elem->GetText();
+        if(text != nullptr) {
+            return converter(text, &out);
+        }
+        return false;
+    }
+
+    static
+    bool cstring_converter_(const char* str, const char** out)
+    {
+        YATO_REQUIRES(out != nullptr);
+        if(str != nullptr) {
+            *out = str;
+            return true;
+        }
+        return false;
+    }
+
     static
     stored_variant get_impl_(const xml_config_state& state, const tinyxml2::XMLElement* elem, config_type type) noexcept
     {
@@ -64,7 +92,7 @@ namespace conf {
             {
             case config_type::integer: {
                     int64_t val = 0;
-                    if(tinyxml2::XML_SUCCESS == elem->QueryInt64Text(&val)) {
+                    if (query_value_(elem, val, &tinyxml2::XMLUtil::ToInt64)) {
                         using return_type = stored_type_trait<config_type::integer>::return_type;
                         res.emplace<return_type>(yato::narrow_cast<return_type>(val));
                     }
@@ -72,7 +100,7 @@ namespace conf {
                 break;
             case config_type::floating: {
                     double val = 0.0;
-                    if(tinyxml2::XML_SUCCESS == elem->QueryDoubleText(&val)) {
+                    if (query_value_(elem, val, &tinyxml2::XMLUtil::ToDouble)) {
                         using return_type = stored_type_trait<config_type::floating>::return_type;
                         res.emplace<return_type>(yato::narrow_cast<return_type>(val));
                     }
@@ -80,17 +108,18 @@ namespace conf {
                 break;
             case config_type::boolean: {
                     bool val = false;
-                    if(tinyxml2::XML_SUCCESS == elem->QueryBoolText(&val)) {
+                    if (query_value_(elem, val, &tinyxml2::XMLUtil::ToBool)) {
                         using return_type = stored_type_trait<config_type::boolean>::return_type;
                         res.emplace<return_type>(yato::narrow_cast<return_type>(val));
                     }
                 }
                 break;
             case config_type::string: {
-                    const char* text = elem->GetText();
-                    if(text != nullptr) {
+                    const char* val = nullptr;
+                    if (query_value_(elem, val, &cstring_converter_)) {
+                        YATO_ENSURES(val != nullptr);
                         using return_type = stored_type_trait<config_type::string>::return_type;
-                        res.emplace<return_type>(text);
+                        res.emplace<return_type>(val);
                     }
                 }
                 break;
@@ -162,8 +191,6 @@ namespace conf {
         }
         return 0;
     }
-
-    
 
     //---------------------------------------------------------------------------------------------
 
