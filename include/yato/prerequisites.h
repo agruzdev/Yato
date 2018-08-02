@@ -10,25 +10,19 @@
 
 #if defined(DEBUG) || defined(_DEBUG) || !defined(NDEBUG)
 #define YATO_DEBUG (1)
-#define YATO_DEBUG_BOOL true
-#define YATO_RELEASE (0)
-#define YATO_RELEASE_BOOL false
 #else
 #define YATO_DEBUG (0)
-#define YATO_DEBUG_BOOL false
-#define YATO_RELEASE (1)
-#define YATO_RELEASE_BOOL true
 #endif 
-static_assert(YATO_DEBUG != YATO_RELEASE, "Wrong configuration");
-static_assert(YATO_DEBUG_BOOL != YATO_RELEASE_BOOL, "Wrong configuration");
 
-#if defined(__x86_64__) || defined(_M_X64) || defined(__ANDROID__)
+
+#if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__)
 #define YATO_X64
-#elif defined(__i386) || defined(_M_IX86)
+#elif defined(__i386) || defined(_M_IX86) || defined(__ANDROID__)
 #define YATO_X86
 #else
 #error "Unknown architecture!"
 #endif
+
 
 #ifdef _MSC_VER
 # define YATO_MSVC
