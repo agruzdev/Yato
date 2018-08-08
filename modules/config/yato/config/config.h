@@ -83,21 +83,29 @@ namespace conf {
          * Return true if config is an object, i.e. contains named values.
          */
         bool is_object() const {
-            return m_backend ? m_backend->do_is_object() : false;
+            return m_backend ? m_backend->is_object() : false;
         }
 
         /**
          * Return true if config is an array, i.e. contains indexed values.
          */
         bool is_array() const {
-            return m_backend ? m_backend->do_is_array() : false;
+            return m_backend ? m_backend->is_array() : false;
         }
 
         /**
          * Return number of entires in the config, if config is an array.
          */
         size_t size() const {
-            return m_backend ? m_backend->do_get_size() : 0u;
+            return m_backend ? m_backend->size() : 0u;
+        }
+
+        /**
+         * Returns all keys stored in the config object.
+         * Order of keys is arbitrary.
+         */
+        std::vector<std::string> keys() const {
+            return m_backend ? m_backend->keys() : std::vector<std::string>{};
         }
 
         /**
@@ -184,7 +192,7 @@ namespace conf {
             using trait = yato::conf::config_value_trait<Ty_>;
             using return_type = typename stored_type_trait<trait::stored_type>::return_type;
 
-            return m_backend->do_get_by_name(name, trait::stored_type).template get_opt<return_type>().map(
+            return m_backend->get_by_name(name, trait::stored_type).template get_opt<return_type>().map(
                 [&converter](return_type && val){ return converter(cast_result_(std::move(val))); }
             );
         }
@@ -199,7 +207,7 @@ namespace conf {
             using trait = yato::conf::config_value_trait<Ty_>;
             using return_type = typename stored_type_trait<trait::stored_type>::return_type;
 
-            return m_backend->do_get_by_index(idx, trait::stored_type).template get_opt<return_type>().map(
+            return m_backend->get_by_index(idx, trait::stored_type).template get_opt<return_type>().map(
                 [&converter](return_type && val){ return converter(cast_result_(std::move(val))); }
             );
         }

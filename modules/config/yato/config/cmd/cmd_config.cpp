@@ -51,12 +51,12 @@ namespace conf {
     class cmd_config_state
     {
     private:
-        TCLAP::CmdLine mCmd;
-        std::map<std::string, argument_info> mArgs;
+        TCLAP::CmdLine m_cmd;
+        std::map<std::string, argument_info> m_args;
 
     public:
         cmd_config_state(const std::string & description, const std::string & version)
-            : mCmd(description, ' ', version)
+            : m_cmd(description, ' ', version)
         { }
         
         ~cmd_config_state() = default;
@@ -66,22 +66,33 @@ namespace conf {
             YATO_REQUIRES(arg.value != nullptr);
 
             const std::string name = arg.value->getName();
-            mCmd.add(arg.value.get());
-            mArgs[name] = std::move(arg);
+            m_cmd.add(arg.value.get());
+            m_args[name] = std::move(arg);
         }
 
         // Return not const pointer since ValueArg::getValue() is not const
         const argument_info* find(const std::string & name, config_type type) const
         {
-            const auto it = mArgs.find(name);
-            if(it != mArgs.cend() && (*it).second.type == type) {
+            const auto it = m_args.find(name);
+            if(it != m_args.cend() && (*it).second.type == type) {
                 return &(*it).second;
             }
             return nullptr;
         }
 
-        void parse(int argc, const char* const* argv) {
-            mCmd.parse(argc, argv);
+        void parse(int argc, const char* const* argv)
+        {
+            m_cmd.parse(argc, argv);
+        }
+
+        std::vector<std::string> keys() const
+        {
+            std::vector<std::string> res;
+            res.reserve(m_args.size());
+            for(const auto & entry : m_args) {
+                res.push_back(entry.first);
+            }
+            return res;
         }
     };
 
@@ -98,12 +109,18 @@ namespace conf {
 
     cmd_config& cmd_config::operator=(cmd_config&&) noexcept = default;
 
-    bool cmd_config::do_is_object() const noexcept
+    bool cmd_config::is_object() const noexcept
     {
         return true;
     }
 
-    stored_variant cmd_config::do_get_by_name(const std::string & name, config_type type) const noexcept
+    std::vector<std::string> cmd_config::keys() const noexcept
+    {
+        YATO_REQUIRES(m_impl != nullptr);
+        return m_impl->keys();
+    }
+
+    stored_variant cmd_config::get_by_name(const std::string & name, config_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
         stored_variant res{};
@@ -152,19 +169,19 @@ namespace conf {
         return res;
     }
 
-    stored_variant cmd_config::do_get_by_index(size_t index, config_type type) const noexcept
+    stored_variant cmd_config::get_by_index(size_t index, config_type type) const noexcept
     {
         YATO_MAYBE_UNUSED(index);
         YATO_MAYBE_UNUSED(type);
         return yato::nullvar_t{};
     }
 
-    bool cmd_config::do_is_array() const noexcept
+    bool cmd_config::is_array() const noexcept
     {
         return false;
     }
 
-    size_t cmd_config::do_get_size() const noexcept
+    size_t cmd_config::size() const noexcept
     {
         return 0;
     }

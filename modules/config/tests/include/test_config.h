@@ -23,6 +23,15 @@ void TestConfig_PlainObject(const yato::conf::config & conf)
     EXPECT_FALSE(conf.empty());
     EXPECT_TRUE(conf.is_object());
 
+    const auto keys = conf.keys();
+    EXPECT_EQ(5u, keys.size());
+
+    EXPECT_TRUE(std::find(keys.cbegin(), keys.cend(), "int") != keys.cend());
+    EXPECT_TRUE(std::find(keys.cbegin(), keys.cend(), "message") != keys.cend());
+    EXPECT_TRUE(std::find(keys.cbegin(), keys.cend(), "flt") != keys.cend());
+    EXPECT_TRUE(std::find(keys.cbegin(), keys.cend(), "flag1") != keys.cend());
+    EXPECT_TRUE(std::find(keys.cbegin(), keys.cend(), "flag2") != keys.cend());
+
     const auto i = conf.value<int32_t>("int");
     EXPECT_EQ(42, i.get_or(0));
 

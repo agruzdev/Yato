@@ -8,6 +8,8 @@
 #include <map>
 #include <vector>
 
+#include "yato/variant_match.h"
+
 #include "manual_config.h"
 
 namespace yato {
@@ -145,6 +147,21 @@ namespace conf {
             return m_node.get_as_unsafe<manual_array_type>().size();
         }
 
+        std::vector<std::string> keys() const
+        {
+            std::vector<std::string> res;
+            yato::variant_match(
+                [&res](const manual_object_type & obj) {
+                    res.reserve(obj.size());
+                    for (const auto & entry : obj) {
+                        res.push_back(entry.first);
+                    }
+                },
+                [](yato::match_default_t) {}
+            )(m_node);
+            return res;
+        }
+
         void put(const std::string & key, details::manual_scalar && val)
         {
             put_impl_(key, manual_value_type(std::move(val)));
@@ -209,31 +226,37 @@ namespace conf {
 
     manual_config& manual_config::operator=(manual_config&&) noexcept = default;
 
-    bool manual_config::do_is_object() const noexcept
+    bool manual_config::is_object() const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
         return m_impl->is_object();
     }
 
-    stored_variant manual_config::do_get_by_name(const std::string & name, config_type type) const noexcept
+    std::vector<std::string> manual_config::keys() const noexcept
+    {
+        YATO_REQUIRES(m_impl != nullptr);
+        return m_impl->keys();
+    }
+
+    stored_variant manual_config::get_by_name(const std::string & name, config_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
         return m_impl->get(name, type);
     }
 
-    bool manual_config::do_is_array() const noexcept
+    bool manual_config::is_array() const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
         return m_impl->is_array();
     }
 
-    stored_variant manual_config::do_get_by_index(size_t index, config_type type) const noexcept
+    stored_variant manual_config::get_by_index(size_t index, config_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
         return m_impl->get(index, type);
     }
 
-    size_t manual_config::do_get_size() const noexcept
+    size_t manual_config::size() const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
         return m_impl->size();

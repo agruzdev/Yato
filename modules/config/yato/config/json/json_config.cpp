@@ -51,11 +51,25 @@ namespace conf {
 
     json_config& json_config::operator=(json_config&&) noexcept = default;
 
-    bool json_config::do_is_object() const noexcept
+    bool json_config::is_object() const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
         const auto & json = m_impl->get();
         return json.is_object();
+    }
+
+    std::vector<std::string> json_config::keys() const noexcept
+    {
+        YATO_REQUIRES(m_impl != nullptr);
+        std::vector<std::string> res;
+        const auto & json = m_impl->get();
+        if(json.is_object()) {
+            res.reserve(json.size());
+            for(auto it = json.cbegin(); it != json.cend(); ++it) {
+                res.push_back(it.key());
+            }
+        }
+        return res;
     }
 
     static
@@ -102,7 +116,7 @@ namespace conf {
         return res;
     }
 
-    stored_variant json_config::do_get_by_name(const std::string & name, config_type type) const noexcept
+    stored_variant json_config::get_by_name(const std::string & name, config_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
         stored_variant res{};
@@ -123,7 +137,7 @@ namespace conf {
         return res;
     }
 
-    stored_variant json_config::do_get_by_index(size_t index, config_type type) const noexcept
+    stored_variant json_config::get_by_index(size_t index, config_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
         stored_variant res{};
@@ -144,7 +158,7 @@ namespace conf {
         return res;
     }
 
-    bool json_config::do_is_array() const noexcept
+    bool json_config::is_array() const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
 
@@ -152,7 +166,7 @@ namespace conf {
         return json.is_array();
     }
 
-    size_t json_config::do_get_size() const noexcept
+    size_t json_config::size() const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
 

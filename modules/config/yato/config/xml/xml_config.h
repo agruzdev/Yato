@@ -23,13 +23,14 @@ namespace conf {
     private:
         std::unique_ptr<xml_config_state> m_impl;
 
-        bool do_is_object() const noexcept override;
-        stored_variant do_get_by_name(const std::string & name, config_type type) const noexcept override;
+        bool is_object() const noexcept override;
+        stored_variant get_by_name(const std::string & name, config_type type) const noexcept override;
 
-        bool do_is_array() const noexcept override;
-        stored_variant do_get_by_index(size_t index, config_type type) const noexcept override;
+        bool is_array() const noexcept override;
+        stored_variant get_by_index(size_t index, config_type type) const noexcept override;
 
-        size_t do_get_size() const noexcept override;
+        size_t size() const noexcept override;
+        std::vector<std::string> keys() const noexcept override;
 
         bool is_array_tag() const;
         void init_array_cache() const;

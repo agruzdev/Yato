@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <limits>
 #include <string>
+#include <vector>
 
 #include <yato/optional.h>
 #include <yato/variant.h>
@@ -237,13 +238,14 @@ namespace conf {
     public:
         virtual ~config_backend() = 0;
 
-        virtual bool do_is_object() const noexcept = 0;
-        virtual stored_variant do_get_by_name(const std::string & name, config_type type) const noexcept = 0;
+        virtual bool is_object() const noexcept = 0;
+        virtual stored_variant get_by_name(const std::string & name, config_type type) const noexcept = 0;
 
-        virtual bool do_is_array() const noexcept = 0;
-        virtual stored_variant do_get_by_index(size_t index, config_type type) const noexcept = 0;
+        virtual bool is_array() const noexcept = 0;
+        virtual stored_variant get_by_index(size_t index, config_type type) const noexcept = 0;
 
-        virtual size_t do_get_size() const noexcept = 0;
+        virtual size_t size() const noexcept = 0;
+        virtual std::vector<std::string> keys() const noexcept = 0;
     };
 
 } // namespace conf

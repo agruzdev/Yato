@@ -43,7 +43,7 @@ namespace conf {
             {
                 YATO_REQUIRES(m_left  != nullptr);
                 YATO_REQUIRES(m_right != nullptr);
-                if(!(m_left->do_is_object() && m_right->do_is_object())) {
+                if(!(m_left->is_object() && m_right->is_object())) {
                     throw yato::argument_error("Config union can be created only for two objects");
                 }
             }
@@ -56,46 +56,58 @@ namespace conf {
             union_backend& operator=(const union_backend&) = default;
             union_backend& operator=(union_backend&&) noexcept = default;
 
-            bool do_is_object() const noexcept override
+            bool is_object() const noexcept override
             {
-                return m_left->do_is_object();
+                return m_left->is_object();
             }
 
-            stored_variant do_get_by_name(const std::string & name, config_type type) const noexcept override
+            stored_variant get_by_name(const std::string & name, config_type type) const noexcept override
             {
                 if(m_priority == priority::left){
-                    const auto left_res = m_left->do_get_by_name(name, type);
+                    const auto left_res = m_left->get_by_name(name, type);
                     if(!left_res.is_type<void>()) {
                         return left_res;
                     }
                     else {
-                        return m_right->do_get_by_name(name, type);
+                        return m_right->get_by_name(name, type);
                     }
                 }
                 else {
-                    const auto right_res = m_right->do_get_by_name(name, type);
+                    const auto right_res = m_right->get_by_name(name, type);
                     if(!right_res.is_type<void>()) {
                         return right_res;
                     }
                     else {
-                        return m_left->do_get_by_name(name, type);
+                        return m_left->get_by_name(name, type);
                     }
                 }
             }
+            
+            std::vector<std::string> keys() const noexcept override
+            {
+                auto left_keys = m_left->keys();
+                auto right_keys = m_right->keys();
+                std::sort(left_keys.begin(), left_keys.end());
+                std::sort(right_keys.begin(), right_keys.end());
+                std::vector<std::string> res;
+                res.reserve(left_keys.size() + right_keys.size());
+                std::set_union(left_keys.cbegin(), left_keys.cend(), right_keys.cbegin(), right_keys.cend(), std::back_inserter(res));
+                return res;
+            }
 
-            bool do_is_array() const noexcept override
+            bool is_array() const noexcept override
             {
                 return false;
             }
 
-            stored_variant do_get_by_index(size_t index, config_type type) const noexcept override
+            stored_variant get_by_index(size_t index, config_type type) const noexcept override
             {
                 YATO_MAYBE_UNUSED(index);
                 YATO_MAYBE_UNUSED(type);
                 return stored_variant{};
             }
 
-            size_t do_get_size() const noexcept override
+            size_t size() const noexcept override
             {
                 return 0;
             }
@@ -118,7 +130,7 @@ namespace conf {
             {
                 YATO_REQUIRES(m_left  != nullptr);
                 YATO_REQUIRES(m_right != nullptr);
-                if(!(m_left->do_is_object() && m_right->do_is_object())) {
+                if(!(m_left->is_object() && m_right->is_object())) {
                     throw yato::argument_error("Config union can be created only for two objects");
                 }
             }
@@ -131,34 +143,46 @@ namespace conf {
             intersection_backend& operator=(const intersection_backend&) = default;
             intersection_backend& operator=(intersection_backend&&) noexcept = default;
 
-            bool do_is_object() const noexcept override
+            bool is_object() const noexcept override
             {
-                return m_left->do_is_object();
+                return m_left->is_object();
             }
 
-            stored_variant do_get_by_name(const std::string & name, config_type type) const noexcept override
+            stored_variant get_by_name(const std::string & name, config_type type) const noexcept override
             {
-                const auto left_res  = m_left->do_get_by_name(name, type);
-                const auto right_res = m_right->do_get_by_name(name, type);
+                const auto left_res  = m_left->get_by_name(name, type);
+                const auto right_res = m_right->get_by_name(name, type);
                 if(!left_res.is_type<void>() && !right_res.is_type<void>()) {
                     return m_priority == priority::left ? left_res : right_res;
                 }
                 return stored_variant{};
             }
 
-            bool do_is_array() const noexcept override
+            std::vector<std::string> keys() const noexcept override
+            {
+                auto left_keys = m_left->keys();
+                auto right_keys = m_right->keys();
+                std::sort(left_keys.begin(), left_keys.end());
+                std::sort(right_keys.begin(), right_keys.end());
+                std::vector<std::string> res;
+                res.reserve(std::max(left_keys.size(), right_keys.size()));
+                std::set_intersection(left_keys.cbegin(), left_keys.cend(), right_keys.cbegin(), right_keys.cend(), std::back_inserter(res));
+                return res;
+            }
+
+            bool is_array() const noexcept override
             {
                 return false;
             }
 
-            stored_variant do_get_by_index(size_t index, config_type type) const noexcept override
+            stored_variant get_by_index(size_t index, config_type type) const noexcept override
             {
                 YATO_MAYBE_UNUSED(index);
                 YATO_MAYBE_UNUSED(type);
                 return stored_variant{};
             }
 
-            size_t do_get_size() const noexcept override
+            size_t size() const noexcept override
             {
                 return 0;
             }
@@ -181,7 +205,7 @@ namespace conf {
             {
                 YATO_REQUIRES(m_left  != nullptr);
                 YATO_REQUIRES(m_right != nullptr);
-                if(!(m_left->do_is_array() && m_right->do_is_array())) {
+                if(!(m_left->is_array() && m_right->is_array())) {
                     throw yato::argument_error("Config concatination can be created only for two arrays");
                 }
             }
@@ -194,37 +218,42 @@ namespace conf {
             concatenation_backend& operator=(const concatenation_backend&) = default;
             concatenation_backend& operator=(concatenation_backend&&) noexcept = default;
 
-            bool do_is_object() const noexcept override
+            bool is_object() const noexcept override
             {
                 return false;
             }
 
-            stored_variant do_get_by_name(const std::string & name, config_type type) const noexcept override
+            stored_variant get_by_name(const std::string & name, config_type type) const noexcept override
             {
                 YATO_MAYBE_UNUSED(name);
                 YATO_MAYBE_UNUSED(type);
                 return stored_variant{};
             }
 
-            bool do_is_array() const noexcept override
+            std::vector<std::string> keys() const noexcept override
+            {
+                return std::vector<std::string>{};
+            }
+
+            bool is_array() const noexcept override
             {
                 return true;
             }
 
-            stored_variant do_get_by_index(size_t index, config_type type) const noexcept override
+            stored_variant get_by_index(size_t index, config_type type) const noexcept override
             {
-                const size_t offset = m_left->do_get_size();
+                const size_t offset = m_left->size();
                 if(index < offset) {
-                    return m_left->do_get_by_index(index, type);
+                    return m_left->get_by_index(index, type);
                 }
                 else {
-                    return m_right->do_get_by_index(index - offset, type);
+                    return m_right->get_by_index(index - offset, type);
                 }
             }
 
-            size_t do_get_size() const noexcept override
+            size_t size() const noexcept override
             {
-                return m_left->do_get_size() + m_right->do_get_size();
+                return m_left->size() + m_right->size();
             }
         };
     }
