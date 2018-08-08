@@ -146,7 +146,7 @@ void TestConfig_ArrayCat(const yato::conf::config & conf1, const yato::conf::con
 
     const auto cat1 = yato::conf::array_cat(conf1, conf2);
     EXPECT_TRUE(cat1.is_array());
-    EXPECT_EQ(5, cat1.size());
+    EXPECT_EQ(5u, cat1.size());
     EXPECT_EQ(10,  cat1.value<int>(0).get());
     EXPECT_EQ(20,  cat1.value<int>(1).get());
     EXPECT_EQ(30,  cat1.value<int>(2).get());
@@ -155,7 +155,7 @@ void TestConfig_ArrayCat(const yato::conf::config & conf1, const yato::conf::con
 
     const auto cat2 = yato::conf::array_cat(conf2, conf1);
     EXPECT_TRUE(cat2.is_array());
-    EXPECT_EQ(5, cat2.size());
+    EXPECT_EQ(5u, cat2.size());
     EXPECT_EQ(400, cat2.value<int>(0).get());
     EXPECT_EQ(500, cat2.value<int>(1).get());
     EXPECT_EQ(10,  cat2.value<int>(2).get());

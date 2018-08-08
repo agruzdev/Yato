@@ -9,6 +9,7 @@
 #define _YATO_META_H_
 
 #include <tuple>
+#include <limits>
 
 #include "prerequisites.h"
 #include "primitive_types.h"

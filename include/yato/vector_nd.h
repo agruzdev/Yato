@@ -53,7 +53,7 @@ namespace yato
              * @param new_size Required capacity.
              * @return Capacity to be allocated, probably bigger than required.
              */
-            static constexpr
+            static YATO_CONSTEXPR_FUNC_EX
             size_t increase(size_t old_size, size_t new_size)
             {
                 YATO_REQUIRES(new_size > old_size);
