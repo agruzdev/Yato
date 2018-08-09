@@ -14,20 +14,13 @@ namespace yato {
 
 namespace conf {
 
-    /**
-     * Type used to define arguments priority in config operations
-     */
-    enum class priority
-    {
-        left,
-        right
-    };
 
     namespace details
     {
 
         /**
          * Union implementation
+         * Left is always high priority
          */
         class union_backend
             : public config_backend
@@ -35,11 +28,10 @@ namespace conf {
         private:
             backend_ptr m_left;
             backend_ptr m_right;
-            priority m_priority;
 
         public:
-            union_backend(const backend_ptr & left, const backend_ptr & right, priority p)
-                : m_left(left), m_right(right), m_priority(p)
+            union_backend(const backend_ptr & left, const backend_ptr & right)
+                : m_left(left), m_right(right)
             {
                 YATO_REQUIRES(m_left  != nullptr);
                 YATO_REQUIRES(m_right != nullptr);
@@ -63,23 +55,12 @@ namespace conf {
 
             stored_variant get_by_name(const std::string & name, config_type type) const noexcept override
             {
-                if(m_priority == priority::left){
-                    const auto left_res = m_left->get_by_name(name, type);
-                    if(!left_res.is_type<void>()) {
-                        return left_res;
-                    }
-                    else {
-                        return m_right->get_by_name(name, type);
-                    }
+                const auto left_res = m_left->get_by_name(name, type);
+                if(!left_res.is_type<void>()) {
+                    return left_res;
                 }
                 else {
-                    const auto right_res = m_right->get_by_name(name, type);
-                    if(!right_res.is_type<void>()) {
-                        return right_res;
-                    }
-                    else {
-                        return m_left->get_by_name(name, type);
-                    }
+                    return m_right->get_by_name(name, type);
                 }
             }
             
@@ -115,6 +96,7 @@ namespace conf {
 
         /**
          * Intersection implementation
+         * Left is always high priority
          */
         class intersection_backend
             : public config_backend
@@ -122,11 +104,10 @@ namespace conf {
         private:
             backend_ptr m_left;
             backend_ptr m_right;
-            priority m_priority;
 
         public:
-            intersection_backend(const backend_ptr & left, const backend_ptr & right, priority p)
-                : m_left(left), m_right(right), m_priority(p)
+            intersection_backend(const backend_ptr & left, const backend_ptr & right)
+                : m_left(left), m_right(right)
             {
                 YATO_REQUIRES(m_left  != nullptr);
                 YATO_REQUIRES(m_right != nullptr);
@@ -153,7 +134,7 @@ namespace conf {
                 const auto left_res  = m_left->get_by_name(name, type);
                 const auto right_res = m_right->get_by_name(name, type);
                 if(!left_res.is_type<void>() && !right_res.is_type<void>()) {
-                    return m_priority == priority::left ? left_res : right_res;
+                    return left_res;
                 }
                 return stored_variant{};
             }
@@ -259,6 +240,15 @@ namespace conf {
     }
 
     /**
+     * Type used to define arguments priority in config operations
+     */
+    enum class priority
+    {
+        left,
+        right
+    };
+
+    /**
      * Creates a union of two configurations
      * Requested key will be found if and only if it is presented in the left or right sub-config.
      * If the requested key is presented in the both sub-configs, then the value is choosen according to the priority flag.
@@ -271,7 +261,10 @@ namespace conf {
         backend_ptr left_backend  = left.get_backend();
         backend_ptr right_backend = right.get_backend();
         if(left_backend != nullptr && right_backend != nullptr) {
-            return config(std::make_shared<details::union_backend>(left_backend, right_backend, p));
+            if(p != priority::left) {
+                left_backend.swap(right_backend);
+            }
+            return config(std::make_shared<details::union_backend>(left_backend, right_backend));
         }
         if(left_backend != nullptr) {
             return left;
@@ -297,7 +290,10 @@ namespace conf {
         if(left_backend == nullptr || right_backend == nullptr) {
             return config{};
         }
-        return config(std::make_shared<details::intersection_backend>(left_backend, right_backend, p));
+        if(p != priority::left) {
+            left_backend.swap(right_backend);
+        }
+        return config(std::make_shared<details::intersection_backend>(left_backend, right_backend));
     }
 
     /**
