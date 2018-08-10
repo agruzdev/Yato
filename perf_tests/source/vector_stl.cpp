@@ -88,6 +88,81 @@ BENCHMARK(Vector3D_Write_STL)->Arg(1000)->Arg(10000)->Arg(100000)->Arg(1000000);
 
 
 
+void Vector1D_RndRead_STL(benchmark::State & state)
+{
+    static const int RND_SEED = 3;
+    const size_t N = state.range(0);
+
+    std::vector<int32_t> dst(N);
+
+    std::srand(RND_SEED);
+
+    for (auto _ : state) {
+        for(size_t i = 0; i < N; ++i) {
+            const size_t rx = static_cast<size_t>(rand() % N);
+            benchmark::DoNotOptimize(dst[rx]);
+        }
+    }
+}
+
+
+BENCHMARK(Vector1D_RndRead_STL)->Arg(1000)->Arg(10000)->Arg(100000)->Arg(1000000);
+
+
+void Vector2D_RndRead_STL(benchmark::State & state)
+{
+    static const int RND_SEED = 3;
+    const size_t TOTAL_SIZE = state.range(0);
+    const size_t N = static_cast<size_t>(std::sqrt(TOTAL_SIZE)); 
+
+    std::vector<int32_t> dst(N * N);
+
+    std::srand(RND_SEED);
+
+    for (auto _ : state) {
+        for(size_t y = 0; y < N; ++y) {
+            for(size_t x = 0; x < N; ++x) {
+                const size_t ry = static_cast<size_t>(rand() % N);
+                const size_t rx = static_cast<size_t>(rand() % N);
+                benchmark::DoNotOptimize(dst[ry * N + rx]);
+            }
+        }
+    }
+}
+
+BENCHMARK(Vector2D_RndRead_STL)->Arg(1000)->Arg(10000)->Arg(100000)->Arg(1000000);
+
+
+void Vector3D_RndRead_STL(benchmark::State & state)
+{
+    static const int RND_SEED = 3;
+    const size_t TOTAL_SIZE = state.range(0);
+    const size_t N = static_cast<size_t>(std::cbrt(TOTAL_SIZE)); 
+
+    std::vector<int32_t> dst(N * N * N);
+
+    std::srand(RND_SEED);
+
+    for (auto _ : state) {
+        for(size_t z = 0; z < N; ++z) {
+            for(size_t y = 0; y < N; ++y) {
+                for(size_t x = 0; x < N; ++x) {
+                    const size_t ry = static_cast<size_t>(rand() % N);
+                    const size_t rx = static_cast<size_t>(rand() % N);
+                    const size_t rz = static_cast<size_t>(rand() % N);
+                    benchmark::DoNotOptimize(dst[(rz * N + ry) * N + rx]);
+                }
+            }
+        }
+    }
+}
+
+BENCHMARK(Vector3D_RndRead_STL)->Arg(1000)->Arg(10000)->Arg(100000)->Arg(1000000);
+
+
+
+
+
 void Vector1D_PushBack_STL(benchmark::State & state)
 {
     static const int RND_SEED = 3;
