@@ -148,7 +148,7 @@ namespace conf {
     template <>
     struct config_value_trait<uint64_t>
     {
-        using converter_type = details::narrow_converter<uint8_t, int64_t>;
+        using converter_type = details::narrow_converter<uint64_t, int64_t>;
         static constexpr config_type stored_type = config_type::integer;
     };
 
