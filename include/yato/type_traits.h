@@ -8,13 +8,10 @@
 #ifndef _YATO_TYPE_TRAITS_H_
 #define _YATO_TYPE_TRAITS_H_
 
-#include <array>
 #include <functional>
-#include <iterator>
 #include <limits>
 #include <memory>
 #include <type_traits>
-#include <vector>
 
 #include "prerequisites.h"
 #include "primitive_types.h"

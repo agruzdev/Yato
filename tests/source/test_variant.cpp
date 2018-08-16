@@ -18,15 +18,15 @@ TEST(Yato_Variant, details)
     static_assert(yato::details::sizeof_ext<double>::value == sizeof(double), "yato::details::sizeof_ext fail");
     static_assert(yato::details::sizeof_ext<void>::value == 1, "yato::details::sizeof_ext fail");
 
-    static_assert(yato::details::max_types_size<l1>::value == sizeof(double), "yaato::details::max_types_size fail");
-    static_assert(yato::details::max_types_size<l2>::value == sizeof(void*), "yaato::details::max_types_size fail");
-    static_assert(yato::details::max_types_size<l3>::value == 1, "yaato::details::max_types_size fail");
-    static_assert(yato::details::max_types_size<l4>::value == 1, "yaato::details::max_types_size fail");
+    static_assert(yato::details::max_types_size<l1>::value == sizeof(double), "yato::details::max_types_size fail");
+    static_assert(yato::details::max_types_size<l2>::value == sizeof(void*), "yato::details::max_types_size fail");
+    static_assert(yato::details::max_types_size<l3>::value == 1, "yato::details::max_types_size fail");
+    static_assert(yato::details::max_types_size<l4>::value == 1, "yato::details::max_types_size fail");
 
-    static_assert(yato::details::max_types_alignment<l1>::value == std::alignment_of<double>::value, "yaato::details::max_types_alignment fail");
-    static_assert(yato::details::max_types_alignment<l2>::value == std::alignment_of<void*>::value, "yaato::details::max_types_alignment fail");
-    static_assert(yato::details::max_types_alignment<l3>::value == 1, "yaato::details::max_types_alignment fail");
-    static_assert(yato::details::max_types_alignment<l4>::value == 1, "yaato::details::max_types_alignment fail");
+    static_assert(yato::details::max_types_alignment<l1>::value == std::alignment_of<double>::value, "yato::details::max_types_alignment fail");
+    static_assert(yato::details::max_types_alignment<l2>::value == std::alignment_of<void*>::value, "yato::details::max_types_alignment fail");
+    static_assert(yato::details::max_types_alignment<l3>::value == 1, "yato::details::max_types_alignment fail");
+    static_assert(yato::details::max_types_alignment<l4>::value == 1, "yato::details::max_types_alignment fail");
 }
 
 TEST(Yato_Variant, common)
