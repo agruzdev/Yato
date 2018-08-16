@@ -8,8 +8,9 @@
 #ifndef _YATO_ACTOR_PATH_H_
 #define _YATO_ACTOR_PATH_H_
 
-#include <string>
 #include <locale>
+#include <string>
+#include <vector>
 
 #include <yato/prerequisites.h>
 #include <yato/assert.h>
