@@ -2,7 +2,7 @@
 * YATO library
 *
 * The MIT License (MIT)
-* Copyright (c) 2018 Alexey Gruzdev
+* Copyright (c) 2016-2018 Alexey Gruzdev
 */
 
 #ifndef _YATO_ACTOR_SYSTEM_EX_H_

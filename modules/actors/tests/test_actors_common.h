@@ -2,7 +2,7 @@
  * YATO library
  *
  * The MIT License (MIT)
- * Copyright (c) 2018 Alexey Gruzdev
+ * Copyright (c) 2016-2018 Alexey Gruzdev
  */
 
 #ifndef _YATO_TEST_ACTORS_COMMON_H_
