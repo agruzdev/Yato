@@ -8,12 +8,11 @@
 #ifndef _YATO_ACTORS_IO_TCP_RECEIVER_H_
 #define _YATO_ACTORS_IO_TCP_RECEIVER_H_
 
-#include <boost/asio.hpp>
-#include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
+#include <functional>
+#include <memory>
 
-#include "../../actor.h"
+#include <asio.hpp>
+
 #include "../tcp.h"
 #include "tcp_connection.h"
 
@@ -25,7 +24,7 @@ namespace io
 {
 
     class tcp_receiver
-        : public boost::enable_shared_from_this<tcp_receiver>
+        : public std::enable_shared_from_this<tcp_receiver>
     {
     private:
         std::shared_ptr<tcp_connection> m_connection;
@@ -33,11 +32,11 @@ namespace io
         actor_ref m_handler;
 
         static
-        void handle_receive_(const boost::weak_ptr<tcp_receiver> & weak_self, const boost::system::error_code & error)
+        void handle_receive_(const std::weak_ptr<tcp_receiver> & weak_self, const asio::error_code & error, std::size_t /*bytes_transferred*/)
         {
             auto self = weak_self.lock();
             if (self != nullptr) {
-                if ((boost::asio::error::eof == error) || (boost::asio::error::connection_reset == error)) {
+                if ((asio::error::eof == error) || (asio::error::connection_reset == error)) {
                     // Disconnected
                     self->m_remote.tell(tcp::peer_closed());
                     return;
@@ -45,10 +44,10 @@ namespace io
                 if (!error) {
                     std::vector<char> buf(self->m_connection->socket().available());
 
-                    boost::system::error_code read_err;
-                    const size_t len = self->m_connection->socket().read_some(boost::asio::buffer(buf), read_err);
+                    asio::error_code read_err;
+                    const size_t len = self->m_connection->socket().read_some(asio::buffer(buf), read_err);
                     // ToDo (a.gruzdev): Returns 0 but error is not set. Why?
-                    if ((boost::asio::error::eof == read_err) || (boost::asio::error::connection_reset == read_err) || (0 == len)) {
+                    if ((asio::error::eof == read_err) || (asio::error::connection_reset == read_err) || (0 == len)) {
                         // Disconnected
                         self->m_remote.tell(tcp::peer_closed());
                         return;
@@ -63,11 +62,20 @@ namespace io
             }
         }
 
+        std::weak_ptr<tcp_receiver> weak_from_this_impl_()
+        {
+#if defined(YATO_CXX17) || (defined(_MSC_VER) && (_MSC_VER >= 1910))
+            return weak_from_this();
+#else
+            return std::weak_ptr<tcp_receiver>(shared_from_this());
+#endif
+        }
+
         // http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/overview/core/reactor.html
         void start_receive_()
         {
-            m_connection->socket().async_read_some(boost::asio::null_buffers(), 
-                boost::bind(&handle_receive_, weak_from_this(), boost::asio::placeholders::error));
+            m_connection->socket().async_read_some(asio::null_buffers(), 
+                std::bind(&handle_receive_, weak_from_this_impl_(), std::placeholders::_1, std::placeholders::_2));
         }
 
         tcp_receiver(const std::shared_ptr<tcp_connection> & connection, const actor_ref & remote, const actor_ref & handler)
@@ -97,18 +105,15 @@ namespace io
             * Write data to socket
             */
         bool write(const std::vector<char> & data) {
-            boost::system::error_code err;
-            const size_t len = m_connection->socket().send(boost::asio::buffer(data), 0, err);
+            asio::error_code err;
+            const size_t len = m_connection->socket().send(asio::buffer(data), 0, err);
             return !err && (len == data.size());
         }
 
-        /**
-            * Has to be stored in boost::shared_ptr
-            */
         static
-        boost::shared_ptr<tcp_receiver> create(const std::shared_ptr<tcp_connection> & connection, const actor_ref & remote, const actor_ref & handler)
+        std::shared_ptr<tcp_receiver> create(const std::shared_ptr<tcp_connection> & connection, const actor_ref & remote, const actor_ref & handler)
         {
-            boost::shared_ptr<tcp_receiver> p;
+            std::shared_ptr<tcp_receiver> p;
             p.reset(new tcp_receiver(connection, remote, handler));
             p->start_receive_();
             return p;

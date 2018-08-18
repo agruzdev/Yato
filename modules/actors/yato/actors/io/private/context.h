@@ -11,7 +11,7 @@
 #include <memory>
 #include <thread>
 
-#include <boost/asio.hpp>
+#include <asio.hpp>
 
 #include "../../logger.h"
 
@@ -27,14 +27,14 @@ namespace io
     private:
         logger_ptr m_log = logger_factory::create("io_context");
 
-        std::unique_ptr<boost::asio::io_service> m_service;
-        std::unique_ptr<boost::asio::io_service::work> m_work;
+        std::unique_ptr<asio::io_service> m_service;
+        std::unique_ptr<asio::io_service::work> m_work;
         std::thread m_thread;
 
     public:
         io_context() {
-            m_service = std::make_unique<boost::asio::io_service>();
-            m_work    = std::make_unique<boost::asio::io_service::work>(*m_service);
+            m_service = std::make_unique<asio::io_service>();
+            m_work    = std::make_unique<asio::io_service::work>(*m_service);
             m_thread = std::thread([this]{
                 m_log->debug("IO start");
                 m_service->run();
@@ -55,11 +55,11 @@ namespace io
         io_context& operator= (io_context&&) = delete;
 
 
-        const boost::asio::io_service & service() const {
+        const asio::io_service & service() const {
             return *m_service;
         }
 
-        boost::asio::io_service & service() {
+        asio::io_service & service() {
             return *m_service;
         }
     };

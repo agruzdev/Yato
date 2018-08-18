@@ -38,7 +38,7 @@ The library is tested on NDK 13
 ### Actors system
 
 Yato provides a simple actors system implementation, that is developed to look and feel like [Akka](https://akka.io/). 
-It supports basic features of an actor system and optional io model for networking (requires `boost` dependency).
+It supports basic features of an actor system and optional io model for networking.
 
 [More...](./actors/Actors.md)
 

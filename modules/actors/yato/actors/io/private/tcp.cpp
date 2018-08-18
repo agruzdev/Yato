@@ -8,7 +8,7 @@
 #include <string>
 #include <map>
 
-#include <boost/asio.hpp>
+#include <asio.hpp>
 
 #include <yato/any_match.h>
 
@@ -37,8 +37,7 @@ namespace io
     { }
     //-----------------------------------------------------
 
-    tcp_manager::~tcp_manager()
-    { }
+    tcp_manager::~tcp_manager() = default;
     //-----------------------------------------------------
 
     void tcp_manager::pre_start()
@@ -53,9 +52,9 @@ namespace io
 
                 auto address = bind.address;
 
-                boost::system::error_code err;
-                boost::asio::ip::tcp::resolver resolver(m_context->service());
-                boost::asio::ip::tcp::resolver::query query(boost::asio::ip::tcp::v4(), address.host, std::to_string(address.port));
+                asio::error_code err;
+                asio::ip::tcp::resolver resolver(m_context->service());
+                asio::ip::tcp::resolver::query query(asio::ip::tcp::v4(), address.host, std::to_string(address.port));
                 auto endpoint = *resolver.resolve(query, err);
                 if (err) {
                     bind.handler.tell(tcp::command_fail("Failed to resolve endpoint!"), self());
@@ -76,9 +75,9 @@ namespace io
                 const auto & remote = connect.address;
                 log().debug("Connect " + remote.to_string());
 
-                boost::system::error_code err;
-                boost::asio::ip::tcp::resolver resolver(m_context->service());
-                boost::asio::ip::tcp::resolver::query query(boost::asio::ip::tcp::v4(), remote.host, std::to_string(remote.port));
+                asio::error_code err;
+                asio::ip::tcp::resolver resolver(m_context->service());
+                asio::ip::tcp::resolver::query query(asio::ip::tcp::v4(), remote.host, std::to_string(remote.port));
                 auto endpoint = *resolver.resolve(query, err);
                 if (err) {
                     connect.handler.tell(tcp::command_fail("Failed to resolve endpoint! Address = " + remote.to_string()), self());

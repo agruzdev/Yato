@@ -8,8 +8,9 @@
 #ifndef _YATO_ACTORS_IO_TCP_REMOTE_H_
 #define _YATO_ACTORS_IO_TCP_REMOTE_H_
 
-#include <boost/asio.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
+
+#include <asio.hpp>
 
 #include "../../actor.h"
 #include "../tcp.h"
@@ -26,7 +27,7 @@ namespace io
         : public actor
     {
         std::shared_ptr<tcp_connection> m_connection;
-        boost::shared_ptr<tcp_receiver> m_receiver;
+        std::shared_ptr<tcp_receiver> m_receiver;
         //------------------------------------------------------
 
         void pre_start() override
@@ -55,7 +56,7 @@ namespace io
                         m_receiver = tcp_receiver::create(m_connection, self(), assign.handler);
                     }
                 },
-                [this](const boost::system::error_code & error) {
+                [this](const asio::error_code & error) {
                     log().error("Receive error! %s", error.message().c_str());
                 },
                 [this](const tcp::peer_closed & closed) {

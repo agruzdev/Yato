@@ -8,7 +8,7 @@
 #ifndef _YATO_ACTORS_IO_TCP_CONNECTION_H_
 #define _YATO_ACTORS_IO_TCP_CONNECTION_H_
 
-#include <boost/asio.hpp>
+#include <asio.hpp>
 #include "../../actor_ref.h"
 
 namespace yato
@@ -22,18 +22,18 @@ namespace io
     {
     private:
         actor_ref m_server;
-        boost::asio::ip::tcp::socket m_socket;
+        asio::ip::tcp::socket m_socket;
 
     public:
-        tcp_connection(const actor_ref & server, boost::asio::io_service & io)
+        tcp_connection(const actor_ref & server, asio::io_service & io)
             : m_server(server), m_socket(io)
         { }
 
-        boost::asio::ip::tcp::socket & socket() {
+        asio::ip::tcp::socket & socket() {
             return m_socket;
         }
 
-        const boost::asio::ip::tcp::socket & socket() const {
+        const asio::ip::tcp::socket & socket() const {
             return m_socket;
         }
 

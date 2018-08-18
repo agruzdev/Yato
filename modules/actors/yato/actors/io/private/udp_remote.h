@@ -8,6 +8,10 @@
 #ifndef _YATO_ACTORS_IO_UDP_REMOTE_H_
 #define _YATO_ACTORS_IO_UDP_REMOTE_H_
 
+#include <memory>
+
+#include <asio.hpp>
+
 #include <yato/any_match.h>
 
 #include "../../actor.h"
@@ -26,7 +30,7 @@ namespace io
         : public actor
     {
         std::shared_ptr<udp_connection> m_connection;
-        boost::shared_ptr<udp_receiver> m_receiver;
+        std::shared_ptr<udp_receiver> m_receiver;
         //------------------------------------------------------
 
         void pre_start() override
@@ -42,7 +46,7 @@ namespace io
         void receive(yato::any && message) override
         {
             yato::any_match(
-                [this](const boost::system::error_code & error) {
+                [this](const asio::error_code & error) {
                     log().error("Receive error! %s", error.message().c_str());
                 },
                 [this](const udp::peer_closed & closed) {

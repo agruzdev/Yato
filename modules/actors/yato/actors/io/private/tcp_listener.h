@@ -8,9 +8,10 @@
 #ifndef _YATO_ACTORS_IO_TCP_LISTENER_H_
 #define _YATO_ACTORS_IO_TCP_LISTENER_H_
 
-#include <boost/asio.hpp>
-#include <boost/bind.hpp>
-#include <boost/enable_shared_from_this.hpp>
+#include <functional>
+#include <memory>
+
+#include <asio.hpp>
 
 #include "../../actor.h"
 #include "tcp_remote.h"
@@ -28,9 +29,9 @@ namespace io
         struct accept
         {
             std::shared_ptr<tcp_connection> connection;
-            boost::system::error_code error;
+            asio::error_code error;
 
-            accept(const std::shared_ptr<tcp_connection> & connection, const boost::system::error_code & error)
+            accept(const std::shared_ptr<tcp_connection> & connection, const asio::error_code & error)
                 : connection(connection), error(error)
             { }
         };
@@ -40,16 +41,16 @@ namespace io
          * Listens to socket and sends `accept` message to listener actor
          */
         class acceptor
-            : public boost::enable_shared_from_this<acceptor>
+            : public std::enable_shared_from_this<acceptor>
         {
             std::shared_ptr<io_context> m_context;
-            boost::asio::ip::tcp::acceptor m_acceptor;
-            boost::asio::ip::tcp::endpoint m_endpoint;
+            asio::ip::tcp::acceptor m_acceptor;
+            asio::ip::tcp::endpoint m_endpoint;
             actor_ref m_server;
             actor_ref m_listener;
 
             static
-            void handle_accept_(const boost::weak_ptr<acceptor> weak_self, const std::shared_ptr<tcp_connection> & connection, const boost::system::error_code & error)
+            void handle_accept_(const std::weak_ptr<acceptor> weak_self, const std::shared_ptr<tcp_connection> & connection, const asio::error_code & error)
             {
                 auto self = weak_self.lock();
                 if (self != nullptr) {
@@ -58,14 +59,23 @@ namespace io
                 }
             }
 
+            std::weak_ptr<acceptor> weak_from_this_impl_()
+            {
+#if defined(YATO_CXX17) || (defined(_MSC_VER) && (_MSC_VER >= 1910))
+                return weak_from_this();
+#else
+                return std::weak_ptr<acceptor>(shared_from_this());
+#endif
+            }
+
             void start_accept_()
             {
                 auto connection = std::make_shared<tcp_connection>(m_server, m_context->service());
                 m_acceptor.async_accept(connection->socket(),
-                    boost::bind(&handle_accept_, weak_from_this(), connection, boost::asio::placeholders::error));
+                    std::bind(&handle_accept_, weak_from_this_impl_(), connection, std::placeholders::_1));
             }
 
-            acceptor(const std::shared_ptr<io_context> & ctx, const boost::asio::ip::tcp::endpoint & endpoint, const actor_ref & server, const actor_ref & listener)
+            acceptor(const std::shared_ptr<io_context> & ctx, const asio::ip::tcp::endpoint & endpoint, const actor_ref & server, const actor_ref & listener)
                 : m_context(ctx), m_acceptor(ctx->service(), endpoint), m_endpoint(endpoint), m_server(server), m_listener(listener) 
             { }
 
@@ -76,9 +86,9 @@ namespace io
              * Has to be stored in shared_ptr object
              */
             static
-            boost::shared_ptr<acceptor> create(const std::shared_ptr<io_context> & ctx, const boost::asio::ip::tcp::endpoint & endpoint, const actor_ref & server, const actor_ref & listener) 
+            std::shared_ptr<acceptor> create(const std::shared_ptr<io_context> & ctx, const asio::ip::tcp::endpoint & endpoint, const actor_ref & server, const actor_ref & listener) 
             {
-                boost::shared_ptr<acceptor> p;
+                std::shared_ptr<acceptor> p;
                 p.reset(new acceptor(ctx, endpoint, server, listener));
                 p->start_accept_();
                 return p;
@@ -87,10 +97,10 @@ namespace io
         //-----------------------------------------------------------
 
         std::shared_ptr<io_context> m_context;
-        boost::asio::ip::tcp::endpoint m_endpoint;
+        asio::ip::tcp::endpoint m_endpoint;
         actor_ref m_server;
 
-        boost::shared_ptr<acceptor> m_acceptor;
+        std::shared_ptr<acceptor> m_acceptor;
         //-----------------------------------------------------------
 
         void pre_start() override
@@ -129,7 +139,7 @@ namespace io
         }
 
     public:
-        tcp_listener(const actor_ref & handler, const std::shared_ptr<io_context>& ctx, const boost::asio::ip::tcp::endpoint & endpoint)
+        tcp_listener(const actor_ref & handler, const std::shared_ptr<io_context>& ctx, const asio::ip::tcp::endpoint & endpoint)
             : m_context(ctx), m_endpoint(endpoint), m_server(handler)
         { }
     };

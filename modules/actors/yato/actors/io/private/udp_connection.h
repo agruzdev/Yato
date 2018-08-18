@@ -8,7 +8,8 @@
 #ifndef _YATO_ACTORS_IO_UDP_CONNECTION_H_
 #define _YATO_ACTORS_IO_UDP_CONNECTION_H_
 
-#include <boost/asio.hpp>
+#include <asio.hpp>
+
 #include "../../actor_ref.h"
 #include "../inet_address.h"
 
@@ -23,18 +24,18 @@ namespace io
     {
     private:
         actor_ref m_server;
-        boost::asio::ip::udp::socket m_socket;
+        asio::ip::udp::socket m_socket;
 
     public:
-        udp_connection(const actor_ref & server, boost::asio::io_service & io, const inet_address & address)
-            : m_server(server), m_socket(io, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), address.port))
+        udp_connection(const actor_ref & server, asio::io_service & io, const inet_address & address)
+            : m_server(server), m_socket(io, asio::ip::udp::endpoint(asio::ip::udp::v4(), address.port))
         { }
 
-        boost::asio::ip::udp::socket & socket() {
+        asio::ip::udp::socket & socket() {
             return m_socket;
         }
 
-        const boost::asio::ip::udp::socket & socket() const {
+        const asio::ip::udp::socket & socket() const {
             return m_socket;
         }
 

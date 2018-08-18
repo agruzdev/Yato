@@ -5,7 +5,7 @@
 * Copyright (c) 2016-2018 Alexey Gruzdev
 */
 
-#include <boost/asio.hpp>
+#include <asio.hpp>
 
 #include <yato/any_match.h>
 
@@ -34,8 +34,7 @@ namespace io
     { }
     //-----------------------------------------------------
 
-    udp_manager::~udp_manager()
-    { }
+    udp_manager::~udp_manager() = default;
     //-----------------------------------------------------
 
     void udp_manager::pre_start() {

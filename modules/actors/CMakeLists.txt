@@ -30,26 +30,18 @@ include_directories(${YATO_INCLUDE_DIRS})
 # IO
 
 if(YATO_ACTORS_WITH_IO)
-    if(NOT DEFINED Boost_USE_STATIC_LIBS)
-        set(Boost_USE_STATIC_LIBS ON)
-    endif()
-    find_package(Boost REQUIRED COMPONENTS system date_time regex)
+    include(${YATO_SOURCE_DIR}/cmake/dependency.asio.cmake)
 
     file(GLOB yato_actors_io_sources
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/actors/io/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/actors/io/private/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/actors/io/private/*.cpp")
-
     list(APPEND yato_actors_sources ${yato_actors_io_sources})
 
+    include_directories(${ASIO_INCLUDE_DIR})
+
     add_definitions(-DYATO_ACTORS_WITH_IO)
-
-    include_directories(${Boost_INCLUDE_DIRS})
-    link_directories(${Boost_LIBRARY_DIRS})
-
-    if(WIN32 AND CLANG)
-        add_definitions("-DBOOST_USE_WINDOWS_H")
-    endif()
+    add_definitions(-DASIO_STANDALONE)
     if(WIN32)
         add_definitions("-D_WIN32_WINNT=0x0501")
     endif()
@@ -63,14 +55,6 @@ add_library(YatoActors STATIC ${yato_actors_sources})
 set_property(TARGET YatoActors PROPERTY FOLDER "Modules")
 
 if(YATO_ACTORS_WITH_IO)
-    target_link_libraries(YatoActors PRIVATE debug ${Boost_SYSTEM_LIBRARY_DEBUG})
-    target_link_libraries(YatoActors PRIVATE debug ${Boost_DATE_TIME_LIBRARY_DEBUG})
-    target_link_libraries(YatoActors PRIVATE debug ${Boost_REGEX_LIBRARY_DEBUG})
-
-    target_link_libraries(YatoActors PRIVATE optimized ${Boost_SYSTEM_LIBRARY_RELEASE})
-    target_link_libraries(YatoActors PRIVATE optimized ${Boost_DATE_TIME_LIBRARY_RELEASE})
-    target_link_libraries(YatoActors PRIVATE optimized ${Boost_REGEX_LIBRARY_RELEASE})
-
     if(WIN32)
         target_link_libraries(YatoActors PRIVATE wsock32)
         target_link_libraries(YatoActors PRIVATE ws2_32)
