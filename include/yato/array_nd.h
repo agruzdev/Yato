@@ -117,7 +117,7 @@ namespace yato
             *    case of Nd shape
             */
             template <typename _HyperShape = typename _my_shape::hyper_shape>
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             typename std::enable_if<!std::is_same<_HyperShape, null_shape>::value,
                 sub_array<iterator, _HyperShape> >::type
             operator[](size_t idx) const 
@@ -142,7 +142,7 @@ namespace yato
              *    case of 1d shape 
              */
             template <typename _HyperShape = typename _my_shape::hyper_shape>
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             typename std::enable_if<std::is_same<_HyperShape, null_shape>::value,
                 decltype(*std::declval<iterator>())>::type
             operator[](size_t idx) const 
@@ -270,7 +270,7 @@ namespace yato
             *    case of Nd shape
             */
             template <typename _HyperShape = typename shape::hyper_shape>
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             typename std::enable_if<!std::is_same<_HyperShape, null_shape>::value,
                 sub_array<const_iterator, _HyperShape> >::type
             operator[](size_t idx) const 
@@ -305,7 +305,7 @@ namespace yato
             *    case of 1d shape
             */
             template <typename _HyperShape = typename shape::hyper_shape>
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             typename std::enable_if<std::is_same<_HyperShape, null_shape>::value,
                 decltype(*std::declval<const_iterator>())>::type
             operator[](size_t idx) const 
@@ -315,7 +315,7 @@ namespace yato
             }
 
             template <typename _HyperShape = typename shape::hyper_shape>
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             typename std::enable_if<std::is_same<_HyperShape, null_shape>::value,
                 decltype(*std::declval<iterator>())>::type
             operator[](size_t idx) 

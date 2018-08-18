@@ -71,10 +71,10 @@
 
 // Extended constexpr
 #if (defined(_MSC_VER) && (_MSC_VER > 1900)) || (defined(__cplusplus) && __cplusplus >= 201400L)
-#define YATO_HAS_EXTENDED_CONSTEXPR
-#define YATO_CONSTEXPR_FUNC_EX constexpr 
+#define YATO_HAS_CONSTEXPR_CXX14
+#define YATO_CONSTEXPR_FUNC_CXX14 constexpr 
 #else
-#define YATO_CONSTEXPR_FUNC_EX inline
+#define YATO_CONSTEXPR_FUNC_CXX14 inline
 #endif
 
 #if (defined(_MSC_VER) && (_MSC_VER >= 1900)) || (defined(__cplusplus) && (__cplusplus >= 201400L))

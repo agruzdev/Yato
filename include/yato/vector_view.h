@@ -223,14 +223,14 @@ namespace yato
             return m_end;
         }
 
-        YATO_CONSTEXPR_FUNC_EX
+        YATO_CONSTEXPR_FUNC_CXX14
         const_reference operator[] (size_type idx) const YATO_NOEXCEPT_KEYWORD
         {
             YATO_REQUIRES(idx < size());
             return *std::next(m_begin, idx);
         }
 
-        YATO_CONSTEXPR_FUNC_EX
+        YATO_CONSTEXPR_FUNC_CXX14
         reference operator[] (size_type idx) YATO_NOEXCEPT_KEYWORD
         {
             YATO_REQUIRES(idx < size());

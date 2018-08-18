@@ -111,7 +111,7 @@ namespace conf {
         template <typename ToType_, typename FromType_>
         struct checked_limits_converter
         {
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             ToType_ operator()(FromType_ && val) const {
                 YATO_REQUIRES(val <= static_cast<FromType_>(std::numeric_limits<ToType_>::max()));
                 YATO_REQUIRES(val >= static_cast<FromType_>(std::numeric_limits<ToType_>::min()));

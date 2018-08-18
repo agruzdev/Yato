@@ -121,7 +121,7 @@ namespace yato
             ~sub_array_proxy() = default;
 
             template<size_t MyDimsNum = dimensions_number>
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             auto operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
                 -> typename std::enable_if<(MyDimsNum > 1), data_reference>::type
             {
@@ -130,7 +130,7 @@ namespace yato
             }
 
             template<size_t MyDimsNum = dimensions_number>
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             auto operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
                 -> typename std::enable_if <(MyDimsNum == 1), data_reference>::type
             {
@@ -170,7 +170,7 @@ namespace yato
             /**
              * Get dimensions
              */
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             dimensions_type dimensions() const
             {
                 return dimensions_type(dimensions_range());
@@ -179,7 +179,7 @@ namespace yato
             /**
              *  Get dimensions range
              */
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             auto dimensions_range() const
                 -> decltype(yato::range<desc_iterator>(m_desc_iter, std::next(m_desc_iter, dimensions_number)).map(tuple_cgetter<typename dim_descriptor::type, dim_descriptor::idx_size>()))
             {
@@ -189,7 +189,7 @@ namespace yato
             /**
              *  Get size along one dimension
              */
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             size_type size(size_t idx) const YATO_NOEXCEPT_KEYWORD
             {
                 YATO_REQUIRES(idx < dimensions_number);
@@ -199,7 +199,7 @@ namespace yato
             /**
              *  Get stride along one dimension
              */
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             size_type stride(size_t idx) const YATO_NOEXCEPT_KEYWORD
             {
                 YATO_REQUIRES(idx < dimensions_number - 1);
@@ -445,7 +445,7 @@ namespace yato
             /**
              *  Increment iterator
              */
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             this_type & operator++() YATO_NOEXCEPT_KEYWORD
             {
                 std::advance(m_data_iter, total_stored());
@@ -465,7 +465,7 @@ namespace yato
             /**
              *  Decrement iterator
              */
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             this_type & operator--() YATO_NOEXCEPT_KEYWORD
             {
                 std::advance(m_data_iter, -narrow_cast<difference_type>(total_stored()));

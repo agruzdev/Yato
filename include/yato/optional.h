@@ -219,7 +219,7 @@ namespace yato
                 return *get_ptr_();
             }
 
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             value_type & get() & {
                 if(!m_stored) {
                     throw yato::bad_optional_access("empty optional");
@@ -235,7 +235,7 @@ namespace yato
                 return std::move(*get_ptr_());
             }
 
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             value_type && get() && {
                 if(!m_stored) {
                     throw yato::bad_optional_access("empty optional");
@@ -249,7 +249,7 @@ namespace yato
                 return *get_ptr_();
             }
 
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             value_type & get_unsafe() & {
                 YATO_REQUIRES(m_stored);
                 return *get_ptr_();
@@ -261,7 +261,7 @@ namespace yato
                 return std::move(*get_ptr_());
             }
 
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             value_type && get_unsafe() && {
                 YATO_REQUIRES(m_stored);
                 return std::move(*get_ptr_());
@@ -274,7 +274,7 @@ namespace yato
             }
 
             template <typename DefTy_>
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             value_type get_or(DefTy_ && default_value) && {
                 return m_stored ? std::move(*get_ptr_()) : static_cast<value_type>(std::forward<DefTy_>(default_value));
             }

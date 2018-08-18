@@ -104,7 +104,7 @@ YATO_CLANG_WARNING_IGNORE("-Wmissing-braces")
 YATO_PRAGMA_WARNING_POP
 
         template <typename SizeIter>
-        YATO_CONSTEXPR_FUNC_EX explicit
+        YATO_CONSTEXPR_FUNC_CXX14 explicit
         dimensionality(const range<SizeIter> & extents)
         {
             YATO_REQUIRES(extents.distance() == dimensions_number);
@@ -175,7 +175,7 @@ YATO_PRAGMA_WARNING_POP
             return m_extents.cend();
         }
 
-        YATO_CONSTEXPR_FUNC_EX
+        YATO_CONSTEXPR_FUNC_CXX14
         sub_dimensionality sub_dims() const
         {
             return sub_dimensionality(make_range(std::next(m_extents.cbegin()), m_extents.cend()));
@@ -198,7 +198,7 @@ YATO_PRAGMA_WARNING_POP
         { }
 
         template <typename SizeIter>
-        YATO_CONSTEXPR_FUNC_EX explicit
+        YATO_CONSTEXPR_FUNC_CXX14 explicit
         dimensionality(const range<SizeIter> &)
         { }
 
@@ -228,7 +228,7 @@ YATO_PRAGMA_WARNING_POP
     YATO_CONSTEXPR_FUNC
     size_t length(_ContainerType && container)
     {
-#ifdef YATO_HAS_EXTENDED_CONSTEXPR
+#ifdef YATO_HAS_CONSTEXPR_CXX14
         YATO_REQUIRES(container.dimensions_num() == 1);
 #endif
         return container.size(0);
@@ -238,7 +238,7 @@ YATO_PRAGMA_WARNING_POP
     YATO_CONSTEXPR_FUNC
     size_t height_2d(_ContainerType && container)
     {
-#ifdef YATO_HAS_EXTENDED_CONSTEXPR
+#ifdef YATO_HAS_CONSTEXPR_CXX14
         YATO_REQUIRES(container.dimensions_num() == 2);
 #endif
         return container.size(0);
@@ -248,7 +248,7 @@ YATO_PRAGMA_WARNING_POP
     YATO_CONSTEXPR_FUNC
     size_t width_2d(_ContainerType && container)
     {
-#ifdef YATO_HAS_EXTENDED_CONSTEXPR
+#ifdef YATO_HAS_CONSTEXPR_CXX14
         YATO_REQUIRES(container.dimensions_num() == 2);
 #endif
         return container.size(1);
@@ -258,7 +258,7 @@ YATO_PRAGMA_WARNING_POP
     YATO_CONSTEXPR_FUNC
     size_t depth_3d(_ContainerType && container)
     {
-#ifdef YATO_HAS_EXTENDED_CONSTEXPR
+#ifdef YATO_HAS_CONSTEXPR_CXX14
         YATO_REQUIRES(container.dimensions_num() == 3);
 #endif
         return container.size(0);
@@ -268,7 +268,7 @@ YATO_PRAGMA_WARNING_POP
     YATO_CONSTEXPR_FUNC
     size_t height_3d(_ContainerType && container)
     {
-#ifdef YATO_HAS_EXTENDED_CONSTEXPR
+#ifdef YATO_HAS_CONSTEXPR_CXX14
         YATO_REQUIRES(container.dimensions_num() == 3);
 #endif
         return container.size(1);
@@ -278,7 +278,7 @@ YATO_PRAGMA_WARNING_POP
     YATO_CONSTEXPR_FUNC
     size_t width_3d(_ContainerType && container)
     {
-#ifdef YATO_HAS_EXTENDED_CONSTEXPR
+#ifdef YATO_HAS_CONSTEXPR_CXX14
         YATO_REQUIRES(container.dimensions_num() == 3);
 #endif
         return container.size(2);

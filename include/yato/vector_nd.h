@@ -53,7 +53,7 @@ namespace yato
              * @param new_size Required capacity.
              * @return Capacity to be allocated, probably bigger than required.
              */
-            static YATO_CONSTEXPR_FUNC_EX
+            static YATO_CONSTEXPR_FUNC_CXX14
             size_t increase(size_t old_size, size_t new_size)
             {
                 YATO_REQUIRES(new_size > old_size);
@@ -1141,7 +1141,7 @@ namespace yato
             /**
              *  Element access without bounds check in release
              */
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             const_proxy operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
             {
                 YATO_REQUIRES(idx < size(0));
@@ -1150,7 +1150,7 @@ namespace yato
             /**
              *  Element access without bounds check in release
              */
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             proxy operator[](size_t idx) YATO_NOEXCEPT_KEYWORD
             {
                 YATO_REQUIRES(idx < size(0));
@@ -1329,7 +1329,7 @@ namespace yato
             /**
              *  Get number of dimensions
              */
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             size_t dimensions_num() const YATO_NOEXCEPT_KEYWORD
             {
                 return dimensions_number;
@@ -1347,7 +1347,7 @@ namespace yato
              *  Get size of specified dimension
              *  If the vector is empty ( empty() returns true ) then calling for size(idx) returns 0 for idx = 0; Return value for any idx > 0 is undefined
              */
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             size_type size(size_t idx) const YATO_NOEXCEPT_KEYWORD
             {
                 YATO_REQUIRES(idx < dimensions_number);
@@ -1356,7 +1356,7 @@ namespace yato
             /**
              *  Get the total size of the vector (number of all elements)
              */
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             size_t total_size() const YATO_NOEXCEPT_KEYWORD
             {
                 return std::get<dim_descriptor::idx_total>(m_descriptors[0]);
@@ -2284,7 +2284,7 @@ namespace yato
             /**
              *  Element access without bounds check in release
              */
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             const_reference operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
             {
                 YATO_REQUIRES(idx < m_size);
@@ -2294,7 +2294,7 @@ namespace yato
             /**
              *  Element access without bounds check in release
              */
-            YATO_CONSTEXPR_FUNC_EX
+            YATO_CONSTEXPR_FUNC_CXX14
             reference operator[](size_t idx) YATO_NOEXCEPT_KEYWORD
             {
                 YATO_REQUIRES(idx < m_size);

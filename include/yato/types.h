@@ -136,21 +136,21 @@ namespace yato
             return narrow_cast<uint64_t>(number);
         }
 
-        YATO_CONSTEXPR_FUNC_EX
+        YATO_CONSTEXPR_FUNC_CXX14
         float32_t operator"" _f32(long double number) YATO_NOEXCEPT_TESTED
         {
             YATO_REQUIRES(static_cast<long double>(std::numeric_limits<float32_t>::lowest()) <= number && number <= static_cast<long double>(std::numeric_limits<float32_t>::max()));
             return static_cast<float32_t>(number);
         }
 
-        YATO_CONSTEXPR_FUNC_EX
+        YATO_CONSTEXPR_FUNC_CXX14
         float64_t operator"" _f64(long double number) YATO_NOEXCEPT_TESTED
         {
             YATO_REQUIRES(static_cast<long double>(std::numeric_limits<float64_t>::lowest()) <= number && number <= static_cast<long double>(std::numeric_limits<float64_t>::max()));
             return static_cast<float64_t>(number);
         }
 
-        YATO_CONSTEXPR_FUNC_EX
+        YATO_CONSTEXPR_FUNC_CXX14
         float80_t operator"" _f80(long double number) YATO_NOEXCEPT_TESTED
         {
             YATO_REQUIRES(static_cast<long double>(std::numeric_limits<float80_t>::lowest()) <= number && number <= static_cast<long double>(std::numeric_limits<float80_t>::max()));
