@@ -30,7 +30,7 @@ function(file_exists STATUS_ FILE_ HASH_MD5_)
 endfunction()
 
 
-function(dependency_download_and_unzip URL_ HASH_MD5_ FILE_ UNZIPPED_DIR_)
+function(dependency_download_and_unzip URL_ HASH_MD5_ FILE_ UNZIPPED_DIR_ ONLY_CHECK_ RET_CODE_)
     get_filename_component(workdir_ ${FILE_} DIRECTORY)
     set(unzipped_directory ${workdir_}/unzipped)
 
@@ -38,6 +38,11 @@ function(dependency_download_and_unzip URL_ HASH_MD5_ FILE_ UNZIPPED_DIR_)
     if(NOT ${unzip_exists_})
         file_exists(archive_is_valid_ ${FILE_} ${HASH_MD5_})
         if(NOT ${archive_is_valid_})
+            if(ONLY_CHECK_)
+                set(${RET_CODE_} FALSE PARENT_SCOPE)
+                return()
+            endif()
+
             message(STATUS "Downloading: ${URL_}")
             file(DOWNLOAD ${URL_} ${FILE_}
                 SHOW_PROGRESS
@@ -45,7 +50,9 @@ function(dependency_download_and_unzip URL_ HASH_MD5_ FILE_ UNZIPPED_DIR_)
                 STATUS ret_
             )
             if(NOT ret_)
-                message(FATAL_ERROR "Failed to download: ${URL_}")
+                message(SEND_ERROR "Failed to download: ${URL_}")
+                set(${RET_CODE_} FALSE PARENT_SCOPE)
+                return()
             endif()
         endif()
 
@@ -56,29 +63,21 @@ function(dependency_download_and_unzip URL_ HASH_MD5_ FILE_ UNZIPPED_DIR_)
             RESULT_VARIABLE ret_
         )
         if(ret_)
-            message(FATAL_ERROR "Failed to extract: ${FILE_}")
+            message(SEND_ERROR "Failed to extract: ${FILE_}")
+            set(${RET_CODE_} FALSE PARENT_SCOPE)
+            return()
         endif()
     endif()
 
     set(${UNZIPPED_DIR_} ${unzipped_directory} PARENT_SCOPE)
+    set(${RET_CODE_} TRUE PARENT_SCOPE)
 endfunction()
 
 
 
-#function(dependency_find_or_download
-#    DEPENDENCY_NAME           # Short dependency name used for cache variables
-#    DEPENDENCY_VERBOSE_NAME   # Verbose name for messages and hints
-#    DEP_URL                   # Url for downloading.
-#    DEP_HASH_MD5              # Hash of downloaded file
-#    FILE_NAME                 # Downloaded file name
-#    
-#    DOWNLOADED_PREFIX         # Additonal path prefix after extracting archive
-#   
-#    OUT_INVALIDATED           # Out flag. ON if dependency should be configured. OFF if cache is valid.
-#)
-#
-# Use global flag DOWNLOAD_ALL to enable downloading by default
 
+# Defines ${DEPENDENCY_NAME}_FOUND_ROOT on success
+# Use global flag DOWNLOAD_ALL to enable downloading by default
 function(dependency_find_or_download)
     set(oneValueArgs
         NAME            # Short dependency name used for cache variables
@@ -90,23 +89,38 @@ function(dependency_find_or_download)
     )
     cmake_parse_arguments(DEPENDENCY "" "${oneValueArgs}" "" ${ARGN})
 
-    option(${DEPENDENCY_NAME}_DOWNLOAD "Download ${DEPENDENCY_VERBOSE_NAME} sources" OFF)
-    if(${DEPENDENCY_NAME}_DOWNLOAD OR DOWNLOAD_ALL)
-        string(TOLOWER ${DEPENDENCY_NAME} folder_name_)
-        dependency_download_and_unzip(${DEPENDENCY_URL} ${DEPENDENCY_HASH_MD5} 
-            "${YATO_SOURCE_DIR}/dependencies/${folder_name_}/package.zip"
-            unzipped_location_
-        )
+    string(TOLOWER ${DEPENDENCY_NAME} folder_name_)
+    set(dependency_file_ "${YATO_SOURCE_DIR}/dependencies/${folder_name_}/package.zip")
+
+    # 1. check locally
+    dependency_download_and_unzip(${DEPENDENCY_URL} ${DEPENDENCY_HASH_MD5} ${dependency_file_} unzipped_location_ TRUE dependency_is_found_)
+    if(${dependency_is_found_})
         set(root_ ${unzipped_location_})
         if(DEPENDENCY_PREFIX)
             set(root_ ${root_}/${DEPENDENCY_PREFIX})
         endif()
-    else()
+    endif()
+
+    # 2. check environment
+    if(NOT EXISTS ${root_})
         if(${DEPENDENCY_NAME}_ROOT)
             set(root_ ${${DEPENDENCY_NAME}_ROOT})
         else()
-            # Check environment
             set(root_ $ENV{${DEPENDENCY_NAME}_ROOT})
+        endif()
+    endif()
+
+    # 3. download
+    option(${DEPENDENCY_NAME}_DOWNLOAD "Download ${DEPENDENCY_VERBOSE_NAME} sources" OFF)
+    if(NOT EXISTS ${root_} OR DOWNLOAD_ALL)
+        if(${DEPENDENCY_NAME}_DOWNLOAD OR DOWNLOAD_ALL)
+            dependency_download_and_unzip(${DEPENDENCY_URL} ${DEPENDENCY_HASH_MD5} ${dependency_file_} unzipped_location_ FALSE dependency_is_downloaded_)
+            if(${dependency_is_downloaded_})
+                set(root_ ${unzipped_location_})
+                if(DEPENDENCY_PREFIX)
+                    set(root_ ${root_}/${DEPENDENCY_PREFIX})
+                endif()
+            endif()
         endif()
     endif()
 
