@@ -20,11 +20,11 @@ endfunction()
 
 # Check that file exists and has valid hash
 function(file_exists STATUS_ FILE_ HASH_MD5_)
-    set(STATUS_ FALSE)
+    set(${STATUS_} FALSE PARENT_SCOPE)
     if(EXISTS ${FILE_})
         file(MD5 ${FILE_} hash_)
         if(${hash_} STREQUAL ${HASH_MD5_})
-            set(STATUS_ TRUE)
+            set(${STATUS_} TRUE PARENT_SCOPE)
         endif()
     endif()
 endfunction()
@@ -92,6 +92,10 @@ function(dependency_find_or_download)
     string(TOLOWER ${DEPENDENCY_NAME} folder_name_)
     set(dependency_file_ "${YATO_SOURCE_DIR}/dependencies/${folder_name_}/package.zip")
 
+    if(NOT DEFINED DOWNLOAD_ALL)
+        set(DOWNLOAD_ALL FALSE)
+    endif()
+
     # 1. check locally
     dependency_download_and_unzip(${DEPENDENCY_URL} ${DEPENDENCY_HASH_MD5} ${dependency_file_} unzipped_location_ TRUE dependency_is_found_)
     if(${dependency_is_found_})
@@ -112,8 +116,8 @@ function(dependency_find_or_download)
 
     # 3. download
     option(${DEPENDENCY_NAME}_DOWNLOAD "Download ${DEPENDENCY_VERBOSE_NAME} sources" OFF)
-    if(NOT EXISTS ${root_} OR DOWNLOAD_ALL)
-        if(${DEPENDENCY_NAME}_DOWNLOAD OR DOWNLOAD_ALL)
+    if((NOT EXISTS ${root_}) OR ${DOWNLOAD_ALL})
+        if(${${DEPENDENCY_NAME}_DOWNLOAD} OR ${DOWNLOAD_ALL})
             dependency_download_and_unzip(${DEPENDENCY_URL} ${DEPENDENCY_HASH_MD5} ${dependency_file_} unzipped_location_ FALSE dependency_is_downloaded_)
             if(${dependency_is_downloaded_})
                 set(root_ ${unzipped_location_})
