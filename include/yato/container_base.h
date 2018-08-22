@@ -60,7 +60,6 @@ namespace yato
     class dimensionality
     {
     private:
-        using my_type = dimensionality<DimensionsNum, SizeType>;
         using container_type = std::array<SizeType, DimensionsNum>;
         //---------------------------------------------------
 
@@ -77,26 +76,24 @@ namespace yato
         //---------------------------------------------------
 
         YATO_CONSTEXPR_FUNC
-        const size_type total_size_impl(size_t idx) const
+        size_type total_size_impl_(size_t idx) const
         {
             return idx >= dimensions_number - 1
                 ? m_extents[dimensions_number - 1]
-                : m_extents[idx] * total_size_impl(idx + 1);
+                : m_extents[idx] * total_size_impl_(idx + 1);
         }
         //---------------------------------------------------
 
     public:
         YATO_CONSTEXPR_FUNC
-        dimensionality()
-            : m_extents()
-        { }
+        dimensionality() = default;
 
 YATO_PRAGMA_WARNING_PUSH
 YATO_CLANG_WARNING_IGNORE("-Wmissing-braces")
-        template <typename... Args>
+        template <typename... Args_>
         YATO_CONSTEXPR_FUNC explicit 
-        dimensionality(const size_type & extent1, const Args &... extents) YATO_NOEXCEPT_KEYWORD
-            : m_extents({ extent1, extents... })
+        dimensionality(size_type extent1, Args_... extents) YATO_NOEXCEPT_KEYWORD
+            : m_extents({ std::move(extent1), std::move(extents)... })
         {
             // ToDo (a.gruzdev): Make SFINAE friendly if necessary
             static_assert(sizeof...(extents) + 1 == dimensions_number, "yato::dimensionality[dimensionality]: Invalid dimensions number");
@@ -112,16 +109,16 @@ YATO_PRAGMA_WARNING_POP
         }
 
         YATO_CONSTEXPR_FUNC
-        dimensionality(const my_type &) = default;
-#ifndef YATO_MSVC_2013
-        dimensionality(my_type &&) = default;
-#endif
+        dimensionality(const dimensionality &) = default;
+
+        dimensionality(dimensionality &&) = default;
+
+        dimensionality & operator = (const dimensionality &) = default;
+
+        dimensionality & operator = (dimensionality &&) = default;
+
         ~dimensionality() = default;
 
-        my_type & operator = (const my_type &) = default;
-#ifndef YATO_MSVC_2013
-        my_type & operator = (my_type &&) = default;
-#endif
         YATO_CONSTEXPR_FUNC
         const size_type & operator[](size_t idx) const
         {
@@ -150,9 +147,9 @@ YATO_PRAGMA_WARNING_POP
         }
 
         YATO_CONSTEXPR_FUNC
-        const SizeType total_size() const
+        SizeType total_size() const
         {
-            return total_size_impl(0);
+            return total_size_impl_(0);
         }
 
         iterator begin()
@@ -194,8 +191,7 @@ YATO_PRAGMA_WARNING_POP
         static YATO_CONSTEXPR_VAR size_t dimensions_number = 0;
 
         YATO_CONSTEXPR_FUNC
-        dimensionality()
-        { }
+        dimensionality() = default;
 
         template <typename SizeIter>
         YATO_CONSTEXPR_FUNC_CXX14 explicit
@@ -203,6 +199,15 @@ YATO_PRAGMA_WARNING_POP
         { }
 
         ~dimensionality() = default;
+
+        YATO_CONSTEXPR_FUNC
+        dimensionality(const dimensionality &) = default;
+
+        dimensionality(dimensionality &&) noexcept = default;
+
+        dimensionality & operator = (const dimensionality &) = default;
+
+        dimensionality & operator = (dimensionality &&) noexcept = default;
 
         YATO_CONSTEXPR_FUNC
         size_t dimensions_num() const
@@ -214,12 +219,35 @@ YATO_PRAGMA_WARNING_POP
     /**
      * Helper function for creating dimensionality
      */
-    template <typename SizeType = size_t, typename... Extents>
+    template <typename SizeType_ = size_t, typename... Extents_>
     YATO_CONSTEXPR_FUNC
-    dimensionality<sizeof...(Extents), SizeType> dims(const Extents &... extents)
+    auto dims(Extents_... extents)
+        -> std::enable_if_t<std::is_integral<SizeType_>::value, dimensionality<sizeof...(Extents_), SizeType_>>
     {
-        return dimensionality<sizeof...(Extents), SizeType>(narrow_cast<SizeType>(extents)...);
+        return dimensionality<sizeof...(Extents_), SizeType_>(narrow_cast<SizeType_>(extents)...);
     }
+
+    /**
+     * Helper function for creating dimensionality
+     */
+#ifdef YATO_CXX17
+    // Requires implicit inline modifier for static constexpr
+    template <typename SizeType_ = size_t, typename... Extents_>
+    YATO_CONSTEXPR_FUNC
+    auto dims(Extents_ && ... extents)
+        -> std::enable_if_t<!std::is_integral<SizeType_>::value, dimensionality<sizeof...(Extents_), SizeType_>>
+    {
+        return dimensionality<sizeof...(Extents_), SizeType_>(std::forward<Extents_>(extents)...);
+    }
+#else
+    template <typename SizeType_ = size_t, typename... Extents_>
+    YATO_CONSTEXPR_FUNC
+    auto dims(Extents_... extents)
+        -> std::enable_if_t<!std::is_integral<SizeType_>::value, dimensionality<sizeof...(Extents_), SizeType_>>
+    {
+        return dimensionality<sizeof...(Extents_), SizeType_>(extents...);
+    }
+#endif
 
     //----------------------------------------------------------------------------------
 
