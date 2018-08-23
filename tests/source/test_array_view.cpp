@@ -19,7 +19,6 @@ TEST(Yato_ArrayView, common)
     EXPECT_EQ(6U, view.stride(1));
 
     EXPECT_EQ(24U, view.total_size());
-    EXPECT_EQ(60U, view.total_stored());
 
     auto r = view.dimensions_range();
     EXPECT_EQ(2U, *(r.begin()));
@@ -31,11 +30,12 @@ TEST(Yato_ArrayView, common)
     EXPECT_EQ(3U, dims[1]);
     EXPECT_EQ(4U, dims[2]);
 
-    int i = 0;
-    for (auto it = view.plain_begin(); it != view.plain_end(); ++it, ++i) {
-        EXPECT_EQ(arr[i], *it);
-    }
-    
+    // not safe
+    //int i = 0;
+    //for (auto it = view.plain_begin(); it != view.plain_end(); ++it, ++i) {
+    //    EXPECT_EQ(arr[i], *it);
+    //}
+    //
 }
 
 TEST(Yato_ArrayView, common_2)

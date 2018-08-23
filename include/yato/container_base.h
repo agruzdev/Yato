@@ -179,6 +179,19 @@ YATO_PRAGMA_WARNING_POP
         }
     };
 
+    template <size_t DimsNum_, typename SizeType1_, typename SizeType2_>
+    YATO_CONSTEXPR_FUNC
+    bool operator == (const dimensionality<DimsNum_, SizeType1_> & dims1, const dimensionality<DimsNum_, SizeType2_> & dims2)
+    {
+        return std::equal(dims1.cbegin(), dims1.cend(), dims2.cbegin());
+    }
+
+    template <size_t DimsNum_, typename SizeType1_, typename SizeType2_>
+    YATO_CONSTEXPR_FUNC
+    bool operator != (const dimensionality<DimsNum_, SizeType1_> & dims1, const dimensionality<DimsNum_, SizeType2_> & dims2)
+    {
+        return !(dims1 == dims2);
+    }
 
     /**
      * Zero-dimensional extents

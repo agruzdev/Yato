@@ -26,29 +26,28 @@ namespace yato
             using this_type = array_view_base<ValueType, DimsNum>;
         public:
 
-            using value_type = ValueType;
-            using dimensions_type = dimensionality<DimsNum, size_t>;
-            using strides_type    = dimensionality<DimsNum - 1, size_t>;
-            using size_type = size_t;
+            using value_type        = ValueType;
+            using size_type         = size_t;
+            using dimensions_type   = dimensionality<DimsNum, size_t>;
+            using strides_type      = dimensionality<DimsNum - 1, size_t>;
 
             static YATO_CONSTEXPR_VAR size_t dimensions_number = DimsNum;
             static_assert(dimensions_number > 1, "Dimensions number should be greater than 1");
 
-            using value_iterator        = value_type*;
-            using const_value_iterator  = const value_type*;
-            using value_reference       = value_type&;
-            using const_value_reference = const value_type&;
+            using value_iterator  = std::add_pointer_t<value_type>;
+            using value_reference = std::add_lvalue_reference_t<value_type>;
 
             using dim_descriptor = dimension_descriptor_strided<size_type>; // size, stride, offset
 
             using sub_view       = details::sub_array_proxy<value_iterator, dim_descriptor, dimensions_number - 1>;
-            using const_sub_view = details::sub_array_proxy<const_value_iterator, dim_descriptor, dimensions_number - 1>;
 
             using reference       = sub_view;
-            using const_reference = const_sub_view;
+            using const_reference = sub_view;
             using iterator        = sub_view;
-            using const_iterator  = const_sub_view;
+            using const_iterator  = sub_view;
 
+            using plain_iterator        = std::add_pointer_t<value_type>;
+            using const_plain_iterator  = std::add_pointer_t<std::add_const_t<value_type>>;
             //--------------------------------------------------------------------
 
             value_iterator m_base_ptr;
@@ -59,9 +58,12 @@ namespace yato
                 : m_base_ptr(ptr)
             {
                 YATO_REQUIRES(ptr != nullptr);
+                YATO_REQUIRES(extents[dimensions_number - 1] <= strides[dimensions_number - 2]);
                 m_descriptors[dimensions_number - 1] = std::make_tuple(extents[dimensions_number - 1], extents[dimensions_number - 1], strides[dimensions_number - 2]);
                 for (size_t i = dimensions_number - 1; i > 0; --i) {
-                    m_descriptors[i - 1] = std::make_tuple(extents[i - 1],
+                    YATO_REQUIRES((i > 1) ? extents[i - 1] <= strides[i - 2] : true);
+                    m_descriptors[i - 1] = std::make_tuple(
+                        extents[i - 1],
                         extents[i - 1] * std::get<dim_descriptor::idx_total>(m_descriptors[i]),
                         (i > 1 ? strides[i - 2] : extents[0]) * std::get<dim_descriptor::idx_offset>(m_descriptors[i]));
                 }
@@ -72,21 +74,8 @@ namespace yato
             array_view_base(const this_type&) = default;
             array_view_base& operator= (const this_type&) = default;
 
-#ifndef YATO_MSVC_2013
             array_view_base(this_type&&) = default;
             array_view_base& operator= (this_type&&) = default;
-#else
-            array_view_base(this_type && other)
-                : m_descriptors(std::move(other.m_descriptors)), m_base_ptr(std::move(other.m_base_ptr))
-            { }
-
-            array_view_base& operator= (this_type && other)
-            {
-                REQUIRES(this != &other);
-                m_descriptors = std::move(other.m_descriptors);
-                m_base_ptr = std::move(other.m_base_ptr);
-            }
-#endif
 
             value_iterator get_pointer_() const
             {
@@ -123,28 +112,23 @@ namespace yato
                 return yato::make_range(m_descriptors).map(tuple_cgetter<typename dim_descriptor::type, dim_descriptor::idx_size>());
             }
 
-            sub_view get_sub_view_(size_t idx)
+            sub_view get_sub_view_(size_t idx) const
             {
                 return sub_view(std::next(m_base_ptr, idx * std::get<dim_descriptor::idx_offset>(m_descriptors[1])), &(m_descriptors[1]));
             }
 
-            const_sub_view get_const_sub_view_(size_t idx) const
-            {
-                return const_sub_view(std::next(m_base_ptr, idx * std::get<dim_descriptor::idx_offset>(m_descriptors[1])), &(m_descriptors[1]));
-            }
-
-            iterator get_iterator_(size_t idx)
+            iterator get_iterator_(size_t idx) const
             {
                 return get_sub_view_(idx);
             }
 
             const_iterator get_const_iterator_(size_t idx) const
             {
-                return get_const_sub_view_(idx);
+                return get_sub_view_(idx);
             }
 
             template<typename... IdxTail>
-            value_reference at_impl_(size_t idx, IdxTail && ... tail)
+            value_reference at_impl_(size_t idx, IdxTail && ... tail) const
             {
                 static_assert(sizeof...(IdxTail)+1 == dimensions_number, "Wrong indexes number");
                 if (idx >= get_size_(0)) {
@@ -153,14 +137,9 @@ namespace yato
                 return get_sub_view_(idx).at(std::forward<IdxTail>(tail)...);
             }
 
-            template<typename... IdxTail>
-            const_value_reference const_at_impl_(size_t idx, IdxTail && ... tail) const
+            bool is_continous_() const
             {
-                static_assert(sizeof...(IdxTail)+1 == dimensions_number, "Wrong indexes number");
-                if (idx >= get_size_(0)) {
-                    throw yato::out_of_range_error("yato::array_view_nd[at]: out of range!");
-                }
-                return get_const_sub_view_(idx).at(std::forward<IdxTail>(tail)...);
+                return get_total_size_() == get_total_stored_();
             }
         };
 
@@ -171,21 +150,22 @@ namespace yato
             using this_type = array_view_base<ValueType, 1>;
 
         public:
-            using dimensions_type = dimensionality<1, size_t>;
-            using strides_type    = dimensionality<0, size_t>;
-            using value_type = ValueType;
-            using size_type = size_t;
+            using value_type        = ValueType;
+            using size_type         = size_t;
+            using dimensions_type   = dimensionality<1, size_t>;
+            using strides_type      = dimensionality<0, size_t>;
             static YATO_CONSTEXPR_VAR size_t dimensions_number = 1;
 
-            using value_iterator        = value_type*;
-            using const_value_iterator  = const value_type*;
-            using value_reference       = value_type&;
-            using const_value_reference = const value_type&;
+            using value_iterator  = std::add_pointer_t<value_type>;
+            using value_reference = std::add_lvalue_reference_t<value_type>;
 
-            using iterator        = value_iterator;
-            using const_iterator  = const_value_iterator;
-            using reference       = value_reference&;
-            using const_reference = const_value_reference;
+            using iterator        = std::add_pointer_t<value_type>;
+            using const_iterator  = std::add_pointer_t<std::add_const_t<value_type>>;
+            using reference       = std::add_lvalue_reference_t<value_type>;
+            using const_reference = std::add_lvalue_reference_t<std::add_const_t<value_type>>;
+
+            using plain_iterator        = std::add_pointer_t<value_type>;
+            using const_plain_iterator  = std::add_pointer_t<std::add_const_t<value_type>>;
             //--------------------------------------------------------------------
 
             value_iterator  m_base_ptr;
@@ -203,21 +183,9 @@ namespace yato
             array_view_base(const this_type&) = default;
             array_view_base& operator= (const this_type&) = default;
 
-#ifndef YATO_MSVC_2013
             array_view_base(this_type&&) = default;
             array_view_base& operator= (this_type&&) = default;
-#else
-            array_view_base(this_type && other)
-                : m_base_ptr(std::move(other.m_base_ptr)), m_size(std::move(other.m_size))
-            { }
 
-            array_view_base& operator= (this_type && other)
-            {
-                REQUIRES(this != &other);
-                m_base_ptr = std::move(other.m_base_ptr);
-                m_size = std::move(other.m_size);
-            }
-#endif
             value_iterator get_pointer_() const
             {
                 return m_base_ptr;
@@ -253,17 +221,12 @@ namespace yato
                 return yato::make_range(m_size.cbegin(), m_size.cend());
             }
 
-            value_reference get_sub_view_(size_t idx)
+            value_reference get_sub_view_(size_t idx) const
             {
                 return *std::next(m_base_ptr, idx);
             }
 
-            const_value_reference get_const_sub_view_(size_t idx) const
-            {
-                return *std::next(m_base_ptr, idx);
-            }
-
-            iterator get_iterator_(size_t idx)
+            iterator get_iterator_(size_t idx) const
             {
                 return std::next(m_base_ptr, idx);
             }
@@ -273,7 +236,7 @@ namespace yato
                 return std::next(m_base_ptr, idx);
             }
 
-            value_reference at_impl_(size_t idx)
+            value_reference at_impl_(size_t idx) const
             {
                 if (idx >= m_size[0]) {
                     throw yato::out_of_range_error("yato::array_view_nd[at]: out of range!");
@@ -281,12 +244,9 @@ namespace yato
                 return get_sub_view_(idx);
             }
 
-            const_value_reference const_at_impl_(size_t idx) const
+            bool is_continous_() const
             {
-                if (idx >= m_size[0]) {
-                    throw yato::out_of_range_error("yato::array_view_nd[at]: out of range!");
-                }
-                return get_const_sub_view_(idx);
+                return true;
             }
         };
 
@@ -313,13 +273,13 @@ namespace yato
         using typename base_type::value_type;
         using typename base_type::size_type;
         using typename base_type::value_iterator;
-        using typename base_type::const_value_iterator;
         using typename base_type::value_reference;
-        using typename base_type::const_value_reference;
         using typename base_type::reference;
         using typename base_type::const_reference;
         using typename base_type::iterator;
         using typename base_type::const_iterator;
+        using typename base_type::plain_iterator;
+        using typename base_type::const_plain_iterator;
         //-------------------------------------------------------
 
         array_view_nd(value_type* ptr, const dimensions_type & extents)
@@ -333,20 +293,8 @@ namespace yato
         array_view_nd(const this_type & other) = default;
         array_view_nd& operator=(const this_type &) = default;
 
-#ifndef YATO_MSVC_2013
         array_view_nd(this_type &&) = default;
         array_view_nd& operator=(this_type && other) = default;
-#else
-        array_view_nd(this_type && other)
-            : base_type(std::move(other))
-        { }
-
-        array_view_nd& operator=(this_type && other)
-        {
-            move_impl(std::move(other));
-            return *this;
-        }
-#endif
 
         ~array_view_nd() = default;
 
@@ -358,7 +306,7 @@ namespace yato
         auto reshape(const dimensionality<NewDimsNum, size_type> & extents) const
             -> array_view_nd<value_type, NewDimsNum>
         {
-            YATO_REQUIRES(extents.total_size() == total_stored());
+            YATO_REQUIRES(extents.total_size() == base_type::get_total_stored_());
             return array_view_nd<value_type, NewDimsNum>(base_type::get_pointer_(), extents);
         }
 
@@ -370,51 +318,23 @@ namespace yato
         auto reshape(const dimensionality<NewDimsNum, size_type> & extents, const dimensionality<NewDimsNum - 1, size_type> & strides) const
             -> array_view_nd<value_type, NewDimsNum>
         {
-            YATO_REQUIRES(extents[0] * strides.total_size() == total_stored());
+            YATO_REQUIRES(extents[0] * strides.total_size() == base_type::get_total_stored_());
             return array_view_nd<value_type, NewDimsNum>(base_type::get_pointer_(), extents, strides);
         }
 
-        const_reference operator[](size_t idx) const
-        {
-            YATO_REQUIRES(idx < base_type::get_size_(0));
-            return base_type::get_const_sub_view_(idx);
-        }
-
-        reference operator[](size_t idx)
+        reference operator[](size_t idx) const
         {
             YATO_REQUIRES(idx < base_type::get_size_(0));
             return base_type::get_sub_view_(idx);
         }
 
-#ifndef YATO_MSVC_2013
         template<typename... Indexes>
         auto at(Indexes &&... indexes) const
-            -> typename std::enable_if<(sizeof...(Indexes) == dimensions_number), const_value_reference>::type
-        {
-            return base_type::const_at_impl_(std::forward<Indexes>(indexes)...);
-        }
-
-        template<typename... Indexes>
-        auto at(Indexes &&... indexes)
             -> typename std::enable_if<(sizeof...(Indexes) == dimensions_number), value_reference>::type
         {
             return base_type::at_impl_(std::forward<Indexes>(indexes)...);
         }
-#else
-        template<typename... Indexes>
-        const_value_reference at(Indexes &&... indexes) const
-        {
-            static_assert((sizeof...(Indexes) == dimensions_number), "Invalid arguments number");
-            return base_type::const_at_impl_(std::forward<Indexes>(indexes)...);
-        }
 
-        template<typename... Indexes>
-        value_reference at(Indexes &&... indexes)
-        {
-            static_assert((sizeof...(Indexes) == dimensions_number), "Invalid arguments number");
-            return base_type::at_impl_(std::forward<Indexes>(indexes)...);
-        }
-#endif
         size_type total_size() const
         {
             return base_type::get_total_size_();
@@ -443,14 +363,6 @@ namespace yato
         size_type stride(size_t idx) const
         {
             return base_type::get_stride_(idx);
-        }
-
-        /**
-         * Get total number of elements in the view with strides
-         */
-        size_type total_stored() const
-        {
-            return base_type::get_total_stored_();
         }
 
         /**
@@ -483,7 +395,7 @@ namespace yato
             return base_type::get_const_iterator_(0);
         }
 
-        iterator begin()
+        iterator begin() const
         {
             return base_type::get_iterator_(0);
         }
@@ -493,28 +405,32 @@ namespace yato
             return base_type::get_const_iterator_(size(0));
         }
 
-        iterator end()
+        iterator end() const
         {
             return base_type::get_iterator_(size(0));
         }
 
-        const_value_iterator plain_cbegin() const
+        const_plain_iterator plain_cbegin() const
         {
+            YATO_REQUIRES(continuous());
             return base_type::get_pointer_();
         }
 
-        value_iterator plain_begin()
+        plain_iterator plain_begin() const
         {
+            YATO_REQUIRES(continuous());
             return base_type::get_pointer_();
         }
 
-        const_value_iterator plain_cend() const
+        const_plain_iterator plain_cend() const
         {
+            YATO_REQUIRES(continuous());
             return base_type::get_pointer_() + base_type::get_total_stored_();
         }
 
-        value_iterator plain_end()
+        plain_iterator plain_end() const
         {
+            YATO_REQUIRES(continuous());
             return base_type::get_pointer_() + base_type::get_total_stored_();
         }
 
@@ -523,33 +439,36 @@ namespace yato
             return make_range(cbegin(), cend());
         }
 
-        yato::range<iterator> range()
+        yato::range<iterator> range() const
         {
             return make_range(begin(), end());
         }
 
-        yato::range<const_value_iterator> plain_crange() const
+        yato::range<const_plain_iterator> plain_crange() const
         {
+            YATO_REQUIRES(continuous());
             return make_range(plain_cbegin(), plain_cend());
         }
 
-        yato::range<value_iterator> plain_range()
+        yato::range<plain_iterator> plain_range() const
         {
+            YATO_REQUIRES(continuous());
             return make_range(plain_begin(), plain_end());
         }
 
         /**
-         * Get raw pointer to underlying data
+         * Chech is view data has no gaps, i.e. strides are equal to sizes
+         * Plain iterators are valid only if view is continuous
          */
-        value_type* data()
+        bool continuous() const
         {
-            return base_type::get_pointer_();
+            return base_type::is_continous_();
         }
 
         /**
          * Get raw pointer to underlying data
          */
-        const value_type* data() const
+        value_type* data() const
         {
             return base_type::get_pointer_();
         }
