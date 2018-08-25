@@ -89,8 +89,14 @@ function(dependency_find_or_download)
     )
     cmake_parse_arguments(DEPENDENCY "" "${oneValueArgs}" "" ${ARGN})
 
+    if(DEPENDENCY_FILE_NAME)
+        set(file_name_ ${DEPENDENCY_FILE_NAME})
+    else()
+        set(file_name_ "package.zip")
+    endif()
+    
     string(TOLOWER ${DEPENDENCY_NAME} folder_name_)
-    set(dependency_file_ "${YATO_SOURCE_DIR}/dependencies/${folder_name_}/package.zip")
+    set(dependency_file_ "${YATO_SOURCE_DIR}/dependencies/${folder_name_}/${file_name_}")
 
     if(NOT DEFINED DOWNLOAD_ALL)
         set(DOWNLOAD_ALL FALSE)
