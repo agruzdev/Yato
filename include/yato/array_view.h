@@ -77,6 +77,19 @@ namespace yato
             array_view_base(this_type&&) = default;
             array_view_base& operator= (this_type&&) = default;
 
+            template <typename Ty_ = value_type, typename = std::enable_if_t<std::is_const<Ty_>::value>>
+            array_view_base(const array_view_base<std::remove_const_t<value_type>, dimensions_number> & other)
+                : m_base_ptr(other.m_base_ptr), m_descriptors(other.m_descriptors)
+            { }
+
+            template <typename Ty_ = value_type, typename = std::enable_if_t<std::is_const<Ty_>::value>>
+            array_view_base& operator=(const array_view_base<std::remove_const_t<value_type>, dimensions_number> & other)
+            {
+                m_base_ptr    = other.m_base_ptr;
+                m_descriptors = other.m_descriptors;
+                return *this;
+            }
+
             value_iterator get_pointer_() const
             {
                 return m_base_ptr;
@@ -185,6 +198,19 @@ namespace yato
 
             array_view_base(this_type&&) = default;
             array_view_base& operator= (this_type&&) = default;
+
+            template <typename Ty_ = value_type, typename = std::enable_if_t<std::is_const<Ty_>::value>>
+            array_view_base(const array_view_base<std::remove_const_t<value_type>, dimensions_number> & other)
+                : m_base_ptr(other.m_base_ptr), m_size(other.m_size)
+            { }
+
+            template <typename Ty_ = value_type, typename = std::enable_if_t<std::is_const<Ty_>::value>>
+            array_view_base& operator=(const array_view_base<std::remove_const_t<value_type>, dimensions_number> & other)
+            {
+                m_base_ptr = other.m_base_ptr;
+                m_size     = other.m_size;
+                return *this;
+            }
 
             value_iterator get_pointer_() const
             {
@@ -297,6 +323,24 @@ namespace yato
         array_view_nd& operator=(this_type && other) = default;
 
         ~array_view_nd() = default;
+
+        /**
+         * Convert view<T> to view<const T>
+         */
+        template <typename Ty_ = value_type, typename = std::enable_if_t<std::is_const<Ty_>::value>>
+        array_view_nd(const array_view_nd<std::remove_const_t<value_type>, dimensions_number> & other)
+            : base_type(other)
+        { }
+
+        /**
+         * Assign view<T> to view<const T>
+         */
+        template <typename Ty_ = value_type, typename = std::enable_if_t<std::is_const<Ty_>::value>>
+        array_view_nd& operator=(const array_view_nd<std::remove_const_t<value_type>, dimensions_number> & other)
+        {
+            base_type::operator=(other);
+            return *this;
+        }
 
         /**
          * Create a new array view on the same data but with another shape
@@ -472,6 +516,9 @@ namespace yato
         {
             return base_type::get_pointer_();
         }
+
+        // For view<T> to view<const T> conversion
+        friend class array_view_nd<std::add_const_t<value_type>, dimensions_number>;
     };
 
 

@@ -36,6 +36,8 @@ TEST(Yato_ArrayView, common)
     //    EXPECT_EQ(arr[i], *it);
     //}
     //
+    yato::array_view_3d<const int> cview(view);
+    cview = view;
 }
 
 TEST(Yato_ArrayView, common_2)
