@@ -66,6 +66,21 @@ if(YATO_CONFIG_XML)
     set(CONFIG_NON_EMPTY_TEST ON)
 endif()
 
+# INI
+option(YATO_CONFIG_INI "Enable INI config background" OFF)
+if(YATO_CONFIG_INI)
+    include(${YATO_SOURCE_DIR}/cmake/dependency.ini.cmake)
+    include_directories(${INI_INCLUDE_DIR})
+    file(GLOB ini_sources
+        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/ini/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/ini/*.cpp"
+    )
+    list(APPEND config_sources ${ini_sources})
+    list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/ini")
+    set(CONFIG_NON_EMPTY_TEST ON)
+endif()
+
+
 include_directories(${YATO_INCLUDE_DIRS})
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 

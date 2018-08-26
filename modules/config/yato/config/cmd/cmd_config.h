@@ -142,4 +142,4 @@ namespace conf {
 
 } // namespace yato
 
-#endif // _YATO_CONFIG_JSON_CONFIG_H_
+#endif // _YATO_CONFIG_CMD_CONFIG_H_
