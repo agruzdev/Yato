@@ -265,18 +265,59 @@ YATO_PRAGMA_WARNING_POP
     //----------------------------------------------------------------------------------
 
 
-    template <typename _ContainerType>
+    template <typename ContainerType_>
     YATO_CONSTEXPR_FUNC
-    size_t length(_ContainerType && container)
+    auto length(ContainerType_ && container)
+        -> std::enable_if_t<yato::remove_cvref_t<ContainerType_>::dimensions_number == 1, size_t>
     {
-#ifdef YATO_HAS_CONSTEXPR_CXX14
-        YATO_REQUIRES(container.dimensions_num() == 1);
-#endif
         return container.size(0);
     }
 
-    template <typename _ContainerType>
+    template <typename ContainerType_>
     YATO_CONSTEXPR_FUNC
+    auto width(ContainerType_ && container)
+        -> std::enable_if_t<yato::remove_cvref_t<ContainerType_>::dimensions_number == 2, size_t>
+    {
+        return container.size(1);
+    }
+
+    template <typename ContainerType_>
+    YATO_CONSTEXPR_FUNC
+    auto height(ContainerType_ && container)
+        -> std::enable_if_t<yato::remove_cvref_t<ContainerType_>::dimensions_number == 2, size_t>
+    {
+        return container.size(0);
+    }
+
+    template <typename ContainerType_>
+    YATO_CONSTEXPR_FUNC
+    auto width(ContainerType_ && container)
+        -> std::enable_if_t<yato::remove_cvref_t<ContainerType_>::dimensions_number == 3, size_t>
+    {
+        return container.size(2);
+    }
+
+    template <typename ContainerType_>
+    YATO_CONSTEXPR_FUNC
+    auto height(ContainerType_ && container)
+        -> std::enable_if_t<yato::remove_cvref_t<ContainerType_>::dimensions_number == 3, size_t>
+    {
+        return container.size(1);
+    }
+
+    template <typename ContainerType_>
+    YATO_CONSTEXPR_FUNC
+    auto depth(ContainerType_ && container)
+        -> std::enable_if_t<yato::remove_cvref_t<ContainerType_>::dimensions_number == 3, size_t>
+    {
+        return container.size(0);
+    }
+
+
+
+    template <typename _ContainerType>
+    YATO_DEPRECATED("Use yato::height() instead")
+    YATO_CONSTEXPR_FUNC 
     size_t height_2d(_ContainerType && container)
     {
 #ifdef YATO_HAS_CONSTEXPR_CXX14
@@ -286,6 +327,7 @@ YATO_PRAGMA_WARNING_POP
     }
 
     template <typename _ContainerType>
+    YATO_DEPRECATED("Use yato::width() instead")
     YATO_CONSTEXPR_FUNC
     size_t width_2d(_ContainerType && container)
     {
@@ -296,6 +338,7 @@ YATO_PRAGMA_WARNING_POP
     }
 
     template <typename _ContainerType>
+    YATO_DEPRECATED("Use yato::depth() instead")
     YATO_CONSTEXPR_FUNC
     size_t depth_3d(_ContainerType && container)
     {
@@ -306,6 +349,7 @@ YATO_PRAGMA_WARNING_POP
     }
 
     template <typename _ContainerType>
+    YATO_DEPRECATED("Use yato::height() instead")
     YATO_CONSTEXPR_FUNC
     size_t height_3d(_ContainerType && container)
     {
@@ -316,6 +360,7 @@ YATO_PRAGMA_WARNING_POP
     }
 
     template <typename _ContainerType>
+    YATO_DEPRECATED("Use yato::width() instead")
     YATO_CONSTEXPR_FUNC
     size_t width_3d(_ContainerType && container)
     {

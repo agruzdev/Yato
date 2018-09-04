@@ -23,8 +23,8 @@ TEST(Yato_Array_Nd, array_nd)
     EXPECT_NO_THROW(p[0] = 1);
     //EXPECT_THROW(p[4] = 0, yato::assertion_error);
 
-    EXPECT_EQ(2U, yato::height_2d(array_2d));
-    EXPECT_EQ(3U, yato::width_2d(array_2d));
+    EXPECT_EQ(2U, yato::height(array_2d));
+    EXPECT_EQ(3U, yato::width(array_2d));
 
     yato::array_nd<int, 2, 3, 4> array_3d;
     EXPECT_NO_THROW(array_3d[1][1][1] = 2);
@@ -34,9 +34,9 @@ TEST(Yato_Array_Nd, array_nd)
     //EXPECT_THROW(array_3d[1][3][1] = 0, yato::assertion_error);
     //EXPECT_THROW(array_3d[1][1][4] = 0, yato::assertion_error);
 
-    EXPECT_EQ(2U, yato::depth_3d(array_3d));
-    EXPECT_EQ(3U, yato::height_3d(array_3d));
-    EXPECT_EQ(4U, yato::width_3d(array_3d));
+    EXPECT_EQ(2U, yato::depth(array_3d));
+    EXPECT_EQ(3U, yato::height(array_3d));
+    EXPECT_EQ(4U, yato::width(array_3d));
 }
 
 TEST(Yato_Array_Nd, array_nd_2)
@@ -136,12 +136,12 @@ TEST(Yato_Array_Nd, array_nd_dimensions)
     yato::array_nd<uint8_t, L, M, N> arr;
     yato::array_nd<uint8_t, N, M, L> vec;
     
-    EXPECT_TRUE(arr.size<0>() == L);
-    EXPECT_TRUE(arr.size<1>() == M);
-    EXPECT_TRUE(arr.size<2>() == N);
-    EXPECT_TRUE(vec.size<0>() == N);
-    EXPECT_TRUE(vec.size<1>() == M);
-    EXPECT_TRUE(vec.size<2>() == L);
+    EXPECT_TRUE(arr.size(0) == L);
+    EXPECT_TRUE(arr.size(1) == M);
+    EXPECT_TRUE(arr.size(2) == N);
+    EXPECT_TRUE(vec.size(0) == N);
+    EXPECT_TRUE(vec.size(1) == M);
+    EXPECT_TRUE(vec.size(2) == L);
 }
 
 

@@ -114,6 +114,15 @@ namespace yato
         >
     { };
 
+    template <typename Ty_>
+    struct remove_cvref 
+    {
+        using type = std::remove_cv_t<std::remove_reference_t<Ty_>>;
+    };
+
+    template <typename Ty_>
+    using remove_cvref_t = typename remove_cvref<Ty_>::type;
+
     //----------------------------------------------------------
     // Smart pointer traits
     //

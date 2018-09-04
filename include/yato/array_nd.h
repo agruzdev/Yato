@@ -11,7 +11,7 @@
 #include <array>
 #include <vector>
 #include "assert.h"
-#include "type_traits.h"
+#include "container_base.h"
 
 namespace yato
 {
@@ -42,18 +42,26 @@ namespace yato
             static YATO_CONSTEXPR_VAR size_t top_dimension = _Dim_Head;
         };
 
-        template<typename _Shape, size_t _Num>
+        template<typename Shape_>
         struct get_dimension
         {
-            static YATO_CONSTEXPR_VAR size_t value = (_Num == 0)
-                ? _Shape::top_dimension
-                : get_dimension<typename _Shape::hyper_shape, _Num - 1>::value;
+            static YATO_CONSTEXPR_FUNC
+            size_t apply(size_t idx)
+            {
+                return (0 == idx)
+                    ? Shape_::top_dimension
+                    : get_dimension<typename Shape_::hyper_shape>::apply(idx - 1);
+            }
         };
 
-        template<size_t _Num>
-        struct get_dimension<null_shape, _Num>
+        template<>
+        struct get_dimension<null_shape>
         {
-            static YATO_CONSTEXPR_VAR size_t value = 0;
+            static YATO_CONSTEXPR_FUNC
+            size_t apply(size_t)
+            {
+                return 0;
+            }
         };
 
         template<typename _Iterator, typename _Shape>
@@ -184,6 +192,8 @@ namespace yato
             */
             using const_iterator = typename container_type::const_iterator;
             //-------------------------------------------------------
+
+            static YATO_CONSTEXPR_VAR size_t dimensions_number = shape::dimensions_number;
 
         private:
             container_type m_plain_array;
@@ -337,14 +347,13 @@ namespace yato
             }
 
             /**
-             * Get size along one dimension	
+             * Get size along one dimension
              */
-            template<size_t _Dimension>
-            YATO_CONSTEXPR_FUNC 
-            size_t size() const YATO_NOEXCEPT_KEYWORD 
+            YATO_CONSTEXPR_FUNC_CXX14
+            size_t size(size_t idx) const YATO_NOEXCEPT_KEYWORD
             {
-                static_assert(_Dimension < shape::dimensions_number, "yato::array_nd: dimension index is out of range!");
-                return get_dimension<shape, _Dimension>::value;
+                YATO_REQUIRES(idx < shape::dimensions_number);
+                return get_dimension<shape>::apply(idx);
             }
 
             /**
@@ -417,54 +426,6 @@ namespace yato
     template<typename _DataType, size_t _First_Dimension, size_t... _More_Dimensions> 
     using array_nd = details::array_nd_impl < _DataType, details::plain_array_shape<_First_Dimension, _More_Dimensions...> >;
 
-    // Overload size accessors
-    template <typename _DataType, typename _Shape>
-    YATO_CONSTEXPR_FUNC
-    size_t length(const details::array_nd_impl<_DataType, _Shape> & /*array*/)
-    {
-        static_assert(_Shape::dimensions_number == 1, "Invalid shape");
-        return details::get_dimension<_Shape, 0>::value;
-    }
-
-    template <typename _DataType, typename _Shape>
-    YATO_CONSTEXPR_FUNC
-    size_t height_2d(const details::array_nd_impl<_DataType, _Shape> & /*array*/)
-    {
-        static_assert(_Shape::dimensions_number == 2, "Invalid shape");
-        return details::get_dimension<_Shape, 0>::value;
-    }
-
-    template <typename _DataType, typename _Shape>
-    YATO_CONSTEXPR_FUNC
-    size_t width_2d(const details::array_nd_impl<_DataType, _Shape> & /*array*/)
-    {
-        static_assert(_Shape::dimensions_number == 2, "Invalid shape");
-        return details::get_dimension<_Shape, 1>::value;
-    }
-
-    template <typename _DataType, typename _Shape>
-    YATO_CONSTEXPR_FUNC
-    size_t depth_3d(const details::array_nd_impl<_DataType, _Shape> & /*array*/)
-    {
-        static_assert(_Shape::dimensions_number == 3, "Invalid shape");
-        return details::get_dimension<_Shape, 0>::value;
-    }
-
-    template <typename _DataType, typename _Shape>
-    YATO_CONSTEXPR_FUNC
-    size_t height_3d(const details::array_nd_impl<_DataType, _Shape> & /*array*/)
-    {
-        static_assert(_Shape::dimensions_number == 3, "Invalid shape");
-        return details::get_dimension<_Shape, 1>::value;
-    }
-
-    template <typename _DataType, typename _Shape>
-    YATO_CONSTEXPR_FUNC
-    size_t width_3d(const details::array_nd_impl<_DataType, _Shape> & /*array*/)
-    {
-        static_assert(_Shape::dimensions_number == 3, "Invalid shape");
-        return details::get_dimension<_Shape, 2>::value;
-    }
 }
 
 #endif
