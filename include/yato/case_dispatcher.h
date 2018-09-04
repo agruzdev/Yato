@@ -49,9 +49,9 @@ namespace yato
         template <typename Ty_, typename CasesTuple_, size_t Len_ = std::tuple_size<CasesTuple_>::value>
         struct find_match_case
         {
-            using callable_type  = std::decay_t<std::tuple_element_t<Len_ - 1, CasesTuple_>>;
+            using callable_type  = yato::remove_cvref_t<std::tuple_element_t<Len_ - 1, CasesTuple_>>;
             using arg_type       = typename yato::callable_trait<callable_type>::template arg<0>::type;
-            using arg_decay_type = std::decay_t<arg_type>;
+            using arg_decay_type = yato::remove_cvref_t<arg_type>;
 
             static constexpr size_t value = std::is_same<arg_decay_type, Ty_>::value
                 ? Len_ - 1
@@ -68,7 +68,7 @@ namespace yato
         template <typename... Cases_>
         auto match_result_type_impl(const std::tuple<Cases_...>&)
             -> get_type_t<std::common_type<
-                    typename callable_trait<std::decay_t<Cases_>>::result_type...
+                    typename callable_trait<yato::remove_cvref_t<Cases_>>::result_type...
                 >>;
 
         template <typename CasesTuple_>
@@ -83,9 +83,9 @@ namespace yato
             static constexpr size_t case_index = std::tuple_size<CasesTuple_>::value - Len_;
 
             using next_dispatcher = match_dispatcher_impl<AnyTy_, CasesTuple_, OnDefault_, Len_ - 1>;
-            using callable_type   = std::decay_t<std::tuple_element_t<case_index, CasesTuple_>>;
+            using callable_type   = yato::remove_cvref_t<std::tuple_element_t<case_index, CasesTuple_>>;
             using arg_type        = typename yato::callable_trait<callable_type>::template arg<0>::type;
-            using arg_decay_type  = std::decay_t<arg_type>;
+            using arg_decay_type  = yato::remove_cvref_t<arg_type>;
             //-------------------------------------------------------
 
             static

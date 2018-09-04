@@ -63,7 +63,7 @@ namespace actors
      */
     template <typename ConsumerTy_>
     std::unique_ptr<message_consumer> make_behaviour(ConsumerTy_ && receiver) {
-        return std::make_unique<details::receive_wrapper<std::decay_t<ConsumerTy_>>>(std::forward<ConsumerTy_>(receiver));
+        return std::make_unique<details::receive_wrapper<yato::remove_cvref_t<ConsumerTy_>>>(std::forward<ConsumerTy_>(receiver));
     }
 
 

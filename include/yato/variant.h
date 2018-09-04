@@ -837,12 +837,12 @@ namespace yato
              *  Create variant from value
              */
             template <typename Ty, typename = typename std::enable_if<
-                (yato::meta::list_find<alternativies_list, std::decay_t<Ty>>::value != yato::meta::list_npos)
+                (yato::meta::list_find<alternativies_list, yato::remove_cvref_t<Ty>>::value != yato::meta::list_npos)
             >::type>
             explicit
             basic_variant(Ty && value)
             {
-                m_storage.template create<std::decay_t<Ty>>(std::forward<Ty>(value));
+                m_storage.template create<yato::remove_cvref_t<Ty>>(std::forward<Ty>(value));
             }
 
             /**

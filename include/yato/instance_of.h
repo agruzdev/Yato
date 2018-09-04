@@ -9,6 +9,7 @@
 #define _YATO_INSTANCE_OF_H_
 
 #include "assert.h"
+#include "type_traits.h"
 
 namespace yato
 {
@@ -16,7 +17,7 @@ namespace yato
     template<typename _T>
     class instance_of
     {
-        static_assert(std::is_same<_T, typename std::decay<_T>::type>::value, "Type should be without any specifiers");
+        static_assert(std::is_same<_T, typename yato::remove_cvref<_T>::type>::value, "Type should be without any specifiers");
 
         using instance_type = _T;
 

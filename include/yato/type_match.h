@@ -20,14 +20,14 @@ namespace yato
         struct match_dispatcher 
             : public match_dispatcher<_CasesTuple, _CaseIdx - 1>
         {
-            using arg_type = typename yato::callable_trait<typename std::decay<typename std::tuple_element<_CaseIdx - 1, _CasesTuple>::type>::type>::template arg<0>::type;
+            using arg_type = typename yato::callable_trait<typename yato::remove_cvref<typename std::tuple_element<_CaseIdx - 1, _CasesTuple>::type>::type>::template arg<0>::type;
             using match_dispatcher<_CasesTuple, _CaseIdx - 1>::_invoke_case;
             //-------------------------------------------------------
 
             YATO_CONSTEXPR_FUNC
             auto _invoke_case(const _CasesTuple & functions, arg_type arg) const
 #ifdef YATO_MSVC_2013
-                -> typename yato::callable_trait<typename std::decay<typename std::tuple_element<_CaseIdx - 1, _CasesTuple>::type>::type>::result_type
+                -> typename yato::callable_trait<typename yato::remove_cvref<typename std::tuple_element<_CaseIdx - 1, _CasesTuple>::type>::type>::result_type
 #else 
                 -> decltype(auto)
 #endif

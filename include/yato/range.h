@@ -13,6 +13,7 @@
 #include <list>
 #include <set>
 
+#include "type_traits.h"
 #include "numeric_iterator.h"
 #include "transform_iterator.h"
 #include "filter_iterator.h"
@@ -249,41 +250,41 @@ namespace yato
     */
     template<typename _IteratorType>
     YATO_CONSTEXPR_FUNC 
-    typename std::enable_if< is_iterator< typename std::decay<_IteratorType>::type >::value, range< typename std::decay<_IteratorType>::type > >::type
+    typename std::enable_if< is_iterator< typename yato::remove_cvref<_IteratorType>::type >::value, range< typename yato::remove_cvref<_IteratorType>::type > >::type
         make_range(_IteratorType && begin, _IteratorType && end)
     {
-        return range<typename std::decay<_IteratorType>::type>(std::forward<_IteratorType>(begin), std::forward<_IteratorType>(end));
+        return range<typename yato::remove_cvref<_IteratorType>::type>(std::forward<_IteratorType>(begin), std::forward<_IteratorType>(end));
     }
 
     /**
      *    Helper functions to make numeric ranges (e.g. for ranged for-loops)
      */
-    template <typename _T>
+    template <typename Ty_>
     YATO_CONSTEXPR_FUNC
-    typename std::enable_if < std::is_integral<typename std::decay<_T>::type>::value, range<numeric_iterator<typename std::decay<_T>::type>> >::type
-        make_range(_T && left, _T && right)
+    typename std::enable_if < std::is_integral<typename yato::remove_cvref<Ty_>::type>::value, range<numeric_iterator<typename yato::remove_cvref<Ty_>::type>> >::type
+        make_range(Ty_ && left, Ty_ && right)
     {
-        return make_range(numeric_iterator<typename std::decay<_T>::type>(std::forward<_T>(left)), numeric_iterator<typename std::decay<_T>::type>(std::forward<_T>(right)));
+        return make_range(numeric_iterator<typename yato::remove_cvref<Ty_>::type>(std::forward<Ty_>(left)), numeric_iterator<typename yato::remove_cvref<Ty_>::type>(std::forward<Ty_>(right)));
     }
 
     /**
      *    Helper functions to make numeric ranges (e.g. for ranged for-loops)
      */
-    template <typename _T>
+    template <typename Ty_>
     YATO_CONSTEXPR_FUNC
-    typename std::enable_if < std::is_integral<typename std::decay<_T>::type>::value, range<numeric_iterator<typename std::decay<_T>::type>> >::type
-        make_range(_T && right)
+    typename std::enable_if < std::is_integral<typename yato::remove_cvref<Ty_>::type>::value, range<numeric_iterator<typename yato::remove_cvref<Ty_>::type>> >::type
+        make_range(Ty_ && right)
     {
-        return make_range(static_cast<typename std::decay<_T>::type>(0), std::forward<_T>(right));
+        return make_range(static_cast<typename yato::remove_cvref<Ty_>::type>(0), std::forward<Ty_>(right));
     }
 
     /**
      *  Generic version. Calls begin() and end()
      */
-    template <typename _T>
+    template <typename Ty_>
     YATO_CONSTEXPR_FUNC
-    auto make_range(_T && object)
-        -> typename std::enable_if<std::is_class<typename std::decay<_T>::type>::value, range<decltype(object.begin())> >::type
+    auto make_range(Ty_ && object)
+        -> typename std::enable_if<std::is_class<typename yato::remove_cvref<Ty_>::type>::value, range<decltype(object.begin())> >::type
     {
         return range<decltype(object.begin())>(object.begin(), object.end());
     }
@@ -291,10 +292,10 @@ namespace yato
     /**
      *  Generic version. Calls cbegin() and cend()
      */
-    template <typename _T>
+    template <typename Ty_>
     YATO_CONSTEXPR_FUNC
-    auto make_crange(const _T & object)
-        -> typename std::enable_if<std::is_class<typename std::decay<_T>::type>::value, range<decltype(object.cbegin())> >::type
+    auto make_crange(const Ty_ & object)
+        -> typename std::enable_if<std::is_class<typename yato::remove_cvref<Ty_>::type>::value, range<decltype(object.cbegin())> >::type
     {
         return range<decltype(object.cbegin())>(object.cbegin(), object.cend());
     }
