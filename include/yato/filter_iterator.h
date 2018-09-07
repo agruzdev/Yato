@@ -126,9 +126,9 @@ namespace yato
 
     template <typename _Predicate, typename _Iterator, typename _DereferencePolicy = dereference_policy_no_caching, bool _HasEnd = true>
     class filter_iterator 
-        : private details::filter_cache_base<typename std::remove_reference<typename std::iterator_traits<_Iterator>::reference>::type, _DereferencePolicy>
+        : private details::filter_cache_base<typename std::iterator_traits<_Iterator>::value_type, _DereferencePolicy>
     {
-        using _base = details::filter_cache_base<typename std::remove_reference<typename std::iterator_traits<_Iterator>::reference>::type, _DereferencePolicy>;
+        using _base = details::filter_cache_base<typename std::iterator_traits<_Iterator>::value_type, _DereferencePolicy>;
     public:
         using predicate_type = _Predicate;
         using iterator_type = _Iterator;
@@ -775,24 +775,24 @@ namespace yato
     };
 
 
-    template<typename _Predicate, typename _Iterator, typename _SomePolicy, bool _HasEnd>
-    inline void swap(filter_iterator<_Predicate, _Iterator, _SomePolicy, _HasEnd> & one, filter_iterator<_Predicate, _Iterator, _SomePolicy, _HasEnd> & another)
+    template <typename Predicate_, typename Iterator_, typename SomePolicy_, bool HasEnd_>
+    void swap(filter_iterator<Predicate_, Iterator_, SomePolicy_, HasEnd_> & one, filter_iterator<Predicate_, Iterator_, SomePolicy_, HasEnd_> & another) YATO_NOEXCEPT_KEYWORD
     {
         one.swap(another);
     }
 
-    template<typename _DereferencePolicy = dereference_policy_no_caching, typename _Predicate, typename _Iterator>
-    inline auto make_filter_iterator(_Iterator && iterator, _Iterator && end, _Predicate && predicate)
-        -> filter_iterator<typename std::remove_reference<_Predicate>::type, typename std::remove_reference<_Iterator>::type, _DereferencePolicy>
+    template<typename DereferencePolicy_ = dereference_policy_no_caching, typename Predicate_, typename Iterator_>
+    auto make_filter_iterator(Iterator_ && iterator, Iterator_ && end, Predicate_ && predicate)
+        -> filter_iterator<yato::remove_cvref_t<Predicate_>, yato::remove_cvref_t<Iterator_>, DereferencePolicy_>
     {
-        return filter_iterator<typename std::remove_reference<_Predicate>::type, typename std::remove_reference<_Iterator>::type, _DereferencePolicy>(std::forward<_Iterator>(iterator), std::forward<_Iterator>(end), std::forward<_Predicate>(predicate));
+        return filter_iterator<yato::remove_cvref_t<Predicate_>, yato::remove_cvref_t<Iterator_>, DereferencePolicy_>(std::forward<Iterator_>(iterator), std::forward<Iterator_>(end), std::forward<Predicate_>(predicate));
     }
 
-    template<typename _DereferencePolicy = dereference_policy_no_caching, typename _Predicate, typename _Iterator>
-    inline auto make_filter_iterator(_Iterator && iterator, _Predicate && predicate)
-        -> filter_iterator<typename std::remove_reference<_Predicate>::type, typename std::remove_reference<_Iterator>::type, _DereferencePolicy, false>
+    template<typename DereferencePolicy_ = dereference_policy_no_caching, typename Predicate_, typename Iterator_>
+    auto make_filter_iterator(Iterator_ && iterator, Predicate_ && predicate)
+        -> filter_iterator<yato::remove_cvref_t<Predicate_>, yato::remove_cvref_t<Iterator_>, DereferencePolicy_, false>
     {
-        return filter_iterator<typename std::remove_reference<_Predicate>::type, typename std::remove_reference<_Iterator>::type, _DereferencePolicy, false>(std::forward<_Iterator>(iterator), std::forward<_Predicate>(predicate));
+        return filter_iterator<yato::remove_cvref_t<Predicate_>, yato::remove_cvref_t<Iterator_>, DereferencePolicy_, false>(std::forward<Iterator_>(iterator), std::forward<Predicate_>(predicate));
     }
 }
 

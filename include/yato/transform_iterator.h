@@ -352,26 +352,26 @@ namespace yato
         friend class transform_iterator;
      };
 
-    template<typename _UnaryFunction, typename _Iterator>
-    inline void swap(transform_iterator<_UnaryFunction, _Iterator> & one, transform_iterator<_UnaryFunction, _Iterator> & another)
+    template<typename UnaryFunction_, typename Iterator_>
+    void swap(transform_iterator<UnaryFunction_, Iterator_> & one, transform_iterator<UnaryFunction_, Iterator_> & another) YATO_NOEXCEPT_KEYWORD
     {
         one.swap(another);
     }
 
-    template<typename _UnaryFunction, typename _Iterator>
+    template<typename UnaryFunction_, typename Iterator_>
     YATO_CONSTEXPR_FUNC
-    auto make_transform_iterator(_Iterator && iterator, _UnaryFunction && function)
-        -> transform_iterator<typename std::remove_reference<_UnaryFunction>::type, typename std::remove_reference<_Iterator>::type>
+    auto make_transform_iterator(Iterator_ && iterator, UnaryFunction_ && function)
+        -> transform_iterator<yato::remove_cvref_t<UnaryFunction_>, yato::remove_cvref_t<Iterator_>>
     {
-        return transform_iterator<typename std::remove_reference<_UnaryFunction>::type, typename std::remove_reference<_Iterator>::type>(std::forward<_Iterator>(iterator), std::forward<_UnaryFunction>(function));
+        return transform_iterator<yato::remove_cvref_t<UnaryFunction_>, yato::remove_cvref_t<Iterator_>>(std::forward<Iterator_>(iterator), std::forward<UnaryFunction_>(function));
     }
 
-    template<typename _UnaryFunction, typename _Iterator>
+    template<typename UnaryFunction_, typename Iterator_>
     YATO_CONSTEXPR_FUNC
-    auto make_transform_iterator(_Iterator && iterator)
-        -> typename std::enable_if< std::is_constructible<_UnaryFunction>::value, transform_iterator<_UnaryFunction, typename std::remove_reference<_Iterator>::type> >::type
+    auto make_transform_iterator(Iterator_ && iterator)
+        -> std::enable_if_t<std::is_constructible<UnaryFunction_>::value, transform_iterator<UnaryFunction_, yato::remove_cvref_t<Iterator_>>>
     {
-        return transform_iterator<_UnaryFunction, typename std::remove_reference<_Iterator>::type>(std::forward<_Iterator>(iterator), _UnaryFunction());
+        return transform_iterator<UnaryFunction_, yato::remove_cvref_t<Iterator_>>(std::forward<Iterator_>(iterator), UnaryFunction_());
     }
 
 }
