@@ -309,7 +309,7 @@ namespace yato
          *  Is computed using the first iterator in the tuple!
          */
         template<typename MyCategory_ = iterator_category>
-        auto operator - (const MyCategory_ & other)  const
+        auto operator - (const this_type & other)  const
             -> std::enable_if_t<std::is_base_of<std::random_access_iterator_tag, MyCategory_>::value, difference_type>
         {
             return std::get<0>(m_iterators) - std::get<0>(other.m_iterators);
@@ -319,7 +319,7 @@ namespace yato
          *  Compare equality
          *  Two zip iterators are equal if all iterators in the iterator tuple are equal 
          */
-        bool operator == (const this_type & other)  const
+        bool operator == (const this_type & other) const
         {
             return !tuple_any_of<notequal_op_>(m_iterators, other.m_iterators);
         }

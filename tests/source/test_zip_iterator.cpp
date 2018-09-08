@@ -128,3 +128,24 @@ TEST(Yato_ZipIterator, loop_2)
     });
     EXPECT_EQ(116.0f, sum);
 }
+
+TEST(Yato_ZipIterator, dist)
+{
+    std::vector<int> a = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    std::vector<float> b = { 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 3.0f, 4.0f };
+
+    auto it1 = yato::make_zip_iterator(std::make_tuple(a.begin(), b.cbegin()));
+    const auto it2 = yato::make_zip_iterator(std::make_tuple(a.end(), b.cend()));
+    EXPECT_EQ(9, it2 - it1);
+
+    ++it1;
+    EXPECT_EQ(8, it2 - it1);
+
+    it1 += 2;
+    EXPECT_EQ(6, it2 - it1);
+
+    while(it1 != it2) {
+        ++it1;
+    }
+    EXPECT_EQ(0, it2 - it1);
+}
