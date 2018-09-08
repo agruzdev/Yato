@@ -111,6 +111,7 @@ TEST(Yato_Range, make_range_2)
 
     A a = A(&vec);
     auto r = yato::make_range<A&>(a);
+    (void)r;
 
     auto it = vec.begin();
     for (int & x : yato::make_range(a)) {

@@ -62,8 +62,8 @@ namespace yato
         //-------------------------------------------------------
 
     private:
-        const iterator_type m_begin;
-        const iterator_type m_end;
+        iterator_type m_begin;
+        iterator_type m_end;
         //-------------------------------------------------------
 
     public:
@@ -89,19 +89,18 @@ namespace yato
         range<iterator_type>& operator=(const range<iterator_type> & other) YATO_NOEXCEPT_KEYWORD
         {
             m_begin = other.m_begin;
-            m_end = other.m_end;
+            m_end   = other.m_end;
             return *this;
         }
 
         range<iterator_type>& operator=(range<iterator_type> && other) YATO_NOEXCEPT_KEYWORD
         {
             m_begin = std::move(other.m_begin);
-            m_end = std::move(other.m_end);
+            m_end   = std::move(other.m_end);
             return *this;
         }
 
-        ~range() 
-        { }
+        ~range() = default;
 
         YATO_CONSTEXPR_FUNC 
         const iterator_type & begin() const YATO_NOEXCEPT_KEYWORD
@@ -160,88 +159,91 @@ namespace yato
         /**
          *  Apply lazy transformation to all elements
          */
-        template <typename _Callable>
+        template <typename Callable_>
         YATO_CONSTEXPR_FUNC
-        auto map(const _Callable & callable) const
-            -> range<transform_iterator<_Callable, iterator_type>>
+        auto map(Callable_ && callable) const
+            -> range<transform_iterator<Callable_, iterator_type>>
         {
-            using _transformed_iterator_type = transform_iterator<_Callable, iterator_type>;
-            return range<_transformed_iterator_type>(_transformed_iterator_type(begin(), callable), _transformed_iterator_type(end(), callable));
+            using transformed_iterator_type = transform_iterator<Callable_, iterator_type>;
+            return range<transformed_iterator_type>(transformed_iterator_type(begin(), callable), transformed_iterator_type(end(), callable));
         }
 
         /**
          *  Apply lazy filtering 
          */
-        template <typename _DereferencePolicy = dereference_policy_no_caching, typename _Predicate>
+        template <typename DereferencePolicy_ = dereference_policy_no_caching, typename Predicate_>
         YATO_CONSTEXPR_FUNC
-        auto filter(const _Predicate & predicate) const
-            -> range<filter_iterator<_Predicate, iterator_type, _DereferencePolicy>>
+        auto filter(const Predicate_ & predicate) const
+            -> range<filter_iterator<Predicate_, iterator_type, DereferencePolicy_>>
         {
-            using _filtered_iterator_type = filter_iterator<_Predicate, iterator_type, _DereferencePolicy>;
-            return range<_filtered_iterator_type>(_filtered_iterator_type(begin(), end(), predicate), _filtered_iterator_type(end(), end(), predicate));
+            using filtered_iterator_type = filter_iterator<Predicate_, iterator_type, DereferencePolicy_>;
+            return range<filtered_iterator_type>(filtered_iterator_type(begin(), end(), predicate), filtered_iterator_type(end(), end(), predicate));
         }
 
         /**
          *  Join two ranges into range of tuples
          */
-        template <typename... _Ranges>
+        template <typename... Ranges_>
         YATO_CONSTEXPR_FUNC
-        auto zip(const _Ranges & ...ranges) const
-            -> range<zip_iterator<iterator_type, typename _Ranges::iterator_type...>> 
+        auto zip(const Ranges_ & ... ranges) const
+            -> range<zip_iterator<iterator_type, typename Ranges_::iterator_type...>> 
         {
 #ifdef YATO_MSVC_2013
-            using _zipped_iterator_type = typename details::ranges_to_zip_iterator<my_type, _Ranges...>::type;
+            using zipped_iterator_type = typename details::ranges_to_zip_iterator<my_type, Ranges_...>::type;
 #else
-            using _zipped_iterator_type = zip_iterator<iterator_type, typename _Ranges::iterator_type...>;
+            using zipped_iterator_type = zip_iterator<iterator_type, typename Ranges_::iterator_type...>;
 #endif
-            return range<_zipped_iterator_type>(_zipped_iterator_type(std::make_tuple(begin(), ranges.begin()...)), _zipped_iterator_type(std::make_tuple(end(), ranges.end()...)));
+            return range<zipped_iterator_type>(zipped_iterator_type(std::make_tuple(begin(), ranges.begin()...)), zipped_iterator_type(std::make_tuple(end(), ranges.end()...)));
         }
 
         /**
          *  Accumulate range values from left to right
          */
-        template <typename _BinaryFunction, typename _ValueType>
+        template <typename BinaryFunction_, typename ValueType_>
         YATO_CONSTEXPR_FUNC
-        _ValueType fold_left(_BinaryFunction && function, const _ValueType & initialValue) const
+        ValueType_ fold_left(BinaryFunction_ && function, ValueType_ && initialValue) const
         {
-            return std::accumulate(begin(), end(), initialValue, std::forward<_BinaryFunction>(function));
+            return std::accumulate(begin(), end(), std::forward<ValueType_>(initialValue), std::forward<BinaryFunction_>(function));
         }
 
         /**
          *  Accumulate range values from right to left
          */
-        template <typename _BinaryFunction, typename _ValueType>
+        template <typename BinaryFunction_, typename ValueType_>
         YATO_CONSTEXPR_FUNC
-        _ValueType fold_right(_BinaryFunction && function, const _ValueType & initialValue) const
+        ValueType_ fold_right(BinaryFunction_ && function, ValueType_ && initialValue) const
         {
-            return std::accumulate(rbegin(), rend(), initialValue, std::forward<_BinaryFunction>(function));
+            return std::accumulate(rbegin(), rend(), std::forward<ValueType_>(initialValue), std::forward<BinaryFunction_>(function));
         }
 
         /**
          *  Convert range to vector via copying
          */
-        template <typename _Allocator = std::allocator<typename std::iterator_traits<iterator_type>::value_type>>
-        std::vector<typename std::iterator_traits<iterator_type>::value_type, _Allocator> to_vector(const _Allocator & allocator = _Allocator()) const
+        template <typename Allocator_ = std::allocator<typename std::iterator_traits<iterator_type>::value_type>>
+        auto to_vector(const Allocator_ & allocator = Allocator_()) const
+            -> std::vector<typename std::iterator_traits<iterator_type>::value_type, Allocator_>
         {
-            return std::vector<typename std::iterator_traits<iterator_type>::value_type, _Allocator>(begin(), end(), allocator);
+            return std::vector<typename std::iterator_traits<iterator_type>::value_type, Allocator_>(begin(), end(), allocator);
         }
-
+            
         /**
          *  Convert range to list via copying
          */
-        template <typename _Allocator = std::allocator<typename std::iterator_traits<iterator_type>::value_type>>
-        std::list<typename std::iterator_traits<iterator_type>::value_type, _Allocator> to_list(const _Allocator & allocator = _Allocator()) const
+        template <typename Allocator_ = std::allocator<typename std::iterator_traits<iterator_type>::value_type>>
+        auto to_list(const Allocator_ & allocator = Allocator_()) const
+            -> std::list<typename std::iterator_traits<iterator_type>::value_type, Allocator_> 
         {
-            return std::list<typename std::iterator_traits<iterator_type>::value_type, _Allocator>(begin(), end(), allocator);
+            return std::list<typename std::iterator_traits<iterator_type>::value_type, Allocator_>(begin(), end(), allocator);
         }
 
         /**
          *  Convert range to set via copying
          */
-        template <typename _Comparator = std::less<typename std::iterator_traits<iterator_type>::value_type>, typename _Allocator = std::allocator<typename std::iterator_traits<iterator_type>::value_type>>
-        std::set<typename std::iterator_traits<iterator_type>::value_type, _Comparator, _Allocator> to_set(const _Comparator & comparator = _Comparator(), const _Allocator & allocator = _Allocator()) const
+        template <typename Comparator_ = std::less<typename std::iterator_traits<iterator_type>::value_type>, typename Allocator_ = std::allocator<typename std::iterator_traits<iterator_type>::value_type>>
+        auto to_set(const Comparator_ & comparator = Comparator_(), const Allocator_ & allocator = Allocator_()) const
+            -> std::set<typename std::iterator_traits<iterator_type>::value_type, Comparator_, Allocator_>
         {
-            return std::set<typename std::iterator_traits<iterator_type>::value_type, _Comparator, _Allocator>(begin(), end(), comparator, allocator);
+            return std::set<typename std::iterator_traits<iterator_type>::value_type, Comparator_, Allocator_>(begin(), end(), comparator, allocator);
         }
     };
     
@@ -250,8 +252,8 @@ namespace yato
     */
     template<typename _IteratorType>
     YATO_CONSTEXPR_FUNC 
-    typename std::enable_if< is_iterator< typename yato::remove_cvref<_IteratorType>::type >::value, range< typename yato::remove_cvref<_IteratorType>::type > >::type
-        make_range(_IteratorType && begin, _IteratorType && end)
+    auto make_range(_IteratorType && begin, _IteratorType && end)
+        -> typename std::enable_if< is_iterator< typename yato::remove_cvref<_IteratorType>::type >::value, range< typename yato::remove_cvref<_IteratorType>::type > >::type
     {
         return range<typename yato::remove_cvref<_IteratorType>::type>(std::forward<_IteratorType>(begin), std::forward<_IteratorType>(end));
     }
@@ -261,8 +263,8 @@ namespace yato
      */
     template <typename Ty_>
     YATO_CONSTEXPR_FUNC
-    typename std::enable_if < std::is_integral<typename yato::remove_cvref<Ty_>::type>::value, range<numeric_iterator<typename yato::remove_cvref<Ty_>::type>> >::type
-        make_range(Ty_ && left, Ty_ && right)
+    auto make_range(Ty_ && left, Ty_ && right)
+        -> typename std::enable_if < std::is_integral<typename yato::remove_cvref<Ty_>::type>::value, range<numeric_iterator<typename yato::remove_cvref<Ty_>::type>> >::type
     {
         return make_range(numeric_iterator<typename yato::remove_cvref<Ty_>::type>(std::forward<Ty_>(left)), numeric_iterator<typename yato::remove_cvref<Ty_>::type>(std::forward<Ty_>(right)));
     }
@@ -272,8 +274,8 @@ namespace yato
      */
     template <typename Ty_>
     YATO_CONSTEXPR_FUNC
-    typename std::enable_if < std::is_integral<typename yato::remove_cvref<Ty_>::type>::value, range<numeric_iterator<typename yato::remove_cvref<Ty_>::type>> >::type
-        make_range(Ty_ && right)
+    auto make_range(Ty_ && right)
+        -> typename std::enable_if < std::is_integral<typename yato::remove_cvref<Ty_>::type>::value, range<numeric_iterator<typename yato::remove_cvref<Ty_>::type>> >::type
     {
         return make_range(static_cast<typename yato::remove_cvref<Ty_>::type>(0), std::forward<Ty_>(right));
     }
