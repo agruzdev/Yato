@@ -150,7 +150,7 @@ namespace yato
                 return get_sub_view_(idx).at(std::forward<IdxTail>(tail)...);
             }
 
-            bool is_continous_() const
+            bool is_continuous_() const
             {
                 return get_total_size_() == get_total_stored_();
             }
@@ -270,7 +270,7 @@ namespace yato
                 return get_sub_view_(idx);
             }
 
-            bool is_continous_() const
+            bool is_continuous_() const
             {
                 return true;
             }
@@ -506,7 +506,7 @@ namespace yato
          */
         bool continuous() const
         {
-            return base_type::is_continous_();
+            return base_type::is_continuous_();
         }
 
         /**

@@ -70,8 +70,8 @@ namespace yato
             size_type get_stride_(size_t idx) const YATO_NOEXCEPT_KEYWORD
             {
                 return (idx + 2 < dimensions_number)
-                    ? std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter)) / std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter, 2))
-                    : std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter));
+                    ? std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter, idx + 1)) / std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter, idx + 2))
+                    : std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter, idx + 1));
             }
 
             YATO_CONSTEXPR_FUNC
@@ -225,6 +225,28 @@ namespace yato
             }
 
             /**
+             * Check that proxy represents a continuous data segment and plain access can be used
+             */
+            template<size_t MyDimsNum_ = dimensions_number>
+            YATO_CONSTEXPR_FUNC
+            auto continuous() const
+                -> typename std::enable_if<(MyDimsNum_ > 1), bool>::type
+            {
+                return std::get<dim_descriptor::idx_total>(*std::next(m_desc_iter)) == std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter));
+            }
+
+            /**
+             * Check that proxy represents a continuous data segment and plain access can be used
+             */
+            template<size_t MyDimsNum_ = dimensions_number>
+            YATO_CONSTEXPR_FUNC
+            auto continuous() const
+                -> typename std::enable_if<(MyDimsNum_ == 1), bool>::type
+            {
+                return true;
+            }
+
+            /**
              *  Get begin iterator for going through arrays of lower dimensionality
              */
             template<size_t MyDimsNum = dimensions_number>
@@ -349,6 +371,7 @@ namespace yato
              */
             data_iterator plain_begin() const &
             {
+                YATO_REQUIRES(continuous());
                 return m_data_iter;
             }
 
@@ -357,6 +380,7 @@ namespace yato
              */
             data_iterator plain_end() const &
             {
+                YATO_REQUIRES(continuous());
                 return std::next(m_data_iter, total_stored());
             }
 
@@ -365,6 +389,7 @@ namespace yato
              */
             std::move_iterator<data_iterator> plain_begin() &&
             {
+                YATO_REQUIRES(continuous());
                 return std::make_move_iterator(m_data_iter);
             }
 
@@ -373,6 +398,7 @@ namespace yato
              */
             std::move_iterator<data_iterator> plain_end() &&
             {
+                YATO_REQUIRES(continuous());
                 return std::make_move_iterator(std::next(m_data_iter, total_stored()));
             }
 
@@ -381,6 +407,7 @@ namespace yato
              */
             data_iterator plain_cbegin() const
             {
+                YATO_REQUIRES(continuous());
                 return m_data_iter;
             }
 
@@ -389,6 +416,7 @@ namespace yato
              */
             data_iterator plain_cend() const
             {
+                YATO_REQUIRES(continuous());
                 return std::next(m_data_iter, total_stored());
             }
 
@@ -429,7 +457,7 @@ namespace yato
              */
             iter_pointer_type data() const YATO_NOEXCEPT_KEYWORD
             {
-                return &(*plain_begin());
+                return &(*m_data_iter);
             }
 
             /**

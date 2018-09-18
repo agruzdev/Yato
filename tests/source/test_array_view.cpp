@@ -6,7 +6,7 @@
 
 TEST(Yato_ArrayView, common)
 {
-    int arr[60];
+    int arr[420];
     std::iota(std::begin(arr), std::end(arr), 1);
 
     yato::array_view_3d<int> view(arr, yato::dims(2, 3, 4), yato::dims(5, 6));
@@ -17,6 +17,8 @@ TEST(Yato_ArrayView, common)
 
     EXPECT_EQ(5U, view.stride(0));
     EXPECT_EQ(6U, view.stride(1));
+
+    EXPECT_EQ(6U, view[0].stride(0));
 
     EXPECT_EQ(24U, view.total_size());
 
@@ -38,6 +40,16 @@ TEST(Yato_ArrayView, common)
     //
     yato::array_view_3d<const int> cview(view);
     cview = view;
+
+    yato::array_view_nd<int, 4> view2(arr, yato::dims(2, 3, 4, 5), yato::dims(5, 6, 7));
+    EXPECT_EQ(5U, view2.stride(0));
+    EXPECT_EQ(6U, view2.stride(1));
+    EXPECT_EQ(7U, view2.stride(2));
+
+    EXPECT_EQ(6U, view2[0].stride(0));
+    EXPECT_EQ(7U, view2[0].stride(1));
+
+    EXPECT_EQ(7U, view2[0][0].stride(0));
 }
 
 TEST(Yato_ArrayView, common_2)
@@ -440,3 +452,23 @@ TEST(Yato_ArrayView, reshape_2)
     EXPECT_EQ(5, view_6[4]);
     EXPECT_EQ(6, view_6[5]);
 }
+
+TEST(Yato_ArrayView, continuousity)
+{
+    int arr3[25] = { };
+    yato::array_view_3d<int> view3(&arr3[0], yato::dims(2, 2, 2));
+    EXPECT_TRUE(view3.continuous());
+    EXPECT_TRUE(view3[0].continuous());
+    EXPECT_TRUE(view3[0][0].continuous());
+
+    yato::array_view_3d<int> view4(&arr3[0], yato::dims(2, 2, 2), yato::dims(3, 2));
+    EXPECT_FALSE(view4.continuous());
+    EXPECT_TRUE(view4[0].continuous());
+    EXPECT_TRUE(view4[0][0].continuous());
+
+    int arr2[3][3] = { {1, 2, 3}, {4, 5, 6}, {7, 8, 9} };
+    yato::array_view_2d<int> view2(&arr2[0][0], yato::dims(2, 2), yato::dims(3));
+    EXPECT_FALSE(view2.continuous());
+    EXPECT_TRUE(view2[0].continuous());
+}
+
