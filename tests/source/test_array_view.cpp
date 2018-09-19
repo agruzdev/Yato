@@ -472,3 +472,43 @@ TEST(Yato_ArrayView, continuousity)
     EXPECT_TRUE(view2[0].continuous());
 }
 
+TEST(Yato_ArrayView, plain_access)
+{
+    int arr1[2][3] = { { 1, 1, 2 }, { 1, 1, 2 } };
+    yato::array_view_2d<int> view1(&arr1[0][0], yato::dims(2, 2), yato::dims(3));
+
+    EXPECT_TRUE(view1[0].continuous());
+    EXPECT_EQ(2, std::distance(view1.begin(), view1.end()));
+    EXPECT_EQ(2, view1[0].size(0));
+    EXPECT_EQ(2, std::distance(view1[0].begin(), view1[0].end()));
+    EXPECT_EQ(2, std::distance(view1[0].plain_begin(), view1[0].plain_end()));
+    for (int j = 0; j < 2; ++j) {
+        for(auto x : view1[j].plain_range()) {
+            EXPECT_EQ(1, x);
+        }
+    }
+
+    int arr2[2][3][2] = { { { 1, 1 }, 
+                            { 1, 1 },
+                            { 2, 2 } },
+                          {  { 1, 1 }, 
+                             { 1, 1 },
+                             { 2, 2 } } };
+    yato::array_view_3d<int> view2(&arr2[0][0][0], yato::dims(2, 2, 2), yato::dims(3, 2));
+    EXPECT_FALSE(view2.continuous());
+    EXPECT_EQ(2, std::distance(view2.begin(), view2.end()));
+    //plain
+    EXPECT_TRUE(view2[0].continuous());
+    EXPECT_EQ(2, std::distance(view2[0].begin(), view2[0].end()));
+    EXPECT_EQ(4, std::distance(view2[0].plain_begin(), view2[0].plain_end()));
+    //line
+    EXPECT_TRUE(view2[0][0].continuous());
+    EXPECT_EQ(2, std::distance(view2[0][0].begin(), view2[0][0].end()));
+    EXPECT_EQ(2, std::distance(view2[0][0].plain_begin(), view2[0][0].plain_end()));
+
+    for (int k = 0; k < 2; ++k) {
+        for(auto x : view1[k].plain_range()) {
+            EXPECT_EQ(1, x);
+        }
+    }
+}

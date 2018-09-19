@@ -381,7 +381,7 @@ namespace yato
             data_iterator plain_end() const &
             {
                 YATO_REQUIRES(continuous());
-                return std::next(m_data_iter, total_stored());
+                return std::next(m_data_iter, total_size());
             }
 
             /**
@@ -399,7 +399,7 @@ namespace yato
             std::move_iterator<data_iterator> plain_end() &&
             {
                 YATO_REQUIRES(continuous());
-                return std::make_move_iterator(std::next(m_data_iter, total_stored()));
+                return std::make_move_iterator(std::next(m_data_iter, total_size()));
             }
 
             /**
@@ -417,7 +417,7 @@ namespace yato
             data_iterator plain_cend() const
             {
                 YATO_REQUIRES(continuous());
-                return std::next(m_data_iter, total_stored());
+                return std::next(m_data_iter, total_size());
             }
 
             /**

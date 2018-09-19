@@ -469,13 +469,13 @@ namespace yato
         const_plain_iterator plain_cend() const
         {
             YATO_REQUIRES(continuous());
-            return base_type::get_pointer_() + base_type::get_total_stored_();
+            return base_type::get_pointer_() + base_type::get_total_size_();
         }
 
         plain_iterator plain_end() const
         {
             YATO_REQUIRES(continuous());
-            return base_type::get_pointer_() + base_type::get_total_stored_();
+            return base_type::get_pointer_() + base_type::get_total_size_();
         }
 
         yato::range<const_iterator> crange() const
