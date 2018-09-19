@@ -609,11 +609,31 @@ namespace yato
                 YATO_REQUIRES(plain_size != 0);
 
                 allocator_type& alloc = m_raw_vector.allocator();
-                value_type* new_data = memory::allocate(alloc, plain_size);
+                value_type* new_data  = memory::allocate(alloc, plain_size);
                 value_type* dst = new_data; // copy, that can be changed
                 try {
                     // Recursively copy values from the initializser list
                     raw_copy_initializer_list_<InitTy_, dimensions_number>(init_list, dst);
+                }
+                catch(...) {
+                    memory::destroy(alloc, new_data, dst);
+                    memory::deallocate(alloc, new_data, plain_size);
+                    throw;
+                }
+                m_raw_vector.init_manually(new_data, plain_size);
+            }
+
+            template <typename MultidimTy_>
+            void raw_init_from_multidim_(size_t plain_size, const MultidimTy_ & v)
+            {
+                YATO_REQUIRES(plain_size != 0);
+
+                allocator_type& alloc = m_raw_vector.allocator();
+                value_type* new_data  = memory::allocate(alloc, plain_size);
+                value_type* dst = new_data; // copy, that can be changed
+                try {
+                    // Recursively copy values
+                    fill_from_miltidim_(dst, v);
                 }
                 catch(...) {
                     memory::destroy(alloc, new_data, dst);
@@ -810,6 +830,22 @@ namespace yato
             {
                 size_t & dim = std::get<dim_descriptor::idx_size>(m_descriptors[dimensions_number - Dims_]);
                 dim = std::max(dim, init_list.size());
+            }
+
+            template <typename MultidimType_>
+            auto fill_from_miltidim_(value_type* & dst, const MultidimType_ & v)
+                -> std::enable_if_t<(MultidimType_::dimensions_number > 1)>
+            {
+                for (auto it = v.cbegin(); it != v.cend(); ++it) {
+                    fill_from_miltidim_(dst, *it);
+                }
+            }
+
+            template <typename MultidimType_>
+            auto fill_from_miltidim_(value_type* & dst, const MultidimType_ & v)
+                -> std::enable_if_t<(MultidimType_::dimensions_number == 1)>
+            {
+                memory::copy_to_uninitialized(m_raw_vector.allocator(), v.cbegin(), v.cend(), dst);
             }
 
             YATO_FORCED_INLINE
@@ -1033,12 +1069,17 @@ namespace yato
              */
             template<typename _DataIterator, typename _SizeIterator>
             explicit
-            vector_nd_impl(const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & other)
+            vector_nd_impl(const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & proxy)
             {
-                init_sizes_(other.dimensions_range());
+                init_sizes_(proxy.dimensions_range());
                 const size_t plain_size = total_size();
                 if(plain_size != 0) {
-                    m_raw_vector.init_from_range(plain_size, other.plain_cbegin(), other.plain_cend());
+                    if (proxy.continuous()) {
+                        m_raw_vector.init_from_range(plain_size, proxy.plain_cbegin(), proxy.plain_cend());
+                    }
+                    else {
+                        raw_init_from_multidim_(plain_size, proxy);
+                    }
                 }
             }
 
@@ -1046,9 +1087,38 @@ namespace yato
              *  Assign from proxy
              */
             template<typename _DataIterator, typename _SizeIterator>
-            vector_nd_impl& operator = (const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & other)
+            vector_nd_impl& operator = (const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & proxy)
             {
-                this_type{ other }.swap(*this);
+                this_type{ proxy }.swap(*this);
+                return *this;
+            }
+
+            /**
+             *  Copy from view
+             */
+            template <typename OtherTy_>
+            explicit
+            vector_nd_impl(const yato::array_view_nd<OtherTy_, dimensions_number> & view)
+            {
+                init_sizes_(view.dimensions_range());
+                const size_t plain_size = total_size();
+                if(plain_size != 0) {
+                    if (view.continuous()) {
+                        m_raw_vector.init_from_range(plain_size, view.plain_cbegin(), view.plain_cend());
+                    }
+                    else {
+                        raw_init_from_multidim_(plain_size, view);
+                    }
+                }
+            }
+
+            /**
+             *  Assign from view
+             */
+            template <typename OtherTy_>
+            vector_nd_impl& operator = (const yato::array_view_nd<OtherTy_, dimensions_number> & view)
+            {
+                this_type{ view }.swap(*this);
                 return *this;
             }
 
@@ -2144,19 +2214,40 @@ namespace yato
              */
             template<typename _DataIterator, typename _SizeIterator>
             explicit
-            vector_nd_impl(const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & other)
-                : m_raw_vector(), m_size(other.total_size())
+            vector_nd_impl(const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & proxy)
+                : m_raw_vector(), m_size(proxy.total_size())
             {
-                m_raw_vector.init_from_range(m_size, other.plain_cbegin(), other.plain_cend());
+                m_raw_vector.init_from_range(m_size, proxy.plain_cbegin(), proxy.plain_cend());
             }
 
             /**
              *  Assign from proxy
              */
             template<typename _DataIterator, typename _SizeIterator>
-            vector_nd_impl& operator= (const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & other)
+            vector_nd_impl& operator= (const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & proxy)
             {
-                this_type{other}.swap(*this);
+                this_type{ proxy }.swap(*this);
+                return *this;
+            }
+
+            /**
+             *  Copy from view
+             */
+            template <typename OtherTy_>
+            explicit
+            vector_nd_impl(const yato::array_view_nd<OtherTy_, dimensions_number> & view)
+                : m_raw_vector(), m_size(view.total_size())
+            {
+                m_raw_vector.init_from_range(m_size, view.plain_cbegin(), view.plain_cend());
+            }
+
+            /**
+             *  Assign from view
+             */
+            template <typename OtherTy_>
+            vector_nd_impl& operator= (const yato::array_view_nd<OtherTy_, dimensions_number> & view)
+            {
+                this_type{ view }.swap(*this);
                 return *this;
             }
 

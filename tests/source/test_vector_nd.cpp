@@ -126,6 +126,25 @@ TEST(Yato_VectorND, common)
 
         yato::vector_nd<float, 3> vec9(yato::dims(2, 0, 3), 1.0f); 
         //EXPECT_TRUE(vec9.empty()); Undefined behaviour
+
+        yato::vector_nd<int, 1> vec2c = yato::vector_nd<int, 1>(vec2.view());
+        for(size_t i = 0; i < vec2.size(); ++i) {
+            EXPECT_EQ(vec2[i], vec2c[i]);
+        }
+        yato::vector_nd<int, 2> vec4ñ = yato::vector_nd<int, 2>(vec4.view());
+        for(size_t j = 0; j < vec4.size(0); ++j) {
+            for(size_t i = 0; i < vec4.size(1); ++i) {
+                EXPECT_EQ(vec4[j][i], vec4ñ[j][i]);
+            }
+        }
+        yato::vector_nd<int, 3> vec5ñ = yato::vector_nd<int, 3>(vec5.cview());
+        for(size_t k = 0; k < vec5.size(0); ++k) {
+            for(size_t j = 0; j < vec5.size(1); ++j) {
+                for(size_t i = 0; i < vec5.size(2); ++i) {
+                    EXPECT_EQ(vec5[k][j][i], vec5ñ[k][j][i]);
+                }
+            }
+        }
     }
     catch (...)
     {
