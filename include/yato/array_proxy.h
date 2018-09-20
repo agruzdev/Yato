@@ -176,14 +176,21 @@ namespace yato
                 return dimensions_type(dimensions_range());
             }
 
+            //non public interface
+            YATO_CONSTEXPR_FUNC_CXX14
+            yato::range<desc_iterator> descriptors_range_() const
+            {
+                return yato::range<desc_iterator>(m_desc_iter, std::next(m_desc_iter, dimensions_number));
+            }
+
             /**
              *  Get dimensions range
              */
             YATO_CONSTEXPR_FUNC_CXX14
             auto dimensions_range() const
-                -> decltype(yato::range<desc_iterator>(m_desc_iter, std::next(m_desc_iter, dimensions_number)).map(tuple_cgetter<typename dim_descriptor::type, dim_descriptor::idx_size>()))
+                -> decltype(descriptors_range_().map(tuple_cgetter<typename dim_descriptor::type, dim_descriptor::idx_size>()))
             {
-                return yato::range<desc_iterator>(m_desc_iter, std::next(m_desc_iter, dimensions_number)).map(tuple_cgetter<typename dim_descriptor::type, dim_descriptor::idx_size>());
+                return descriptors_range_().map(tuple_cgetter<typename dim_descriptor::type, dim_descriptor::idx_size>());
             }
 
             /**
@@ -623,7 +630,7 @@ namespace yato
             }
 
             //-------------------------------------------------------
-            
+
             template<typename, typename, size_t>
             friend class sub_array_proxy;
         };

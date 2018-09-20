@@ -512,3 +512,47 @@ TEST(Yato_ArrayView, plain_access)
         }
     }
 }
+
+TEST(Yato_ArrayView, view_from_proxy)
+{
+    int arr1[2][3] = { { 1, 2, 3 }, { 4, 5, 6 } };
+    yato::array_view_2d<int> view1(&arr1[0][0], yato::dims(2, 2), yato::dims(3));
+
+    yato::array_view_1d<int> view2 = view1[0];
+    EXPECT_EQ(2, view2.size());
+    EXPECT_EQ(1, view2[0]);
+    EXPECT_EQ(2, view2[1]);
+
+    view2 = view1[1];
+    EXPECT_EQ(2, view2.size());
+    EXPECT_EQ(4, view2[0]);
+    EXPECT_EQ(5, view2[1]);
+
+
+    int arr2[2][3][3] = { { { 1, 2, 3 }, 
+                            { 4, 5, 6 },
+                            { 7, 8, 9 } },
+                          {  { 11, 12, 13 }, 
+                             { 14, 15, 16 },
+                             { 17, 18, 19 } } };
+
+    yato::array_view_3d<int> view3(&arr2[0][0][0], yato::dims(2, 2, 2), yato::dims(3, 3));
+    yato::array_view_2d<int> view4 = view3[0];
+    EXPECT_EQ(2, view4.size(0));
+    EXPECT_EQ(2, view4.size(1));
+    EXPECT_EQ(3, view4.stride(0));
+    EXPECT_EQ(1, view4[0][0]);
+    EXPECT_EQ(2, view4[0][1]);
+    EXPECT_EQ(4, view4[1][0]);
+    EXPECT_EQ(5, view4[1][1]);
+
+    view4 = view3[1];
+    EXPECT_EQ(2, view4.size(0));
+    EXPECT_EQ(2, view4.size(1));
+    EXPECT_EQ(3, view4.stride(0));
+    EXPECT_EQ(11, view4[0][0]);
+    EXPECT_EQ(12, view4[0][1]);
+    EXPECT_EQ(14, view4[1][0]);
+    EXPECT_EQ(15, view4[1][1]);
+}
+

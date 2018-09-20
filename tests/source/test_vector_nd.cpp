@@ -1999,4 +1999,54 @@ TEST(Yato_VectorND, exception_safe_erase_2)
     EXPECT_EQ(FooThrowing::ctors, FooThrowing::dtors);
 }
 
+TEST(Yato_VectorND, view_from_proxy)
+{
+    yato::vector_2d<int> vec1 = { { 1, 2, 3 }, { 4, 5, 6 } };
 
+    yato::array_view_1d<int> view2 = vec1[0];
+    EXPECT_EQ(3, view2.size());
+    EXPECT_EQ(1, view2[0]);
+    EXPECT_EQ(2, view2[1]);
+    EXPECT_EQ(3, view2[2]);
+
+    view2 = vec1[1];
+    EXPECT_EQ(3, view2.size());
+    EXPECT_EQ(4, view2[0]);
+    EXPECT_EQ(5, view2[1]);
+    EXPECT_EQ(6, view2[2]);
+
+    yato::vector_3d<int> vec2 = { { { 1, 2, 3 }, 
+                                    { 4, 5, 6 },
+                                    { 7, 8, 9 } },
+                                  {  { 11, 12, 13 }, 
+                                     { 14, 15, 16 },
+                                     { 17, 18, 19 } } };
+
+    yato::array_view_2d<int> view4 = vec2[0];
+    EXPECT_EQ(3, view4.size(0));
+    EXPECT_EQ(3, view4.size(1));
+    EXPECT_EQ(3, view4.stride(0));
+    EXPECT_EQ(1, view4[0][0]);
+    EXPECT_EQ(2, view4[0][1]);
+    EXPECT_EQ(3, view4[0][2]);
+    EXPECT_EQ(4, view4[1][0]);
+    EXPECT_EQ(5, view4[1][1]);
+    EXPECT_EQ(6, view4[1][2]);
+    EXPECT_EQ(7, view4[2][0]);
+    EXPECT_EQ(8, view4[2][1]);
+    EXPECT_EQ(9, view4[2][2]);
+
+    view4 = vec2[1];
+    EXPECT_EQ(3, view4.size(0));
+    EXPECT_EQ(3, view4.size(1));
+    EXPECT_EQ(3, view4.stride(0));
+    EXPECT_EQ(11, view4[0][0]);
+    EXPECT_EQ(12, view4[0][1]);
+    EXPECT_EQ(13, view4[0][2]);
+    EXPECT_EQ(14, view4[1][0]);
+    EXPECT_EQ(15, view4[1][1]);
+    EXPECT_EQ(16, view4[1][2]);
+    EXPECT_EQ(17, view4[2][0]);
+    EXPECT_EQ(18, view4[2][1]);
+    EXPECT_EQ(19, view4[2][2]);
+}

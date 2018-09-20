@@ -57,7 +57,6 @@ namespace yato
             array_view_base(value_type* ptr, const dimensions_type & extents, const strides_type & strides)
                 : m_base_ptr(ptr)
             {
-                YATO_REQUIRES(ptr != nullptr);
                 YATO_REQUIRES(extents[dimensions_number - 1] <= strides[dimensions_number - 2]);
                 m_descriptors[dimensions_number - 1] = std::make_tuple(extents[dimensions_number - 1], extents[dimensions_number - 1], strides[dimensions_number - 2]);
                 for (size_t i = dimensions_number - 1; i > 0; --i) {
@@ -66,6 +65,22 @@ namespace yato
                         extents[i - 1],
                         extents[i - 1] * std::get<dim_descriptor::idx_total>(m_descriptors[i]),
                         (i > 1 ? strides[i - 2] : extents[0]) * std::get<dim_descriptor::idx_offset>(m_descriptors[i]));
+                }
+            }
+
+            template <typename DataIterator_, typename SizeIterator_>
+            array_view_base(const details::sub_array_proxy<DataIterator_, SizeIterator_, dimensions_number> & proxy)
+                : m_base_ptr(proxy.data())
+            {
+                using proxy_descriptor_type = typename yato::remove_cvref_t<decltype(proxy)>::dim_descriptor;
+                YATO_REQUIRES(proxy.descriptors_range_().distance() == dimensions_number);
+                auto desc_it = proxy.descriptors_range_().begin();
+                for (size_t i = 0; i < dimensions_number; ++i, ++desc_it) {
+                    m_descriptors[i] = std::make_tuple(
+                        std::get<proxy_descriptor_type::idx_size>(*desc_it),
+                        std::get<proxy_descriptor_type::idx_total>(*desc_it),
+                        std::get<proxy_descriptor_type::idx_offset>(*desc_it)
+                    );
                 }
             }
 
@@ -187,9 +202,12 @@ namespace yato
 
             array_view_base(value_type* ptr, const dimensions_type & extents, const strides_type &)
                 : m_base_ptr(ptr), m_size(extents)
-            {
-                YATO_REQUIRES(ptr != nullptr);
-            }
+            { }
+
+            template <typename DataIterator_, typename SizeIterator_>
+            array_view_base(const details::sub_array_proxy<DataIterator_, SizeIterator_, dimensions_number> & proxy)
+                : m_base_ptr(proxy.data()), m_size(proxy.size(0))
+            { }
 
             ~array_view_base() = default;
 
@@ -339,6 +357,26 @@ namespace yato
         array_view_nd& operator=(const array_view_nd<std::remove_const_t<VTy_>, dimensions_number> & other)
         {
             base_type::operator=(other);
+            return *this;
+        }
+
+        /**
+         *  Create from proxy
+         */
+        template<typename DataIterator_, typename SizeIterator_, typename = 
+            std::enable_if_t<std::is_same<typename std::iterator_traits<DataIterator_>::value_type, value_type>::value>>
+        array_view_nd(const details::sub_array_proxy<DataIterator_, SizeIterator_, dimensions_number> & proxy)
+            : base_type(proxy)
+        { }
+
+        /**
+         *  Create from proxy
+         */
+        template<typename DataIterator_, typename SizeIterator_, typename = 
+            std::enable_if_t<std::is_same<typename std::iterator_traits<DataIterator_>::value_type, value_type>::value>>
+        array_view_nd& operator=(const details::sub_array_proxy<DataIterator_, SizeIterator_, dimensions_number> & proxy)
+        {
+            base_type::operator=(proxy);
             return *this;
         }
 
