@@ -556,3 +556,70 @@ TEST(Yato_ArrayView, view_from_proxy)
     EXPECT_EQ(15, view4[1][1]);
 }
 
+TEST(Yato_ArrayView, cv_cast)
+{
+    {
+        int arr1[6] = { 1, 2, 3, 4, 5, 6 };
+        yato::array_view_1d<int> view1(&arr1[0], yato::dims(6));
+
+        yato::array_view_1d<const int> test1(view1);
+        yato::array_view_1d<volatile int> test2(view1);
+        yato::array_view_1d<const volatile int> test3(view1);
+
+        EXPECT_EQ(test1.dimensions(), view1.dimensions());
+        EXPECT_EQ(test2.dimensions(), view1.dimensions());
+        EXPECT_EQ(test3.dimensions(), view1.dimensions());
+
+        yato::array_view_1d<const int> view2(&arr1[0], yato::dims(6));
+        yato::array_view_1d<const int> test4(view2);
+        yato::array_view_1d<const volatile int> test6(view2);
+
+        EXPECT_EQ(test4.dimensions(), view2.dimensions());
+        EXPECT_EQ(test6.dimensions(), view2.dimensions());
+
+        yato::array_view_1d<volatile int> view3(&arr1[0], yato::dims(6));
+        yato::array_view_1d<const volatile int> test7(view3);
+        yato::array_view_1d<volatile const int> test8(view3);
+
+        EXPECT_EQ(test7.dimensions(), view3.dimensions());
+        EXPECT_EQ(test8.dimensions(), view3.dimensions());
+
+        yato::array_view_1d<const volatile int> view4(&arr1[0], yato::dims(6));
+        yato::array_view_1d<const volatile int> test9(view4);
+
+        EXPECT_EQ(test9.dimensions(), view4.dimensions());
+    }
+
+    {
+        int arr2[2][3] = { { 1, 2, 3 }, { 4, 5, 6 } };
+        yato::array_view_2d<int> view1(&arr2[0][0], yato::dims(2, 2), yato::dims(3));
+
+        yato::array_view_2d<const int> test1(view1);
+        yato::array_view_2d<volatile int> test2(view1);
+        yato::array_view_2d<const volatile int> test3(view1);
+
+        EXPECT_EQ(test1.dimensions(), view1.dimensions());
+        EXPECT_EQ(test2.dimensions(), view1.dimensions());
+        EXPECT_EQ(test3.dimensions(), view1.dimensions());
+
+        yato::array_view_2d<const int> view2(&arr2[0][0], yato::dims(2, 2), yato::dims(3));
+        yato::array_view_2d<const int> test4(view2);
+        yato::array_view_2d<const volatile int> test6(view2);
+
+        EXPECT_EQ(test4.dimensions(), view2.dimensions());
+        EXPECT_EQ(test6.dimensions(), view2.dimensions());
+
+        yato::array_view_2d<volatile int> view3(&arr2[0][0], yato::dims(2, 2), yato::dims(3));
+        yato::array_view_2d<const volatile int> test7(view3);
+        yato::array_view_2d<volatile const int> test8(view3);
+
+        EXPECT_EQ(test7.dimensions(), view3.dimensions());
+        EXPECT_EQ(test8.dimensions(), view3.dimensions());
+
+        yato::array_view_2d<const volatile int> view4(&arr2[0][0], yato::dims(2, 2), yato::dims(3));
+        yato::array_view_2d<const volatile int> test9(view4);
+
+        EXPECT_EQ(test9.dimensions(), view4.dimensions());
+    }
+
+}

@@ -19,6 +19,17 @@ namespace yato
 {
     namespace details
     {
+        template <typename Ty_, typename CvTy_>
+        struct convertible_view_type
+            : yato::boolean_constant<!std::is_same<Ty_, CvTy_>::value &&
+                (std::is_same<std::add_const_t<Ty_>, CvTy_>::value ||
+                 std::is_same<std::add_volatile_t<Ty_>, CvTy_>::value ||
+                 std::is_same<std::add_cv_t<Ty_>, CvTy_>::value)
+            >
+        { };
+
+
+
         // Multidimensional case
         template<typename ValueType, size_t DimsNum>
         class array_view_base
@@ -92,13 +103,15 @@ namespace yato
             array_view_base(this_type&&) = default;
             array_view_base& operator= (this_type&&) = default;
 
-            template <typename VTy_ = value_type, typename = std::enable_if_t<std::is_const<VTy_>::value>>
-            array_view_base(const array_view_base<std::remove_const_t<VTy_>, dimensions_number> & other)
+            template <typename OtherTy_, typename = 
+                std::enable_if_t<convertible_view_type<OtherTy_, value_type>::value>>
+            array_view_base(const array_view_base<OtherTy_, dimensions_number> & other)
                 : m_base_ptr(other.m_base_ptr), m_descriptors(other.m_descriptors)
             { }
 
-            template <typename VTy_ = value_type, typename = std::enable_if_t<std::is_const<VTy_>::value>>
-            array_view_base& operator=(const array_view_base<std::remove_const_t<VTy_>, dimensions_number> & other)
+            template <typename OtherTy_, typename = 
+                std::enable_if_t<convertible_view_type<OtherTy_, value_type>::value>>
+            array_view_base& operator=(const array_view_base<OtherTy_, dimensions_number> & other)
             {
                 m_base_ptr    = other.m_base_ptr;
                 m_descriptors = other.m_descriptors;
@@ -217,13 +230,15 @@ namespace yato
             array_view_base(this_type&&) = default;
             array_view_base& operator= (this_type&&) = default;
 
-            template <typename VTy_ = value_type, typename = std::enable_if_t<std::is_const<VTy_>::value>>
-            array_view_base(const array_view_base<std::remove_const_t<VTy_>, dimensions_number> & other)
+            template <typename OtherTy_, typename = 
+                std::enable_if_t<convertible_view_type<OtherTy_, value_type>::value>>
+            array_view_base(const array_view_base<OtherTy_, dimensions_number> & other)
                 : m_base_ptr(other.m_base_ptr), m_size(other.m_size)
             { }
 
-            template <typename VTy_ = value_type, typename = std::enable_if_t<std::is_const<VTy_>::value>>
-            array_view_base& operator=(const array_view_base<std::remove_const_t<VTy_>, dimensions_number> & other)
+            template <typename OtherTy_, typename = 
+                std::enable_if_t<convertible_view_type<OtherTy_, value_type>::value>>
+            array_view_base& operator=(const array_view_base<OtherTy_, dimensions_number> & other)
             {
                 m_base_ptr = other.m_base_ptr;
                 m_size     = other.m_size;
@@ -345,16 +360,18 @@ namespace yato
         /**
          * Convert view<T> to view<const T>
          */
-        template <typename VTy_ = value_type, typename = std::enable_if_t<std::is_const<VTy_>::value>>
-        array_view_nd(const array_view_nd<std::remove_const_t<VTy_>, dimensions_number> & other)
+        template <typename OtherTy_, typename = 
+            std::enable_if_t<details::convertible_view_type<OtherTy_, value_type>::value>>
+        array_view_nd(const array_view_nd<OtherTy_, dimensions_number> & other)
             : base_type(other)
         { }
 
         /**
          * Assign view<T> to view<const T>
          */
-        template <typename VTy_ = value_type, typename = std::enable_if_t<std::is_const<VTy_>::value>>
-        array_view_nd& operator=(const array_view_nd<std::remove_const_t<VTy_>, dimensions_number> & other)
+        template <typename OtherTy_, typename = 
+            std::enable_if_t<details::convertible_view_type<OtherTy_, value_type>::value>>
+        array_view_nd& operator=(const array_view_nd<OtherTy_, dimensions_number> & other)
         {
             base_type::operator=(other);
             return *this;
@@ -555,8 +572,9 @@ namespace yato
             return base_type::get_pointer_();
         }
 
-        // For view<T> to view<const T> conversion
-        friend class array_view_nd<std::add_const_t<value_type>, dimensions_number>;
+        // For view<T> to view<const/volatile T> conversion
+        template <typename OtherTy_, size_t DimsNum_>
+        friend class array_view_nd;
     };
 
 
