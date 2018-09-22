@@ -67,17 +67,26 @@ namespace yato
             desc_iterator m_desc_iter;
             //-------------------------------------------------------
 
-            size_type get_stride_(size_t idx) const YATO_NOEXCEPT_KEYWORD
+            template<size_t MyDimsNum_ = dimensions_number>
+            auto get_stride_(size_t idx) const YATO_NOEXCEPT_KEYWORD
+                -> typename std::enable_if <(MyDimsNum_ > 1), size_type>::type
             {
-                return (idx + 2 < dimensions_number)
-                    ? std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter, idx + 1)) / std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter, idx + 2))
-                    : std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter, idx + 1));
+                return dim_descriptor::template offset_to_bytes<iter_value_type>(std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter, idx + 1)));
             }
 
-            YATO_CONSTEXPR_FUNC
+            template<size_t MyDimsNum_ = dimensions_number>
+            auto get_stride_(size_t) const YATO_NOEXCEPT_KEYWORD
+                -> typename std::enable_if <(MyDimsNum_ == 1), size_type>::type
+            {
+                return dim_descriptor::template offset_to_bytes<iter_value_type>(std::get<dim_descriptor::idx_size>(*m_desc_iter));
+            }
+
+            YATO_CONSTEXPR_FUNC_CXX14
             sub_proxy create_sub_proxy_(size_t offset) const YATO_NOEXCEPT_KEYWORD
             {
-                return sub_proxy(std::next(m_data_iter, offset * std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter))), std::next(m_desc_iter));
+                data_iterator sub_proxy_iter{ m_data_iter };
+                details::advance_bytes(sub_proxy_iter, offset * dim_descriptor::template offset_to_bytes<iter_value_type>(std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter))));
+                return sub_proxy(sub_proxy_iter, std::next(m_desc_iter));
             }
             //-------------------------------------------------------
 
@@ -204,7 +213,8 @@ namespace yato
             }
 
             /**
-             *  Get stride along one dimension
+             *  Get byte offset till next sub-proxy
+             *  Returns size in bytes for 1D proxy
              */
             YATO_CONSTEXPR_FUNC_CXX14
             size_type stride(size_t idx) const YATO_NOEXCEPT_KEYWORD
@@ -228,18 +238,20 @@ namespace yato
             YATO_CONSTEXPR_FUNC
             size_type total_stored() const
             {
-                return std::get<dim_descriptor::idx_offset>(*m_desc_iter);
+                return dim_descriptor::template offset_to_bytes<iter_value_type>(std::get<dim_descriptor::idx_offset>(*m_desc_iter));
             }
 
             /**
              * Check that proxy represents a continuous data segment and plain access can be used
              */
             template<size_t MyDimsNum_ = dimensions_number>
-            YATO_CONSTEXPR_FUNC
+            YATO_CONSTEXPR_FUNC_CXX14
             auto continuous() const
                 -> typename std::enable_if<(MyDimsNum_ > 1), bool>::type
             {
-                return std::get<dim_descriptor::idx_total>(*std::next(m_desc_iter)) == std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter));
+                const size_t stride_offset = dim_descriptor::template offset_to_bytes<iter_value_type>(std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter)));
+                const size_t elem_offset   = std::get<dim_descriptor::idx_total>(*std::next(m_desc_iter)) * sizeof(iter_value_type);
+                return (stride_offset == elem_offset);
             }
 
             /**
@@ -483,7 +495,7 @@ namespace yato
             YATO_CONSTEXPR_FUNC_CXX14
             this_type & operator++() YATO_NOEXCEPT_KEYWORD
             {
-                std::advance(m_data_iter, total_stored());
+                details::advance_bytes(m_data_iter, total_stored());
                 return *this;
             }
 
@@ -503,7 +515,7 @@ namespace yato
             YATO_CONSTEXPR_FUNC_CXX14
             this_type & operator--() YATO_NOEXCEPT_KEYWORD
             {
-                std::advance(m_data_iter, -narrow_cast<difference_type>(total_stored()));
+                details::advance_bytes(m_data_iter, -narrow_cast<difference_type>(total_stored()));
                 return *this;
             }
 
@@ -522,7 +534,7 @@ namespace yato
              */
             this_type & operator+= (difference_type offset) YATO_NOEXCEPT_KEYWORD
             {
-                std::advance(m_data_iter, offset * total_stored());
+                details::advance_bytes(m_data_iter, offset * total_stored());
                 return *this;
             }
 
@@ -550,7 +562,7 @@ namespace yato
              */
             this_type & operator-= (difference_type offset) YATO_NOEXCEPT_KEYWORD
             {
-                std::advance(m_data_iter, -offset * narrow_cast<difference_type>(total_stored()));
+                details::advance_bytes(m_data_iter, -offset * narrow_cast<difference_type>(total_stored()));
                 return *this;
             }
 
@@ -572,7 +584,8 @@ namespace yato
             difference_type operator- (const this_type & one, const this_type & another)
             {
                 YATO_REQUIRES(one.total_stored() == another.total_stored());
-                return (one.m_data_iter - another.m_data_iter) / one.total_stored();
+                using byte_pointer = const volatile uint8_t*;
+                return (yato::pointer_cast<byte_pointer>(one.m_data_iter) - yato::pointer_cast<byte_pointer>(another.m_data_iter)) / one.total_stored();
             }
 
             /**

@@ -2025,7 +2025,7 @@ TEST(Yato_VectorND, view_from_proxy)
     yato::array_view_2d<int> view4 = vec2[0];
     EXPECT_EQ(3, view4.size(0));
     EXPECT_EQ(3, view4.size(1));
-    EXPECT_EQ(3, view4.stride(0));
+    EXPECT_EQ(3u * sizeof(int), view4.stride(0));
     EXPECT_EQ(1, view4[0][0]);
     EXPECT_EQ(2, view4[0][1]);
     EXPECT_EQ(3, view4[0][2]);
@@ -2039,7 +2039,7 @@ TEST(Yato_VectorND, view_from_proxy)
     view4 = vec2[1];
     EXPECT_EQ(3, view4.size(0));
     EXPECT_EQ(3, view4.size(1));
-    EXPECT_EQ(3, view4.stride(0));
+    EXPECT_EQ(3u * sizeof(int), view4.stride(0));
     EXPECT_EQ(11, view4[0][0]);
     EXPECT_EQ(12, view4[0][1]);
     EXPECT_EQ(13, view4[0][2]);

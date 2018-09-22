@@ -31,6 +31,13 @@ namespace yato
         static YATO_CONSTEXPR_VAR size_t idx_size   = 0;
         static YATO_CONSTEXPR_VAR size_t idx_total  = 1;
         static YATO_CONSTEXPR_VAR size_t idx_offset = 1;
+
+        template <typename Ty_>
+        static
+        size_t offset_to_bytes(size_t offset)
+        {
+            return offset * sizeof(Ty_);
+        }
     };
 
     /**
@@ -50,8 +57,25 @@ namespace yato
         static YATO_CONSTEXPR_VAR size_t idx_size   = 0;
         static YATO_CONSTEXPR_VAR size_t idx_total  = 1;
         static YATO_CONSTEXPR_VAR size_t idx_offset = 2;
+
+        template <typename Ty_>
+        static
+        size_t offset_to_bytes(size_t offset)
+        {
+            return offset;
+        }
     };
 
+    namespace details
+    {
+        // Interpret as byte offset
+        template <typename Ty_>
+        static
+        void advance_bytes(Ty_* & ptr, std::ptrdiff_t diff)
+        {
+            ptr = yato::pointer_cast<Ty_*>(yato::pointer_cast<typename yato::take_cv_from<Ty_, uint8_t>::type*>(ptr) + diff);
+        }
+    }
 
     /**
      * Storage for containers extents
@@ -261,6 +285,87 @@ YATO_PRAGMA_WARNING_POP
         return dimensionality<sizeof...(Extents_), SizeType_>(extents...);
     }
 #endif
+
+    //----------------------------------------------------------------------------------
+
+    template <size_t DimensionsNum_, typename SizeType_ = size_t>
+    class strides_array
+    {
+    public:
+        static YATO_CONSTEXPR_VAR size_t dimensions_number = DimensionsNum_;
+        using size_type = SizeType_;
+
+    private:
+        std::array<size_type, dimensions_number> m_values;
+
+    public:
+        template <typename... Args_>
+        strides_array(std::enable_if_t<(sizeof...(Args_) == dimensions_number - 1), size_type> arg0, Args_... args)
+            : m_values{{arg0, args...}}
+        { }
+
+        strides_array(const strides_array&) = default;
+        strides_array(strides_array&&) = default;
+
+        strides_array& operator=(const strides_array&) = default;
+        strides_array& operator=(strides_array&&) = default;
+
+        ~strides_array() = default;
+
+        YATO_CONSTEXPR_FUNC
+        const size_type & operator[](size_t idx) const
+        {
+            return m_values[idx];
+        }
+
+        size_type & operator[](size_t idx)
+        {
+            return m_values[idx];
+        }
+    };
+
+    template <typename SizeType_>
+    class strides_array<0, SizeType_>
+    {
+    public:
+        static YATO_CONSTEXPR_VAR size_t dimensions_number = 0;
+        using size_type = SizeType_;
+    };
+
+
+    /**
+     * Helper function for creating dimensionality
+     */
+    template <typename SizeType_ = size_t, typename... Offsets_>
+    YATO_CONSTEXPR_FUNC
+    auto strides(Offsets_... offsets)
+        -> std::enable_if_t<std::is_integral<SizeType_>::value, strides_array<sizeof...(Offsets_), SizeType_>>
+    {
+        return strides_array<sizeof...(Offsets_), SizeType_>(narrow_cast<SizeType_>(offsets)...);
+    }
+
+    /**
+     * Helper function for creating dimensionality
+     */
+#ifdef YATO_CXX17
+    // Requires implicit inline modifier for static constexpr
+    template <typename SizeType_ = size_t, typename... Offsets_>
+    YATO_CONSTEXPR_FUNC
+    auto strides(Offsets_ && ... offsets)
+        -> std::enable_if_t<!std::is_integral<SizeType_>::value, strides_array<sizeof...(Offsets_), SizeType_>>
+    {
+        return strides_array<sizeof...(Offsets_), SizeType_>(std::forward<Offsets_>(offsets)...);
+    }
+#else
+    template <typename SizeType_ = size_t, typename... Offsets_>
+    YATO_CONSTEXPR_FUNC
+    auto strides(Offsets_... offsets)
+        -> std::enable_if_t<!std::is_integral<SizeType_>::value, strides_array<sizeof...(Offsets_), SizeType_>>
+    {
+        return strides_array<sizeof...(Offsets_), SizeType_>(offsets...);
+    }
+#endif
+
 
     //----------------------------------------------------------------------------------
 

@@ -40,7 +40,9 @@ namespace yato
             using value_type        = ValueType;
             using size_type         = size_t;
             using dimensions_type   = dimensionality<DimsNum, size_t>;
-            using strides_type      = dimensionality<DimsNum - 1, size_t>;
+
+            using element_strides_type  = dimensionality<DimsNum - 1, size_t>;
+            using byte_strides_type     = strides_array<DimsNum - 1, size_t>;
 
             static YATO_CONSTEXPR_VAR size_t dimensions_number = DimsNum;
             static_assert(dimensions_number > 1, "Dimensions number should be greater than 1");
@@ -65,11 +67,11 @@ namespace yato
             std::array<dim_descriptor::type, dimensions_number> m_descriptors;
             //--------------------------------------------------------------------
 
-            array_view_base(value_type* ptr, const dimensions_type & extents, const strides_type & strides)
+            array_view_base(value_type* ptr, const dimensions_type & extents, const element_strides_type & strides)
                 : m_base_ptr(ptr)
             {
                 YATO_REQUIRES(extents[dimensions_number - 1] <= strides[dimensions_number - 2]);
-                m_descriptors[dimensions_number - 1] = std::make_tuple(extents[dimensions_number - 1], extents[dimensions_number - 1], strides[dimensions_number - 2]);
+                m_descriptors[dimensions_number - 1] = std::make_tuple(extents[dimensions_number - 1], extents[dimensions_number - 1], strides[dimensions_number - 2] * sizeof(value_type));
                 for (size_t i = dimensions_number - 1; i > 0; --i) {
                     YATO_REQUIRES((i > 1) ? extents[i - 1] <= strides[i - 2] : true);
                     m_descriptors[i - 1] = std::make_tuple(
@@ -79,18 +81,33 @@ namespace yato
                 }
             }
 
+            array_view_base(value_type* ptr, const dimensions_type & extents, const byte_strides_type & strides)
+                : m_base_ptr(ptr)
+            {
+                YATO_REQUIRES(extents[dimensions_number - 1] <= strides[dimensions_number - 2]);
+                m_descriptors[dimensions_number - 1] = std::make_tuple(extents[dimensions_number - 1], extents[dimensions_number - 1], strides[dimensions_number - 2]);
+                for (size_t i = dimensions_number - 1; i > 0; --i) {
+                    YATO_REQUIRES((i > 1) ? extents[i - 1] <= strides[i - 2] : true);
+                    m_descriptors[i - 1] = std::make_tuple(
+                        extents[i - 1],
+                        extents[i - 1] * std::get<dim_descriptor::idx_total>(m_descriptors[i]),
+                        (i > 1 ? strides[i - 2] : (extents[0] * std::get<dim_descriptor::idx_offset>(m_descriptors[i]))));
+                }
+            }
+
             template <typename DataIterator_, typename SizeIterator_>
             array_view_base(const details::sub_array_proxy<DataIterator_, SizeIterator_, dimensions_number> & proxy)
                 : m_base_ptr(proxy.data())
             {
                 using proxy_descriptor_type = typename yato::remove_cvref_t<decltype(proxy)>::dim_descriptor;
+                using proxy_data_type = typename yato::remove_cvref_t<decltype(proxy)>::iter_value_type;
                 YATO_REQUIRES(proxy.descriptors_range_().distance() == dimensions_number);
                 auto desc_it = proxy.descriptors_range_().begin();
                 for (size_t i = 0; i < dimensions_number; ++i, ++desc_it) {
                     m_descriptors[i] = std::make_tuple(
                         std::get<proxy_descriptor_type::idx_size>(*desc_it),
                         std::get<proxy_descriptor_type::idx_total>(*desc_it),
-                        std::get<proxy_descriptor_type::idx_offset>(*desc_it)
+                        proxy_descriptor_type::template offset_to_bytes<proxy_data_type>(std::get<proxy_descriptor_type::idx_offset>(*desc_it))
                     );
                 }
             }
@@ -132,9 +149,7 @@ namespace yato
             size_type get_stride_(size_t idx) const
             {
                 YATO_REQUIRES(idx < dimensions_number - 1);
-                return (idx + 2 < dimensions_number)
-                    ? std::get<dim_descriptor::idx_offset>(m_descriptors[idx + 1]) / std::get<dim_descriptor::idx_offset>(m_descriptors[idx + 2])
-                    : std::get<dim_descriptor::idx_offset>(m_descriptors[dimensions_number - 1]);
+                return std::get<dim_descriptor::idx_offset>(m_descriptors[idx + 1]);
             }
 
             size_type get_total_size_() const
@@ -155,7 +170,9 @@ namespace yato
 
             sub_view get_sub_view_(size_t idx) const
             {
-                return sub_view(std::next(m_base_ptr, idx * std::get<dim_descriptor::idx_offset>(m_descriptors[1])), &(m_descriptors[1]));
+                value_iterator sub_view_ptr{ m_base_ptr };
+                details::advance_bytes(sub_view_ptr, idx * dim_descriptor::offset_to_bytes<value_type>(std::get<dim_descriptor::idx_offset>(m_descriptors[1])));
+                return sub_view(sub_view_ptr, &(m_descriptors[1]));
             }
 
             iterator get_iterator_(size_t idx) const
@@ -180,7 +197,7 @@ namespace yato
 
             bool is_continuous_() const
             {
-                return get_total_size_() == get_total_stored_();
+                return get_total_size_() * sizeof(value_type) == get_total_stored_();
             }
         };
 
@@ -194,7 +211,10 @@ namespace yato
             using value_type        = ValueType;
             using size_type         = size_t;
             using dimensions_type   = dimensionality<1, size_t>;
-            using strides_type      = dimensionality<0, size_t>;
+
+            using element_strides_type  = dimensionality<0, size_t>;
+            using byte_strides_type     = strides_array<0, size_t>;
+
             static YATO_CONSTEXPR_VAR size_t dimensions_number = 1;
 
             using value_iterator  = std::add_pointer_t<value_type>;
@@ -213,7 +233,11 @@ namespace yato
             dimensions_type m_size;
             //--------------------------------------------------------------------
 
-            array_view_base(value_type* ptr, const dimensions_type & extents, const strides_type &)
+            array_view_base(value_type* ptr, const dimensions_type & extents, const element_strides_type &)
+                : m_base_ptr(ptr), m_size(extents)
+            { }
+
+            array_view_base(value_type* ptr, const dimensions_type & extents, const byte_strides_type &)
                 : m_base_ptr(ptr), m_size(extents)
             { }
 
@@ -261,7 +285,7 @@ namespace yato
             {
                 YATO_MAYBE_UNUSED(idx);
                 YATO_REQUIRES(idx == 0);
-                return m_size[0];
+                return m_size[0] * sizeof(value_type);
             }
 
             size_type get_total_size_() const
@@ -271,7 +295,7 @@ namespace yato
 
             size_type get_total_stored_() const
             {
-                return m_size[0];
+                return m_size[0] * sizeof(value_type);
             }
 
             auto get_dims_iter_() const
@@ -328,7 +352,8 @@ namespace yato
 
         using base_type::dimensions_number;
         using typename base_type::dimensions_type;
-        using typename base_type::strides_type;
+        using typename base_type::element_strides_type;
+        using typename base_type::byte_strides_type;
         using typename base_type::value_type;
         using typename base_type::size_type;
         using typename base_type::value_iterator;
@@ -345,8 +370,12 @@ namespace yato
             : base_type(ptr, extents, extents.sub_dims())
         { }
 
-        array_view_nd(value_type* ptr, const dimensions_type & extents, const strides_type & strides)
-            : base_type(ptr, extents, strides)
+        array_view_nd(value_type* ptr, const dimensions_type & extents, const element_strides_type & element_strides)
+            : base_type(ptr, extents, element_strides)
+        { }
+
+        array_view_nd(value_type* ptr, const dimensions_type & extents, const byte_strides_type & byte_strides)
+            : base_type(ptr, extents, byte_strides)
         { }
 
         array_view_nd(const this_type & other) = default;
@@ -400,25 +429,15 @@ namespace yato
         /**
          * Create a new array view on the same data but with another shape
          * Total size should be unchanged
+         * Only continuous view can be reshaped
          */
         template <size_t NewDimsNum>
         auto reshape(const dimensionality<NewDimsNum, size_type> & extents) const
             -> array_view_nd<value_type, NewDimsNum>
         {
-            YATO_REQUIRES(extents.total_size() == base_type::get_total_stored_());
+            YATO_REQUIRES(continuous());
+            YATO_REQUIRES(extents.total_size() == base_type::get_total_size_());
             return array_view_nd<value_type, NewDimsNum>(base_type::get_pointer_(), extents);
-        }
-
-        /**
-         * Create a new array view on the same data but with another shape
-         * Total size should be unchanged
-         */
-        template <size_t NewDimsNum>
-        auto reshape(const dimensionality<NewDimsNum, size_type> & extents, const dimensionality<NewDimsNum - 1, size_type> & strides) const
-            -> array_view_nd<value_type, NewDimsNum>
-        {
-            YATO_REQUIRES(extents[0] * strides.total_size() == base_type::get_total_stored_());
-            return array_view_nd<value_type, NewDimsNum>(base_type::get_pointer_(), extents, strides);
         }
 
         reference operator[](size_t idx) const
@@ -456,8 +475,8 @@ namespace yato
         }
 
         /**
-         * Get stride along specified dimension
-         * For 1D array view is equal to size()
+         * Get byte offset till next sub-view
+         * Returns size in bytes for 1D view
          */
         size_type stride(size_t idx) const
         {
