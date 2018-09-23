@@ -366,6 +366,10 @@ namespace yato
         using typename base_type::const_plain_iterator;
         //-------------------------------------------------------
 
+        array_view_nd()
+            : base_type(nullptr, dimensions_type{}, element_strides_type{})
+        { }
+
         array_view_nd(value_type* ptr, const dimensions_type & extents)
             : base_type(ptr, extents, extents.sub_dims())
         { }
@@ -506,6 +510,11 @@ namespace yato
             -> decltype(std::declval<base_type>().get_dims_iter_())
         {
             return base_type::get_dims_iter_();
+        }
+
+        bool empty() const
+        {
+            return (base_type::get_pointer_() == nullptr) || (base_type::get_total_size_() == 0);
         }
 
         const_iterator cbegin() const

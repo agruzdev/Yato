@@ -11,6 +11,8 @@ TEST(Yato_ArrayView, common)
 
     yato::array_view_3d<int> view(arr, yato::dims(2, 3, 4), yato::dims(5, 6));
 
+    EXPECT_FALSE(view.empty());
+
     EXPECT_EQ(2U, view.size(0));
     EXPECT_EQ(3U, view.size(1));
     EXPECT_EQ(4U, view.size(2));
@@ -50,6 +52,12 @@ TEST(Yato_ArrayView, common)
     EXPECT_EQ( 7U * sizeof(int), view2[0].stride(1));
 
     EXPECT_EQ(7U * sizeof(int), view2[0][0].stride(0));
+
+    yato::array_view_1d<int> empt1;
+    EXPECT_TRUE(empt1.empty());
+
+    yato::array_view_3d<int> empt3;
+    EXPECT_TRUE(empt3.empty());
 }
 
 TEST(Yato_ArrayView, common_2)

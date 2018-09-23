@@ -96,7 +96,7 @@ namespace yato
         //---------------------------------------------------
 
     private:
-        container_type m_extents;
+        container_type m_extents = {};
         //---------------------------------------------------
 
         YATO_CONSTEXPR_FUNC
