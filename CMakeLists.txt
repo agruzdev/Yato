@@ -33,7 +33,14 @@ file(GLOB_RECURSE yato_sources "${YATO_INCLUDE_DIRS}/*.h")
 
 source_group(TREE "${YATO_SOURCE_DIR}" FILES ${yato_sources})
 
-add_custom_target(Yato SOURCES ${yato_sources})
+set(yato_extra_sources "")
+if(MSVC)
+    list(APPEND yato_extra_sources ${YATO_SOURCE_DIR}/extras/yato.natvis)
+endif()
+
+add_custom_target(Yato SOURCES ${yato_sources}
+                               ${yato_extra_sources}
+)
 set_property(TARGET Yato PROPERTY FOLDER "Modules")
 
 #==========================================

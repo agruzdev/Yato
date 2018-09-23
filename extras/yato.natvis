@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+    
+    <!--yato::vector_nd-->
+
+    <Type Name="yato::details::vector_nd_impl&lt;*,1,*,*&gt;">        
+        <DisplayString Condition="m_raw_vector.m_storage.m_second==0">empty</DisplayString>
+        <DisplayString>extent = [{ m_size }]</DisplayString>
+        <Expand>
+            <Item Name="[length]">m_size</Item>
+            <Item Name="[capacity]">m_raw_vector.m_allocated_size</Item>
+            <ArrayItems ExcludeView="simple">
+                <Direction>Forward</Direction>
+                <Size>m_size</Size>
+                <ValuePointer>m_raw_vector.m_storage.m_second</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+    
+    <Type Name="yato::details::vector_nd_impl&lt;*,2,*,*&gt;">
+        <DisplayString Condition="m_raw_vector.m_storage.m_second==0">empty</DisplayString>
+        <DisplayString>extent = [{ *((size_type*)(&amp;m_descriptors[0])+1) }, { *((size_type*)(&amp;m_descriptors[1])+1) }]</DisplayString>
+        <Expand>
+            <Item Name="[height]">*((size_type*)(&amp;m_descriptors[0])+1)</Item>
+            <Item Name="[width]">*((size_type*)(&amp;m_descriptors[1])+1)</Item>
+            <Item Name="[capacity]">m_raw_vector.m_allocated_size</Item>
+            <ArrayItems>
+                <Direction>Forward</Direction>
+                <Rank>2</Rank>
+                <Size>*((size_type*)(&amp;m_descriptors[$i])+1)</Size>
+                <ValuePointer>m_raw_vector.m_storage.m_second</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+    
+    <Type Name="yato::details::vector_nd_impl&lt;*,3,*,*&gt;">
+        <DisplayString Condition="m_raw_vector.m_storage.m_second==0">empty</DisplayString>
+        <DisplayString>extent = [{ *((size_type*)(&amp;m_descriptors[0])+1) }, { *((size_type*)(&amp;m_descriptors[1])+1) }, { *((size_type*)(&amp;m_descriptors[2])+1) }]</DisplayString>
+        <Expand>
+            <Item Name="[depth]">*((size_type*)(&amp;m_descriptors[0])+1)</Item>
+            <Item Name="[height]">*((size_type*)(&amp;m_descriptors[1])+1)</Item>
+            <Item Name="[width]">*((size_type*)(&amp;m_descriptors[2])+1)</Item>
+            <Item Name="[capacity]">m_raw_vector.m_allocated_size</Item>
+            <ArrayItems>
+                <Direction>Forward</Direction>
+                <Rank>3</Rank>
+                <Size>*((size_type*)(&amp;m_descriptors[$i])+1)</Size>
+                <ValuePointer>m_raw_vector.m_storage.m_second</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+
+    <!--yato::array_view_nd-->
+
+    <Type Name="yato::details::array_view_base&lt;*,1&gt;">
+        <DisplayString Condition="m_base_ptr==0">empty</DisplayString>
+        <DisplayString>extent = [{ m_size.m_extents[0] }]</DisplayString>
+        <Expand>
+            <Item Name="[length]">m_size.m_extents[0]</Item>
+            <ArrayItems ExcludeView="simple">
+                <Direction>Forward</Direction>
+                <Size>m_size.m_extents[0]</Size>
+                <ValuePointer>m_base_ptr</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+
+    <Type Name="yato::details::array_view_base&lt;*,2&gt;">
+        <DisplayString Condition="m_base_ptr==0">empty</DisplayString>
+        <DisplayString>extent = [{ *((size_type*)(&amp;m_descriptors[0])+2) }, { *((size_type*)(&amp;m_descriptors[1])+2) }]</DisplayString>
+        <Expand>
+            <Item Name="[height]">*((size_type*)(&amp;m_descriptors[0])+2)</Item>
+            <Item Name="[width]">*((size_type*)(&amp;m_descriptors[1])+2)</Item>
+            <Item Name="[line stride]">*((size_type*)(&amp;m_descriptors[1])+0)</Item>
+            <CustomListItems>
+                <Variable Name="Height" InitialValue="*((size_type*)(&amp;m_descriptors[0])+2)"/>
+                <Variable Name="Width"  InitialValue="*((size_type*)(&amp;m_descriptors[1])+2)"/>
+                <Variable Name="Stride" InitialValue="*((size_type*)(&amp;m_descriptors[1])+0)"/>
+                <Variable Name="Y" InitialValue="0"/>
+                <Variable Name="X" InitialValue="0"/>
+                <Size>(*((size_type*)(&amp;m_descriptors[0])+2)) * (*((size_type*)(&amp;m_descriptors[1])+2))</Size>
+                <Loop>
+                    <Break Condition="Y >= Height"/>
+                    <Exec>X = 0</Exec>
+                    <Loop>
+                        <Break Condition="X >= Width"/>
+                        <Item Name="[{Y},{X}]">*((value_type*)((const volatile char*)m_base_ptr + Y * Stride) + X)</Item>
+                        <Exec>X = X + 1</Exec>
+                    </Loop>
+                    <Exec>Y = Y + 1</Exec>
+                </Loop>
+            </CustomListItems>
+        </Expand>
+    </Type>
+
+    <Type Name="yato::details::array_view_base&lt;*,3&gt;">
+        <DisplayString Condition="m_base_ptr==0">empty</DisplayString>
+        <DisplayString>extent = [{ *((size_type*)(&amp;m_descriptors[0])+2) }, { *((size_type*)(&amp;m_descriptors[1])+2) }, { *((size_type*)(&amp;m_descriptors[2])+2) }]</DisplayString>
+        <Expand>
+            <Item Name="[depth]">*((size_type*)(&amp;m_descriptors[0])+2)</Item>
+            <Item Name="[height]">*((size_type*)(&amp;m_descriptors[1])+2)</Item>
+            <Item Name="[width]">*((size_type*)(&amp;m_descriptors[2])+2)</Item>
+            <Item Name="[plane stride]">*((size_type*)(&amp;m_descriptors[1])+0)</Item>
+            <Item Name="[line stride]">*((size_type*)(&amp;m_descriptors[2])+0)</Item>
+            <CustomListItems>
+                <Variable Name="Depth"  InitialValue="*((size_type*)(&amp;m_descriptors[0])+2)"/>
+                <Variable Name="Height" InitialValue="*((size_type*)(&amp;m_descriptors[1])+2)"/>
+                <Variable Name="Width"  InitialValue="*((size_type*)(&amp;m_descriptors[2])+2)"/>
+                <Variable Name="PlaneStride" InitialValue="*((size_type*)(&amp;m_descriptors[1])+0)"/>
+                <Variable Name="LineStride"  InitialValue="*((size_type*)(&amp;m_descriptors[2])+0)"/>
+                <Variable Name="Z" InitialValue="0"/>
+                <Variable Name="X" InitialValue="0"/>
+                <Variable Name="Y" InitialValue="0"/>
+                <Size>(*((size_type*)(&amp;m_descriptors[0])+2)) * (*((size_type*)(&amp;m_descriptors[1])+2)) * (*((size_type*)(&amp;m_descriptors[2])+2))</Size>
+                <Loop>
+                    <Break Condition="Z >= Depth"/>
+                    <Exec>Y = 0</Exec>
+                    <Loop>
+                        <Break Condition="Y >= Height"/>
+                        <Exec>X = 0</Exec>
+                        <Loop>
+                            <Break Condition="X >= Width"/>
+                            <Item Name="[{Z},{Y},{X}]">*((value_type*)((const volatile char*)m_base_ptr + Z * PlaneStride + Y * LineStride) + X)</Item>
+                            <Exec>X = X + 1</Exec>
+                        </Loop>
+                        <Exec>Y = Y + 1</Exec>
+                    </Loop>
+                    <Exec>Z = Z + 1</Exec>
+                </Loop>
+            </CustomListItems>
+        </Expand>
+    </Type>
+
+    <Type Name="yato::array_view_nd&lt;*,*&gt;">
+        <DisplayString>{*(base_type*)this}</DisplayString>
+        <Expand>
+            <ExpandedItem>*(base_type*)this</ExpandedItem>  
+        </Expand>
+    </Type>
+
+</AutoVisualizer>
