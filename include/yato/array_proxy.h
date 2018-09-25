@@ -10,7 +10,6 @@
 
 #include <iterator>
 #include "assert.h"
-#include "not_null.h"
 #include "types.h"
 #include "range.h"
 #include "container_base.h"
@@ -20,7 +19,32 @@ namespace yato
 
     namespace details
     {
-        template<typename ValueType_, typename DimensionDescriptor_, size_t DimsNum_>
+        enum class proxy_access_policy
+        {
+            lvalue_ref,   ///< Return lvalue referrence to underlying data
+            rvalue_ref    ///< Return rvalue referrence to underlying data
+        };
+
+        template <typename ValueType_, proxy_access_policy AccessPolicy_>
+        struct proxy_access_traits
+        { };
+
+        template <typename ValueType_>
+        struct proxy_access_traits<ValueType_, proxy_access_policy::lvalue_ref>
+        {
+            using reference      = std::add_lvalue_reference_t<ValueType_>;
+            using plain_iterator = std::add_pointer_t<ValueType_>;
+        };
+
+        template <typename ValueType_>
+        struct proxy_access_traits<ValueType_, proxy_access_policy::rvalue_ref>
+        {
+            using reference      = std::add_rvalue_reference_t<ValueType_>;
+            using plain_iterator = std::move_iterator<std::add_pointer_t<ValueType_>>;
+        };
+
+
+        template<typename ValueType_, typename DimensionDescriptor_, size_t DimsNum_, proxy_access_policy AccessPolicy_ = proxy_access_policy::lvalue_ref>
         class sub_array_proxy;
 
         //-------------------------------------------------------
@@ -28,23 +52,24 @@ namespace yato
         // Has trait of iterator
         // 
 
-        template<typename ValueType_, typename DimensionDescriptor, size_t DimsNum>
+        template<typename ValueType_, typename DimensionDescriptor, size_t DimsNum, proxy_access_policy AccessPolicy_>
         class sub_array_proxy
         {
             static_assert(!std::is_reference<ValueType_>::value, "ValueType can't be reference");
             static_assert(DimsNum >= 1, "dimensions_number cant be 0");
         public:
-            using this_type = sub_array_proxy <ValueType_, DimensionDescriptor, DimsNum>;
+            using this_type = sub_array_proxy <ValueType_, DimensionDescriptor, DimsNum, AccessPolicy_>;
             using dim_descriptor = DimensionDescriptor;
             using desc_iterator  = const typename DimensionDescriptor::type*;
             using data_iterator  = std::add_pointer_t<ValueType_>;
             static YATO_CONSTEXPR_VAR size_t dimensions_number = DimsNum;
+            static YATO_CONSTEXPR_VAR proxy_access_policy access_policy = AccessPolicy_;
 
             using sub_proxy = sub_array_proxy<ValueType_, dim_descriptor, dimensions_number - 1>;
 
             using data_value_type     = ValueType_;
             using data_pointer_type   = std::add_pointer_t<ValueType_>;
-            using data_reference_type = std::add_lvalue_reference_t<ValueType_>;
+            using data_reference_type = typename proxy_access_traits<ValueType_, AccessPolicy_>::reference;
 
             // iterator traits
             using size_type         = typename DimensionDescriptor::size_type;
@@ -54,6 +79,7 @@ namespace yato
             using difference_type   = std::ptrdiff_t;
             using iterator_category = std::random_access_iterator_tag;
 
+            using plain_iterator = typename proxy_access_traits<ValueType_, AccessPolicy_>::plain_iterator;
             using iterator       = sub_proxy;
 
             using dimensions_type = dimensionality<DimsNum, size_type>;
@@ -93,22 +119,31 @@ namespace yato
                 : m_data_iter(data), m_desc_iter(descriptors)
             { }
 
-            sub_array_proxy(const this_type &) = default;
+            sub_array_proxy(const sub_array_proxy &) = default;
 
             template <typename AnotherDataIterator>
-            sub_array_proxy(const sub_array_proxy<AnotherDataIterator, dim_descriptor, dimensions_number> & other)
+            sub_array_proxy(const sub_array_proxy<AnotherDataIterator, dim_descriptor, dimensions_number, access_policy> & other)
                 : m_data_iter(other.m_data_iter), m_desc_iter(other.m_desc_iter)
             { }
 
+            template <proxy_access_policy ProxyAccess_, typename =
+                std::enable_if_t<ProxyAccess_ != access_policy>
+            >
+            explicit
+            sub_array_proxy(const sub_array_proxy<data_value_type, dim_descriptor, dimensions_number, ProxyAccess_> & other)
+                : m_data_iter(other.m_data_iter), m_desc_iter(other.m_desc_iter)
+            { }
+
+
 #ifndef YATO_MSVC_2013
-            sub_array_proxy(this_type &&) = default;
+            sub_array_proxy(sub_array_proxy &&) = default;
 #else
             sub_array_proxy(sub_array_proxy && other) YATO_NOEXCEPT_KEYWORD
                 : m_data_iter(std::move(other.m_data_iter)), m_desc_iter(std::move(other.m_desc_iter))
             {}
 #endif
 
-            this_type & operator= (const this_type & other)
+            sub_array_proxy & operator= (const sub_array_proxy & other)
             {
                 YATO_REQUIRES(this != &other);
                 m_data_iter = other.m_data_iter;
@@ -116,7 +151,7 @@ namespace yato
                 return *this;
             }
 
-            this_type & operator= (this_type && other) YATO_NOEXCEPT_KEYWORD
+            sub_array_proxy & operator= (sub_array_proxy && other) YATO_NOEXCEPT_KEYWORD
             {
                 YATO_REQUIRES(this != &other);
                 m_data_iter = std::move(other.m_data_iter);
@@ -266,7 +301,7 @@ namespace yato
              *  Get begin iterator for going through arrays of lower dimensionality
              */
             template<size_t MyDimsNum = dimensions_number>
-            auto begin() const &
+            auto begin() const
                 -> typename std::enable_if<(MyDimsNum > 1), iterator>::type
             {
                 return create_sub_proxy_(0);
@@ -276,30 +311,10 @@ namespace yato
             *  Get begin iterator for going through arrays of lower dimensionality
             */
             template<size_t MyDimsNum = dimensions_number>
-            auto begin() const &
-                -> typename std::enable_if<(MyDimsNum == 1), data_iterator>::type
+            auto begin() const
+                -> typename std::enable_if<(MyDimsNum == 1), plain_iterator>::type
             {
-                return plain_begin();
-            }
-
-            /**
-             *  Get begin iterator for going through arrays of lower dimensionality
-             */
-            template<size_t MyDimsNum = dimensions_number>
-            auto begin() &&
-                -> typename std::enable_if<(MyDimsNum > 1), std::move_iterator<iterator>>::type
-            {
-                return std::make_move_iterator(create_sub_proxy_(0));
-            }
-
-            /**
-            *  Get begin iterator for going through arrays of lower dimensionality
-            */
-            template<size_t MyDimsNum = dimensions_number>
-            auto begin() const &&
-                -> typename std::enable_if<(MyDimsNum == 1), std::move_iterator<data_iterator>>::type
-            {
-                return std::make_move_iterator(plain_begin());
+                return static_cast<plain_iterator>(plain_begin());
             }
 
             /**
@@ -317,16 +332,16 @@ namespace yato
             */
             template<size_t MyDimsNum = dimensions_number>
             auto cbegin() const
-                -> typename std::enable_if<(MyDimsNum == 1), data_iterator>::type
+                -> typename std::enable_if<(MyDimsNum == 1), plain_iterator>::type
             {
-                return plain_begin();
+                return static_cast<plain_iterator>(plain_begin());
             }
 
             /**
              *  Get end iterator for going through arrays of lower dimensionality
              */
             template<size_t MyDimsNum = dimensions_number>
-            auto end() const &
+            auto end() const
                 -> typename std::enable_if<(MyDimsNum > 1), iterator>::type
             {
                 return create_sub_proxy_(size(0));
@@ -336,30 +351,10 @@ namespace yato
             *  Get end iterator for going through arrays of lower dimensionality
             */
             template<size_t MyDimsNum = dimensions_number>
-            auto end() const &
-                -> typename std::enable_if<(MyDimsNum == 1), data_iterator>::type
+            auto end() const
+                -> typename std::enable_if<(MyDimsNum == 1), plain_iterator>::type
             {
                 return plain_end();
-            }
-
-            /**
-             *  Get end iterator for going through arrays of lower dimensionality
-             */
-            template<size_t MyDimsNum = dimensions_number>
-            auto end() &&
-                -> typename std::enable_if<(MyDimsNum > 1), std::move_iterator<iterator>>::type
-            {
-                return std::make_move_iterator(create_sub_proxy_(size(0)));
-            }
-
-            /**
-            *  Get end iterator for going through arrays of lower dimensionality
-            */
-            template<size_t MyDimsNum = dimensions_number>
-            auto end() &&
-                -> typename std::enable_if<(MyDimsNum == 1), std::move_iterator<data_iterator>>::type
-            {
-                return std::make_move_iterator(plain_end());
             }
 
             /**
@@ -377,7 +372,7 @@ namespace yato
             */
             template<size_t MyDimsNum = dimensions_number>
             auto cend() const
-                -> typename std::enable_if<(MyDimsNum == 1), data_iterator>::type
+                -> typename std::enable_if<(MyDimsNum == 1), plain_iterator>::type
             {
                 return plain_end();
             }
@@ -385,61 +380,43 @@ namespace yato
             /**
              *  Get begin iterator for going through all elements of all dimensions
              */
-            data_iterator plain_begin() const &
+            plain_iterator plain_begin() const
             {
                 YATO_REQUIRES(continuous());
-                return m_data_iter;
+                return static_cast<plain_iterator>(m_data_iter);
             }
 
             /**
              *  Get end iterator for going through all elements of all dimensions
              */
-            data_iterator plain_end() const &
+            plain_iterator plain_end() const
             {
                 YATO_REQUIRES(continuous());
-                return std::next(m_data_iter, total_size());
+                return static_cast<plain_iterator>(std::next(m_data_iter, total_size()));
             }
 
             /**
              *  Get begin iterator for going through all elements of all dimensions
              */
-            std::move_iterator<data_iterator> plain_begin() &&
+            plain_iterator plain_cbegin() const
             {
                 YATO_REQUIRES(continuous());
-                return std::make_move_iterator(m_data_iter);
+                return static_cast<plain_iterator>(m_data_iter);
             }
 
             /**
              *  Get end iterator for going through all elements of all dimensions
              */
-            std::move_iterator<data_iterator> plain_end() &&
+            plain_iterator plain_cend() const
             {
                 YATO_REQUIRES(continuous());
-                return std::make_move_iterator(std::next(m_data_iter, total_size()));
-            }
-
-            /**
-             *  Get begin iterator for going through all elements of all dimensions
-             */
-            data_iterator plain_cbegin() const
-            {
-                YATO_REQUIRES(continuous());
-                return m_data_iter;
-            }
-
-            /**
-             *  Get end iterator for going through all elements of all dimensions
-             */
-            data_iterator plain_cend() const
-            {
-                YATO_REQUIRES(continuous());
-                return std::next(m_data_iter, total_size());
+                return static_cast<plain_iterator>(std::next(m_data_iter, total_size()));
             }
 
             /**
              *  Get range of iterators for going through the top dimension
              */
-            yato::range<iterator> range() const &
+            yato::range<iterator> range() const
             {
                 return make_range(begin(), end());
             }
@@ -447,25 +424,9 @@ namespace yato
             /**
              *  Get range of iterators for going through all elements of all dimensions
              */
-            yato::range<data_iterator> plain_range() const &
+            yato::range<plain_iterator> plain_range() const
             {
                 return make_range(plain_begin(), plain_end());
-            }
-
-            /**
-             *  Get range of iterators for going through the top dimension
-             */
-            yato::range<std::move_iterator<iterator>> range() &&
-            {
-                return make_range(std::move(*this).begin(), std::move(*this).end());
-            }
-
-            /**
-             *  Get range of iterators for going through all elements of all dimensions
-             */
-            yato::range<std::move_iterator<data_iterator>> plain_range() &&
-            {
-                return make_range(std::move(*this).plain_begin(), std::move(*this).plain_end());
             }
 
             /**
@@ -641,11 +602,21 @@ namespace yato
 
             //-------------------------------------------------------
 
-            template<typename, typename, size_t>
+            template<typename, typename, size_t, proxy_access_policy>
             friend class sub_array_proxy;
         };
 
+        template <typename ProxyValue_, typename ProxyDimension_, size_t ProxyDims_, proxy_access_policy ProxyAccess_>
+        YATO_CONSTEXPR_FUNC
+        auto make_move_iterator(const sub_array_proxy<ProxyValue_, ProxyDimension_, ProxyDims_, ProxyAccess_> & it)
+            -> sub_array_proxy<ProxyValue_, ProxyDimension_, ProxyDims_, proxy_access_policy::rvalue_ref>
+        {
+            return sub_array_proxy<ProxyValue_, ProxyDimension_, ProxyDims_, proxy_access_policy::rvalue_ref>(it);
+        }
+
     }
+
+    using details::make_move_iterator;
 
 }
 

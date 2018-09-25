@@ -1096,7 +1096,7 @@ TEST(Yato_VectorND, insert_move)
     yato::vector_nd<FooMoving, 2> vec1 = { { 1, 1 },{ 4, 4 } };
     yato::vector_nd<FooMoving, 2> vec2 = { { 2, 2 },{ 3, 3 } };
 
-    vec1.insert(std::next(vec1.begin()), std::make_move_iterator(vec2.begin()), std::make_move_iterator(vec2.end()));
+    vec1.insert(std::next(vec1.begin()), yato::make_move_iterator(vec2.begin()), yato::make_move_iterator(vec2.end()));
 
     int i = 1;
     for (const auto & row : vec1) {

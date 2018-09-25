@@ -475,6 +475,17 @@ YATO_PRAGMA_WARNING_POP
         return container.size(2);
     }
 
+
+    //-----------------------------------------------------------------------------
+    //  make_move_iterator with support of array_proxy
+
+    template <typename Iterator_>
+    YATO_CONSTEXPR_FUNC
+    std::move_iterator<Iterator_> make_move_iterator(Iterator_ it)
+    {
+        return std::move_iterator<Iterator_>(it);
+    }
+
 }
 
 
