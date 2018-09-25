@@ -586,11 +586,8 @@ namespace yato
             using size_iterator = typename dimensions_type::iterator;
             using size_const_iterator = typename dimensions_type::const_iterator;
 
-            template<typename SomeDataIter, typename SomeDescriptor>
-            using proxy_tmpl = details::sub_array_proxy<SomeDataIter, SomeDescriptor, dimensions_number - 1>;
-
-            using proxy       = proxy_tmpl<data_iterator,       dim_descriptor>;
-            using const_proxy = proxy_tmpl<const_data_iterator, dim_descriptor>;
+            using proxy       = details::sub_array_proxy<value_type,                   dim_descriptor, dimensions_number - 1>;
+            using const_proxy = details::sub_array_proxy<std::add_const_t<value_type>, dim_descriptor, dimensions_number - 1>;
 
         public:
             using iterator = proxy;
@@ -1067,9 +1064,9 @@ namespace yato
             /**
              *  Copy from proxy
              */
-            template<typename _DataIterator, typename _SizeIterator>
+            template<typename ProxyValue_, typename ProxyDescriptor_>
             explicit
-            vector_nd_impl(const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & proxy)
+            vector_nd_impl(const details::sub_array_proxy<ProxyValue_, ProxyDescriptor_, dimensions_number> & proxy)
             {
                 init_sizes_(proxy.dimensions_range());
                 const size_t plain_size = total_size();
@@ -1835,8 +1832,8 @@ namespace yato
              *  Inserts sub-vector elements from range [first, last) before 'position'
              *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
              */
-            template<typename _OtherDataIterator, typename _SizeIterator>
-            iterator insert(const const_iterator & position, const yato::range< proxy_tmpl<_OtherDataIterator, _SizeIterator> > & range)
+            template<typename ProxyValue_, typename ProxyDescriptor_>
+            iterator insert(const const_iterator & position, const yato::range<details::sub_array_proxy<ProxyValue_, ProxyDescriptor_, dimensions_number - 1>> & range)
             {
                 return insert(position, range.begin(), range.end());
             }
@@ -2212,9 +2209,9 @@ namespace yato
             /**
              *  Copy from proxy
              */
-            template<typename _DataIterator, typename _SizeIterator>
+            template<typename ProxyValue_, typename ProxyDescriptor_>
             explicit
-            vector_nd_impl(const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & proxy)
+            vector_nd_impl(const details::sub_array_proxy<ProxyValue_, ProxyDescriptor_, dimensions_number> & proxy)
                 : m_raw_vector(), m_size(proxy.total_size())
             {
                 m_raw_vector.init_from_range(m_size, proxy.plain_cbegin(), proxy.plain_cend());
@@ -2223,8 +2220,8 @@ namespace yato
             /**
              *  Assign from proxy
              */
-            template<typename _DataIterator, typename _SizeIterator>
-            vector_nd_impl& operator= (const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & proxy)
+            template<typename ProxyValue_, typename ProxyDescriptor_>
+            vector_nd_impl& operator= (const details::sub_array_proxy<ProxyValue_, ProxyDescriptor_, dimensions_number> & proxy)
             {
                 this_type{ proxy }.swap(*this);
                 return *this;

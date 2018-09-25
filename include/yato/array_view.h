@@ -52,7 +52,7 @@ namespace yato
 
             using dim_descriptor = dimension_descriptor_strided<size_type>; // size, stride, offset
 
-            using sub_view       = details::sub_array_proxy<value_iterator, dim_descriptor, dimensions_number - 1>;
+            using sub_view       = details::sub_array_proxy<value_type, dim_descriptor, dimensions_number - 1>;
 
             using reference       = sub_view;
             using const_reference = sub_view;
@@ -95,12 +95,12 @@ namespace yato
                 }
             }
 
-            template <typename DataIterator_, typename SizeIterator_>
-            array_view_base(const details::sub_array_proxy<DataIterator_, SizeIterator_, dimensions_number> & proxy)
+            template <typename ProxyValue_, typename ProxyDescriptor_>
+            array_view_base(const details::sub_array_proxy<ProxyValue_, ProxyDescriptor_, dimensions_number> & proxy)
                 : m_base_ptr(proxy.data())
             {
                 using proxy_descriptor_type = typename yato::remove_cvref_t<decltype(proxy)>::dim_descriptor;
-                using proxy_data_type = typename yato::remove_cvref_t<decltype(proxy)>::iter_value_type;
+                using proxy_data_type = typename yato::remove_cvref_t<decltype(proxy)>::data_value_type;
                 YATO_REQUIRES(proxy.descriptors_range_().distance() == dimensions_number);
                 auto desc_it = proxy.descriptors_range_().begin();
                 for (size_t i = 0; i < dimensions_number; ++i, ++desc_it) {
@@ -241,8 +241,8 @@ namespace yato
                 : m_base_ptr(ptr), m_size(extents)
             { }
 
-            template <typename DataIterator_, typename SizeIterator_>
-            array_view_base(const details::sub_array_proxy<DataIterator_, SizeIterator_, dimensions_number> & proxy)
+            template <typename ProxyValue_, typename ProxyDescriptor_>
+            array_view_base(const details::sub_array_proxy<ProxyValue_, ProxyDescriptor_, dimensions_number> & proxy)
                 : m_base_ptr(proxy.data()), m_size(proxy.size(0))
             { }
 
@@ -413,18 +413,18 @@ namespace yato
         /**
          *  Create from proxy
          */
-        template<typename DataIterator_, typename SizeIterator_, typename = 
-            std::enable_if_t<std::is_same<typename std::iterator_traits<DataIterator_>::value_type, value_type>::value>>
-        array_view_nd(const details::sub_array_proxy<DataIterator_, SizeIterator_, dimensions_number> & proxy)
+        template<typename ProxyValue_, typename ProxyDescriptor_, typename = 
+            std::enable_if_t<std::is_same<ProxyValue_, value_type>::value>>
+        array_view_nd(const details::sub_array_proxy<ProxyValue_, ProxyDescriptor_, dimensions_number> & proxy)
             : base_type(proxy)
         { }
 
         /**
          *  Create from proxy
          */
-        template<typename DataIterator_, typename SizeIterator_, typename = 
-            std::enable_if_t<std::is_same<typename std::iterator_traits<DataIterator_>::value_type, value_type>::value>>
-        array_view_nd& operator=(const details::sub_array_proxy<DataIterator_, SizeIterator_, dimensions_number> & proxy)
+        template<typename ProxyValue_, typename ProxyDescriptor_, typename = 
+            std::enable_if_t<std::is_same<ProxyValue_, value_type>::value>>
+        array_view_nd& operator=(const details::sub_array_proxy<ProxyValue_, ProxyDescriptor_, dimensions_number> & proxy)
         {
             base_type::operator=(proxy);
             return *this;

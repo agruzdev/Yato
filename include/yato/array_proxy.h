@@ -20,7 +20,7 @@ namespace yato
 
     namespace details
     {
-        template<typename DataIterator, typename DimensionDescriptor, size_t DimsNum>
+        template<typename ValueType_, typename DimensionDescriptor_, size_t DimsNum_>
         class sub_array_proxy;
 
         //-------------------------------------------------------
@@ -28,22 +28,23 @@ namespace yato
         // Has trait of iterator
         // 
 
-        template<typename DataIterator, typename DimensionDescriptor, size_t DimsNum>
+        template<typename ValueType_, typename DimensionDescriptor, size_t DimsNum>
         class sub_array_proxy
         {
+            static_assert(!std::is_reference<ValueType_>::value, "ValueType can't be reference");
             static_assert(DimsNum >= 1, "dimensions_number cant be 0");
         public:
-            using this_type = sub_array_proxy <DataIterator, DimensionDescriptor, DimsNum>;
+            using this_type = sub_array_proxy <ValueType_, DimensionDescriptor, DimsNum>;
             using dim_descriptor = DimensionDescriptor;
             using desc_iterator  = const typename DimensionDescriptor::type*;
-            using data_iterator  = DataIterator;
+            using data_iterator  = std::add_pointer_t<ValueType_>;
             static YATO_CONSTEXPR_VAR size_t dimensions_number = DimsNum;
 
-            using sub_proxy = sub_array_proxy<data_iterator, dim_descriptor, dimensions_number - 1>;
+            using sub_proxy = sub_array_proxy<ValueType_, dim_descriptor, dimensions_number - 1>;
 
-            using iter_value_type     = typename std::iterator_traits<DataIterator>::value_type;
-            using iter_pointer_type   = typename std::iterator_traits<DataIterator>::pointer;
-            using iter_reference_type = typename std::iterator_traits<DataIterator>::reference;
+            using data_value_type     = ValueType_;
+            using data_pointer_type   = std::add_pointer_t<ValueType_>;
+            using data_reference_type = std::add_lvalue_reference_t<ValueType_>;
 
             // iterator traits
             using size_type         = typename DimensionDescriptor::size_type;
@@ -52,10 +53,6 @@ namespace yato
             using reference         = this_type&;
             using difference_type   = std::ptrdiff_t;
             using iterator_category = std::random_access_iterator_tag;
-
-            using data_value_type        = typename std::conditional<(dimensions_number > 1), sub_proxy, iter_value_type>::type;
-            using data_pointer           = typename std::conditional<(dimensions_number > 1), sub_proxy, iter_pointer_type>::type;
-            using data_reference         = typename std::conditional<(dimensions_number > 1), sub_proxy, iter_reference_type>::type;
 
             using iterator       = sub_proxy;
 
@@ -71,21 +68,21 @@ namespace yato
             auto get_stride_(size_t idx) const YATO_NOEXCEPT_KEYWORD
                 -> typename std::enable_if <(MyDimsNum_ > 1), size_type>::type
             {
-                return dim_descriptor::template offset_to_bytes<iter_value_type>(std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter, idx + 1)));
+                return dim_descriptor::template offset_to_bytes<data_value_type>(std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter, idx + 1)));
             }
 
             template<size_t MyDimsNum_ = dimensions_number>
             auto get_stride_(size_t) const YATO_NOEXCEPT_KEYWORD
                 -> typename std::enable_if <(MyDimsNum_ == 1), size_type>::type
             {
-                return dim_descriptor::template offset_to_bytes<iter_value_type>(std::get<dim_descriptor::idx_size>(*m_desc_iter));
+                return dim_descriptor::template offset_to_bytes<data_value_type>(std::get<dim_descriptor::idx_size>(*m_desc_iter));
             }
 
             YATO_CONSTEXPR_FUNC_CXX14
             sub_proxy create_sub_proxy_(size_t offset) const YATO_NOEXCEPT_KEYWORD
             {
                 data_iterator sub_proxy_iter{ m_data_iter };
-                details::advance_bytes(sub_proxy_iter, offset * dim_descriptor::template offset_to_bytes<iter_value_type>(std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter))));
+                details::advance_bytes(sub_proxy_iter, offset * dim_descriptor::template offset_to_bytes<data_value_type>(std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter))));
                 return sub_proxy(sub_proxy_iter, std::next(m_desc_iter));
             }
             //-------------------------------------------------------
@@ -132,7 +129,7 @@ namespace yato
             template<size_t MyDimsNum = dimensions_number>
             YATO_CONSTEXPR_FUNC_CXX14
             auto operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
-                -> typename std::enable_if<(MyDimsNum > 1), data_reference>::type
+                -> typename std::enable_if<(MyDimsNum > 1), sub_proxy>::type
             {
                 YATO_REQUIRES(idx < size(0));
                 return create_sub_proxy_(idx);
@@ -141,7 +138,7 @@ namespace yato
             template<size_t MyDimsNum = dimensions_number>
             YATO_CONSTEXPR_FUNC_CXX14
             auto operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
-                -> typename std::enable_if <(MyDimsNum == 1), data_reference>::type
+                -> typename std::enable_if <(MyDimsNum == 1), data_reference_type>::type
             {
                 YATO_REQUIRES(idx < size(0));
                 return *std::next(m_data_iter, idx);
@@ -149,7 +146,7 @@ namespace yato
 
             template<size_t MyDimsNum = dimensions_number, typename... _IdxTail>
             auto at(size_t idx, _IdxTail... tail) const
-                -> typename std::enable_if <(MyDimsNum > 1), iter_reference_type>::type
+                -> typename std::enable_if <(MyDimsNum > 1), data_reference_type>::type
             {
                 if (idx >= size(0)) {
                     throw yato::out_of_range_error("yato::array_sub_view_nd: out of range!");
@@ -159,7 +156,7 @@ namespace yato
 
             template<size_t MyDimsNum = dimensions_number>
             auto at(size_t idx) const
-                -> typename std::enable_if <(MyDimsNum == 1), iter_reference_type>::type
+                -> typename std::enable_if <(MyDimsNum == 1), data_reference_type>::type
             {
                 if (idx >= size(0)) {
                     throw yato::out_of_range_error("yato::array_sub_view_nd: out of range!");
@@ -238,7 +235,7 @@ namespace yato
             YATO_CONSTEXPR_FUNC
             size_type total_stored() const
             {
-                return dim_descriptor::template offset_to_bytes<iter_value_type>(std::get<dim_descriptor::idx_offset>(*m_desc_iter));
+                return dim_descriptor::template offset_to_bytes<data_value_type>(std::get<dim_descriptor::idx_offset>(*m_desc_iter));
             }
 
             /**
@@ -249,8 +246,8 @@ namespace yato
             auto continuous() const
                 -> typename std::enable_if<(MyDimsNum_ > 1), bool>::type
             {
-                const size_t stride_offset = dim_descriptor::template offset_to_bytes<iter_value_type>(std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter)));
-                const size_t elem_offset   = std::get<dim_descriptor::idx_total>(*std::next(m_desc_iter)) * sizeof(iter_value_type);
+                const size_t stride_offset = dim_descriptor::template offset_to_bytes<data_value_type>(std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter)));
+                const size_t elem_offset   = std::get<dim_descriptor::idx_total>(*std::next(m_desc_iter)) * sizeof(data_value_type);
                 return (stride_offset == elem_offset);
             }
 
@@ -474,7 +471,7 @@ namespace yato
             /**
              *  Get raw pointer to underlying data
              */
-            iter_pointer_type data() const YATO_NOEXCEPT_KEYWORD
+            data_pointer_type data() const YATO_NOEXCEPT_KEYWORD
             {
                 return &(*m_data_iter);
             }
