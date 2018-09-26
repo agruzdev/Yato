@@ -146,3 +146,9 @@ There are few generic implementations
 * **yato::attributes_map** accepts any attributes and stores in std::map. Is not thread safe
 * **yato::ignores_attributes** ignores any attributes passed to the class.
 * **yato::atomic_attributes** accepts a number of previously registered attributes. All opetarions with the attrinutes are atomic and thread safe (except for registration). Supports only arithmetic types or pointers
+
+
+## Extras
+
+* **yato.natvis** provides user-friendly visualization of yato::vector_nd and yato::array_view_nd classes (1d,2d and 3d) in Visual Studio debugger.
+
