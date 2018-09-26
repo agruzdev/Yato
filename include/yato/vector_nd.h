@@ -1370,6 +1370,22 @@ namespace yato
             }
 
             /**
+             * Convert to view for the full vector
+             */
+            operator yato::array_view_nd<std::add_const_t<value_type>, dimensions_number>() const
+            {
+                return cview();
+            }
+
+            /**
+             * Convert to view for the full vector
+             */
+            operator yato::array_view_nd<value_type, dimensions_number>()
+            {
+                return view();
+            }
+
+            /**
              * Get a raw pointer to stored data beginning
              */
             const data_type* data() const YATO_NOEXCEPT_KEYWORD
@@ -1577,21 +1593,21 @@ namespace yato
              *  Add sub-vector element to the back.
              *  In the case of exception the vector remains unchanged.
              */
-            template<typename _OtherDataType, typename _OtherAllocator>
-            void push_back(const vector_nd_impl<_OtherDataType, dimensions_number - 1, _OtherAllocator> & sub_vector)
+            template <typename OtherValue_>
+            void push_back(const array_view_nd<OtherValue_, dimensions_number - 1> & sub_element)
             {
-                const auto sub_dims = sub_vector.dimensions_range();
+                const auto sub_dims = sub_element.dimensions_range();
                 if(!match_sub_dimensions_(sub_dims)) {
                     throw yato::argument_error("yato::vector_nd[push_back]: Subvector dimensions mismatch!");
                 }
                 init_dimensions_if_empty_(sub_dims);
 
                 const size_t old_size = total_size();
-                const size_t new_size = old_size + sub_vector.total_size();
+                const size_t new_size = old_size + sub_element.total_size();
                 const auto insert_range = m_raw_vector.prepare_push_back(old_size, new_size);
                 value_type* dst = insert_range.begin();
                 try {
-                    memory::copy_to_uninitialized(m_raw_vector.allocator(), sub_vector.plain_cbegin(), sub_vector.plain_cend(), dst);
+                    memory::copy_to_uninitialized_multidim(m_raw_vector.allocator(), sub_element.cbegin(), sub_element.cend(), dst);
                 }
                 catch(...) {
                     // delete all, since sub-vector was not inserted wholly.
@@ -1602,10 +1618,20 @@ namespace yato
             }
 
             /**
+             *  Add sub-vector element to the back.
+             *  In the case of exception the vector remains unchanged.
+             */
+            template <typename OtherValue_, typename OtherAllocator_>
+            void push_back(const vector_nd_impl<OtherValue_, dimensions_number - 1, OtherAllocator_> & sub_vector)
+            {
+                push_back(sub_vector.cview());
+            }
+
+            /**
              *  Add sub-vector element to the back
              */
-            template<typename _OtherAllocator>
-            void push_back(vector_nd_impl<data_type, dimensions_number - 1, _OtherAllocator> && sub_vector)
+            template <typename OtherAllocator_>
+            void push_back(vector_nd_impl<data_type, dimensions_number - 1, OtherAllocator_> && sub_vector)
             {
                 const auto sub_dims = sub_vector.dimensions_range();
                 if(!match_sub_dimensions_(sub_dims)) {
@@ -1650,17 +1676,17 @@ namespace yato
              *  In the case of error only part of vector [0, position) will be kept.
              *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
              */
-            template<typename OtherTy_, typename OtherAllocator_>
-            iterator insert(const const_iterator & position, const vector_nd_impl<OtherTy_, dimensions_number - 1, OtherAllocator_> & sub_vector)
+            template <typename OtherValue_>
+            iterator insert(const const_iterator & position, const array_view_nd<OtherValue_, dimensions_number - 1> & sub_element)
             {
-                const auto sub_dims = sub_vector.dimensions_range();
+                const auto sub_dims = sub_element.dimensions_range();
                 if(!match_sub_dimensions_(sub_dims)) {
                     throw yato::argument_error("yato::vector_nd[insert]: Subvector dimensions number mismatch!");
                 }
                 init_dimensions_if_empty_(sub_dims);
 
                 const size_t insert_offset = raw_offset_checked_(position);
-                const size_t element_size  = sub_vector.total_size();
+                const size_t element_size  = sub_element.total_size();
                 if(element_size == 0) {
                     throw yato::argument_error("yato::vector_nd[insert]: Insert value is empty!");
                 }
@@ -1670,7 +1696,7 @@ namespace yato
                 allocator_type& alloc = m_raw_vector.allocator();
                 value_type* dst = insert_range.begin();
                 try {
-                    memory::copy_to_uninitialized(alloc, sub_vector.plain_cbegin(), sub_vector.plain_cend(), dst);
+                    memory::copy_to_uninitialized_multidim(m_raw_vector.allocator(), sub_element.cbegin(), sub_element.cend(), dst);
                 }
                 catch(...) {
                     // destroy partially filled sub-vector
@@ -1687,10 +1713,22 @@ namespace yato
             }
 
             /**
+             *  Insert sub-vector element.
+             *  In the case of error only part of vector [0, position) will be kept.
+             *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
+             */
+            template <typename OtherValue_, typename OtherAllocator_>
+            iterator insert(const const_iterator & position, const vector_nd_impl<OtherValue_, dimensions_number - 1, OtherAllocator_> & sub_vector)
+            {
+                return insert(position, sub_vector.cview());
+            }
+
+            /**
              *  Insert sub-vector element
              *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
              */
-            iterator insert(const const_iterator & position, vector_nd_impl<data_type, dimensions_number - 1, allocator_type> && sub_vector)
+            template <typename OtherAllocator_>
+            iterator insert(const const_iterator & position, vector_nd_impl<data_type, dimensions_number - 1, OtherAllocator_> && sub_vector)
             {
                 const auto sub_dims = sub_vector.dimensions_range();
                 if(!match_sub_dimensions_(sub_dims)) {
@@ -1729,18 +1767,18 @@ namespace yato
              *  Insert count copies of sub-vector element
              *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
              */
-            template<typename OtherTy_, typename OtherAllocator_>
-            iterator insert(const const_iterator & position, size_t count, const vector_nd_impl<OtherTy_, dimensions_number - 1, OtherAllocator_> & sub_vector)
+            template <typename OtherValue_>
+            iterator insert(const const_iterator & position, size_t count, const array_view_nd<OtherValue_, dimensions_number - 1> & sub_element)
             {
                 if(count > 0) {
-                    const auto sub_dims = sub_vector.dimensions_range();
+                    const auto sub_dims = sub_element.dimensions_range();
                     if(!match_sub_dimensions_(sub_dims)) {
                         throw yato::argument_error("yato::vector_nd[insert]: Subvector dimensions number mismatch!");
                     }
                     init_dimensions_if_empty_(sub_dims);
 
                     const size_t insert_offset = raw_offset_checked_(position);
-                    const size_t element_size  = sub_vector.total_size();
+                    const size_t element_size  = sub_element.total_size();
                     if(element_size == 0) {
                         throw yato::argument_error("yato::vector_nd[insert]: Insert value is empty!");
                     }
@@ -1753,7 +1791,7 @@ namespace yato
                     allocator_type& alloc = m_raw_vector.allocator();
                     try {
                         while(inserted_count != count) {
-                            memory::copy_to_uninitialized(alloc, sub_vector.plain_cbegin(), sub_vector.plain_cend(), copy_last);
+                            memory::copy_to_uninitialized_multidim(m_raw_vector.allocator(), sub_element.cbegin(), sub_element.cend(), copy_last);
                             copy_first = copy_last;
                             ++inserted_count;
                         }
@@ -1777,11 +1815,21 @@ namespace yato
             }
 
             /**
+             *  Insert count copies of sub-vector element
+             *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
+             */
+            template <typename OtherValue_, typename OtherAllocator_>
+            iterator insert(const const_iterator & position, size_t count, const vector_nd_impl<OtherValue_, dimensions_number - 1, OtherAllocator_> & sub_vector)
+            {
+                return insert(position, count, sub_vector.cview());
+            }
+
+            /**
              *  Inserts sub-vector elements from range [first, last) before 'position'
              *  @param position Iterator to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
              */
             template<typename IteratorNd_, typename = 
-                // Check that iterator poits to something of lower dimensionality
+                // Check that iterator points to something of lower dimensionality
                 std::enable_if_t<std::iterator_traits<IteratorNd_>::value_type::dimensions_number == dimensions_number - 1>
             >
             iterator insert(const const_iterator & position, const IteratorNd_ & first, const IteratorNd_ & last)
@@ -2537,6 +2585,22 @@ namespace yato
             auto view()
             {
                 return yato::array_view_1d<value_type>(data(), yato::dims(m_size));
+            }
+
+            /**
+             * Convert to view for the full vector
+             */
+            operator yato::array_view_1d<std::add_const_t<value_type>>() const
+            {
+                return cview();
+            }
+
+            /**
+             * Convert to view for the full vector
+             */
+            operator yato::array_view_1d<value_type>()
+            {
+                return view();
             }
 
             /**

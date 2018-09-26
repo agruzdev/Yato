@@ -338,6 +338,16 @@ namespace yato
             }
         }
 
+        /**
+         * Fallback for not multidimensional iterators
+         */
+        template <typename Alloc_, typename Iter_, typename Ty_>
+        auto copy_to_uninitialized_multidim(Alloc_ & alloc, const Iter_ & src_first, const Iter_ & src_last, Ty_* & dst_first)
+            -> std::enable_if_t<!yato::is_multidimensional<Iter_>::value>
+        {
+            copy_to_uninitialized(alloc, src_first, src_last, dst_first);
+        }
+
 
         /**
          * Init raw memory with moved values

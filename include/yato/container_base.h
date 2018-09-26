@@ -475,6 +475,21 @@ YATO_PRAGMA_WARNING_POP
         return container.size(2);
     }
 
+    //-----------------------------------------------------------------------------
+    // Multidim iterator/container trait
+
+    template <typename Ty_, typename = void>
+    struct is_multidimensional
+        : std::false_type
+    { };
+
+    template <typename Ty_>
+    struct is_multidimensional <
+        Ty_,
+        std::enable_if_t<(Ty_::dimensions_number >= 0)>
+    >
+        : std::true_type
+    { };
 
     //-----------------------------------------------------------------------------
     //  make_move_iterator with support of array_proxy
