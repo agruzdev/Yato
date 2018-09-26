@@ -1071,6 +1071,23 @@ TEST(Yato_VectorND, insert_range)
     }
 }
 
+TEST(Yato_VectorND, insert_range_non_continuous)
+{
+    yato::vector_nd<int, 2> vec1 = { { 1, 1 },{ 4, 4 } };
+    yato::vector_nd<int, 2> vec2 = { { 2, 2, 5 },{ 3, 3, 5 } };
+
+    yato::array_view_2d<int> view2(&vec2[0][0], yato::dims(2, 2), yato::dims(3));
+
+    vec1.insert(std::next(vec1.begin()), view2.begin(), view2.end());
+
+    int i = 1;
+    for (const auto & row : vec1) {
+        EXPECT_EQ(i, row[0]);
+        EXPECT_EQ(i, row[1]);
+        ++i;
+    }
+}
+
 
 TEST(Yato_VectorND, insert_range_usertype)
 {

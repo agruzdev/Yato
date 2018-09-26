@@ -296,6 +296,48 @@ namespace yato
             details::copy_operation<Alloc_, Iter_, Ty_>::apply(alloc, src_first, src_last, dst_first);
         }
 
+        /**
+         * Init raw memory with copied values.
+         * dst_first must not belong [src_first, src_last)
+         */
+        template <typename Alloc_, typename Iter_, typename Ty_>
+        auto copy_to_uninitialized_multidim(Alloc_ & alloc, Iter_ src_first, const Iter_ & src_last, Ty_* & dst_first)
+            -> std::enable_if_t<(Iter_::dimensions_number > 1)>
+        {
+            YATO_REQUIRES(dst_first != nullptr);
+            YATO_REQUIRES(std::distance(src_first, src_last) >= 0);
+            if (src_first.makes_plain_range()) {
+                copy_to_uninitialized(alloc, (*src_first).plain_cbegin(), (*src_last).plain_cbegin(), dst_first);
+            }
+            else {
+                while(src_first != src_last) {
+                    copy_to_uninitialized_multidim(alloc, (*src_first).cbegin(), (*src_first).cend(), dst_first);
+                    ++src_first;
+                }
+            }
+        }
+
+        /**
+         * Init raw memory with copied values.
+         * dst_first must not belong [src_first, src_last)
+         */
+        template <typename Alloc_, typename Iter_, typename Ty_>
+        auto copy_to_uninitialized_multidim(Alloc_ & alloc, Iter_ src_first, const Iter_ & src_last, Ty_* & dst_first)
+            -> std::enable_if_t<(Iter_::dimensions_number == 1)>
+        {
+            YATO_REQUIRES(dst_first != nullptr);
+            YATO_REQUIRES(std::distance(src_first, src_last) >= 0);
+            if (src_first.makes_plain_range()) {
+                copy_to_uninitialized(alloc, (*src_first).plain_cbegin(), (*src_last).plain_cbegin(), dst_first);
+            }
+            else {
+                while(src_first != src_last) {
+                    copy_to_uninitialized(alloc, (*src_first).cbegin(), (*src_first).cend(), dst_first);
+                    ++src_first;
+                }
+            }
+        }
+
 
         /**
          * Init raw memory with moved values

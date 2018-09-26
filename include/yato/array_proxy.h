@@ -298,6 +298,15 @@ namespace yato
             }
 
             /**
+             * Check that iterators range can have plain access
+             */
+            YATO_CONSTEXPR_FUNC
+            bool makes_plain_range() const
+            {
+                return sizeof(data_value_type) * total_size() == total_stored();
+            }
+
+            /**
              *  Get begin iterator for going through arrays of lower dimensionality
              */
             template<size_t MyDimsNum = dimensions_number>

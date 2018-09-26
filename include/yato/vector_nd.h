@@ -1806,7 +1806,7 @@ namespace yato
                     allocator_type& alloc = m_raw_vector.allocator();
                     value_type* dst = insert_range.begin();
                     try {
-                        memory::copy_to_uninitialized(alloc, (*first).plain_begin(), (*last).plain_begin(), dst);
+                        memory::copy_to_uninitialized_multidim(alloc, first, last, dst);
                     }
                     catch(...) {
                         // number of whole elements
