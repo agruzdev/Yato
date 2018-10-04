@@ -13,22 +13,13 @@
 #include <vector>
 
 #include "array_proxy.h"
+#include "iterator_nd.h"
 #include "tuple.h"
 
 namespace yato
 {
     namespace details
     {
-        template <typename Ty_, typename CvTy_>
-        struct convertible_view_type
-            : yato::boolean_constant<!std::is_same<Ty_, CvTy_>::value &&
-                (std::is_same<std::add_const_t<Ty_>, CvTy_>::value ||
-                 std::is_same<std::add_volatile_t<Ty_>, CvTy_>::value ||
-                 std::is_same<std::add_cv_t<Ty_>, CvTy_>::value)
-            >
-        { };
-
-
 
         // Multidimensional case
         template<typename ValueType, size_t DimsNum>
@@ -52,12 +43,12 @@ namespace yato
 
             using dim_descriptor = dimension_descriptor_strided<size_type>; // size, stride, offset
 
-            using sub_view       = details::sub_array_proxy<value_type, dim_descriptor, dimensions_number - 1>;
+            using sub_view       = proxy_nd<value_type, dim_descriptor, dimensions_number - 1>;
 
             using reference       = sub_view;
             using const_reference = sub_view;
-            using iterator        = sub_view;
-            using const_iterator  = sub_view;
+            using iterator        = iterator_nd<value_type, dim_descriptor, dimensions_number - 1>;
+            using const_iterator  = iterator_nd<value_type, dim_descriptor, dimensions_number - 1>;
 
             using plain_iterator        = std::add_pointer_t<value_type>;
             using const_plain_iterator  = std::add_pointer_t<std::add_const_t<value_type>>;
@@ -96,11 +87,11 @@ namespace yato
             }
 
             template <typename ProxyValue_, typename ProxyDescriptor_>
-            array_view_base(const details::sub_array_proxy<ProxyValue_, ProxyDescriptor_, dimensions_number> & proxy)
+            array_view_base(const proxy_nd<ProxyValue_, ProxyDescriptor_, dimensions_number> & proxy)
                 : m_base_ptr(proxy.data())
             {
                 using proxy_descriptor_type = typename yato::remove_cvref_t<decltype(proxy)>::dim_descriptor;
-                using proxy_data_type = typename yato::remove_cvref_t<decltype(proxy)>::data_value_type;
+                using proxy_data_type = typename yato::remove_cvref_t<decltype(proxy)>::value_type;
                 YATO_REQUIRES(proxy.descriptors_range_().distance() == dimensions_number);
                 auto desc_it = proxy.descriptors_range_().begin();
                 for (size_t i = 0; i < dimensions_number; ++i, ++desc_it) {
@@ -133,6 +124,16 @@ namespace yato
                 m_base_ptr    = other.m_base_ptr;
                 m_descriptors = other.m_descriptors;
                 return *this;
+            }
+
+            auto to_view_() const
+            {
+                return proxy_nd<std::add_const_t<value_type>, dim_descriptor, dimensions_number>(m_base_ptr, &m_descriptors[0]);
+            }
+
+            auto to_view_()
+            {
+                return proxy_nd<value_type, dim_descriptor, dimensions_number>(m_base_ptr, &m_descriptors[0]);
             }
 
             value_iterator get_pointer_() const
@@ -177,18 +178,18 @@ namespace yato
 
             iterator get_iterator_(size_t idx) const
             {
-                return get_sub_view_(idx);
+                return static_cast<iterator>(get_sub_view_(idx));
             }
 
             const_iterator get_const_iterator_(size_t idx) const
             {
-                return get_sub_view_(idx);
+                return static_cast<const_iterator>(get_sub_view_(idx));
             }
 
             template<typename... IdxTail>
             value_reference at_impl_(size_t idx, IdxTail && ... tail) const
             {
-                static_assert(sizeof...(IdxTail)+1 == dimensions_number, "Wrong indexes number");
+                static_assert(sizeof...(IdxTail) + 1 == dimensions_number, "Wrong indexes number");
                 if (idx >= get_size_(0)) {
                     throw yato::out_of_range_error("yato::array_view_nd[at]: out of range!");
                 }
@@ -217,6 +218,8 @@ namespace yato
 
             static YATO_CONSTEXPR_VAR size_t dimensions_number = 1;
 
+            using dim_descriptor = dimension_descriptor_strided<size_type>; // size, stride, offset
+
             using value_iterator  = std::add_pointer_t<value_type>;
             using value_reference = std::add_lvalue_reference_t<value_type>;
 
@@ -242,7 +245,7 @@ namespace yato
             { }
 
             template <typename ProxyValue_, typename ProxyDescriptor_>
-            array_view_base(const details::sub_array_proxy<ProxyValue_, ProxyDescriptor_, dimensions_number> & proxy)
+            array_view_base(const proxy_nd<ProxyValue_, ProxyDescriptor_, dimensions_number> & proxy)
                 : m_base_ptr(proxy.data()), m_size(proxy.size(0))
             { }
 
@@ -269,6 +272,16 @@ namespace yato
                 return *this;
             }
 
+            auto to_view_() const
+            {
+                return proxy_nd<std::add_const_t<value_type>, dim_descriptor, dimensions_number>(m_base_ptr, &m_size, &m_size);
+            }
+
+            auto to_view_()
+            {
+                return proxy_nd<value_type, dim_descriptor, dimensions_number>(m_base_ptr, &m_size, &m_size);
+            }
+
             value_iterator get_pointer_() const
             {
                 return m_base_ptr;
@@ -284,8 +297,8 @@ namespace yato
             size_type get_stride_(size_t idx) const
             {
                 YATO_MAYBE_UNUSED(idx);
-                YATO_REQUIRES(idx == 0);
-                return m_size[0] * sizeof(value_type);
+                YATO_REQUIRES(false && "no strides for 1D");
+                return 0;
             }
 
             size_type get_total_size_() const
@@ -344,7 +357,8 @@ namespace yato
      */
     template<typename ValueType, size_t DimsNum>
     class array_view_nd
-        : private details::array_view_base<ValueType, DimsNum>
+        : public container_nd<std::remove_cv_t<ValueType>, DimsNum, array_view_nd<ValueType, DimsNum>>
+        , private details::array_view_base<ValueType, DimsNum>
     {
     public:
         using this_type = array_view_nd<ValueType, DimsNum>;
@@ -352,6 +366,7 @@ namespace yato
 
         using base_type::dimensions_number;
         using typename base_type::dimensions_type;
+        using typename base_type::dim_descriptor;
         using typename base_type::element_strides_type;
         using typename base_type::byte_strides_type;
         using typename base_type::value_type;
@@ -415,7 +430,7 @@ namespace yato
          */
         template<typename ProxyValue_, typename ProxyDescriptor_, typename = 
             std::enable_if_t<std::is_same<ProxyValue_, value_type>::value>>
-        array_view_nd(const details::sub_array_proxy<ProxyValue_, ProxyDescriptor_, dimensions_number> & proxy)
+        array_view_nd(const proxy_nd<ProxyValue_, ProxyDescriptor_, dimensions_number> & proxy)
             : base_type(proxy)
         { }
 
@@ -424,7 +439,7 @@ namespace yato
          */
         template<typename ProxyValue_, typename ProxyDescriptor_, typename = 
             std::enable_if_t<std::is_same<ProxyValue_, value_type>::value>>
-        array_view_nd& operator=(const details::sub_array_proxy<ProxyValue_, ProxyDescriptor_, dimensions_number> & proxy)
+        array_view_nd& operator=(const proxy_nd<ProxyValue_, ProxyDescriptor_, dimensions_number> & proxy)
         {
             base_type::operator=(proxy);
             return *this;
@@ -444,13 +459,21 @@ namespace yato
             return array_view_nd<value_type, NewDimsNum>(base_type::get_pointer_(), extents);
         }
 
+        /**
+         * Convert to view for the full array
+         */
+        operator proxy_nd<value_type, dim_descriptor, dimensions_number>() const
+        {
+            return base_type::to_view_();
+        }
+
         reference operator[](size_t idx) const
         {
             YATO_REQUIRES(idx < base_type::get_size_(0));
             return base_type::get_sub_view_(idx);
         }
 
-        template<typename... Indexes>
+        template <typename... Indexes>
         auto at(Indexes &&... indexes) const
             -> typename std::enable_if<(sizeof...(Indexes) == dimensions_number), value_reference>::type
         {
@@ -595,7 +618,15 @@ namespace yato
         /**
          * Get raw pointer to underlying data
          */
-        value_type* data() const
+        std::add_pointer_t<value_type> data() const
+        {
+            return base_type::get_pointer_();
+        }
+
+        /**
+         * Get raw pointer to underlying data
+         */
+        std::add_pointer_t<std::add_const_t<value_type>> cdata() const
         {
             return base_type::get_pointer_();
         }

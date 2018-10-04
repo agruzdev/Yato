@@ -557,14 +557,14 @@ TEST(Yato_VectorND, proxy_iter)
     auto row = vec5.cbegin();
     auto end = vec5.cend();
     for (int i = 1; row != end; ++row, ++i) {
-        const int & x = row[0];
+        const int & x = (*row)[0];
         EXPECT_EQ(1, x);
-        EXPECT_EQ(row[1], i);
+        EXPECT_EQ((*row)[1], i);
     }
 
     yato::vector_nd<int, 2> vec6 = { { 1, 1, 1 },{ 0, 0, 0 },{ 1, 1, 1 } };
     auto row_2 = std::next(vec6.begin());
-    std::fill(std::begin(row_2), std::end(row_2), 1);
+    std::fill(std::begin(*row_2), std::end(*row_2), 1);
     for (auto x : vec6.plain_range()) {
         EXPECT_EQ(1, x);
     }
@@ -867,6 +867,7 @@ TEST(Yato_VectorND, insert)
     }
 }
 
+
 TEST(Yato_VectorND, insert_usertype)
 {
     FooCounted::reset_counters();
@@ -1023,6 +1024,7 @@ TEST(Yato_VectorND, insert_count)
         ++i;
     }
 }
+
 
 TEST(Yato_VectorND, insert_count_usertype)
 {
@@ -1440,8 +1442,8 @@ TEST(Yato_VectorND, proxy_data)
     EXPECT_EQ(&v[1][0][0], v[1].data());
     EXPECT_EQ(&v[1][1][0], v[1][1].data());
 
-    auto plain  = v.begin()  + 1;
-    auto cplain = v.cbegin() + 1;
+    auto plain  = *(v.begin()  + 1);
+    auto cplain = *(v.cbegin() + 1);
 
     EXPECT_EQ(5, foo(plain.data()));
     //EXPECT_EQ(5, foo(cplain.data())); // Error, const iterator
@@ -2067,3 +2069,4 @@ TEST(Yato_VectorND, view_from_proxy)
     EXPECT_EQ(18, view4[2][1]);
     EXPECT_EQ(19, view4[2][2]);
 }
+

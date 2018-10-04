@@ -11,12 +11,14 @@
 #include <array>
 #include <vector>
 
+#include "array_proxy.h"
 #include "array_view.h"
 #include "assert.h"
 #include "compressed_pair.h"
-#include "stl_utility.h"
+#include "iterator_nd.h"
 #include "memory_utility.h"
 #include "range.h"
+#include "stl_utility.h"
 
 namespace yato
 {
@@ -554,10 +556,9 @@ namespace yato
         //-------------------------------------------------------
         // Generic implementation
 
-        template <typename _DataType, size_t _DimensionsNum, typename _Allocator, 
-            typename CapacityPolicy_ = details::default_capacity_policy
-        >
+        template <typename _DataType, size_t _DimensionsNum, typename _Allocator, typename CapacityPolicy_ = details::default_capacity_policy>
         class vector_nd_impl
+            : public container_nd<_DataType, _DimensionsNum, vector_nd_impl<_DataType, _DimensionsNum, _Allocator, CapacityPolicy_>>
         {
         public:
             /*
@@ -586,12 +587,12 @@ namespace yato
             using size_iterator = typename dimensions_type::iterator;
             using size_const_iterator = typename dimensions_type::const_iterator;
 
-            using proxy       = details::sub_array_proxy<value_type,                   dim_descriptor, dimensions_number - 1>;
-            using const_proxy = details::sub_array_proxy<std::add_const_t<value_type>, dim_descriptor, dimensions_number - 1>;
+            using proxy       = proxy_nd<value_type,                   dim_descriptor, dimensions_number - 1>;
+            using const_proxy = proxy_nd<std::add_const_t<value_type>, dim_descriptor, dimensions_number - 1>;
 
         public:
-            using iterator = proxy;
-            using const_iterator = const_proxy;
+            using iterator       = iterator_nd<value_type,                   dim_descriptor, dimensions_number - 1>;
+            using const_iterator = iterator_nd<std::add_const_t<value_type>, dim_descriptor, dimensions_number - 1>;
 
             //-------------------------------------------------------
 
@@ -643,7 +644,7 @@ namespace yato
             YATO_FORCED_INLINE
             size_t raw_offset_checked_(const const_iterator & position) const
             {
-                const std::ptrdiff_t offset = std::distance<const_data_iterator>(m_raw_vector.ptr(), position.plain_cbegin());
+                const std::ptrdiff_t offset = std::distance<const_data_iterator>(m_raw_vector.ptr(), (*position).plain_cbegin());
 #if YATO_DEBUG
                 if (offset < 0) {
                     throw yato::argument_error("yato::vector_nd: position iterator doesn't belong to this vector!");
@@ -1064,9 +1065,9 @@ namespace yato
             /**
              *  Copy from proxy
              */
-            template<typename ProxyValue_, typename ProxyDescriptor_>
+            template<typename ProxyValue_, typename ProxyDescriptor_, proxy_access_policy ProxyAccess_>
             explicit
-            vector_nd_impl(const details::sub_array_proxy<ProxyValue_, ProxyDescriptor_, dimensions_number> & proxy)
+            vector_nd_impl(const proxy_nd<ProxyValue_, ProxyDescriptor_, dimensions_number, ProxyAccess_> & proxy)
             {
                 init_sizes_(proxy.dimensions_range());
                 const size_t plain_size = total_size();
@@ -1083,8 +1084,8 @@ namespace yato
             /**
              *  Assign from proxy
              */
-            template<typename _DataIterator, typename _SizeIterator>
-            vector_nd_impl& operator = (const details::sub_array_proxy<_DataIterator, _SizeIterator, dimensions_number> & proxy)
+            template<typename _DataIterator, typename _SizeIterator, proxy_access_policy ProxyAccess_>
+            vector_nd_impl& operator = (const proxy_nd<_DataIterator, _SizeIterator, dimensions_number, ProxyAccess_> & proxy)
             {
                 this_type{ proxy }.swap(*this);
                 return *this;
@@ -1254,7 +1255,7 @@ namespace yato
              */
             const_iterator cbegin() const YATO_NOEXCEPT_KEYWORD
             {
-                return create_const_proxy_(static_cast<size_t>(0));
+                return static_cast<const_iterator>(create_const_proxy_(static_cast<size_t>(0)));
             }
 
             /**
@@ -1262,7 +1263,7 @@ namespace yato
              */
             iterator begin() YATO_NOEXCEPT_KEYWORD
             {
-                return create_proxy_(static_cast<size_t>(0));
+                return static_cast<iterator>(create_proxy_(static_cast<size_t>(0)));
             }
 
             /**
@@ -1270,7 +1271,7 @@ namespace yato
              */
             const_iterator cend() const YATO_NOEXCEPT_KEYWORD
             {
-                return create_const_proxy_(size(0));
+                return static_cast<const_iterator>(create_const_proxy_(size(0)));
             }
 
             /**
@@ -1278,7 +1279,7 @@ namespace yato
              */
             iterator end() YATO_NOEXCEPT_KEYWORD
             {
-                return create_proxy_(size(0));
+                return static_cast<iterator>(create_proxy_(size(0)));
             }
 
             /**
@@ -1348,7 +1349,15 @@ namespace yato
             /**
              * Get a raw pointer to stored data beginning
              */
-            data_type* data() YATO_NOEXCEPT_KEYWORD
+            std::add_pointer_t<value_type> data() YATO_NOEXCEPT_KEYWORD
+            {
+                return m_raw_vector.ptr();
+            }
+
+            /**
+             * Get a raw pointer to stored data beginning
+             */
+            std::add_pointer_t<std::add_const_t<value_type>> cdata() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_raw_vector.ptr();
             }
@@ -1358,7 +1367,7 @@ namespace yato
              */
             auto cview() const
             {
-                return yato::array_view_nd<std::add_const_t<value_type>, dimensions_number>(data(), dimensions());
+                return yato::array_view_nd<std::add_const_t<value_type>, dimensions_number>(cdata(), dimensions());
             }
 
             /**
@@ -1372,25 +1381,17 @@ namespace yato
             /**
              * Convert to view for the full vector
              */
-            operator yato::array_view_nd<std::add_const_t<value_type>, dimensions_number>() const
+            operator proxy_nd<std::add_const_t<value_type>, dim_descriptor, dimensions_number>() const
             {
-                return cview();
+                return proxy_nd<std::add_const_t<value_type>, dim_descriptor, dimensions_number>(m_raw_vector.ptr(), &m_descriptors[0]);
             }
 
             /**
              * Convert to view for the full vector
              */
-            operator yato::array_view_nd<value_type, dimensions_number>()
+            operator proxy_nd<value_type, dim_descriptor, dimensions_number>()
             {
-                return view();
-            }
-
-            /**
-             * Get a raw pointer to stored data beginning
-             */
-            const data_type* data() const YATO_NOEXCEPT_KEYWORD
-            {
-                return m_raw_vector.ptr();
+                return proxy_nd<value_type, dim_descriptor, dimensions_number>(m_raw_vector.ptr(), &m_descriptors[0]);
             }
 
             /**
@@ -1399,6 +1400,14 @@ namespace yato
             bool empty() const YATO_NOEXCEPT_KEYWORD
             {
                 return (get_top_dimension_() == 0);
+            }
+
+            /**
+             *  Data is always continuous in vector
+             */
+            bool continuous() const
+            {
+                return true;
             }
 
             /**
@@ -1593,8 +1602,8 @@ namespace yato
              *  Add sub-vector element to the back.
              *  In the case of exception the vector remains unchanged.
              */
-            template <typename OtherValue_>
-            void push_back(const array_view_nd<OtherValue_, dimensions_number - 1> & sub_element)
+            template <typename OtherValue_, typename Impl_>
+            void push_back(const container_nd<OtherValue_, dimensions_number - 1, Impl_> & sub_element)
             {
                 const auto sub_dims = sub_element.dimensions_range();
                 if(!match_sub_dimensions_(sub_dims)) {
@@ -1615,16 +1624,6 @@ namespace yato
                     throw;
                 }
                 update_top_dimension_(get_top_dimension_() + 1);
-            }
-
-            /**
-             *  Add sub-vector element to the back.
-             *  In the case of exception the vector remains unchanged.
-             */
-            template <typename OtherValue_, typename OtherAllocator_>
-            void push_back(const vector_nd_impl<OtherValue_, dimensions_number - 1, OtherAllocator_> & sub_vector)
-            {
-                push_back(sub_vector.cview());
             }
 
             /**
@@ -1676,51 +1675,10 @@ namespace yato
              *  In the case of error only part of vector [0, position) will be kept.
              *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
              */
-            template <typename OtherValue_>
-            iterator insert(const const_iterator & position, const array_view_nd<OtherValue_, dimensions_number - 1> & sub_element)
+            template <typename OtherValue_, typename Impl_>
+            iterator insert(const const_iterator & position, const container_nd<OtherValue_, dimensions_number - 1, Impl_> & sub_element)
             {
-                const auto sub_dims = sub_element.dimensions_range();
-                if(!match_sub_dimensions_(sub_dims)) {
-                    throw yato::argument_error("yato::vector_nd[insert]: Subvector dimensions number mismatch!");
-                }
-                init_dimensions_if_empty_(sub_dims);
-
-                const size_t insert_offset = raw_offset_checked_(position);
-                const size_t element_size  = sub_element.total_size();
-                if(element_size == 0) {
-                    throw yato::argument_error("yato::vector_nd[insert]: Insert value is empty!");
-                }
-
-                auto insert_range = prepare_insert_(insert_offset, 1, element_size);
-
-                allocator_type& alloc = m_raw_vector.allocator();
-                value_type* dst = insert_range.begin();
-                try {
-                    memory::copy_to_uninitialized_multidim(m_raw_vector.allocator(), sub_element.cbegin(), sub_element.cend(), dst);
-                }
-                catch(...) {
-                    // destroy partially filled sub-vector
-                    memory::destroy(alloc, insert_range.begin(), dst);
-                    // destroy the detached right part
-                    memory::destroy(alloc, insert_range.end(), m_raw_vector.ptr() + total_size() + element_size);
-                    // adjust size
-                    update_top_dimension_(insert_offset / element_size);
-                    throw;
-                }
-                update_top_dimension_(get_top_dimension_() + 1);
-                // return position to newly inserted element
-                return create_proxy_(insert_range.begin());
-            }
-
-            /**
-             *  Insert sub-vector element.
-             *  In the case of error only part of vector [0, position) will be kept.
-             *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
-             */
-            template <typename OtherValue_, typename OtherAllocator_>
-            iterator insert(const const_iterator & position, const vector_nd_impl<OtherValue_, dimensions_number - 1, OtherAllocator_> & sub_vector)
-            {
-                return insert(position, sub_vector.cview());
+                return insert(position, 1, sub_element);
             }
 
             /**
@@ -1767,8 +1725,8 @@ namespace yato
              *  Insert count copies of sub-vector element
              *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
              */
-            template <typename OtherValue_>
-            iterator insert(const const_iterator & position, size_t count, const array_view_nd<OtherValue_, dimensions_number - 1> & sub_element)
+            template <typename OtherValue_, typename Impl_>
+            iterator insert(const const_iterator & position, size_t count, const container_nd<OtherValue_, dimensions_number - 1, Impl_> & sub_element)
             {
                 if(count > 0) {
                     const auto sub_dims = sub_element.dimensions_range();
@@ -1812,16 +1770,6 @@ namespace yato
                     const size_t insert_offset = raw_offset_checked_(position);
                     return create_proxy_(insert_offset);
                 }
-            }
-
-            /**
-             *  Insert count copies of sub-vector element
-             *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
-             */
-            template <typename OtherValue_, typename OtherAllocator_>
-            iterator insert(const const_iterator & position, size_t count, const vector_nd_impl<OtherValue_, dimensions_number - 1, OtherAllocator_> & sub_vector)
-            {
-                return insert(position, count, sub_vector.cview());
             }
 
             /**
@@ -1880,8 +1828,8 @@ namespace yato
              *  Inserts sub-vector elements from range [first, last) before 'position'
              *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
              */
-            template<typename ProxyValue_, typename ProxyDescriptor_>
-            iterator insert(const const_iterator & position, const yato::range<details::sub_array_proxy<ProxyValue_, ProxyDescriptor_, dimensions_number - 1>> & range)
+            template<typename IterValue_, typename IterDescriptor_, proxy_access_policy IterAccess_>
+            iterator insert(const const_iterator & position, const yato::range<iterator_nd<IterValue_, IterDescriptor_, dimensions_number - 1, IterAccess_>> & range)
             {
                 return insert(position, range.begin(), range.end());
             }
@@ -1944,6 +1892,7 @@ namespace yato
 
         template <typename _DataType, typename _Allocator, typename CapacityPolicy_>
         class vector_nd_impl<_DataType, 1, _Allocator, CapacityPolicy_>
+            : public container_nd<_DataType, 1, vector_nd_impl<_DataType, 1, _Allocator, CapacityPolicy_>>
         {
         public:
             /*
@@ -1951,6 +1900,7 @@ namespace yato
              */
             using this_type = vector_nd_impl<_DataType, 1, _Allocator>;
             using dimensions_type = dimensionality<1, size_t>;
+            using size_type = size_t;
             using value_type = _DataType;
             using data_type = _DataType;
             using allocator_type = _Allocator;
@@ -1959,6 +1909,8 @@ namespace yato
             using const_data_iterator = const _DataType*;
             using reference = _DataType&;
             using const_reference = const _DataType&;
+
+            using dim_descriptor = dimension_descriptor<size_type>;
 
             static YATO_CONSTEXPR_VAR size_t dimensions_number = 1;
 
@@ -2257,9 +2209,9 @@ namespace yato
             /**
              *  Copy from proxy
              */
-            template<typename ProxyValue_, typename ProxyDescriptor_>
+            template<typename ProxyValue_, typename ProxyDescriptor_, proxy_access_policy ProxyAccess_>
             explicit
-            vector_nd_impl(const details::sub_array_proxy<ProxyValue_, ProxyDescriptor_, dimensions_number> & proxy)
+            vector_nd_impl(const proxy_nd<ProxyValue_, ProxyDescriptor_, dimensions_number, ProxyAccess_> & proxy)
                 : m_raw_vector(), m_size(proxy.total_size())
             {
                 m_raw_vector.init_from_range(m_size, proxy.plain_cbegin(), proxy.plain_cend());
@@ -2268,8 +2220,8 @@ namespace yato
             /**
              *  Assign from proxy
              */
-            template<typename ProxyValue_, typename ProxyDescriptor_>
-            vector_nd_impl& operator= (const details::sub_array_proxy<ProxyValue_, ProxyDescriptor_, dimensions_number> & proxy)
+            template<typename ProxyValue_, typename ProxyDescriptor_, proxy_access_policy ProxyAccess_>
+            vector_nd_impl& operator= (const proxy_nd<ProxyValue_, ProxyDescriptor_, dimensions_number, ProxyAccess_> & proxy)
             {
                 this_type{ proxy }.swap(*this);
                 return *this;
@@ -2558,7 +2510,7 @@ namespace yato
             /**
              * Get a raw pointer to stored data beginning
              */
-            value_type* data()
+            std::add_pointer_t<value_type> data()
             {
                 return m_raw_vector.ptr();
             }
@@ -2566,7 +2518,7 @@ namespace yato
             /**
              * Get a raw pointer to stored data beginning
              */
-            const value_type* data() const
+            std::add_pointer_t<std::add_const_t<value_type>> cdata() const
             {
                 return m_raw_vector.ptr();
             }
@@ -2576,7 +2528,7 @@ namespace yato
              */
             auto cview() const
             {
-                return yato::array_view_1d<std::add_const_t<value_type>>(data(), yato::dims(m_size));
+                return yato::array_view_1d<std::add_const_t<value_type>>(cdata(), yato::dims(m_size));
             }
 
             /**
@@ -2590,17 +2542,17 @@ namespace yato
             /**
              * Convert to view for the full vector
              */
-            operator yato::array_view_1d<std::add_const_t<value_type>>() const
+            operator yato::proxy_nd<std::add_const_t<value_type>, dim_descriptor, 1>() const
             {
-                return cview();
+                return yato::proxy_nd<std::add_const_t<value_type>, dim_descriptor, 1>(data(), &m_size, &m_size);
             }
 
             /**
              * Convert to view for the full vector
              */
-            operator yato::array_view_1d<value_type>()
+            operator yato::proxy_nd<value_type, dim_descriptor, 1>()
             {
-                return view();
+                return yato::proxy_nd<value_type, dim_descriptor, 1>(data(), &m_size, &m_size);
             }
 
             /**
@@ -2609,6 +2561,14 @@ namespace yato
             bool empty() const
             {
                 return m_size == 0;
+            }
+
+            /**
+             *  Data is always continuous in vector
+             */
+            bool continuous() const
+            {
+                return true;
             }
 
             /**
