@@ -22,7 +22,7 @@ namespace yato
     template <typename ValueType_, size_t Dimensions_, typename Implementation_>
     class container_nd
     {
-        static_assert(std::is_same<ValueType_, yato::remove_cvref_t<ValueType_>>::value, "ValueType_ should be uncvalified non-reference");
+        static_assert(!std::is_reference<ValueType_>::value, "ValueType_ cannot be a reference");
         static_assert(Dimensions_ > 0, "Invalid dimensions");
 
         using this_type = container_nd<ValueType_, Dimensions_, Implementation_>;
@@ -45,17 +45,9 @@ namespace yato
         /**
          * Access sub-element
          */
-        auto operator[](size_t idx)
+        decltype(auto) operator[](size_t idx) const
         {
-            return static_cast<Implementation_*>(this)->operator[](idx);
-        }
-
-        /**
-         * Access sub-element
-         */
-        auto operator[](size_t idx) const
-        {
-            return static_cast<const Implementation_*>(this)->operator[](idx);
+            return static_cast<Implementation_*>(const_cast<this_type*>(this))->operator[](idx);
         }
 
         /**
@@ -103,7 +95,7 @@ namespace yato
         /**
          * Get dimensions array
          */
-        auto dimensions() const
+        decltype(auto) dimensions() const
         {
             return static_cast<const Implementation_*>(this)->dimensions();
         }
@@ -111,7 +103,7 @@ namespace yato
         /**
          * Get dimensions range
          */
-        auto dimensions_range() const
+        decltype(auto) dimensions_range() const
         {
             return static_cast<const Implementation_*>(this)->dimensions_range();
         }
@@ -119,15 +111,15 @@ namespace yato
         /**
          * Iterator along the top dimension
          */
-        auto begin()
+        decltype(auto) begin() const
         {
-            return static_cast<Implementation_*>(this)->begin();
+            return static_cast<Implementation_*>(const_cast<this_type*>(this))->begin();
         }
 
         /**
          * Iterator along the top dimension
          */
-        auto cbegin() const
+        decltype(auto) cbegin() const
         {
             return static_cast<const Implementation_*>(this)->cbegin();
         }
@@ -135,15 +127,15 @@ namespace yato
         /**
          * Iterator along the top dimension
          */
-        auto end()
+        decltype(auto) end() const
         {
-            return static_cast<Implementation_*>(this)->end();
+            return static_cast<Implementation_*>(const_cast<this_type*>(this))->end();
         }
 
         /**
          * Iterator along the top dimension
          */
-        auto cend() const
+        decltype(auto) cend() const
         {
             return static_cast<const Implementation_*>(this)->cend();
         }
@@ -151,15 +143,15 @@ namespace yato
         /**
          * Iterator along the top dimension
          */
-        auto plain_begin()
+        decltype(auto) plain_begin() const
         {
-            return static_cast<Implementation_*>(this)->plain_begin();
+            return static_cast<Implementation_*>(const_cast<this_type*>(this))->plain_begin();
         }
 
         /**
          * Iterator along the top dimension
          */
-        auto plain_cbegin() const
+        decltype(auto) plain_cbegin() const
         {
             return static_cast<const Implementation_*>(this)->plain_cbegin();
         }
@@ -167,15 +159,15 @@ namespace yato
         /**
          * Iterator along the top dimension
          */
-        auto plain_end()
+        decltype(auto) plain_end() const
         {
-            return static_cast<Implementation_*>(this)->plain_end();
+            return static_cast<Implementation_*>(const_cast<this_type*>(this))->plain_end();
         }
 
         /**
          * Iterator along the top dimension
          */
-        auto plain_cend() const
+        decltype(auto) plain_cend() const
         {
             return static_cast<const Implementation_*>(this)->plain_cend();
         }
@@ -183,17 +175,17 @@ namespace yato
         /**
          * Raw pointer to underlying data
          */
-        auto data()
+        decltype(auto) data() const
         {
-            return static_cast<Implementation_*>(this)->data();
+            return static_cast<Implementation_*>(const_cast<this_type*>(this))->data();
         }
 
         /**
          * Raw pointer to underlying data
          */
-        auto cdata() const
+        decltype(auto) cdata() const
         {
-            return static_cast<const Implementation_*>(this)->data();
+            return static_cast<const Implementation_*>(this)->cdata();
         }
     };
 

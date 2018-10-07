@@ -2070,3 +2070,15 @@ TEST(Yato_VectorND, view_from_proxy)
     EXPECT_EQ(19, view4[2][2]);
 }
 
+template <typename Impl_>
+static void foo_cont(const yato::container_nd<int, 2, Impl_> & c)
+{
+    EXPECT_EQ(8, c.stride(0));
+    EXPECT_EQ(42, c[1][1]);
+}
+
+TEST(Yato_VectorND, container)
+{
+    yato::vector_2d<int> v = {{1, 2}, {3, 42}};
+    foo_cont(v);
+}

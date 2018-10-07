@@ -318,6 +318,42 @@ namespace yato
             return std::get<Idx>(t);
         }
     };
+
+
+    /**
+     * Make tuple of Num_ types Ty_
+     */
+    template <typename Ty_, size_t Num_, typename... Elems_>
+    struct tuple_dup
+    {
+        using tupe = typename tuple_dup<Ty_, Num_ - 1, Ty_, Elems_...>::type; 
+    };
+
+    template <typename Ty_, typename... Elems_>
+    struct tuple_dup<Ty_, 0, Elems_...>
+    {
+        using type = std::tuple<Elems_...>;
+    };
+
+    template <typename Ty_, size_t Num_>
+    using tuple_dup_t = typename tuple_dup<Ty_, Num_>::type;
+
+
+    /**
+     * Split tuple to head and tail
+     */
+    template <typename Tuple_>
+    struct tuple_split
+    { };
+
+    template <typename Head_, typename... Tail_>
+    struct tuple_split<
+        std::tuple<Head_, Tail_...>
+    >
+    {
+        using head = Head_;
+        using tail = std::tuple<Tail_...>;
+    };
 }
 
 #endif

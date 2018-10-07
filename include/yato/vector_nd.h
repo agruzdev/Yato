@@ -1381,6 +1381,22 @@ namespace yato
             /**
              * Convert to view for the full vector
              */
+            operator yato::array_view_nd<std::add_const_t<value_type>, dimensions_number>() const
+            {
+                return cview();
+            }
+
+            /**
+             * Convert to view for the full vector
+             */
+            operator yato::array_view_nd<value_type, dimensions_number>()
+            {
+                return view();
+            }
+
+            /**
+             * Convert to view for the full vector
+             */
             operator proxy_nd<std::add_const_t<value_type>, dim_descriptor, dimensions_number>() const
             {
                 return proxy_nd<std::add_const_t<value_type>, dim_descriptor, dimensions_number>(m_raw_vector.ptr(), &m_descriptors[0]);
@@ -1444,6 +1460,15 @@ namespace yato
             {
                 YATO_REQUIRES(idx < dimensions_number);
                 return std::get<dim_descriptor::idx_size>(m_descriptors[idx]);
+            }
+            /**
+             * Return stride in bytes
+             */
+            YATO_CONSTEXPR_FUNC_CXX14
+            size_type stride(size_t idx) const YATO_NOEXCEPT_KEYWORD
+            {
+                YATO_REQUIRES(idx < dimensions_number - 1);
+                return std::get<dim_descriptor::idx_total>(m_descriptors[idx + 1]) * sizeof(value_type);
             }
             /**
              *  Get the total size of the vector (number of all elements)
@@ -1902,13 +1927,12 @@ namespace yato
             using dimensions_type = dimensionality<1, size_t>;
             using size_type = size_t;
             using value_type = _DataType;
-            using data_type = _DataType;
+            using data_type  = _DataType;
             using allocator_type = _Allocator;
-            //using container_type = std::vector<data_type, allocator_type>;
-            using data_iterator = _DataType*;
-            using const_data_iterator = const _DataType*;
-            using reference = _DataType&;
-            using const_reference = const _DataType&;
+            using data_iterator       = std::add_pointer_t<_DataType>;
+            using const_data_iterator = std::add_pointer_t<std::add_const_t<_DataType>>;
+            using reference           = std::add_lvalue_reference_t<_DataType>;
+            using const_reference     = std::add_lvalue_reference_t<std::add_const_t<_DataType>>;
 
             using dim_descriptor = dimension_descriptor<size_type>;
 
@@ -2542,6 +2566,22 @@ namespace yato
             /**
              * Convert to view for the full vector
              */
+            operator yato::array_view_1d<std::add_const_t<value_type>>() const
+            {
+                return cview();
+            }
+
+            /**
+             * Convert to view for the full vector
+             */
+            operator yato::array_view_1d<value_type>()
+            {
+                return view();
+            }
+
+            /**
+             * Convert to view for the full vector
+             */
             operator yato::proxy_nd<std::add_const_t<value_type>, dim_descriptor, 1>() const
             {
                 return yato::proxy_nd<std::add_const_t<value_type>, dim_descriptor, 1>(data(), &m_size, &m_size);
@@ -2612,6 +2652,16 @@ namespace yato
             size_t size() const
             {
                 return m_size;
+            }
+
+            /**
+             *  1D vector has no stride
+             */
+            size_t stride(size_t idx) const
+            {
+                YATO_REQUIRES(idx < dimensions_number - 1);
+                YATO_MAYBE_UNUSED(idx);
+                return 0;
             }
 
             /**

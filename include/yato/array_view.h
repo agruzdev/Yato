@@ -357,7 +357,7 @@ namespace yato
      */
     template<typename ValueType, size_t DimsNum>
     class array_view_nd
-        : public container_nd<std::remove_cv_t<ValueType>, DimsNum, array_view_nd<ValueType, DimsNum>>
+        : public container_nd<ValueType, DimsNum, array_view_nd<ValueType, DimsNum>>
         , private details::array_view_base<ValueType, DimsNum>
     {
     public:
