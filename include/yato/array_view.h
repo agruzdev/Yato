@@ -164,9 +164,9 @@ namespace yato
             }
 
             auto get_dims_iter_() const
-                -> decltype(yato::make_range(m_descriptors).map(tuple_cgetter<typename dim_descriptor::type, dim_descriptor::idx_size>()))
+                -> decltype(yato::make_range(m_descriptors).map(tuple_cgetter<dim_descriptor::idx_size>()))
             {
-                return yato::make_range(m_descriptors).map(tuple_cgetter<typename dim_descriptor::type, dim_descriptor::idx_size>());
+                return yato::make_range(m_descriptors).map(tuple_cgetter<dim_descriptor::idx_size>());
             }
 
             sub_view get_sub_view_(size_t idx) const

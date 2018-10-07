@@ -208,9 +208,9 @@ namespace yato
          */
         YATO_CONSTEXPR_FUNC_CXX14
         auto dimensions_range() const
-            -> decltype(descriptors_range_().map(tuple_cgetter<typename dim_descriptor::type, dim_descriptor::idx_size>()))
+            -> decltype(descriptors_range_().map(tuple_cgetter<dim_descriptor::idx_size>()))
         {
-            return descriptors_range_().map(tuple_cgetter<typename dim_descriptor::type, dim_descriptor::idx_size>());
+            return descriptors_range_().map(tuple_cgetter<dim_descriptor::idx_size>());
         }
 
         /**

@@ -50,27 +50,27 @@ namespace yato
         //-------------------------------------------------------
 
     private:
-        template <typename Iterator_>
         struct increment_op_
         {
+            template <typename Iterator_>
             void operator()(Iterator_ & it) const
             {
                 ++it;
             }
         };
 
-        template <typename Iterator_>
         struct decrement_op_
         {
+            template <typename Iterator_>
             void operator()(Iterator_ & it) const
             {
                 --it;
             }
         };
 
-        template <typename Iterator_>
         struct dereference_op_
         {
+            template <typename Iterator_>
             YATO_CONSTEXPR_FUNC
             auto operator()(Iterator_ & it) const
                 -> typename std::iterator_traits<Iterator_>::reference
@@ -79,18 +79,18 @@ namespace yato
             }
         };
 
-        template <typename Iterator_>
         struct advance_op_
         {
+            template <typename Iterator_>
             void operator()(Iterator_ & it, difference_type n) const
             {
                 it += n;
             }
         };
 
-        template <typename Iterator1_, typename Iterator2_>
         struct notequal_op_
         {
+            template <typename Iterator1_, typename Iterator2_>
             YATO_CONSTEXPR_FUNC
             bool operator()(const Iterator1_ & it1, const Iterator2_ & it2) const
             {
@@ -98,9 +98,9 @@ namespace yato
             }
         };
 
-        template <typename Iterator1_, typename Iterator2_>
         struct less_op_
         {
+            template <typename Iterator1_, typename Iterator2_>
             YATO_CONSTEXPR_FUNC
             bool operator()(const Iterator1_ & it1, const Iterator2_ & it2) const
             {
@@ -226,7 +226,7 @@ namespace yato
          */
         reference operator*() const
         {
-            return tuple_transform<dereference_op_>(const_cast<this_type*>(this)->m_iterators);
+            return tuple_transform(const_cast<this_type*>(this)->m_iterators, dereference_op_{});
         }
 
         /**
@@ -234,7 +234,7 @@ namespace yato
          */
         this_type & operator++ ()
         {
-            tuple_for_each<increment_op_>(m_iterators);
+            tuple_for_each(m_iterators, increment_op_{});
             return *this;
         }
 
@@ -244,7 +244,7 @@ namespace yato
         this_type operator++ (int)
         {
             auto copy(*this);
-            tuple_for_each<increment_op_>(m_iterators);
+            tuple_for_each(m_iterators, increment_op_{});
             return copy;
         }
 
@@ -255,7 +255,7 @@ namespace yato
         auto operator-- ()
             -> std::enable_if_t<std::is_base_of<std::bidirectional_iterator_tag, MyCategory_>::value, this_type&>
         {
-            tuple_for_each<decrement_op_>(m_iterators);
+            tuple_for_each(m_iterators, decrement_op_{});
             return *this;
         }
 
@@ -267,7 +267,7 @@ namespace yato
             -> std::enable_if_t<std::is_base_of<std::bidirectional_iterator_tag, MyCategory_>::value, this_type>
         {
             auto copy(*this);
-            tuple_for_each<decrement_op_>(m_iterators);
+            tuple_for_each(m_iterators, decrement_op_{});
             return copy;
         }
 
@@ -278,7 +278,7 @@ namespace yato
         auto operator += (difference_type offset)
             -> std::enable_if_t<std::is_base_of<std::random_access_iterator_tag, MyCategory_>::value, this_type&>
         {
-            tuple_for_each<advance_op_>(m_iterators, offset);
+            tuple_for_each(m_iterators, advance_op_{}, offset);
             return *this;
         }
 
@@ -289,7 +289,7 @@ namespace yato
         auto operator -= (difference_type offset)
             -> std::enable_if_t<std::is_base_of<std::random_access_iterator_tag, MyCategory_>::value, this_type&>
         {
-            tuple_for_each<advance_op_>(m_iterators, -offset);
+            tuple_for_each(m_iterators, advance_op_{}, -offset);
             return *this;
         }
 
@@ -321,7 +321,7 @@ namespace yato
          */
         bool operator == (const this_type & other) const
         {
-            return !tuple_any_of<notequal_op_>(m_iterators, other.m_iterators);
+            return !tuple_any_of(m_iterators, other.m_iterators, notequal_op_{});
         }
 
         /**
@@ -330,7 +330,7 @@ namespace yato
          */
         bool operator != (const this_type & other) const
         {
-            return tuple_any_of<notequal_op_>(m_iterators, other.m_iterators);
+            return tuple_any_of(m_iterators, other.m_iterators, notequal_op_{});
         }
 
         /**
@@ -340,7 +340,7 @@ namespace yato
         auto operator < (const this_type & other) const
             -> std::enable_if_t<std::is_base_of<std::random_access_iterator_tag, MyCategory_>::value, bool>
         {
-            return tuple_all_of<less_op_>(m_iterators, other.m_iterators);
+            return tuple_all_of(m_iterators, other.m_iterators, less_op_{});
         }
 
         /**
@@ -350,7 +350,7 @@ namespace yato
         auto operator > (const this_type & other) const
             -> std::enable_if_t<std::is_base_of<std::random_access_iterator_tag, MyCategory_>::value, bool>
         {
-            return tuple_all_of<less_op_>(other.m_iterators, m_iterators);
+            return tuple_all_of(other.m_iterators, m_iterators, less_op_{});
         }
 
         /**
@@ -360,7 +360,7 @@ namespace yato
         auto operator <= (const this_type & other) const
             -> std::enable_if<std::is_base_of<std::random_access_iterator_tag, MyCategory_>::value, bool>
         {
-            return !tuple_all_of<less_op_>(other.m_iterators, m_iterators);
+            return !tuple_all_of(other.m_iterators, m_iterators, less_op_{});
         }
 
         /**
@@ -371,7 +371,7 @@ namespace yato
         auto operator >= (const this_type & other) const
             -> std::enable_if_t<std::is_base_of<std::random_access_iterator_tag, MyCategory_>::value, bool>
         {
-            return !tuple_all_of<less_op_>(m_iterators, other.m_iterators);
+            return !tuple_all_of(m_iterators, other.m_iterators, less_op_{});
         }
 
 

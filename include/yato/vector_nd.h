@@ -788,9 +788,9 @@ namespace yato
             }
 
             auto dimensions_ref_range_()
-                -> decltype(yato::make_range(m_descriptors).map(tuple_getter<typename dim_descriptor::type, dim_descriptor::idx_size>()))
+                -> decltype(yato::make_range(m_descriptors).map(tuple_getter<dim_descriptor::idx_size>()))
             {
-                return yato::make_range(m_descriptors).map(tuple_getter<typename dim_descriptor::type, dim_descriptor::idx_size>());
+                return yato::make_range(m_descriptors).map(tuple_getter<dim_descriptor::idx_size>());
             }
 
             template<typename RangeType>
@@ -1447,9 +1447,9 @@ namespace yato
              *  Get number of dimensions
              */
             auto dimensions_range() const
-                -> decltype(yato::make_range(m_descriptors).map(tuple_cgetter<typename dim_descriptor::type, dim_descriptor::idx_size>()))
+                -> decltype(yato::make_range(m_descriptors).map(tuple_cgetter<dim_descriptor::idx_size>()))
             {
-                return make_range(m_descriptors).map(tuple_cgetter<typename dim_descriptor::type, dim_descriptor::idx_size>());
+                return make_range(m_descriptors).map(tuple_cgetter<dim_descriptor::idx_size>());
             }
             /**
              *  Get size of specified dimension
