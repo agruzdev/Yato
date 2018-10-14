@@ -2071,7 +2071,7 @@ TEST(Yato_VectorND, view_from_proxy)
 }
 
 template <typename Impl_>
-static void foo_cont(const yato::container_nd<int, 2, Impl_> & c)
+static void foo_cont(const yato::const_container_nd<int, 2, Impl_> & c)
 {
     EXPECT_EQ(8, c.stride(0));
     EXPECT_EQ(42, c[1][1]);

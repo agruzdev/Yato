@@ -70,7 +70,7 @@ namespace yato
      */
     template <typename ValueType_, typename DimensionDescriptor_, size_t DimsNum_, proxy_access_policy AccessPolicy_>
     class proxy_nd
-        : public container_nd<ValueType_, DimsNum_, proxy_nd<ValueType_, DimensionDescriptor_, DimsNum_, AccessPolicy_>>
+        : public details::choose_container_interface_t<ValueType_, DimsNum_, proxy_nd<ValueType_, DimensionDescriptor_, DimsNum_, AccessPolicy_>>
     {
         static_assert(!std::is_reference<ValueType_>::value, "ValueType can't be reference");
         static_assert(DimsNum_ >= 1, "dimensions_number cant be 0");
@@ -196,6 +196,15 @@ namespace yato
             return dimensions_type(dimensions_range());
         }
 
+        /**
+         * Get strides
+         */
+        YATO_CONSTEXPR_FUNC_CXX14
+        strides_array<dimensions_number - 1, size_type> strides() const
+        {
+            return strides_array<dimensions_number - 1, size_type>(strides_range());
+        }
+
         //non public interface
         YATO_CONSTEXPR_FUNC_CXX14
         yato::range<desc_iterator> descriptors_range_() const
@@ -211,6 +220,17 @@ namespace yato
             -> decltype(descriptors_range_().map(tuple_cgetter<dim_descriptor::idx_size>()))
         {
             return descriptors_range_().map(tuple_cgetter<dim_descriptor::idx_size>());
+        }
+
+        /**
+         * Get strides range
+         */
+        YATO_CONSTEXPR_FUNC_CXX14
+        auto strides_range() const
+        {
+            return descriptors_range_().tail().map([](const typename dim_descriptor::type & d) {
+                return dim_descriptor::template offset_to_bytes<value_type>(std::get<dim_descriptor::idx_offset>(d));
+            });
         }
 
         /**
@@ -375,7 +395,7 @@ namespace yato
 
     template <typename ValueType_, typename DimensionDescriptor_, proxy_access_policy AccessPolicy_>
     class proxy_nd<ValueType_, DimensionDescriptor_, 1, AccessPolicy_>
-        : public container_nd<ValueType_, 1, proxy_nd<ValueType_, DimensionDescriptor_, 1, AccessPolicy_>>
+        : public details::choose_container_interface_t<ValueType_, 1, proxy_nd<ValueType_, DimensionDescriptor_, 1, AccessPolicy_>>
     {
         static_assert(!std::is_reference<ValueType_>::value, "ValueType can't be reference");
     public:
@@ -502,12 +522,30 @@ namespace yato
         }
 
         /**
+         * Get dimensions
+         */
+        YATO_CONSTEXPR_FUNC_CXX14
+        strides_array<dimensions_number - 1, size_type> strides() const
+        {
+            return strides_array<dimensions_number - 1, size_type>(strides_range());
+        }
+
+        /**
          *  Get dimensions range
          */
         YATO_CONSTEXPR_FUNC_CXX14
         auto dimensions_range() const
         {
             return yato::range<const size_t*>(m_size_ptr, std::next(m_size_ptr));
+        }
+
+        /**
+         *  Get sstrides range
+         */
+        YATO_CONSTEXPR_FUNC_CXX14
+        auto strides_range() const
+        {
+            return yato::range<const size_type*>(nullptr, nullptr);
         }
 
         /**

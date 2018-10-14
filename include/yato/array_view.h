@@ -163,10 +163,16 @@ namespace yato
                 return std::get<dim_descriptor::idx_offset>(m_descriptors[0]);
             }
 
-            auto get_dims_iter_() const
-                -> decltype(yato::make_range(m_descriptors).map(tuple_cgetter<dim_descriptor::idx_size>()))
+            auto get_dims_range_() const
             {
                 return yato::make_range(m_descriptors).map(tuple_cgetter<dim_descriptor::idx_size>());
+            }
+
+            auto get_strides_range_() const
+            {
+                return yato::make_range(m_descriptors).tail().map([](const typename dim_descriptor::type & d) {
+                    return dim_descriptor::template offset_to_bytes<value_type>(std::get<dim_descriptor::idx_offset>(d));
+                });
             }
 
             sub_view get_sub_view_(size_t idx) const
@@ -311,10 +317,15 @@ namespace yato
                 return m_size[0] * sizeof(value_type);
             }
 
-            auto get_dims_iter_() const
-                -> typename yato::range<dimensions_type::const_iterator>
+            auto get_dims_range_() const
             {
                 return yato::make_range(m_size.cbegin(), m_size.cend());
+            }
+
+            // returns empty range
+            auto get_strides_range_() const
+            {
+                return yato::range<const size_type*>(nullptr, nullptr);
             }
 
             value_reference get_sub_view_(size_t idx) const
@@ -357,19 +368,20 @@ namespace yato
      */
     template<typename ValueType, size_t DimsNum>
     class array_view_nd
-        : public container_nd<ValueType, DimsNum, array_view_nd<ValueType, DimsNum>>
+        : public details::choose_container_interface_t<ValueType, DimsNum, array_view_nd<ValueType, DimsNum>>
         , private details::array_view_base<ValueType, DimsNum>
     {
     public:
         using this_type = array_view_nd<ValueType, DimsNum>;
         using base_type = details::array_view_base<ValueType, DimsNum>;
 
-        using base_type::dimensions_number;
+        using value_type = ValueType;
+        static YATO_CONSTEXPR_VAR size_t dimensions_number = DimsNum;
+
         using typename base_type::dimensions_type;
         using typename base_type::dim_descriptor;
         using typename base_type::element_strides_type;
         using typename base_type::byte_strides_type;
-        using typename base_type::value_type;
         using typename base_type::size_type;
         using typename base_type::value_iterator;
         using typename base_type::value_reference;
@@ -515,7 +527,15 @@ namespace yato
          */
         dimensions_type dimensions() const
         {
-            return dimensions_type(base_type::get_dims_iter_());
+            return dimensions_type(base_type::get_dims_range_());
+        }
+
+        /**
+         * Get dimensions
+         */
+        strides_array<dimensions_number - 1, size_type> strides() const
+        {
+            return byte_strides_type(base_type::get_strides_range_());
         }
 
         /**
@@ -530,9 +550,16 @@ namespace yato
          *  Get dimensions range
          */
         auto dimensions_range() const
-            -> decltype(std::declval<base_type>().get_dims_iter_())
         {
-            return base_type::get_dims_iter_();
+            return base_type::get_dims_range_();
+        }
+
+        /**
+         *  Get dimensions range
+         */
+        auto strides_range() const
+        {
+            return base_type::get_strides_range_();
         }
 
         bool empty() const
@@ -706,6 +733,21 @@ namespace yato
     array_view_nd<T, 3> make_view(T(&arr)[Size1][Size2][Size3])
     {
         return array_view_nd<T, 3>(&arr[0][0][0], yato::dims(Size1, Size2, Size3));
+    }
+
+
+    template<typename Ty_, size_t Dims_ , typename Impl_>
+    inline
+    array_view_nd<std::add_const_t<Ty_>, Dims_> make_view(const const_container_nd<Ty_, Dims_, Impl_> & c) YATO_NOEXCEPT_KEYWORD
+    {
+        return array_view_nd<std::add_const_t<Ty_>, Dims_>(c.cdata(), c.dimensions(), c.strides());
+    }
+
+    template<typename Ty_, size_t Dims_ , typename Impl_>
+    inline
+    array_view_nd<Ty_, Dims_> make_view(const container_nd<Ty_, Dims_, Impl_> & c) YATO_NOEXCEPT_KEYWORD
+    {
+        return array_view_nd<Ty_, Dims_>(c.data(), c.dimensions(), c.strides());
     }
 
 }

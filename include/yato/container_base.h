@@ -295,6 +295,9 @@ YATO_PRAGMA_WARNING_POP
         static YATO_CONSTEXPR_VAR size_t dimensions_number = DimensionsNum_;
         using size_type = SizeType_;
 
+        using iterator       = typename std::array<size_type, dimensions_number>::iterator;
+        using const_iterator = typename std::array<size_type, dimensions_number>::const_iterator;
+
     private:
         std::array<size_type, dimensions_number> m_values;
 
@@ -303,6 +306,14 @@ YATO_PRAGMA_WARNING_POP
         strides_array(std::enable_if_t<(sizeof...(Args_) == dimensions_number - 1), size_type> arg0, Args_... args)
             : m_values{{arg0, args...}}
         { }
+
+        template <typename SizeIter>
+        YATO_CONSTEXPR_FUNC_CXX14 explicit
+        strides_array(const range<SizeIter> & extents)
+        {
+            YATO_REQUIRES(extents.distance() == dimensions_number);
+            std::copy(extents.begin(), extents.end(), m_values.begin());
+        }
 
         strides_array(const strides_array&) = default;
         strides_array(strides_array&&) = default;
@@ -322,6 +333,26 @@ YATO_PRAGMA_WARNING_POP
         {
             return m_values[idx];
         }
+
+        iterator begin()
+        {
+            return m_values.begin();
+        }
+
+        const_iterator cbegin() const
+        {
+            return m_values.cbegin();
+        }
+
+        iterator end()
+        {
+            return m_values.end();
+        }
+
+        const_iterator cend() const
+        {
+            return m_values.cend();
+        }
     };
 
     template <typename SizeType_>
@@ -330,7 +361,27 @@ YATO_PRAGMA_WARNING_POP
     public:
         static YATO_CONSTEXPR_VAR size_t dimensions_number = 0;
         using size_type = SizeType_;
+
+        template <typename SizeIter>
+        YATO_CONSTEXPR_FUNC_CXX14 explicit
+        strides_array(const range<SizeIter> &)
+        { }
     };
+
+
+    template <size_t DimsNum_, typename SizeType1_, typename SizeType2_>
+    YATO_CONSTEXPR_FUNC
+    bool operator == (const strides_array<DimsNum_, SizeType1_> & dims1, const strides_array<DimsNum_, SizeType2_> & dims2)
+    {
+        return std::equal(dims1.cbegin(), dims1.cend(), dims2.cbegin());
+    }
+
+    template <size_t DimsNum_, typename SizeType1_, typename SizeType2_>
+    YATO_CONSTEXPR_FUNC
+    bool operator != (const strides_array<DimsNum_, SizeType1_> & dims1, const strides_array<DimsNum_, SizeType2_> & dims2)
+    {
+        return !(dims1 == dims2);
+    }
 
 
     /**

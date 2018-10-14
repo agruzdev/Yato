@@ -9,6 +9,7 @@
 #define _YATO_CONTAINER_ND_H_
 
 #include <iterator>
+#include <type_traits>
 #include "assert.h"
 #include "types.h"
 #include "range.h"
@@ -17,24 +18,17 @@
 
 namespace yato
 {
-    
 
     template <typename ValueType_, size_t Dimensions_, typename Implementation_>
-    class container_nd
+    class const_container_nd
     {
         static_assert(!std::is_reference<ValueType_>::value, "ValueType_ cannot be a reference");
         static_assert(Dimensions_ > 0, "Invalid dimensions");
 
-        using this_type = container_nd<ValueType_, Dimensions_, Implementation_>;
+        using this_type = const_container_nd<ValueType_, Dimensions_, Implementation_>;
     public:
         using value_type = ValueType_;
         static YATO_CONSTEXPR_VAR size_t dimensions_number = Dimensions_;
-
-        explicit
-        operator Implementation_&()
-        {
-            return *this;
-        }
 
         explicit
         operator const Implementation_&() const
@@ -47,7 +41,7 @@ namespace yato
          */
         decltype(auto) operator[](size_t idx) const
         {
-            return static_cast<Implementation_*>(const_cast<this_type*>(this))->operator[](idx);
+            return static_cast<const Implementation_*>(this)->operator[](idx);
         }
 
         /**
@@ -101,6 +95,14 @@ namespace yato
         }
 
         /**
+         * Get dimensions array
+         */
+        decltype(auto) strides() const
+        {
+            return static_cast<const Implementation_*>(this)->strides();
+        }
+
+        /**
          * Get dimensions range
          */
         decltype(auto) dimensions_range() const
@@ -109,11 +111,11 @@ namespace yato
         }
 
         /**
-         * Iterator along the top dimension
+         * Get strides range
          */
-        decltype(auto) begin() const
+        decltype(auto) strides_range() const
         {
-            return static_cast<Implementation_*>(const_cast<this_type*>(this))->begin();
+            return static_cast<const Implementation_*>(this)->strides_range();
         }
 
         /**
@@ -127,25 +129,9 @@ namespace yato
         /**
          * Iterator along the top dimension
          */
-        decltype(auto) end() const
-        {
-            return static_cast<Implementation_*>(const_cast<this_type*>(this))->end();
-        }
-
-        /**
-         * Iterator along the top dimension
-         */
         decltype(auto) cend() const
         {
             return static_cast<const Implementation_*>(this)->cend();
-        }
-
-        /**
-         * Iterator along the top dimension
-         */
-        decltype(auto) plain_begin() const
-        {
-            return static_cast<Implementation_*>(const_cast<this_type*>(this))->plain_begin();
         }
 
         /**
@@ -159,25 +145,9 @@ namespace yato
         /**
          * Iterator along the top dimension
          */
-        decltype(auto) plain_end() const
-        {
-            return static_cast<Implementation_*>(const_cast<this_type*>(this))->plain_end();
-        }
-
-        /**
-         * Iterator along the top dimension
-         */
         decltype(auto) plain_cend() const
         {
             return static_cast<const Implementation_*>(this)->plain_cend();
-        }
-
-        /**
-         * Raw pointer to underlying data
-         */
-        decltype(auto) data() const
-        {
-            return static_cast<Implementation_*>(const_cast<this_type*>(this))->data();
         }
 
         /**
@@ -189,6 +159,85 @@ namespace yato
         }
     };
 
+
+    template <typename ValueType_, size_t Dimensions_, typename Implementation_>
+    class container_nd
+        : public const_container_nd<ValueType_, Dimensions_, Implementation_>
+    {
+        static_assert(!std::is_reference<ValueType_>::value, "ValueType_ cannot be a reference");
+        static_assert(Dimensions_ > 0, "Invalid dimensions");
+
+        using this_type = container_nd<ValueType_, Dimensions_, Implementation_>;
+    public:
+        using value_type = ValueType_;
+        static YATO_CONSTEXPR_VAR size_t dimensions_number = Dimensions_;
+
+        explicit
+        operator Implementation_&() const
+        {
+            return *this;
+        }
+
+        /**
+         * Access sub-element
+         */
+        decltype(auto) operator[](size_t idx) const
+        {
+            return static_cast<Implementation_*>(const_cast<this_type*>(this))->operator[](idx);
+        }
+
+        /**
+         * Iterator along the top dimension
+         */
+        decltype(auto) begin() const
+        {
+            return static_cast<Implementation_*>(const_cast<this_type*>(this))->begin();
+        }
+
+        /**
+         * Iterator along the top dimension
+         */
+        decltype(auto) end() const
+        {
+            return static_cast<Implementation_*>(const_cast<this_type*>(this))->end();
+        }
+
+        /**
+         * Iterator along the top dimension
+         */
+        decltype(auto) plain_begin() const
+        {
+            return static_cast<Implementation_*>(const_cast<this_type*>(this))->plain_begin();
+        }
+
+        /**
+         * Iterator along the top dimension
+         */
+        decltype(auto) plain_end() const
+        {
+            return static_cast<Implementation_*>(const_cast<this_type*>(this))->plain_end();
+        }
+
+        /**
+         * Raw pointer to underlying data
+         */
+        decltype(auto) data() const
+        {
+            return static_cast<Implementation_*>(const_cast<this_type*>(this))->data();
+        }
+
+    };
+
+
+    namespace details
+    {
+        template <typename ValueType_, size_t Dimensions_, typename Implementation_>
+        using choose_container_interface_t = std::conditional_t<std::is_const<ValueType_>::value,
+            yato::const_container_nd<std::remove_const_t<ValueType_>, Dimensions_, Implementation_>,
+            yato::container_nd<ValueType_, Dimensions_, Implementation_>
+        >;
+
+    } // namespace details
 }
 
 #endif //_YATO_CONTAINER_ND_H_
