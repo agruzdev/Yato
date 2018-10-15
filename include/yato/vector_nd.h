@@ -1233,7 +1233,7 @@ namespace yato
                 -> typename std::enable_if<(yato::args_length<_Tail...>::value == dimensions_number - 1), const_reference>::type
             {
                 if (idx >= size(0)) {
-                    throw yato::out_of_range_error("yato::array_nd: out of range!");
+                    throw yato::out_of_range_error("yato::vector_nd: out of range!");
                 }
                 return (*this)[idx].at(std::forward<_Tail>(tail)...);
             }
@@ -1246,7 +1246,7 @@ namespace yato
                 -> typename std::enable_if<(yato::args_length<_Tail...>::value == dimensions_number - 1), reference>::type
             {
                 if (idx >= size(0)) {
-                    throw yato::out_of_range_error("yato::array_nd: out of range!");
+                    throw yato::out_of_range_error("yato::vector_nd: out of range!");
                 }
                 return (*this)[idx].at(std::forward<_Tail>(tail)...);
             }

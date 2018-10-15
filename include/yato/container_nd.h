@@ -238,6 +238,25 @@ namespace yato
         >;
 
     } // namespace details
+
+
+    template <typename ValueType_, typename Implementation_>
+    using const_container_1d = const_container_nd<ValueType_, 1, Implementation_>;
+
+    template <typename ValueType_, typename Implementation_>
+    using const_container_2d = const_container_nd<ValueType_, 2, Implementation_>;
+
+    template <typename ValueType_, typename Implementation_>
+    using const_container_3d = const_container_nd<ValueType_, 3, Implementation_>;
+
+    template <typename ValueType_, typename Implementation_>
+    using container_1d = container_nd<ValueType_, 1, Implementation_>;
+
+    template <typename ValueType_, typename Implementation_>
+    using container_2d = container_nd<ValueType_, 2, Implementation_>;
+
+    template <typename ValueType_, typename Implementation_>
+    using container_3d = container_nd<ValueType_, 3, Implementation_>;
 }
 
 #endif //_YATO_CONTAINER_ND_H_
