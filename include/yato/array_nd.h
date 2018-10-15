@@ -22,32 +22,35 @@ namespace yato
     {
         struct null_shape {};
 
-        template<size_t _Dim_Head, size_t... _Dim_Tail>
-        struct plain_array_shape 
+YATO_PRAGMA_WARNING_PUSH
+#ifdef YATO_MSVC_2015
+ YATO_MSCV_WARNING_IGNORE(4268)
+#endif
+        template <size_t DimHead_, size_t... DimTail_>
+        struct plain_array_shape
         {
-            static_assert(_Dim_Head > 0, "The each array dimension should be greater than 0");
+            static_assert(DimHead_ > 0, "The each array dimension should be greater than 0");
 
-            using hyper_shape = plain_array_shape<_Dim_Tail...>;
-            static YATO_CONSTEXPR_VAR size_t total_size = _Dim_Head * hyper_shape::total_size;
-            static YATO_CONSTEXPR_VAR size_t dimensions_number = sizeof...(_Dim_Tail) + 1;
-            static YATO_CONSTEXPR_VAR size_t top_dimension = _Dim_Head;
+            using hyper_shape = plain_array_shape<DimTail_...>;
+            static YATO_CONSTEXPR_VAR size_t total_size = DimHead_ * hyper_shape::total_size;
+            static YATO_CONSTEXPR_VAR size_t dimensions_number = sizeof...(DimTail_) + 1;
+            static YATO_CONSTEXPR_VAR size_t top_dimension = DimHead_;
 
-            static YATO_CONSTEXPR_VAR std::array<size_t, dimensions_number> extents = { _Dim_Head, _Dim_Tail... };
+            static YATO_CONSTEXPR_VAR std::array<size_t, sizeof...(DimTail_) + 1> extents = { DimHead_, DimTail_... };
         };
 
-        template<size_t _Dim_Head>
-        struct plain_array_shape<_Dim_Head> 
+        template <size_t DimHead_>
+        struct plain_array_shape<DimHead_> 
         {
-            static_assert(_Dim_Head > 0, "The each array dimension should be greater than 0");
+            static_assert(DimHead_ > 0, "The each array dimension should be greater than 0");
 
             using hyper_shape = null_shape;
-            static YATO_CONSTEXPR_VAR size_t total_size = _Dim_Head;
+            static YATO_CONSTEXPR_VAR size_t total_size = DimHead_;
             static YATO_CONSTEXPR_VAR size_t dimensions_number = 1;
-            static YATO_CONSTEXPR_VAR size_t top_dimension = _Dim_Head;
+            static YATO_CONSTEXPR_VAR size_t top_dimension = DimHead_;
 
-            static YATO_CONSTEXPR_VAR std::array<size_t, dimensions_number> extents = { _Dim_Head };
+            static YATO_CONSTEXPR_VAR std::array<size_t, 1> extents = { DimHead_ };
         };
-
 
         template <typename VTy_, typename Shape_, size_t... Offsets_>
         struct plain_array_strides
@@ -61,6 +64,17 @@ namespace yato
         };
 
 
+#if !(defined(__cplusplus) && (__cplusplus >= 201700L))
+        template <size_t DimHead_, size_t... DimTail_>
+        YATO_CONSTEXPR_VAR std::array<size_t, sizeof...(DimTail_) + 1> plain_array_shape<DimHead_, DimTail_...>::extents;
+
+        template <size_t DimHead_>
+        YATO_CONSTEXPR_VAR std::array<size_t, 1> plain_array_shape<DimHead_>::extents;
+
+        template <typename VTy_, size_t... Offsets_>
+        YATO_CONSTEXPR_VAR std::array<size_t, sizeof...(Offsets_)> plain_array_strides<VTy_, null_shape, Offsets_...>::values;
+#endif
+YATO_PRAGMA_WARNING_POP
 
         template<typename _Iterator, typename _Shape>
         class sub_array 
