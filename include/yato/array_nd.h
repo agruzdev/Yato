@@ -9,9 +9,11 @@
 #define _YATO_ARRAY_ND_H_
 
 #include <array>
+#include <type_traits>
 #include <vector>
 #include "assert.h"
-#include "container_base.h"
+#include "container_nd.h"
+#include "array_view.h"
 
 namespace yato
 {
@@ -29,6 +31,8 @@ namespace yato
             static YATO_CONSTEXPR_VAR size_t total_size = _Dim_Head * hyper_shape::total_size;
             static YATO_CONSTEXPR_VAR size_t dimensions_number = sizeof...(_Dim_Tail) + 1;
             static YATO_CONSTEXPR_VAR size_t top_dimension = _Dim_Head;
+
+            static YATO_CONSTEXPR_VAR std::array<size_t, dimensions_number> extents = { _Dim_Head, _Dim_Tail... };
         };
 
         template<size_t _Dim_Head>
@@ -40,29 +44,23 @@ namespace yato
             static YATO_CONSTEXPR_VAR size_t total_size = _Dim_Head;
             static YATO_CONSTEXPR_VAR size_t dimensions_number = 1;
             static YATO_CONSTEXPR_VAR size_t top_dimension = _Dim_Head;
+
+            static YATO_CONSTEXPR_VAR std::array<size_t, dimensions_number> extents = { _Dim_Head };
         };
 
-        template<typename Shape_>
-        struct get_dimension
+
+        template <typename VTy_, typename Shape_, size_t... Offsets_>
+        struct plain_array_strides
+            : public plain_array_strides<VTy_, typename Shape_::hyper_shape, Offsets_..., Shape_::total_size>
+        { };
+
+        template <typename VTy_, size_t... Offsets_>
+        struct plain_array_strides<VTy_, null_shape, Offsets_...>
         {
-            static YATO_CONSTEXPR_FUNC
-            size_t apply(size_t idx)
-            {
-                return (0 == idx)
-                    ? Shape_::top_dimension
-                    : get_dimension<typename Shape_::hyper_shape>::apply(idx - 1);
-            }
+            static YATO_CONSTEXPR_VAR std::array<size_t, sizeof...(Offsets_)> values = { Offsets_ * sizeof(VTy_)... };
         };
 
-        template<>
-        struct get_dimension<null_shape>
-        {
-            static YATO_CONSTEXPR_FUNC
-            size_t apply(size_t)
-            {
-                return 0;
-            }
-        };
+
 
         template<typename _Iterator, typename _Shape>
         class sub_array 
@@ -174,15 +172,17 @@ namespace yato
 
         };
 
-        template<typename _DataType, typename _Shape>
-        class array_nd_impl 
+        template<typename ValueType_, typename Shape_>
+        class array_nd_impl
+            //: public const_container_nd<ValueType_, Shape_::dimensions_number, array_nd_impl<ValueType_, Shape_>>
         {
         public:
-            using data_type = _DataType;
-            using pointer = std::add_pointer<data_type>;
-            using shape = _Shape;
+            using value_type   = ValueType_;
+            using size_type    = size_t;
+            using pointer_type = std::add_pointer<value_type>;
+            using shape = Shape_;
 
-            using container_type = std::array<data_type, shape::total_size>;
+            using container_type = std::array<value_type, shape::total_size>;
             /**
              *	Iterator allowing to pass through all elements of the multidimensional array 
              */
@@ -260,7 +260,7 @@ namespace yato
                 return m_plain_array.begin();
             }
             /**
-             *	Get const iterator to the end of the array
+             *  Get const iterator to the end of the array
              */
             YATO_CONSTEXPR_FUNC 
             const_iterator cend() const YATO_NOEXCEPT_KEYWORD 
@@ -268,13 +268,12 @@ namespace yato
                 return m_plain_array.cend();
             }
             /**
-            *	Get iterator to the end of the array
+            *  Get iterator to the end of the array
             */
             iterator end() YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_array.end();
             }
-
 
             /**
             *    case of Nd shape
@@ -353,7 +352,7 @@ namespace yato
             size_t size(size_t idx) const YATO_NOEXCEPT_KEYWORD
             {
                 YATO_REQUIRES(idx < shape::dimensions_number);
-                return get_dimension<shape>::apply(idx);
+                return shape::extents[idx];
             }
 
             /**
@@ -366,32 +365,94 @@ namespace yato
             }
 
             /**
-             *	Get raw pointer to data
+             * Get byte offset till next sub-view
+             * Returns size in bytes for 1D view
+             */
+            YATO_CONSTEXPR_FUNC_CXX14
+            size_type stride(size_t idx) const
+            {
+                YATO_REQUIRES(idx < shape::dimensions_number - 1);
+                return plain_array_strides<value_type, shape>::values[idx + 1];
+            }
+
+            /**
+             * Get dimensions
+             */
+            dimensionality<dimensions_number, size_type> dimensions() const
+            {
+                return dimensionality<dimensions_number, size_type>(dimensions_range());
+            }
+
+            /**
+             * Get dimensions
+             */
+            strides_array<dimensions_number - 1, size_type> strides() const
+            {
+                return strides_array<dimensions_number - 1, size_type>(strides_range());
+            }
+
+            /**
+             * Get number of dimensions
+             */
+            size_t dimensions_num() const
+            {
+                return dimensions_number;
+            }
+      
+            /**
+             *  Get dimensions range
+             */
+            auto dimensions_range() const
+            {
+                return yato::make_range(std::cbegin(shape::extents), std::cend(shape::extents));
+            }
+
+            /**
+             *  Get dimensions range
+             */
+            auto strides_range() const
+            {
+                return yato::make_range(std::next(std::cbegin(plain_array_strides<value_type, shape>::values)), std::cend(plain_array_strides<value_type, shape>::values));
+            }
+
+            /**
+             *  Get raw pointer to data
              *  Points to valid continuous storage with all elements
              *  The order of elements is same like for native array T[][]..[]
              */
             YATO_CONSTEXPR_FUNC 
-            const data_type* data() const YATO_NOEXCEPT_KEYWORD
+            const value_type* data() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_plain_array.data();
             }
 
             /**
-             *	Get raw pointer to data
+             *  Get raw pointer to data
              *  Points to valid continuous storage with all elements
              *  The order of elements is same like for native array T[][]..[]
              */
-            data_type* data() YATO_NOEXCEPT_KEYWORD 
+            value_type* data() YATO_NOEXCEPT_KEYWORD 
             {
                 return m_plain_array.data();
             }
 
 
             /**
-             *	Fill array with constant value
+             *  Get raw pointer to data
+             *  Points to valid continuous storage with all elements
+             *  The order of elements is same like for native array T[][]..[]
+             */
+            YATO_CONSTEXPR_FUNC 
+            const value_type* cdata() const YATO_NOEXCEPT_KEYWORD
+            {
+                return m_plain_array.data();
+            }
+
+            /**
+             *  Fill array with constant value
              */
             template<typename _T>
-            typename std::enable_if<std::is_convertible<_T, data_type>::value, void>::type 
+            typename std::enable_if<std::is_convertible<_T, value_type>::value, void>::type 
             fill(const _T& value) 
                 YATO_NOEXCEPT_KEYWORD_EXP(std::is_nothrow_copy_assignable<_T>::value) 
             {
@@ -406,7 +467,7 @@ namespace yato
 
         template <typename _T>
         struct is_array_nd<_T, typename std::enable_if<
-            std::is_same<_T, array_nd_impl<typename _T::data_type, typename _T::shape> >::value>::type >
+            std::is_same<_T, array_nd_impl<typename _T::value_type, typename _T::shape> >::value>::type >
             : std::true_type
         { };
 
@@ -426,6 +487,21 @@ namespace yato
     template<typename _DataType, size_t _First_Dimension, size_t... _More_Dimensions> 
     using array_nd = details::array_nd_impl < _DataType, details::plain_array_shape<_First_Dimension, _More_Dimensions...> >;
 
+
+
+    template <typename Ty_, typename Shape_>
+    YATO_CONSTEXPR_FUNC
+    array_view_nd<std::add_const_t<Ty_>, Shape_::dimensions_number> make_view(const details::array_nd_impl<Ty_, Shape_> & arr) YATO_NOEXCEPT_KEYWORD
+    {
+        return array_view_nd<std::add_const_t<Ty_>, Shape_::dimensions_number>(arr.cdata(), arr.dimensions(), arr.strides());
+    }
+
+    template <typename Ty_, typename Shape_>
+    YATO_CONSTEXPR_FUNC
+    array_view_nd<Ty_, Shape_::dimensions_number> make_view(details::array_nd_impl<Ty_, Shape_> & arr) YATO_NOEXCEPT_KEYWORD
+    {
+        return array_view_nd<Ty_, Shape_::dimensions_number>(arr.data(), arr.dimensions(), arr.strides());
+    }
 }
 
 #endif

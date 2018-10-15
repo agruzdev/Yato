@@ -30,6 +30,13 @@ TEST(Yato_Array_Nd, array_nd)
     EXPECT_NO_THROW(array_3d[1][1][1] = 2);
     EXPECT_NO_THROW(array_3d[1][2][3] = 2);
 
+    EXPECT_EQ(2u, array_3d.size(0));
+    EXPECT_EQ(3u, array_3d.size(1));
+    EXPECT_EQ(4u, array_3d.size(2));
+
+    EXPECT_EQ(3u * 4u * sizeof(int), array_3d.stride(0));
+    EXPECT_EQ(4u * sizeof(int), array_3d.stride(1));
+
     //EXPECT_THROW(array_3d[2][1][1] = 0, yato::assertion_error);
     //EXPECT_THROW(array_3d[1][3][1] = 0, yato::assertion_error);
     //EXPECT_THROW(array_3d[1][1][4] = 0, yato::assertion_error);

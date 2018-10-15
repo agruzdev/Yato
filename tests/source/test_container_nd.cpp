@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "yato/container_nd.h"
+#include "yato/array_nd.h"
 #include "yato/vector_nd.h"
 
 namespace
@@ -96,6 +97,24 @@ TEST(Yato_ContainerND, access)
     EXPECT_EQ(10, v2[1][0]);
     EXPECT_EQ(10, v2[2][0]);
     EXPECT_EQ(10, v2[3][0]);
+}
+
+TEST(Yato_ContainerND, access_array)
+{
+    yato::array_nd<int, 4, 4> arr2;
+    arr2.fill(-1);
+
+    auto v = yato::make_view(arr2);
+    //test_write(arr2);  // to be done
+    test_write(v);
+
+    //test_read(arr2);  // to be done
+    test_read(v);
+
+    EXPECT_EQ(42, arr2[0][0]);
+    EXPECT_EQ(10, arr2[1][0]);
+    EXPECT_EQ(10, arr2[2][0]);
+    EXPECT_EQ(10, arr2[3][0]);
 }
 
 TEST(Yato_ContainerND, access_1)
