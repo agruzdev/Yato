@@ -77,6 +77,20 @@ YATO_PRAGMA_WARNING_PUSH
 #endif
 YATO_PRAGMA_WARNING_POP
 
+
+        template <typename ValueType_, typename Shape_>
+        struct deduce_nd_type
+        {
+            using type = typename deduce_nd_type<ValueType_, typename Shape_::hyper_shape>::type[Shape_::top_dimension];
+        };
+
+        template <typename ValueType_>
+        struct deduce_nd_type<ValueType_, null_shape>
+        {
+            using type = ValueType_;
+        };
+
+
         template<typename _Iterator, typename _Shape>
         class sub_array 
         {
@@ -120,7 +134,6 @@ YATO_PRAGMA_WARNING_POP
             /**
              *	Get begin iterator
              */
-            YATO_CONSTEXPR_FUNC
             iterator plain_begin() YATO_NOEXCEPT_KEYWORD
             {
                 return m_iter;
@@ -129,7 +142,6 @@ YATO_PRAGMA_WARNING_POP
             /**
              * Get end iterator
              */
-            YATO_CONSTEXPR_FUNC
             iterator plain_end() {
                 return std::next(m_iter, _my_shape::total_size);
             }
@@ -151,7 +163,6 @@ YATO_PRAGMA_WARNING_POP
                 return std::next(m_iter, _my_shape::total_size);
             }
 
-            YATO_CONSTEXPR_FUNC
             auto plain_range()
             {
                 return yato::make_range(plain_begin(), plain_end());
@@ -226,7 +237,7 @@ YATO_PRAGMA_WARNING_POP
             using pointer_type = std::add_pointer<value_type>;
             using shape        = Shape_;
 
-            using container_type = std::array<value_type, shape::total_size>;
+            //using container_type = std::array<value_type, shape::total_size>;
 
             /**
              * Iterator allowing to pass through all elements of the multidimensional array 
@@ -241,50 +252,36 @@ YATO_PRAGMA_WARNING_POP
             static YATO_CONSTEXPR_VAR size_t dimensions_number = shape::dimensions_number;
 
         private:
-            container_type m_plain_array;
+            value_type* ptr_()
+            {
+                return yato::pointer_cast<value_type*>(&m_array);
+            }
+
+            const value_type* cptr_() const
+            {
+                return yato::pointer_cast<const value_type*>(&m_array);
+            }
 
         public:
-            YATO_CONSTEXPR_FUNC
-            array_nd_impl() YATO_NOEXCEPT_KEYWORD
-                : m_plain_array()
-            { }
-
-            array_nd_impl(const array_nd_impl & other) 
-                YATO_NOEXCEPT_KEYWORD_EXP(std::is_nothrow_copy_constructible<container_type>::value)
-                : m_plain_array(other.m_plain_array)
-            { }
-
-            array_nd_impl& operator=(const array_nd_impl & other) 
-                YATO_NOEXCEPT_KEYWORD_EXP(std::is_nothrow_copy_assignable<container_type>::value)
-            {
-                if (this != &other) {
-                    m_plain_array = other.m_plain_array;
-                }
-                return *this;
-            }
-
-            array_nd_impl(array_nd_impl && other) 
-                YATO_NOEXCEPT_KEYWORD_EXP(std::is_nothrow_move_constructible<container_type>::value)
-                : m_plain_array(std::move(other))
-            { }
-
-            array_nd_impl& operator=(array_nd_impl && other) 
-                YATO_NOEXCEPT_KEYWORD_EXP(std::is_nothrow_move_assignable<container_type>::value)
-            {
-                if (this != &other) {
-                    m_plain_array = std::move(other);
-                }
-                return *this;
-            }
-
-            ~array_nd_impl() = default;
+            /**
+             * Public internal array for aggregate initilization
+             */
+            typename deduce_nd_type<value_type, shape>::type m_array;
 
             /**
              *	Swap arrays data
              */
-            void swap(array_nd_impl & other) YATO_NOEXCEPT_KEYWORD 
+            void swap(array_nd_impl & other)
+#ifdef YATO_CXX17
+                YATO_NOEXCEPT_OPERATOR(std::is_nothrow_swappable<value_type>::value)
+#endif
             {
-                m_plain_array.swap(other.m_plain_array);
+                value_type* it1  = ptr_();
+                value_type* it2  = other.ptr_();
+                value_type* const end1 = ptr_() + total_size();
+                while(it1 != end1) {
+                    std::iter_swap(it1++, it2++);
+                }
             }
 
             /**
@@ -294,16 +291,15 @@ YATO_PRAGMA_WARNING_POP
             YATO_CONSTEXPR_FUNC
             const_iterator plain_cbegin() const YATO_NOEXCEPT_KEYWORD 
             {
-                return m_plain_array.data();
+                return cptr_();
             }
             /**
             *  Get iterator to the begin of the array
             *  Will pass through all elements of the multidimensional array
             */
-            YATO_CONSTEXPR_FUNC
             iterator plain_begin() YATO_NOEXCEPT_KEYWORD
             {
-                return m_plain_array.data();
+                return ptr_();
             }
             /**
              *  Get const iterator to the end of the array
@@ -311,28 +307,31 @@ YATO_PRAGMA_WARNING_POP
             YATO_CONSTEXPR_FUNC 
             const_iterator plain_cend() const YATO_NOEXCEPT_KEYWORD 
             {
-                return m_plain_array.data() + total_size();
+                return cptr_() + total_size();
             }
             /**
             *  Get iterator to the end of the array
             */
-            YATO_CONSTEXPR_FUNC
             iterator plain_end() YATO_NOEXCEPT_KEYWORD
             {
-                return m_plain_array.data() + total_size();
+                return ptr_() + total_size();
             }
 
-            YATO_CONSTEXPR_FUNC
             auto plain_range()
             {
                 return yato::make_range(plain_begin(), plain_end());
             }
 
+YATO_PRAGMA_WARNING_PUSH
+#ifdef YATO_MSVC_2015
+ YATO_MSCV_WARNING_IGNORE(4100)
+#endif
             YATO_CONSTEXPR_FUNC
             auto plain_crange() const
             {
                 return yato::make_range(plain_cbegin(), plain_cend());
             }
+YATO_PRAGMA_WARNING_POP
 
             /**
             *    case of Nd shape
@@ -344,7 +343,7 @@ YATO_PRAGMA_WARNING_POP
             operator[](size_t idx) const 
             {
                 YATO_REQUIRES(idx < shape::top_dimension);
-                return sub_array<const_iterator, _HyperShape>{ m_plain_array.data() + idx * _HyperShape::total_size };
+                return sub_array<const_iterator, _HyperShape>{ cptr_() + idx * _HyperShape::total_size };
             }
 
             template <typename _HyperShape = typename shape::hyper_shape>
@@ -353,7 +352,7 @@ YATO_PRAGMA_WARNING_POP
             operator[](size_t idx)
             {
                 YATO_REQUIRES(idx < shape::top_dimension);
-                return sub_array<iterator, _HyperShape>{ m_plain_array.data() + idx * _HyperShape::total_size };
+                return sub_array<iterator, _HyperShape>{ ptr_() + idx * _HyperShape::total_size };
             }
 
 
@@ -379,7 +378,7 @@ YATO_PRAGMA_WARNING_POP
             operator[](size_t idx) const 
             {
                 YATO_REQUIRES(idx < shape::top_dimension);
-                return m_plain_array[idx];
+                return m_array[idx];
             }
 
             template <typename _HyperShape = typename shape::hyper_shape>
@@ -389,7 +388,7 @@ YATO_PRAGMA_WARNING_POP
             operator[](size_t idx) 
             {
                 YATO_REQUIRES(idx < shape::top_dimension);
-                return m_plain_array[idx];
+                return m_array[idx];
             }
 
             template<typename _HyperShape = typename shape::hyper_shape>
@@ -479,22 +478,10 @@ YATO_PRAGMA_WARNING_POP
              *  Points to valid continuous storage with all elements
              *  The order of elements is same like for native array T[][]..[]
              */
-            YATO_CONSTEXPR_FUNC 
-            const value_type* data() const YATO_NOEXCEPT_KEYWORD
-            {
-                return m_plain_array.data();
-            }
-
-            /**
-             *  Get raw pointer to data
-             *  Points to valid continuous storage with all elements
-             *  The order of elements is same like for native array T[][]..[]
-             */
             value_type* data() YATO_NOEXCEPT_KEYWORD 
             {
-                return m_plain_array.data();
+                return ptr_();
             }
-
 
             /**
              *  Get raw pointer to data
@@ -504,7 +491,7 @@ YATO_PRAGMA_WARNING_POP
             YATO_CONSTEXPR_FUNC 
             const value_type* cdata() const YATO_NOEXCEPT_KEYWORD
             {
-                return m_plain_array.data();
+                return cptr_();
             }
 
             /**

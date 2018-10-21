@@ -6,6 +6,26 @@
 #include <cstring>
 #include <numeric>
 
+TEST(Yato_Array_Nd, aggregate_init)
+{
+    static_assert(std::is_same<yato::details::deduce_nd_type<int, yato::details::plain_array_shape<2>>::type, int[2]>::value, "Fail");
+    static_assert(std::is_same<yato::details::deduce_nd_type<int, yato::details::plain_array_shape<1, 2>>::type, int[1][2]>::value, "Fail");
+    static_assert(std::is_same<yato::details::deduce_nd_type<int, yato::details::plain_array_shape<2, 3, 4>>::type, int[2][3][4]>::value, "Fail");
+
+    yato::array_nd<int, 2> v0 = { 1, 2 };
+    yato::array_nd<int, 2, 3> v1 = {{ {1, 1, 1}, {2, 2, 2} }};
+    yato::array_nd<int, 3, 2> v2 = {{ {1, 1}, {2, 2}, {3, 3} }};
+    yato::array_nd<int, 2, 3, 4> v3 = {{
+            { {1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1} },
+            { {1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1} }
+        }};
+
+    YATO_MAYBE_UNUSED(v0);
+    YATO_MAYBE_UNUSED(v1);
+    YATO_MAYBE_UNUSED(v2);
+    YATO_MAYBE_UNUSED(v3);
+}
+
 TEST(Yato_Array_Nd, array_nd)
 {
     yato::array_nd<int, 2> array_1d;
