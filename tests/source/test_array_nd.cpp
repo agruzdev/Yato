@@ -79,10 +79,10 @@ TEST(Yato_Array_Nd, array_nd_bool)
 TEST(Yato_Array_Nd, array_nd_iterator)
 {
     yato::array_nd<int, 4, 4> arr;
-    std::iota(arr.begin(), arr.end(), 0);
+    std::iota(arr.plain_begin(), arr.plain_end(), 0);
 
     int i = 0;
-    for (int x : arr) {
+    for (int x : arr.plain_crange()) {
         EXPECT_TRUE(x == i++);
     }
 }
@@ -93,11 +93,11 @@ TEST(Yato_Array_Nd, array_nd_iterator_2)
     yato::array_nd<int, 2, 4> arr;
     
     auto && p1 = arr[0];
-    for (int & x : p1) {
+    for (int & x : p1.plain_range()) {
         x = 1;
     }
     auto && p2 = arr[1];
-    for (int & x : p2) {
+    for (int & x : p2.plain_range()) {
         x = 2;
     }
 
@@ -111,26 +111,26 @@ TEST(Yato_Array_Nd, array_nd_copy)
     yato::array_nd<uint8_t, N, N, N> gt;
     yato::array_nd<uint8_t, N, N, N> arr;
    
-    for (auto gtIt = gt.begin(), arrIt = arr.begin(); gtIt != gt.end(); ++gtIt, ++arrIt) {
+    for (auto gtIt = gt.plain_begin(), arrIt = arr.plain_begin(); gtIt != gt.plain_end(); ++gtIt, ++arrIt) {
         uint8_t val = yato::narrow_cast<uint8_t>(std::rand() % 256);
         *gtIt = val;
         *arrIt = val;
     }
 
     auto copy = arr;
-    for (auto copyIt = copy.begin(), arrIt = arr.begin(); copyIt != copy.end(); ++copyIt, ++arrIt) {
+    for (auto copyIt = copy.plain_begin(), arrIt = arr.plain_begin(); copyIt != copy.plain_end(); ++copyIt, ++arrIt) {
         EXPECT_TRUE(*copyIt == *arrIt);
     }
 
     for (int i = 0; i < 10; ++i) {
         copy[std::rand() % N][std::rand() % N][std::rand() % N] = yato::narrow_cast<uint8_t>(std::rand() % 256);
     }
-    for (auto gtIt = gt.begin(), arrIt = arr.begin(); gtIt != gt.end(); ++gtIt, ++arrIt) {
+    for (auto gtIt = gt.plain_begin(), arrIt = arr.plain_begin(); gtIt != gt.plain_end(); ++gtIt, ++arrIt) {
         EXPECT_TRUE(*gtIt == *arrIt);
     }
 
     arr = copy;
-    for (auto copyIt = copy.begin(), arrIt = arr.begin(); copyIt != copy.end(); ++copyIt, ++arrIt) {
+    for (auto copyIt = copy.plain_begin(), arrIt = arr.plain_begin(); copyIt != copy.plain_end(); ++copyIt, ++arrIt) {
         EXPECT_TRUE(*copyIt == *arrIt);
     }
 }
@@ -178,7 +178,7 @@ TEST(Yato_Array_Nd, array_nd_fill)
 {
     yato::array_nd<yato::uint16_t, 4, 4, 4> arr;
     arr.fill(static_cast<uint8_t>(1));
-    for (int x : arr) {
+    for (int x : arr.plain_crange()) {
         EXPECT_TRUE(x == 1);
     }
 }
@@ -194,10 +194,10 @@ TEST(Yato_Array_Nd, array_nd_swap)
     using std::swap;
     swap(arr_1, arr_2);
 
-    for (int x : arr_1) {
+    for (int x : arr_1.plain_crange()) {
         EXPECT_TRUE(x == 2);
     }
-    for (int x : arr_2) {
+    for (int x : arr_2.plain_crange()) {
         EXPECT_TRUE(x == 1);
     }
 

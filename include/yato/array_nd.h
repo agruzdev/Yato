@@ -12,8 +12,9 @@
 #include <type_traits>
 #include <vector>
 #include "assert.h"
-#include "container_nd.h"
 #include "array_view.h"
+#include "container_nd.h"
+#include "range.h"
 
 namespace yato
 {
@@ -120,7 +121,7 @@ YATO_PRAGMA_WARNING_POP
              *	Get begin iterator
              */
             YATO_CONSTEXPR_FUNC
-            iterator begin() const YATO_NOEXCEPT_KEYWORD
+            iterator plain_begin() YATO_NOEXCEPT_KEYWORD
             {
                 return m_iter;
             }
@@ -129,8 +130,37 @@ YATO_PRAGMA_WARNING_POP
              * Get end iterator
              */
             YATO_CONSTEXPR_FUNC
-            iterator end() const {
+            iterator plain_end() {
                 return std::next(m_iter, _my_shape::total_size);
+            }
+
+            /**
+             *	Get begin iterator
+             */
+            YATO_CONSTEXPR_FUNC
+            iterator plain_cbegin() const YATO_NOEXCEPT_KEYWORD
+            {
+                return m_iter;
+            }
+
+            /**
+             * Get end iterator
+             */
+            YATO_CONSTEXPR_FUNC
+            iterator plain_cend() const {
+                return std::next(m_iter, _my_shape::total_size);
+            }
+
+            YATO_CONSTEXPR_FUNC
+            auto plain_range()
+            {
+                return yato::make_range(plain_begin(), plain_end());
+            }
+
+            YATO_CONSTEXPR_FUNC
+            auto plain_crange() const
+            {
+                return yato::make_range(plain_cbegin(), plain_cend());
             }
 
             /**
@@ -194,17 +224,18 @@ YATO_PRAGMA_WARNING_POP
             using value_type   = ValueType_;
             using size_type    = size_t;
             using pointer_type = std::add_pointer<value_type>;
-            using shape = Shape_;
+            using shape        = Shape_;
 
             using container_type = std::array<value_type, shape::total_size>;
+
             /**
-             *	Iterator allowing to pass through all elements of the multidimensional array 
+             * Iterator allowing to pass through all elements of the multidimensional array 
              */
-            using iterator = typename container_type::iterator;
+            using iterator = std::add_pointer_t<value_type>;
             /**
-            *	Const iterator allowing to pass through all elements of the multidimensional array
-            */
-            using const_iterator = typename container_type::const_iterator;
+             * Const iterator allowing to pass through all elements of the multidimensional array
+             */
+            using const_iterator = std::add_pointer_t<std::add_const_t<value_type>>;
             //-------------------------------------------------------
 
             static YATO_CONSTEXPR_VAR size_t dimensions_number = shape::dimensions_number;
@@ -261,32 +292,46 @@ YATO_PRAGMA_WARNING_POP
              *  Will pass through all elements of the multidimensional array
              */
             YATO_CONSTEXPR_FUNC
-            const_iterator cbegin() const YATO_NOEXCEPT_KEYWORD 
+            const_iterator plain_cbegin() const YATO_NOEXCEPT_KEYWORD 
             {
-                return m_plain_array.cbegin();
+                return m_plain_array.data();
             }
             /**
             *  Get iterator to the begin of the array
             *  Will pass through all elements of the multidimensional array
             */
-            iterator begin() YATO_NOEXCEPT_KEYWORD
+            YATO_CONSTEXPR_FUNC
+            iterator plain_begin() YATO_NOEXCEPT_KEYWORD
             {
-                return m_plain_array.begin();
+                return m_plain_array.data();
             }
             /**
              *  Get const iterator to the end of the array
              */
             YATO_CONSTEXPR_FUNC 
-            const_iterator cend() const YATO_NOEXCEPT_KEYWORD 
+            const_iterator plain_cend() const YATO_NOEXCEPT_KEYWORD 
             {
-                return m_plain_array.cend();
+                return m_plain_array.data() + total_size();
             }
             /**
             *  Get iterator to the end of the array
             */
-            iterator end() YATO_NOEXCEPT_KEYWORD
+            YATO_CONSTEXPR_FUNC
+            iterator plain_end() YATO_NOEXCEPT_KEYWORD
             {
-                return m_plain_array.end();
+                return m_plain_array.data() + total_size();
+            }
+
+            YATO_CONSTEXPR_FUNC
+            auto plain_range()
+            {
+                return yato::make_range(plain_begin(), plain_end());
+            }
+
+            YATO_CONSTEXPR_FUNC
+            auto plain_crange() const
+            {
+                return yato::make_range(plain_cbegin(), plain_cend());
             }
 
             /**
@@ -299,7 +344,7 @@ YATO_PRAGMA_WARNING_POP
             operator[](size_t idx) const 
             {
                 YATO_REQUIRES(idx < shape::top_dimension);
-                return sub_array<const_iterator, _HyperShape>{ std::next(cbegin(), idx * _HyperShape::total_size) };
+                return sub_array<const_iterator, _HyperShape>{ m_plain_array.data() + idx * _HyperShape::total_size };
             }
 
             template <typename _HyperShape = typename shape::hyper_shape>
@@ -308,7 +353,7 @@ YATO_PRAGMA_WARNING_POP
             operator[](size_t idx)
             {
                 YATO_REQUIRES(idx < shape::top_dimension);
-                return sub_array<iterator, _HyperShape>{ std::next(begin(), idx * _HyperShape::total_size) };
+                return sub_array<iterator, _HyperShape>{ m_plain_array.data() + idx * _HyperShape::total_size };
             }
 
 
@@ -334,7 +379,7 @@ YATO_PRAGMA_WARNING_POP
             operator[](size_t idx) const 
             {
                 YATO_REQUIRES(idx < shape::top_dimension);
-                return *std::next(cbegin(), idx);
+                return m_plain_array[idx];
             }
 
             template <typename _HyperShape = typename shape::hyper_shape>
@@ -344,7 +389,7 @@ YATO_PRAGMA_WARNING_POP
             operator[](size_t idx) 
             {
                 YATO_REQUIRES(idx < shape::top_dimension);
-                return *std::next(begin(), idx);
+                return m_plain_array[idx];
             }
 
             template<typename _HyperShape = typename shape::hyper_shape>
@@ -470,7 +515,7 @@ YATO_PRAGMA_WARNING_POP
             fill(const _T& value) 
                 YATO_NOEXCEPT_KEYWORD_EXP(std::is_nothrow_copy_assignable<_T>::value) 
             {
-                std::fill(begin(), end(), value);
+                std::fill(plain_begin(), plain_end(), value);
             }
         };
 
