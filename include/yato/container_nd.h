@@ -45,6 +45,15 @@ namespace yato
         }
 
         /**
+         *  Element access with bounds check
+         */
+        template<typename... Tail_>
+        decltype(auto) at(size_t idx, Tail_... tail) const
+        {
+            return static_cast<const Implementation_*>(this)->at(idx, tail...);
+        }
+
+        /**
          * Chech is view data has no gaps, i.e. strides are equal to sizes
          * Plain iterators are valid only if view is continuous
          */
@@ -184,6 +193,15 @@ namespace yato
         decltype(auto) operator[](size_t idx) const
         {
             return static_cast<Implementation_*>(const_cast<this_type*>(this))->operator[](idx);
+        }
+
+        /**
+         *  Element access with bounds check
+         */
+        template<typename... Tail_>
+        decltype(auto) at(size_t idx, Tail_... tail) const
+        {
+            return static_cast<Implementation_*>(const_cast<this_type*>(this))->at(idx, tail...);
         }
 
         /**
