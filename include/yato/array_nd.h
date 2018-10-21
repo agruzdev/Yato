@@ -32,8 +32,8 @@ YATO_PRAGMA_WARNING_PUSH
         {
             static_assert(DimHead_ > 0, "The each array dimension should be greater than 0");
 
-            using hyper_shape = plain_array_shape<DimTail_...>;
-            static YATO_CONSTEXPR_VAR size_t total_size = DimHead_ * hyper_shape::total_size;
+            using sub_shape = plain_array_shape<DimTail_...>;
+            static YATO_CONSTEXPR_VAR size_t total_size = DimHead_ * sub_shape::total_size;
             static YATO_CONSTEXPR_VAR size_t dimensions_number = sizeof...(DimTail_) + 1;
             static YATO_CONSTEXPR_VAR size_t top_dimension = DimHead_;
 
@@ -45,7 +45,7 @@ YATO_PRAGMA_WARNING_PUSH
         {
             static_assert(DimHead_ > 0, "The each array dimension should be greater than 0");
 
-            using hyper_shape = null_shape;
+            using sub_shape = null_shape;
             static YATO_CONSTEXPR_VAR size_t total_size = DimHead_;
             static YATO_CONSTEXPR_VAR size_t dimensions_number = 1;
             static YATO_CONSTEXPR_VAR size_t top_dimension = DimHead_;
@@ -55,7 +55,7 @@ YATO_PRAGMA_WARNING_PUSH
 
         template <typename VTy_, typename Shape_, size_t... Offsets_>
         struct plain_array_strides
-            : public plain_array_strides<VTy_, typename Shape_::hyper_shape, Offsets_..., Shape_::total_size>
+            : public plain_array_strides<VTy_, typename Shape_::sub_shape, Offsets_..., Shape_::total_size>
         { };
 
         template <typename VTy_, size_t... Offsets_>
@@ -81,7 +81,7 @@ YATO_PRAGMA_WARNING_POP
         template <typename ValueType_, typename Shape_>
         struct deduce_nd_type
         {
-            using type = typename deduce_nd_type<ValueType_, typename Shape_::hyper_shape>::type[Shape_::top_dimension];
+            using type = typename deduce_nd_type<ValueType_, typename Shape_::sub_shape>::type[Shape_::top_dimension];
         };
 
         template <typename ValueType_>
@@ -91,30 +91,22 @@ YATO_PRAGMA_WARNING_POP
         };
 
 
-        template<typename _Iterator, typename _Shape>
-        class sub_array 
+        template<typename ValueType_, typename Shape_>
+        class sub_array
         {
         public:
-            /**
-             *	Iterator for elements of the sub-array
-             *  May be const or not
-             */
-            using iterator = _Iterator;
+            using value_type = ValueType_;
+            using iterator   = std::add_pointer_t<ValueType_>;
+            using reference  = std::add_lvalue_reference_t<ValueType_>;
 
         private:
-            using _my_shape = _Shape;
-            using _my_hyper_shape = typename _my_shape::hyper_shape;
+            using shape = Shape_;
             iterator m_iter;
 
         public:
             YATO_CONSTEXPR_FUNC
-            explicit sub_array(const _Iterator & iter) YATO_NOEXCEPT_KEYWORD
+            explicit sub_array(std::add_pointer_t<ValueType_> iter) YATO_NOEXCEPT_KEYWORD
                 : m_iter(iter)
-            { }
-
-            YATO_CONSTEXPR_FUNC
-            explicit sub_array(_Iterator && iter) YATO_NOEXCEPT_KEYWORD
-                : m_iter(std::move(iter))
             { }
 
             YATO_CONSTEXPR_FUNC
@@ -127,6 +119,7 @@ YATO_PRAGMA_WARNING_POP
                 if (&other != this) {
                     m_iter = other.m_iter;
                 }
+                return *this;
             }
 
             ~sub_array() = default;
@@ -142,12 +135,13 @@ YATO_PRAGMA_WARNING_POP
             /**
              * Get end iterator
              */
-            iterator plain_end() {
-                return std::next(m_iter, _my_shape::total_size);
+            iterator plain_end()
+            {
+                return std::next(m_iter, shape::total_size);
             }
 
             /**
-             *	Get begin iterator
+             * Get begin iterator
              */
             YATO_CONSTEXPR_FUNC
             iterator plain_cbegin() const YATO_NOEXCEPT_KEYWORD
@@ -159,8 +153,9 @@ YATO_PRAGMA_WARNING_POP
              * Get end iterator
              */
             YATO_CONSTEXPR_FUNC
-            iterator plain_cend() const {
-                return std::next(m_iter, _my_shape::total_size);
+            iterator plain_cend() const
+            {
+                return std::next(m_iter, shape::total_size);
             }
 
             auto plain_range()
@@ -174,56 +169,55 @@ YATO_PRAGMA_WARNING_POP
                 return yato::make_range(plain_cbegin(), plain_cend());
             }
 
-            /**
-            *    case of Nd shape
-            */
-            template <typename _HyperShape = typename _my_shape::hyper_shape>
+            template <typename SubShape_ = typename shape::sub_shape>
             YATO_CONSTEXPR_FUNC_CXX14
-            typename std::enable_if<!std::is_same<_HyperShape, null_shape>::value,
-                sub_array<iterator, _HyperShape> >::type
-            operator[](size_t idx) const 
+            auto operator[](size_t idx) const
+                -> std::enable_if_t<
+                    !std::is_same<SubShape_, null_shape>::value,
+                    sub_array<value_type, SubShape_>
+                >
             {
-                YATO_REQUIRES(idx < _my_shape::top_dimension);
-                return sub_array<iterator, _HyperShape>{ std::next(m_iter, idx * _HyperShape::total_size) };
+                YATO_REQUIRES(idx < shape::top_dimension);
+                return sub_array<value_type, SubShape_>{ std::next(m_iter, idx * SubShape_::total_size) };
             }
 
-            template<typename _HyperShape = typename _my_shape::hyper_shape, typename... _Tail>
-            typename std::enable_if<
-                !std::is_same<_HyperShape, null_shape>::value,
-                decltype(*std::declval<iterator>())>::type
-            at(size_t firstIdx, _Tail... indexes)
+            template <typename SubShape_ = typename shape::sub_shape, typename... Tail_>
+            auto at(size_t firstIdx, Tail_ &&... indexes)
+                -> std::enable_if_t<
+                    !std::is_same<SubShape_, null_shape>::value,
+                    reference
+                >
             {
-                if (firstIdx >= _my_shape::top_dimension) {
+                if (firstIdx >= shape::top_dimension) {
                     throw yato::out_of_range_error("yato::array_nd[at]: index is out of range!");
                 }
-                return (*this)[firstIdx].at(std::forward<_Tail>(indexes)...);
+                return (*this)[firstIdx].at(std::forward<Tail_>(indexes)...);
             }
 
-            /**
-             *    case of 1d shape 
-             */
-            template <typename _HyperShape = typename _my_shape::hyper_shape>
+            template <typename SubShape_ = typename shape::sub_shape>
             YATO_CONSTEXPR_FUNC_CXX14
-            typename std::enable_if<std::is_same<_HyperShape, null_shape>::value,
-                decltype(*std::declval<iterator>())>::type
-            operator[](size_t idx) const 
+            auto operator[](size_t idx) const
+                -> std::enable_if_t<
+                    std::is_same<SubShape_, null_shape>::value,
+                    reference
+                >
             {
-                YATO_REQUIRES(idx < _my_shape::top_dimension);
+                YATO_REQUIRES(idx < shape::top_dimension);
                 return *std::next(m_iter, idx);
             }
 
-            template<typename _HyperShape = typename _my_shape::hyper_shape>
-            typename std::enable_if<
-                std::is_same<_HyperShape, null_shape>::value,
-                decltype(*std::declval<iterator>())>::type
-            at(size_t firstIdx)
+            template <typename SubShape_ = typename shape::sub_shape>
+            auto at(size_t firstIdx)
+                -> std::enable_if_t<
+                    std::is_same<SubShape_, null_shape>::value,
+                    reference
+                >
             {
-                if (firstIdx >= _my_shape::top_dimension) {
+                if (firstIdx >= shape::top_dimension) {
                     throw yato::out_of_range_error("yato::array_nd[at]: index is out of range!");
                 }
                 return (*this)[firstIdx];
             }
-
 
         };
 
@@ -237,7 +231,8 @@ YATO_PRAGMA_WARNING_POP
             using pointer_type = std::add_pointer<value_type>;
             using shape        = Shape_;
 
-            //using container_type = std::array<value_type, shape::total_size>;
+            using reference       = std::add_lvalue_reference_t<value_type>;
+            using const_reference = std::add_lvalue_reference_t<std::add_const_t<value_type>>;
 
             /**
              * Iterator allowing to pass through all elements of the multidimensional array 
@@ -333,75 +328,106 @@ YATO_PRAGMA_WARNING_PUSH
             }
 YATO_PRAGMA_WARNING_POP
 
-            /**
-            *    case of Nd shape
-            */
-            template <typename _HyperShape = typename shape::hyper_shape>
+            template <typename SubShape_ = typename shape::sub_shape>
             YATO_CONSTEXPR_FUNC_CXX14
-            typename std::enable_if<!std::is_same<_HyperShape, null_shape>::value,
-                sub_array<const_iterator, _HyperShape> >::type
-            operator[](size_t idx) const 
+            auto operator[](size_t idx) const 
+                -> std::enable_if_t<
+                    !std::is_same<SubShape_, null_shape>::value,
+                    sub_array<std::add_const_t<value_type>, SubShape_> 
+                >
             {
                 YATO_REQUIRES(idx < shape::top_dimension);
-                return sub_array<const_iterator, _HyperShape>{ cptr_() + idx * _HyperShape::total_size };
+                return sub_array<std::add_const_t<value_type>, SubShape_>{ cptr_() + idx * SubShape_::total_size };
             }
 
-            template <typename _HyperShape = typename shape::hyper_shape>
-            typename std::enable_if<!std::is_same<_HyperShape, null_shape>::value,
-                sub_array<iterator, _HyperShape> >::type
-            operator[](size_t idx)
+            template <typename SubShape_ = typename shape::sub_shape>
+            auto operator[](size_t idx)
+                -> std::enable_if_t<
+                    !std::is_same<SubShape_, null_shape>::value,
+                    sub_array<value_type, SubShape_>
+                >
             {
                 YATO_REQUIRES(idx < shape::top_dimension);
-                return sub_array<iterator, _HyperShape>{ ptr_() + idx * _HyperShape::total_size };
+                return sub_array<value_type, SubShape_>{ ptr_() + idx * SubShape_::total_size };
+            }
+
+            template <typename SubShape_ = typename shape::sub_shape>
+            YATO_CONSTEXPR_FUNC_CXX14
+            auto operator[](size_t idx) const 
+                -> std::enable_if_t<
+                    std::is_same<SubShape_, null_shape>::value,
+                    const_reference
+                >
+            {
+                YATO_REQUIRES(idx < shape::top_dimension);
+                return m_array[idx];
+            }
+
+            template <typename SubShape_ = typename shape::sub_shape>
+            YATO_CONSTEXPR_FUNC_CXX14
+            auto operator[](size_t idx)
+                -> std::enable_if_t<
+                    std::is_same<SubShape_, null_shape>::value,
+                    reference
+                >
+            {
+                YATO_REQUIRES(idx < shape::top_dimension);
+                return m_array[idx];
             }
 
 
-            template<typename _HyperShape = typename shape::hyper_shape, typename... _Tail>
-            typename std::enable_if<
-                !std::is_same<_HyperShape, null_shape>::value,
-                decltype(*std::declval<iterator>())>::type
-            at(size_t firstIdx, _Tail... indexes)
+            template <typename SubShape_ = typename shape::sub_shape, typename... Tail_>
+            auto at(size_t firstIdx, Tail_ &&... indexes) const
+                -> std::enable_if_t<
+                    !std::is_same<SubShape_, null_shape>::value,
+                    const_reference
+                >
             {
                 if (firstIdx >= shape::top_dimension) {
                     throw yato::out_of_range_error("yato::array_nd[at]: index is out of range!");
                 }
-                return (*this)[firstIdx].at(std::forward<_Tail>(indexes)...);
+                return (*this)[firstIdx].at(std::forward<Tail_>(indexes)...);
             }
 
-            /**
-            *    case of 1d shape
-            */
-            template <typename _HyperShape = typename shape::hyper_shape>
-            YATO_CONSTEXPR_FUNC_CXX14
-            typename std::enable_if<std::is_same<_HyperShape, null_shape>::value,
-                decltype(*std::declval<const_iterator>())>::type
-            operator[](size_t idx) const 
+            template <typename SubShape_ = typename shape::sub_shape, typename... Tail_>
+            auto at(size_t firstIdx, Tail_ &&... indexes)
+                -> std::enable_if_t<
+                    !std::is_same<SubShape_, null_shape>::value,
+                    reference
+                >
             {
-                YATO_REQUIRES(idx < shape::top_dimension);
-                return m_array[idx];
+                if (firstIdx >= shape::top_dimension) {
+                    throw yato::out_of_range_error("yato::array_nd[at]: index is out of range!");
+                }
+                return (*this)[firstIdx].at(std::forward<Tail_>(indexes)...);
             }
 
-            template <typename _HyperShape = typename shape::hyper_shape>
-            YATO_CONSTEXPR_FUNC_CXX14
-            typename std::enable_if<std::is_same<_HyperShape, null_shape>::value,
-                decltype(*std::declval<iterator>())>::type
-            operator[](size_t idx) 
-            {
-                YATO_REQUIRES(idx < shape::top_dimension);
-                return m_array[idx];
-            }
-
-            template<typename _HyperShape = typename shape::hyper_shape>
-            typename std::enable_if<
-                std::is_same<_HyperShape, null_shape>::value,
-                decltype(*std::declval<iterator>())>::type
-            at(size_t firstIdx) 
+            template<typename SubShape_ = typename shape::sub_shape>
+            auto at(size_t firstIdx) const
+                -> std::enable_if_t<
+                    std::is_same<SubShape_, null_shape>::value,
+                    const_reference
+                >
             {
                 if (firstIdx >= shape::top_dimension) {
                     throw yato::out_of_range_error("yato::array_nd[at]: index is out of range!");
                 }
                 return (*this)[firstIdx];
             }
+
+            template<typename SubShape_ = typename shape::sub_shape>
+            auto at(size_t firstIdx)
+                -> std::enable_if_t<
+                    std::is_same<SubShape_, null_shape>::value,
+                    reference
+                >
+            {
+                if (firstIdx >= shape::top_dimension) {
+                    throw yato::out_of_range_error("yato::array_nd[at]: index is out of range!");
+                }
+                return (*this)[firstIdx];
+            }
+
 
             /**
              * Get size along one dimension
