@@ -324,7 +324,7 @@ namespace yato
     template <typename Ty_, size_t Num_, typename... Elems_>
     struct tuple_dup
     {
-        using tupe = typename tuple_dup<Ty_, Num_ - 1, Ty_, Elems_...>::type; 
+        using type = typename tuple_dup<Ty_, Num_ - 1, Ty_, Elems_...>::type; 
     };
 
     template <typename Ty_, typename... Elems_>
@@ -333,6 +333,9 @@ namespace yato
         using type = std::tuple<Elems_...>;
     };
 
+    /**
+     * Make tuple of Num_ types Ty_
+     */
     template <typename Ty_, size_t Num_>
     using tuple_dup_t = typename tuple_dup<Ty_, Num_>::type;
 
