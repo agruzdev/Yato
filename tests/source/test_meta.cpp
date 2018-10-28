@@ -45,6 +45,9 @@ TEST(Yato_Meta, list)
 
     using t7 = yato::meta::list_to_tuple<l7>::type;
     static_assert(std::is_same<t7, std::tuple<float, double>>::value, "yato::meta::list fail!");
+
+    using l8  = yato::meta::list_cat< yato::meta::null_list, yato::meta::null_list >::type;
+    static_assert(std::is_same<l8, yato::meta::null_list>::value, "yato::meta::list fail!");
 }
 
 TEST(Yato_Meta, list_find)

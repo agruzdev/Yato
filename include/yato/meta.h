@@ -25,9 +25,9 @@ namespace yato
         /**
          *  Generate unique type from integer id
          */
-        template<uint32_t _Id>
+        template<uint32_t Id_>
         struct id_type 
-            : std::integral_constant<uint32_t, _Id>
+            : std::integral_constant<uint32_t, Id_>
         { };
 
         //-------------------------------------------------------
@@ -37,11 +37,11 @@ namespace yato
         /**
          *  Wrapper around unsigned integer value
          */
-        template<uint32_t _Num>
+        template<uint32_t Num_>
         struct number
-            : number<_Num - 1>
+            : number<Num_ - 1>
         {
-            static YATO_CONSTEXPR_VAR uint32_t value = _Num;
+            static YATO_CONSTEXPR_VAR uint32_t value = Num_;
         };
 
         template<>
@@ -82,30 +82,30 @@ namespace yato
         /**
          *  List for aggregating a sequence of types
          */
-        template<typename _Head, typename... _Tail>
+        template<typename Head_, typename... Tail_>
         struct list
         {
-            using head = _Head;
-            using tail = list<_Tail...>;
+            using head = Head_;
+            using tail = list<Tail_...>;
         };
 
         /**
          *  List consisting of one element
          */
-        template<typename _Head>
-        struct list<_Head>
+        template<typename Head_>
+        struct list<Head_>
         {
-            using head = _Head;
+            using head = Head_;
             using tail = null_list;
         };
 
         /**
          *  make list from variadic template
          */
-        template<typename... _Elems>
+        template<typename... Elems_>
         struct make_list
         {
-            using type = list<_Elems...>;
+            using type = list<Elems_...>;
         };
 
         /**
@@ -123,82 +123,82 @@ namespace yato
         /**
          *  Reverse list
          */
-        template<typename _List, typename... _Elems>
+        template<typename List_, typename... Elems_>
         struct reverse_list
         {
-            using type = typename reverse_list<typename _List::tail, typename _List::head, _Elems...>::type;
+            using type = typename reverse_list<typename List_::tail, typename List_::head, Elems_...>::type;
         };
 
-        template<typename... _Elems>
-        struct reverse_list<null_list, _Elems...>
+        template<typename... Elems_>
+        struct reverse_list<null_list, Elems_...>
         {
-            using type = list<_Elems...>;
+            using type = list<Elems_...>;
         };
 
         /**
          *  Add list element to the begin
          */
-        template<typename _T, typename _List, typename... _Elems>
+        template<typename Ty_, typename List_, typename... Elems_>
         struct list_push_front
         {
-            using type = typename list_push_front<_T, typename _List::tail, _Elems..., typename _List::head>::type;
+            using type = typename list_push_front<Ty_, typename List_::tail, Elems_..., typename List_::head>::type;
         };
 
-        template<typename _T, typename... _Elems>
-        struct list_push_front<_T, null_list, _Elems...>
+        template<typename Ty_, typename... Elems_>
+        struct list_push_front<Ty_, null_list, Elems_...>
         {
-            using type = list<_T, _Elems...>;
+            using type = list<Ty_, Elems_...>;
         };
 
         /**
          *  Add list element to the end
          */
-        template<typename _List, typename _T, typename... _Elems>
+        template<typename List_, typename Ty_, typename... Elems_>
         struct list_push_back
         {
-            using type = typename list_push_back<typename _List::tail, _T, _Elems..., typename _List::head>::type;
+            using type = typename list_push_back<typename List_::tail, Ty_, Elems_..., typename List_::head>::type;
         };
 
-        template<typename _T, typename... _Elems>
-        struct list_push_back<null_list, _T, _Elems...>
+        template<typename Ty_, typename... Elems_>
+        struct list_push_back<null_list, Ty_, Elems_...>
         {
-            using type = list<_Elems..., _T>;
+            using type = list<Elems_..., Ty_>;
         };
 
         /**
          *  Concatenate two lists
          */
-        template<typename _List1, typename _List2, typename... _Elems>
+        template<typename List1_, typename List2_, typename... Elems_>
         struct list_cat
         {
-            using type = typename list_cat<typename _List1::tail, _List2, _Elems..., typename _List1::head>::type;
+            using type = typename list_cat<typename List1_::tail, List2_, Elems_..., typename List1_::head>::type;
         };
 
-        template<typename _List2, typename... _Elems>
-        struct list_cat<null_list, _List2, _Elems...>
+        template<typename List2_, typename... Elems_>
+        struct list_cat<null_list, List2_, Elems_...>
         {
-            using type = typename list_cat<null_list, typename _List2::tail, _Elems..., typename _List2::head>::type;
+            using type = typename list_cat<null_list, typename List2_::tail, Elems_..., typename List2_::head>::type;
         };
 
-        template<typename... _Elems>
-        struct list_cat<null_list, null_list, _Elems...>
+        template <typename... Elems_>
+        struct list_cat<null_list, null_list, Elems_...>
         {
-            using type = list<_Elems...>;
+            using type = make_list_t<Elems_...>;
         };
 
         /**
          *  Access list element
          */
-        template <typename _List, size_t _Idx>
+        template <typename List_, size_t Idx_>
         struct list_at
         {
-            using type = typename list_at<typename _List::tail, _Idx - 1>::type;
+            using type = typename list_at<typename List_::tail, Idx_ - 1>::type;
         };
 
-        template <typename _List>
-        struct list_at<_List, 0> 
+        template <typename List_>
+        struct list_at<List_, 0> 
         {
-            using type = typename _List::head;
+            using type = typename List_::head;
         };
 
         template <typename List_, size_t Idx_>
@@ -207,42 +207,42 @@ namespace yato
         /**
          *  Convert list to std::tuple
          */
-        template <typename _List, typename... _Types>
+        template <typename List_, typename... Types_>
         struct list_to_tuple
         {
-            using type = typename list_to_tuple <typename _List::tail, _Types..., typename _List::head>::type;
+            using type = typename list_to_tuple <typename List_::tail, Types_..., typename List_::head>::type;
         };
 
-        template <typename... _Types>
-        struct list_to_tuple <null_list, _Types...>
+        template <typename... Types_>
+        struct list_to_tuple <null_list, Types_...>
         {
-            using type = std::tuple<_Types...>;
+            using type = std::tuple<Types_...>;
         };
 
 
         /**
          *  Find type in types list, value is index of found element
          */
-        template <typename List, typename Type, size_t Idx = 0>
+        template <typename List_, typename Type_, size_t Idx_ = 0>
         struct list_find
             : public std::integral_constant<size_t, 
-                std::is_same<typename List::head, Type>::value 
-                ? Idx
-                : list_find<typename List::tail, Type, Idx + 1>::value>
+                std::is_same<typename List_::head, Type_>::value 
+                ? Idx_
+                : list_find<typename List_::tail, Type_, Idx_ + 1>::value>
         { };
 
-        template <typename Type, size_t Idx>
-        struct list_find<null_list, Type, Idx>
+        template <typename Type_, size_t Idx_>
+        struct list_find<null_list, Type_, Idx_>
             : public std::integral_constant<size_t, list_npos>
         { };
 
         /**
          *  Get list length
          */
-        template <typename List>
+        template <typename List_>
         struct list_length
             : public std::integral_constant<size_t,
-                1 + list_length<typename List::tail>::value>
+                1 + list_length<typename List_::tail>::value>
         { };
 
         template <>
