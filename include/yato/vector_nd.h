@@ -592,8 +592,8 @@ namespace yato
             using const_sub_proxy = proxy_nd<std::add_const_t<value_type>, dim_descriptor, dimensions_number - 1>;
 
         public:
-            using iterator       = iterator_nd<value_type,                   dim_descriptor, dimensions_number - 1>;
-            using const_iterator = iterator_nd<std::add_const_t<value_type>, dim_descriptor, dimensions_number - 1>;
+            using iterator       = iterator_nd<sub_proxy>;
+            using const_iterator = iterator_nd<const_sub_proxy>;
 
             //-------------------------------------------------------
 
@@ -1886,8 +1886,8 @@ namespace yato
              *  Inserts sub-vector elements from range [first, last) before 'position'
              *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
              */
-            template<typename IterValue_, typename IterDescriptor_, proxy_access_policy IterAccess_>
-            iterator insert(const const_iterator & position, const yato::range<iterator_nd<IterValue_, IterDescriptor_, dimensions_number - 1, IterAccess_>> & range)
+            template<typename IterProxy_>
+            iterator insert(const const_iterator & position, const yato::range<iterator_nd<IterProxy_>> & range)
             {
                 return insert(position, range.begin(), range.end());
             }

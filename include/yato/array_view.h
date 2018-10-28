@@ -47,8 +47,8 @@ namespace yato
 
             using reference       = sub_view;
             using const_reference = sub_view;
-            using iterator        = iterator_nd<value_type, dim_descriptor, dimensions_number - 1>;
-            using const_iterator  = iterator_nd<value_type, dim_descriptor, dimensions_number - 1>;
+            using iterator        = iterator_nd<sub_view>;
+            using const_iterator  = iterator_nd<sub_view>;
 
             using plain_iterator        = std::add_pointer_t<value_type>;
             using const_plain_iterator  = std::add_pointer_t<std::add_const_t<value_type>>;

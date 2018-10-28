@@ -57,11 +57,10 @@ namespace yato
     };
 
 
-
     template <typename ValueType_, typename DimensionDescriptor_, size_t DimsNum_, proxy_access_policy AccessPolicy_ = proxy_access_policy::lvalue_ref>
     class proxy_nd;
 
-    template <typename ValueType_, typename DimensionDescriptor_, size_t DimsNum_, proxy_access_policy AccessPolicy_ = proxy_access_policy::lvalue_ref>
+    template <typename ProxyType_>
     class iterator_nd;
 
 
@@ -89,10 +88,14 @@ namespace yato
         using pointer_type   = std::add_pointer_t<value_type>;
         using reference_type = typename proxy_access_traits<value_type, access_policy>::reference;
 
-        using iterator       = iterator_nd<value_type, dim_descriptor, dimensions_number - 1, access_policy>;
+        using iterator       = iterator_nd<sub_view>;
         using plain_iterator = typename proxy_access_traits<value_type, access_policy>::plain_iterator;
 
         using dimensions_type = dimensionality<dimensions_number, size_type>;
+        //-------------------------------------------------------
+
+        template <proxy_access_policy Py_>
+        using rebind_access_t = proxy_nd <ValueType_, DimensionDescriptor_, DimsNum_, Py_>;
         //-------------------------------------------------------
 
     private:
@@ -386,7 +389,7 @@ namespace yato
         template<typename, typename, size_t, proxy_access_policy>
         friend class proxy_nd;
 
-        template<typename, typename, size_t, proxy_access_policy>
+        template<typename>
         friend class iterator_nd;
     };
 
@@ -417,6 +420,10 @@ namespace yato
         using plain_iterator = typename proxy_access_traits<value_type, access_policy>::plain_iterator;
 
         using dimensions_type = dimensionality<dimensions_number, size_type>;
+        //-------------------------------------------------------
+
+        template <proxy_access_policy Py_>
+        using rebind_access_t = proxy_nd <ValueType_, DimensionDescriptor_, 1, Py_>;
         //-------------------------------------------------------
 
     private:

@@ -21,48 +21,37 @@ namespace yato
 
     /**
      * Iterator over multidimensional view_nd
+     * Wraps ProxyType_ iterating underlying data accordint to proxy shape
      */
-    template <typename ValueType_, typename DimensionDescriptor_, size_t DimsNum_, proxy_access_policy AccessPolicy_>
+    template <typename ProxyType_>
     class iterator_nd
-        : private proxy_nd<ValueType_, DimensionDescriptor_, DimsNum_, AccessPolicy_>
+        : private ProxyType_
     {
-        using this_type = iterator_nd<ValueType_, DimensionDescriptor_, DimsNum_, AccessPolicy_>;
-        using view_type = proxy_nd<ValueType_, DimensionDescriptor_, DimsNum_, AccessPolicy_>;
+        using this_type  = iterator_nd<ProxyType_>;
+        using proxy_type = ProxyType_;
 
-        using data_value_type     = ValueType_;
-        using data_pointer_type   = std::add_pointer_t<ValueType_>;
-        using data_reference_type = typename proxy_access_traits<ValueType_, AccessPolicy_>::reference;
+        using data_value_type     = typename ProxyType_::value_type;
 
     public:
 
-        using view_type::dimensions_number;
-        using view_type::access_policy;
+        using proxy_type::dimensions_number;
+        using proxy_type::access_policy;
 
         // iterator traits
         using size_type         = size_t;
-        using value_type        = view_type; // dereferencing returns itself for stl compatibility
-        using pointer           = std::add_pointer_t<view_type>;
-        using reference         = std::add_lvalue_reference_t<view_type>;
+        using value_type        = proxy_type; // dereferencing returns itself for stl compatibility
+        using pointer           = std::add_pointer_t<proxy_type>;
+        using reference         = std::add_lvalue_reference_t<proxy_type>;
         using difference_type   = std::ptrdiff_t;
         using iterator_category = std::random_access_iterator_tag;
 
-        iterator_nd(const view_type & v)
-            : view_type(v)
+        iterator_nd(const proxy_type & v)
+            : proxy_type(v)
         { }
 
-        template <typename OtherTy_ = ValueType_, typename =
-            std::enable_if_t<details::convertible_view_type<OtherTy_, data_value_type>::value>
-        >
-        iterator_nd(const iterator_nd<OtherTy_, typename view_type::dim_descriptor, view_type::dimensions_number, view_type::access_policy> & other)
-            : view_type(other)
-        { }
-
-        template <proxy_access_policy ProxyAccess_, typename =
-            std::enable_if_t<ProxyAccess_ != view_type::access_policy>
-        >
-        explicit
-        iterator_nd(const iterator_nd<typename view_type::value_type, typename view_type::dim_descriptor, view_type::dimensions_number, ProxyAccess_> & other)
-            : view_type(other)
+        template <typename OtherProxy_>
+        iterator_nd(const iterator_nd<OtherProxy_> & other)
+            : proxy_type(other)
         { }
 
         iterator_nd(const iterator_nd&) = default;
@@ -79,12 +68,11 @@ namespace yato
         YATO_CONSTEXPR_FUNC
         bool makes_plain_range() const
         {
-            return sizeof(data_value_type) * view_type::total_size() == view_type::total_stored();
+            return sizeof(data_value_type) * proxy_type::total_size() == proxy_type::total_stored();
         }
 
         /**
-         *  Return the current proxy
-         *  Is necessary for supporting ranged 'for' 
+         *  Return the wrapped proxy
          */
         YATO_CONSTEXPR_FUNC
         reference operator*() const
@@ -98,7 +86,7 @@ namespace yato
         YATO_CONSTEXPR_FUNC_CXX14
         this_type & operator++() YATO_NOEXCEPT_KEYWORD
         {
-            details::advance_bytes(view_type::raw_ptr_(), view_type::total_stored());
+            details::advance_bytes(proxy_type::raw_ptr_(), proxy_type::total_stored());
             return *this;
         }
 
@@ -118,7 +106,7 @@ namespace yato
         YATO_CONSTEXPR_FUNC_CXX14
         this_type & operator--() YATO_NOEXCEPT_KEYWORD
         {
-            details::advance_bytes(view_type::raw_ptr_(), -narrow_cast<difference_type>(view_type::total_stored()));
+            details::advance_bytes(proxy_type::raw_ptr_(), -narrow_cast<difference_type>(proxy_type::total_stored()));
             return *this;
         }
 
@@ -137,7 +125,7 @@ namespace yato
          */
         this_type & operator+=(difference_type offset) YATO_NOEXCEPT_KEYWORD
         {
-            details::advance_bytes(view_type::raw_ptr_(), offset * view_type::total_stored());
+            details::advance_bytes(proxy_type::raw_ptr_(), offset * proxy_type::total_stored());
             return *this;
         }
 
@@ -165,7 +153,7 @@ namespace yato
          */
         this_type & operator-=(difference_type offset) YATO_NOEXCEPT_KEYWORD
         {
-            details::advance_bytes(view_type::raw_ptr_(), -offset * narrow_cast<difference_type>(view_type::total_stored()));
+            details::advance_bytes(proxy_type::raw_ptr_(), -offset * narrow_cast<difference_type>(proxy_type::total_stored()));
             return *this;
         }
 
@@ -197,7 +185,7 @@ namespace yato
         friend
         bool operator==(const this_type & one, const this_type & another) YATO_NOEXCEPT_KEYWORD
         {
-            return one.view_type::raw_ptr_() == another.view_type::raw_ptr_();
+            return one.proxy_type::raw_ptr_() == another.proxy_type::raw_ptr_();
         }
 
         /**
@@ -206,7 +194,7 @@ namespace yato
         friend
         bool operator!=(const this_type & one, const this_type & another) YATO_NOEXCEPT_KEYWORD
         {
-            return one.view_type::raw_ptr_() != another.view_type::raw_ptr_();
+            return one.proxy_type::raw_ptr_() != another.proxy_type::raw_ptr_();
         }
 
         /**
@@ -215,7 +203,7 @@ namespace yato
         friend
         bool operator<(const this_type & one, const this_type & another) YATO_NOEXCEPT_KEYWORD
         {
-            return one.view_type::raw_ptr_() < another.view_type::raw_ptr_();
+            return one.proxy_type::raw_ptr_() < another.proxy_type::raw_ptr_();
         }
 
         /**
@@ -224,7 +212,7 @@ namespace yato
         friend
         bool operator>(const this_type & one, const this_type & another) YATO_NOEXCEPT_KEYWORD
         {
-            return one.view_type::raw_ptr_() > another.view_type::raw_ptr_();
+            return one.proxy_type::raw_ptr_() > another.proxy_type::raw_ptr_();
         }
 
         /**
@@ -233,7 +221,7 @@ namespace yato
         friend
         bool operator<=(const this_type & one, const this_type & another) YATO_NOEXCEPT_KEYWORD
         {
-            return one.view_type::raw_ptr_() <= another.view_type::raw_ptr_();
+            return one.proxy_type::raw_ptr_() <= another.proxy_type::raw_ptr_();
         }
 
         /**
@@ -242,21 +230,28 @@ namespace yato
         friend
         bool operator>=(const this_type & one, const this_type & another) YATO_NOEXCEPT_KEYWORD
         {
-            return one.view_type::raw_ptr_() >= another.view_type::raw_ptr_();
+            return one.proxy_type::raw_ptr_() >= another.proxy_type::raw_ptr_();
         }
 
 
-        template<typename, typename, size_t, proxy_access_policy>
+        template<typename>
         friend class iterator_nd;
     };
 
 
     template <typename ProxyValue_, typename ProxyDimension_, size_t ProxyDims_, proxy_access_policy ProxyAccess_>
     YATO_CONSTEXPR_FUNC
-    auto make_move_iterator(const iterator_nd<ProxyValue_, ProxyDimension_, ProxyDims_, ProxyAccess_> & it)
-        -> iterator_nd<ProxyValue_, ProxyDimension_, ProxyDims_, proxy_access_policy::rvalue_ref>
+    auto make_iterator(const proxy_nd<ProxyValue_, ProxyDimension_, ProxyDims_, ProxyAccess_> & p)
     {
-        return iterator_nd<ProxyValue_, ProxyDimension_, ProxyDims_, proxy_access_policy::rvalue_ref>(it);
+        return iterator_nd<proxy_nd<ProxyValue_, ProxyDimension_, ProxyDims_, ProxyAccess_>>(p);
+    }
+
+    template <typename ProxyType_>
+    YATO_CONSTEXPR_FUNC
+    auto make_move_iterator(const iterator_nd<ProxyType_> & it)
+    {
+        using move_proxy = typename ProxyType_::template rebind_access_t<proxy_access_policy::rvalue_ref>;
+        return iterator_nd<move_proxy>(it);
     }
 
 }
