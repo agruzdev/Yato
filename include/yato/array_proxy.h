@@ -32,31 +32,6 @@ namespace yato
     }
 
 
-    enum class proxy_access_policy
-    {
-        lvalue_ref,   ///< Return lvalue referrence to underlying data
-        rvalue_ref    ///< Return rvalue referrence to underlying data
-    };
-
-    template <typename ValueType_, proxy_access_policy AccessPolicy_>
-    struct proxy_access_traits
-    { };
-
-    template <typename ValueType_>
-    struct proxy_access_traits<ValueType_, proxy_access_policy::lvalue_ref>
-    {
-        using reference      = std::add_lvalue_reference_t<ValueType_>;
-        using plain_iterator = std::add_pointer_t<ValueType_>;
-    };
-
-    template <typename ValueType_>
-    struct proxy_access_traits<ValueType_, proxy_access_policy::rvalue_ref>
-    {
-        using reference      = std::add_rvalue_reference_t<ValueType_>;
-        using plain_iterator = std::move_iterator<std::add_pointer_t<ValueType_>>;
-    };
-
-
     template <typename ValueType_, typename DimensionDescriptor_, size_t DimsNum_, proxy_access_policy AccessPolicy_ = proxy_access_policy::lvalue_ref>
     class proxy_nd;
 

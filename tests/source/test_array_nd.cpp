@@ -124,6 +124,18 @@ TEST(Yato_Array_Nd, array_nd_iterator_2)
     EXPECT_TRUE(0 == memcmp(&gt[0][0], &arr[0][0], sizeof(gt)));
 }
 
+TEST(Yato_Array_Nd, array_nd_iterator_3)
+{
+    yato::array_nd<int, 4, 4> arr;
+    std::iota(arr.plain_begin(), arr.plain_end(), 0);
+
+    int i = 0;
+    for (auto line : arr.crange()) {
+        for(auto x : line.crange()) {
+            EXPECT_TRUE(x == i++);
+        }
+    }
+}
 
 TEST(Yato_Array_Nd, array_nd_copy)
 {
