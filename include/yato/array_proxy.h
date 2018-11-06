@@ -58,19 +58,23 @@ namespace yato
         static YATO_CONSTEXPR_VAR size_t dimensions_number = DimsNum_;
         static YATO_CONSTEXPR_VAR proxy_access_policy access_policy = AccessPolicy_;
 
-        using sub_view = proxy_nd<value_type, dim_descriptor, dimensions_number - 1, access_policy>;
+        using sub_view       = proxy_nd<value_type, dim_descriptor, dimensions_number - 1, access_policy>;
+        using const_sub_view = proxy_nd<typename proxy_access_traits<value_type, access_policy>::const_value_type, dim_descriptor, dimensions_number - 1, access_policy>;
 
         using pointer_type   = std::add_pointer_t<value_type>;
         using reference_type = typename proxy_access_traits<value_type, access_policy>::reference;
 
         using iterator       = iterator_nd<sub_view>;
-        using plain_iterator = typename proxy_access_traits<value_type, access_policy>::plain_iterator;
+        using const_iterator = iterator_nd<const_sub_view>;
+
+        using plain_iterator       = typename proxy_access_traits<value_type, access_policy>::plain_iterator;
+        using const_plain_iterator = typename proxy_access_traits<value_type, access_policy>::const_plain_iterator;
 
         using dimensions_type = dimensionality<dimensions_number, size_type>;
         //-------------------------------------------------------
 
         template <proxy_access_policy Py_>
-        using rebind_access_t = proxy_nd <ValueType_, DimensionDescriptor_, DimsNum_, Py_>;
+        using rebind_access_t = proxy_nd<ValueType_, DimensionDescriptor_, DimsNum_, Py_>;
         //-------------------------------------------------------
 
     private:
@@ -95,6 +99,14 @@ namespace yato
             data_iterator sub_proxy_iter{ m_data_iter };
             details::advance_bytes(sub_proxy_iter, offset * dim_descriptor::template offset_to_bytes<value_type>(std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter))));
             return sub_view(sub_proxy_iter, std::next(m_desc_iter));
+        }
+
+        YATO_CONSTEXPR_FUNC_CXX14
+        const_sub_view create_const_sub_view_(size_t offset) const YATO_NOEXCEPT_KEYWORD
+        {
+            data_iterator sub_proxy_iter{ m_data_iter };
+            details::advance_bytes(sub_proxy_iter, offset * dim_descriptor::template offset_to_bytes<value_type>(std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter))));
+            return const_sub_view(sub_proxy_iter, std::next(m_desc_iter));
         }
         //-------------------------------------------------------
 
@@ -272,9 +284,9 @@ namespace yato
         /**
          *  Get begin iterator for going through arrays of lower dimensionality
          */
-        iterator cbegin() const
+        const_iterator cbegin() const
         {
-            return static_cast<iterator>(create_sub_view_(0));
+            return static_cast<const_iterator>(create_const_sub_view_(0));
         }
 
         /**
@@ -288,9 +300,9 @@ namespace yato
         /**
          *  Get end iterator for going through arrays of lower dimensionality
          */
-        iterator cend() const
+        const_iterator cend() const
         {
-            return static_cast<iterator>(create_sub_view_(size(0)));
+            return static_cast<const_iterator>(create_const_sub_view_(size(0)));
         }
 
         /**
@@ -314,19 +326,19 @@ namespace yato
         /**
          *  Get begin iterator for going through all elements of all dimensions
          */
-        plain_iterator plain_cbegin() const
+        const_plain_iterator plain_cbegin() const
         {
             YATO_REQUIRES(continuous());
-            return static_cast<plain_iterator>(m_data_iter);
+            return static_cast<const_plain_iterator>(m_data_iter);
         }
 
         /**
          *  Get end iterator for going through all elements of all dimensions
          */
-        plain_iterator plain_cend() const
+        const_plain_iterator plain_cend() const
         {
             YATO_REQUIRES(continuous());
-            return static_cast<plain_iterator>(std::next(m_data_iter, total_size()));
+            return static_cast<const_plain_iterator>(std::next(m_data_iter, total_size()));
         }
 
         /**
@@ -341,6 +353,22 @@ namespace yato
          *  Get range of iterators for going through all elements of all dimensions
          */
         yato::range<plain_iterator> plain_range() const
+        {
+            return make_range(plain_begin(), plain_end());
+        }
+
+        /**
+         *  Get range of iterators for going through the top dimension
+         */
+        yato::range<const_iterator> crange() const
+        {
+            return make_range(begin(), end());
+        }
+
+        /**
+         *  Get range of iterators for going through all elements of all dimensions
+         */
+        yato::range<const_plain_iterator> plain_crange() const
         {
             return make_range(plain_begin(), plain_end());
         }
@@ -391,8 +419,11 @@ namespace yato
 
         using sub_view       = reference_type;
 
-        using iterator       = typename proxy_access_traits<value_type, access_policy>::plain_iterator;
-        using plain_iterator = typename proxy_access_traits<value_type, access_policy>::plain_iterator;
+        using plain_iterator       = typename proxy_access_traits<value_type, access_policy>::plain_iterator;
+        using const_plain_iterator = typename proxy_access_traits<value_type, access_policy>::const_plain_iterator;
+
+        using iterator       = plain_iterator;
+        using const_iterator = const_plain_iterator;
 
         using dimensions_type = dimensionality<dimensions_number, size_type>;
         //-------------------------------------------------------
@@ -582,7 +613,7 @@ namespace yato
         /**
          *  Get begin iterator for going through arrays of lower dimensionality
          */
-        plain_iterator begin() const
+        iterator begin() const
         {
             return plain_begin();
         }
@@ -590,7 +621,7 @@ namespace yato
         /**
          *  Get begin iterator for going through arrays of lower dimensionality
          */
-        plain_iterator cbegin() const
+        const_iterator cbegin() const
         {
             return plain_begin();
         }
@@ -598,7 +629,7 @@ namespace yato
         /**
          *  Get end iterator for going through arrays of lower dimensionality
          */
-        plain_iterator end() const
+        iterator end() const
         {
             return plain_end();
         }
@@ -606,7 +637,7 @@ namespace yato
         /**
          *  Get end iterator for going through arrays of lower dimensionality
          */
-        plain_iterator cend() const
+        const_plain_iterator cend() const
         {
             return plain_end();
         }
@@ -632,19 +663,19 @@ namespace yato
         /**
          *  Get begin iterator for going through all elements of all dimensions
          */
-        plain_iterator plain_cbegin() const
+        const_plain_iterator plain_cbegin() const
         {
             YATO_REQUIRES(continuous());
-            return static_cast<plain_iterator>(m_data_iter);
+            return static_cast<const_plain_iterator>(m_data_iter);
         }
 
         /**
          *  Get end iterator for going through all elements of all dimensions
          */
-        plain_iterator plain_cend() const
+        const_plain_iterator plain_cend() const
         {
             YATO_REQUIRES(continuous());
-            return static_cast<plain_iterator>(std::next(m_data_iter, total_size()));
+            return static_cast<const_plain_iterator>(std::next(m_data_iter, total_size()));
         }
 
         /**
@@ -659,6 +690,22 @@ namespace yato
          *  Get range of iterators for going through all elements of all dimensions
          */
         yato::range<plain_iterator> plain_range() const
+        {
+            return make_range(plain_begin(), plain_end());
+        }
+
+        /**
+         *  Get range of iterators for going through the top dimension
+         */
+        yato::range<const_iterator> crange() const
+        {
+            return make_range(begin(), end());
+        }
+
+        /**
+         *  Get range of iterators for going through all elements of all dimensions
+         */
+        yato::range<const_plain_iterator> plain_crange() const
         {
             return make_range(plain_begin(), plain_end());
         }

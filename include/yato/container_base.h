@@ -559,15 +559,19 @@ YATO_PRAGMA_WARNING_POP
     template <typename ValueType_>
     struct proxy_access_traits<ValueType_, proxy_access_policy::lvalue_ref>
     {
-        using reference      = std::add_lvalue_reference_t<ValueType_>;
-        using plain_iterator = std::add_pointer_t<ValueType_>;
+        using reference             = std::add_lvalue_reference_t<ValueType_>;
+        using plain_iterator        = std::add_pointer_t<ValueType_>;
+        using const_plain_iterator  = std::add_pointer_t<std::add_const_t<ValueType_>>;
+        using const_value_type      = std::add_const_t<ValueType_>;
     };
 
     template <typename ValueType_>
     struct proxy_access_traits<ValueType_, proxy_access_policy::rvalue_ref>
     {
-        using reference      = std::add_rvalue_reference_t<ValueType_>;
-        using plain_iterator = std::move_iterator<std::add_pointer_t<ValueType_>>;
+        using reference             = std::add_rvalue_reference_t<ValueType_>;
+        using plain_iterator        = std::move_iterator<std::add_pointer_t<ValueType_>>;
+        using const_plain_iterator  = std::move_iterator<std::add_pointer_t<ValueType_>>;
+        using const_value_type      = ValueType_;
     };
 
     //-----------------------------------------------------------------------------
