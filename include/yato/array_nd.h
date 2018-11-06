@@ -97,20 +97,21 @@ YATO_PRAGMA_WARNING_POP
             static_assert(!std::is_reference<ValueType_>::value, "ValueType can't be reference");
         public:
             using value_type = ValueType_;
-            using reference  = std::add_lvalue_reference_t<ValueType_>;
             using shape      = Shape_;
 
             static YATO_CONSTEXPR_VAR size_t dimensions_number = Shape_::dimensions_number;
             static YATO_CONSTEXPR_VAR proxy_access_policy access_policy = AccessPolicy_;
 
+            using reference  = typename proxy_access_traits<value_type, access_policy>::reference;
+
             using sub_proxy       = sub_array<value_type, typename shape::sub_shape, access_policy>;
-            using const_sub_proxy = sub_array<std::add_const_t<value_type>, typename shape::sub_shape, access_policy>;
+            using const_sub_proxy = sub_array<typename proxy_access_traits<value_type, access_policy>::const_value_type, typename shape::sub_shape, access_policy>;
 
             using iterator       = iterator_nd<sub_proxy>;
             using const_iterator = iterator_nd<const_sub_proxy>;
 
-            using plain_iterator       = std::add_pointer_t<value_type>;
-            using const_plain_iterator = std::add_pointer_t<std::add_const_t<value_type>>;
+            using plain_iterator       = typename proxy_access_traits<value_type, access_policy>::plain_iterator;
+            using const_plain_iterator = typename proxy_access_traits<value_type, access_policy>::const_plain_iterator;
 
         private:
             value_type* m_iter;
@@ -274,17 +275,18 @@ YATO_PRAGMA_WARNING_POP
             static_assert(!std::is_reference<ValueType_>::value, "ValueType can't be reference");
         public:
             using value_type = ValueType_;
-            using reference  = std::add_lvalue_reference_t<ValueType_>;
-
-            using shape = plain_array_shape<Length_>;
+            using shape      = plain_array_shape<Length_>;
 
             static YATO_CONSTEXPR_VAR size_t dimensions_number = shape::dimensions_number;
             static YATO_CONSTEXPR_VAR proxy_access_policy access_policy = AccessPolicy_;
 
-            using iterator             = std::add_pointer_t<value_type>;
-            using const_iterator       = std::add_pointer_t<std::add_const_t<value_type>>;
-            using plain_iterator       = std::add_pointer_t<value_type>;
-            using const_plain_iterator = std::add_pointer_t<std::add_const_t<value_type>>;
+            using reference  = typename proxy_access_traits<value_type, access_policy>::reference;
+
+            using plain_iterator       = typename proxy_access_traits<value_type, access_policy>::plain_iterator;
+            using const_plain_iterator = typename proxy_access_traits<value_type, access_policy>::const_plain_iterator;
+
+            using iterator             = plain_iterator;
+            using const_iterator       = const_plain_iterator;
 
         private:
             value_type* m_iter;
