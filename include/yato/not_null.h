@@ -8,7 +8,7 @@
 #ifndef _YATO_NOT_NULL_
 #define _YATO_NOT_NULL_
 
-#include "assert.h"
+#include "assertion.h"
 #include "type_traits.h"
 
 namespace yato

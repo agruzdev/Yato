@@ -8,7 +8,7 @@
 #ifndef _YATO_ZIP_ITERATOR_H_
 #define _YATO_ZIP_ITERATOR_H_
 
-#include "assert.h"
+#include "assertion.h"
 #include "meta.h"
 #include "tuple.h"
 #include "type_traits.h"

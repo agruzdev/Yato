@@ -8,7 +8,7 @@
 #ifndef _YATO_INSTANCE_OF_H_
 #define _YATO_INSTANCE_OF_H_
 
-#include "assert.h"
+#include "assertion.h"
 #include "type_traits.h"
 
 namespace yato

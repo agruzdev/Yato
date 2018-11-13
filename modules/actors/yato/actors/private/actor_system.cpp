@@ -8,7 +8,7 @@
 #include <condition_variable>
 #include <memory>
 
-#include <yato/assert.h>
+#include <yato/assertion.h>
 
 #include "../actor.h"
 #include "../actor_system.h"

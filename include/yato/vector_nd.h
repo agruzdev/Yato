@@ -13,7 +13,7 @@
 
 #include "array_proxy.h"
 #include "array_view.h"
-#include "assert.h"
+#include "assertion.h"
 #include "compressed_pair.h"
 #include "iterator_nd.h"
 #include "memory_utility.h"

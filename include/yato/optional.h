@@ -8,7 +8,7 @@
 #ifndef _YATO_OPTIONAL_H_
 #define _YATO_OPTIONAL_H_
 
-#include "assert.h"
+#include "assertion.h"
 #include "type_traits.h"
 #include "types.h"
 

@@ -9,7 +9,7 @@
 #define _YATO_ITERATOR_ND_H_
 
 #include <iterator>
-#include "assert.h"
+#include "assertion.h"
 #include "types.h"
 #include "range.h"
 

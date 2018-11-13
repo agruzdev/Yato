@@ -15,7 +15,7 @@
 
 #include <yato/optional.h>
 #include <yato/variant.h>
-#include <yato/assert.h>
+#include <yato/assertion.h>
 #include "yato/any.h"
 
 namespace yato {

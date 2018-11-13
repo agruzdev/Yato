@@ -13,7 +13,7 @@
 #include <vector>
 
 #include <yato/prerequisites.h>
-#include <yato/assert.h>
+#include <yato/assertion.h>
 
 namespace yato
 {

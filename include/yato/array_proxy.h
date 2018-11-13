@@ -9,7 +9,7 @@
 #define _YATO_ARRAY_PROXY_H_
 
 #include <iterator>
-#include "assert.h"
+#include "assertion.h"
 #include "types.h"
 #include "range.h"
 

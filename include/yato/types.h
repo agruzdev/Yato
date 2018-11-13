@@ -11,7 +11,7 @@
 #include <cstdint>
 #include <limits>
 
-#include "assert.h"
+#include "assertion.h"
 #include "type_traits.h"
 
 namespace yato

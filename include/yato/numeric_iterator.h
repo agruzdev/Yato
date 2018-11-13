@@ -8,7 +8,7 @@
 #ifndef _YATO_NUMERIC_ITERATOR_H_
 #define _YATO_NUMERIC_ITERATOR_H_
 
-#include "assert.h"
+#include "assertion.h"
 #include "types.h"
 #include "type_traits.h"
 

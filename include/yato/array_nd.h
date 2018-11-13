@@ -11,7 +11,7 @@
 #include <array>
 #include <type_traits>
 #include <vector>
-#include "assert.h"
+#include "assertion.h"
 #include "array_view.h"
 #include "iterator_nd.h"
 #include "range.h"

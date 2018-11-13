@@ -12,7 +12,7 @@
 #include <limits>
 
 #include "type_traits.h"
-#include "assert.h"
+#include "assertion.h"
 
 namespace yato
 {
