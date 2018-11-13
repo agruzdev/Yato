@@ -149,7 +149,7 @@ namespace conf {
                     auto value = dynamic_cast<TCLAP::ValueArg<double>*>(arg->value.get());
                     if(value != nullptr) {
                         using return_type = stored_type_trait<config_type::floating>::return_type;
-                        res.emplace<return_type>(yato::narrow_cast<return_type>(value->getValue()));
+                        res.emplace<return_type>(yato::float_cast<return_type>(value->getValue()));
                     }
                 }
                 break;

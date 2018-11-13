@@ -93,7 +93,7 @@ namespace conf {
         case yato::conf::config_type::floating:
             if(it->is_number_float()) {
                 using return_type = stored_type_trait<config_type::floating>::return_type;
-                res.emplace<return_type>(yato::narrow_cast<return_type>(it->get<nlohmann::json::number_float_t>()));
+                res.emplace<return_type>(yato::float_cast<return_type>(it->get<nlohmann::json::number_float_t>()));
             }
             break;
         case yato::conf::config_type::string:

@@ -88,7 +88,7 @@ namespace conf {
                     double val = 0.0;
                     if (query_value_(elem, val, &tinyxml2::XMLUtil::ToDouble)) {
                         using return_type = stored_type_trait<config_type::floating>::return_type;
-                        res.emplace<return_type>(yato::narrow_cast<return_type>(val));
+                        res.emplace<return_type>(yato::float_cast<return_type>(val));
                     }
                 }
                 break;

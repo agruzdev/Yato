@@ -23,10 +23,20 @@ TEST(Yato_Types, narrow_cast)
     YATO_THROWING_ASSERT_LOCK(throwLock);
 
     EXPECT_THROW(yato::narrow_cast<uint8_t>(1000U), yato::assertion_error);
-    EXPECT_THROW(yato::narrow_cast<int32_t>(1.5f),  yato::assertion_error);
+    EXPECT_THROW(yato::narrow_cast<int32_t>(std::numeric_limits<uint32_t>::max()),  yato::assertion_error);
     EXPECT_THROW(yato::narrow_cast<uint32_t>(-1),   yato::assertion_error);
     EXPECT_NO_THROW(yato::narrow_cast<uint8_t>(255U));
-    EXPECT_NO_THROW(yato::narrow_cast<int32_t>(1.0f));
+    EXPECT_NO_THROW(yato::narrow_cast<int32_t>(1u));
+    EXPECT_NO_THROW(yato::narrow_cast<int64_t>(std::numeric_limits<int32_t>::min()));
+}
+
+TEST(Yato_Types, float_cast)
+{
+    YATO_THROWING_ASSERT_LOCK(throwLock);
+
+    EXPECT_NO_THROW(yato::float_cast<double>(1.0f));
+    EXPECT_NO_THROW(yato::float_cast<float>(1.0));
+    EXPECT_THROW(yato::float_cast<float>(std::numeric_limits<double>::max()), yato::assertion_error);
 }
 
 #ifdef YATO_MSVC

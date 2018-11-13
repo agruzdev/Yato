@@ -45,16 +45,31 @@ namespace yato
 
     }
 
-    template<typename TypeTo_, typename TypeFrom_>
+    template <typename TypeTo_, typename TypeFrom_>
     YATO_CONSTEXPR_FUNC YATO_FORCED_INLINE
     auto narrow_cast(const TypeFrom_ & val) YATO_NOEXCEPT_TESTED
-        -> typename std::enable_if<std::is_arithmetic<TypeTo_>::value && std::is_arithmetic<TypeFrom_>::value, TypeTo_>::type
+        -> std::enable_if_t<
+            std::is_integral<TypeTo_>::value && std::is_integral<TypeFrom_>::value, 
+            TypeTo_
+        >
     {
         YATO_ASSERT_TESTED(val == static_cast<TypeFrom_>(static_cast<TypeTo_>(val)), "yato::narrow_cast failed!");
         YATO_ASSERT_TESTED((details::check_different_sign_narrowing<TypeTo_, TypeFrom_>::apply(static_cast<TypeTo_>(val), val)), "yato::narrow_cast failed!");
         return static_cast<TypeTo_>(val);
     }
 
+
+    template <typename TypeTo_, typename TypeFrom_>
+    YATO_CONSTEXPR_FUNC YATO_FORCED_INLINE
+    auto float_cast(const TypeFrom_ & val) YATO_NOEXCEPT_TESTED
+        -> std::enable_if_t<
+            std::is_floating_point<TypeTo_>::value && std::is_floating_point<TypeFrom_>::value, 
+            TypeTo_
+        >
+    {
+        YATO_ASSERT_TESTED(val == static_cast<TypeFrom_>(static_cast<TypeTo_>(val)), "yato::float_cast failed!");
+        return static_cast<TypeTo_>(val);
+    }
 
     template<typename _TypeTo, typename _TypeFrom>
     YATO_CONSTEXPR_FUNC YATO_FORCED_INLINE
