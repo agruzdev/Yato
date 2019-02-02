@@ -192,11 +192,10 @@ namespace yato
     class any
     {
     private:
-        std::unique_ptr<details::any_placeholder> m_content;
+        std::unique_ptr<details::any_placeholder> m_content{ nullptr };
         //------------------------------------------------
 
     public:
-        constexpr explicit
         any() = default;
 
         template <typename ValueType>
@@ -218,19 +217,10 @@ namespace yato
             : m_content(std::make_unique<details::any_holder<Ty>>(yato::in_place_t(), std::forward<Args>(args)...))
         { }
 
-        constexpr
         any(nullany_t)
-            : m_content(nullptr)
         { }
 
-#ifndef YATO_MSVC_2013
-        any(any &&) = default;
-#else
-        any(any && other)
-            : m_content(std::move(other.m_content))
-        {
-        }
-#endif
+        any(any &&) YATO_NOEXCEPT_KEYWORD = default;
 
         ~any() = default;
 
