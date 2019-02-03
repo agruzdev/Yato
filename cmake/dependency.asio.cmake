@@ -18,9 +18,9 @@ include(${YATO_SOURCE_DIR}/cmake/dependency.common.functions.cmake)
 dependency_find_or_download(
     NAME ASIO
     VERBOSE_NAME "Asio"
-    URL "https://github.com/chriskohlhoff/asio/archive/asio-1-12-0.zip"
-    HASH_MD5 "e7b27761818ba597886620c87f48a768"
-    PREFIX "asio-asio-1-12-0"
+    URL "https://github.com/chriskohlhoff/asio/archive/asio-1-12-2.zip"
+    HASH_MD5 "001b897add76fc39480841be8813bf72"
+    PREFIX "asio-asio-1-12-2"
 )
 
 set(ASIO_INCLUDE_DIR ${ASIO_FOUND_ROOT}/asio/include CACHE INTERNAL "")

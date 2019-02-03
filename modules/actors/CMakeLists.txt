@@ -45,6 +45,11 @@ if(YATO_ACTORS_WITH_IO)
     if(WIN32)
         add_definitions("-D_WIN32_WINNT=0x0501")
     endif()
+
+    if(MINGW AND NOT CLANG)
+       # Mingw 8.1 bug workaround
+       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cast-function-type")
+    endif()
 endif()
 
 #=========================================
@@ -59,7 +64,7 @@ if(YATO_ACTORS_WITH_IO)
         target_link_libraries(YatoActors PRIVATE wsock32)
         target_link_libraries(YatoActors PRIVATE ws2_32)
     else()
-        target_link_libraries(YatoActors PRIVATE pthread)
+        #target_link_libraries(YatoActors PRIVATE pthread)
     endif()
 endif()
 
