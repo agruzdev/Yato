@@ -80,6 +80,21 @@ if(YATO_CONFIG_INI)
     set(CONFIG_NON_EMPTY_TEST ON)
 endif()
 
+# YAML
+option(YATO_CONFIG_YAML "Enable YAML config background" OFF)
+if(YATO_CONFIG_YAML)
+    include(${YATO_SOURCE_DIR}/cmake/dependency.yaml.cmake)
+    include_directories(${YAML_INCLUDE_DIR})
+    link_directories(${YAML_LIBRARY_DIR})
+    list(APPEND config_dependency_targets ${YAML_LIBRARIES})
+    file(GLOB yaml_sources
+        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/yaml/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/yaml/*.cpp"
+    )
+    list(APPEND config_sources ${yaml_sources})
+    list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/yaml")
+    set(CONFIG_NON_EMPTY_TEST ON)
+endif()
 
 include_directories(${YATO_INCLUDE_DIRS})
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
