@@ -36,7 +36,7 @@ TEST(Yato_Range, make_range)
 TEST(Yato_Range, numeric_range_1)
 {
     int i = 0;
-    for (int x : yato::make_range(0, 100)) {
+    for (int x : yato::numeric_range(0, 100)) {
         EXPECT_TRUE(x == i++);
     }
 }
@@ -44,12 +44,12 @@ TEST(Yato_Range, numeric_range_1)
 TEST(Yato_Range, numeric_range_2)
 {
     size_t i = 0;
-    for (size_t x : yato::make_range(100U)) {
+    for (size_t x : yato::numeric_range(100U)) {
         EXPECT_TRUE(x == i++);
     }
 
     int j = 0;
-    for (int x : yato::make_range(100)) {
+    for (int x : yato::numeric_range(100)) {
         EXPECT_TRUE(x == j++);
     }
 }
@@ -59,7 +59,7 @@ TEST(Yato_Range, numeric_range_3)
 {
     using namespace yato::literals;
     yato::uint8_t i = 0;
-    for (auto x : yato::make_range(100_u8)) {
+    for (auto x : yato::numeric_range(100_u8)) {
         EXPECT_TRUE(x == i++);
     }
 }
@@ -95,6 +95,16 @@ TEST(Yato_Range, make_range_2)
             return m_data->end();
         }
 
+        std::vector<int>::const_iterator begin() const
+        {
+            return m_data->cbegin();
+        }
+
+        std::vector<int>::const_iterator end() const
+        {
+            return m_data->cend();
+        }
+
         std::vector<int>::const_iterator cbegin() const
         {
             return m_data->cbegin();
@@ -117,6 +127,7 @@ TEST(Yato_Range, make_range_2)
     for (int & x : yato::make_range(a)) {
         EXPECT_TRUE(x == *it++);
     }
+
 
     const A& c_a = a;
     it = vec.begin();
@@ -183,7 +194,7 @@ TEST(Yato_Range, zip)
         EXPECT_EQ(std::get<0>(t), -std::get<1>(t));
     }
 
-    auto r2 = yato::make_range(v).zip(yato::make_range(u), yato::make_range(1U, 5U));
+    auto r2 = yato::make_range(v).zip(yato::make_range(u), yato::numeric_range(1U, 5U));
     for (const auto & t : r2) {
         EXPECT_EQ(std::get<0>(t), -std::get<1>(t));
         EXPECT_EQ(std::get<0>(t), static_cast<int>(std::get<2>(t)));

@@ -21,113 +21,77 @@
 
 namespace yato
 {
-#ifdef YATO_MSVC_2013
-    namespace details
-    {
-        template <typename _RangesList, typename... _Iterators>
-        struct ranges_to_zip_iterator_impl
-        {
-            using head_range = typename _RangesList::head;
-            using type = typename ranges_to_zip_iterator_impl<typename _RangesList::tail, _Iterators..., typename head_range::iterator_type>::type;
-        };
-
-        template <typename... _Iterators>
-        struct ranges_to_zip_iterator_impl<meta::null_list, _Iterators...>
-        {
-            using type = zip_iterator<_Iterators...>;
-        };
-
-        template <typename... _Ranges>
-        struct ranges_to_zip_iterator
-        {
-            using type = typename ranges_to_zip_iterator_impl<meta::list<_Ranges...>>::type;
-        };
-    }
-#endif
 
     /**
      *  Immutable object aggregating two iterators
      *  Helps to express a range of one container
      */
-    template<typename _IteratorType>
+    template<typename IteratorType_, typename EndType_ = IteratorType_>
     class range
     {
+        using this_type = range<IteratorType_, EndType_>;
     public:
-        using iterator_type = _IteratorType;
+        using iterator_type = IteratorType_;
+        using end_type      = EndType_;
         using reverse_iterator_type = std::reverse_iterator<iterator_type>;
         static_assert(is_iterator<iterator_type>::value, "yato::range can be used only for iterators");
-        using my_type = range<iterator_type>;
 
         using difference_type = typename std::iterator_traits<iterator_type>::difference_type;
+
+        static YATO_CONSTEXPR_VAR bool is_uniform = std::is_same<IteratorType_, EndType_>::value;
         //-------------------------------------------------------
 
     private:
         iterator_type m_begin;
-        iterator_type m_end;
+        end_type      m_end;
         //-------------------------------------------------------
 
     public:
         YATO_CONSTEXPR_FUNC 
-        range(const iterator_type & begin, const iterator_type & end) YATO_NOEXCEPT_KEYWORD
-            : m_begin(begin), m_end(end)
-        { }
-
-        YATO_CONSTEXPR_FUNC 
-        range(iterator_type && begin, iterator_type && end) YATO_NOEXCEPT_KEYWORD
+        range(iterator_type begin, end_type end)
             : m_begin(std::move(begin)), m_end(std::move(end))
         { }
 
-        YATO_CONSTEXPR_FUNC 
-        range(const range<iterator_type> & other) YATO_NOEXCEPT_KEYWORD
-            : m_begin(other.begin()), m_end(other.end())
-        { }
+        range(const range&) = default;
+        range(range&&) = default;
 
-        range(range<iterator_type> && other) YATO_NOEXCEPT_KEYWORD
-            : m_begin(std::move(other.m_begin)), m_end(std::move(other.m_end))
-        { }
-
-        range<iterator_type>& operator=(const range<iterator_type> & other) YATO_NOEXCEPT_KEYWORD
-        {
-            m_begin = other.m_begin;
-            m_end   = other.m_end;
-            return *this;
-        }
-
-        range<iterator_type>& operator=(range<iterator_type> && other) YATO_NOEXCEPT_KEYWORD
-        {
-            m_begin = std::move(other.m_begin);
-            m_end   = std::move(other.m_end);
-            return *this;
-        }
+        range& operator=(const range&) = default;
+        range& operator=(range&&) = default;
 
         ~range() = default;
 
         YATO_CONSTEXPR_FUNC 
-        const iterator_type & begin() const YATO_NOEXCEPT_KEYWORD
+        const iterator_type & begin() const
         {
             return m_begin;
         }
 
         YATO_CONSTEXPR_FUNC 
-        const iterator_type & end() const YATO_NOEXCEPT_KEYWORD
+        const end_type & end() const
         {
             return m_end;
         }
 
+        template <bool UniformRange_ = is_uniform>
         YATO_CONSTEXPR_FUNC
-        reverse_iterator_type rbegin() const
+        auto rbegin() const
+            -> std::enable_if_t<UniformRange_, reverse_iterator_type>
         {
             return reverse_iterator_type(end());
         }
 
+        template <bool UniformRange_ = is_uniform>
         YATO_CONSTEXPR_FUNC
-        reverse_iterator_type rend() const
+        auto rend() const
+            -> std::enable_if_t<UniformRange_, reverse_iterator_type>
         {
             return reverse_iterator_type(begin());
         }
 
+        template <bool UniformRange_ = is_uniform>
         YATO_CONSTEXPR_FUNC
-        range<reverse_iterator_type> reverse() const
+        auto reverse() const
+            -> std::enable_if_t<UniformRange_, range<reverse_iterator_type>>
         {
             return range<reverse_iterator_type>(rbegin(), rend());
         }
@@ -186,13 +150,9 @@ namespace yato
         template <typename... Ranges_>
         YATO_CONSTEXPR_FUNC
         auto zip(const Ranges_ & ... ranges) const
-            -> range<zip_iterator<iterator_type, typename Ranges_::iterator_type...>> 
+            -> range<zip_iterator<iterator_type, typename Ranges_::iterator_type...>>
         {
-#ifdef YATO_MSVC_2013
-            using zipped_iterator_type = typename details::ranges_to_zip_iterator<my_type, Ranges_...>::type;
-#else
             using zipped_iterator_type = zip_iterator<iterator_type, typename Ranges_::iterator_type...>;
-#endif
             return range<zipped_iterator_type>(zipped_iterator_type(std::make_tuple(begin(), ranges.begin()...)), zipped_iterator_type(std::make_tuple(end(), ranges.end()...)));
         }
 
@@ -225,7 +185,7 @@ namespace yato
         {
             return std::vector<typename std::iterator_traits<iterator_type>::value_type, Allocator_>(begin(), end(), allocator);
         }
-            
+
         /**
          *  Convert range to list via copying
          */
@@ -250,56 +210,55 @@ namespace yato
     /**
     *    Helper functions to make range from a couple of iterators with auto type deduction 
     */
-    template<typename _IteratorType>
+    template <typename IteratorType_, typename EndType_>
     YATO_CONSTEXPR_FUNC 
-    auto make_range(_IteratorType && begin, _IteratorType && end)
-        -> typename std::enable_if< is_iterator< typename yato::remove_cvref<_IteratorType>::type >::value, range< typename yato::remove_cvref<_IteratorType>::type > >::type
+    auto make_range(IteratorType_ && begin, EndType_ && end)
     {
-        return range<typename yato::remove_cvref<_IteratorType>::type>(std::forward<_IteratorType>(begin), std::forward<_IteratorType>(end));
+        return range<yato::remove_cvref_t<IteratorType_>, yato::remove_cvref_t<EndType_>>(std::forward<IteratorType_>(begin), std::forward<EndType_>(end));
     }
 
     /**
-     *    Helper functions to make numeric ranges (e.g. for ranged for-loops)
-     */
-    template <typename Ty_>
-    YATO_CONSTEXPR_FUNC
-    auto make_range(Ty_ && left, Ty_ && right)
-        -> typename std::enable_if < std::is_integral<typename yato::remove_cvref<Ty_>::type>::value, range<numeric_iterator<typename yato::remove_cvref<Ty_>::type>> >::type
-    {
-        return make_range(numeric_iterator<typename yato::remove_cvref<Ty_>::type>(std::forward<Ty_>(left)), numeric_iterator<typename yato::remove_cvref<Ty_>::type>(std::forward<Ty_>(right)));
-    }
-
-    /**
-     *    Helper functions to make numeric ranges (e.g. for ranged for-loops)
-     */
-    template <typename Ty_>
-    YATO_CONSTEXPR_FUNC
-    auto make_range(Ty_ && right)
-        -> typename std::enable_if < std::is_integral<typename yato::remove_cvref<Ty_>::type>::value, range<numeric_iterator<typename yato::remove_cvref<Ty_>::type>> >::type
-    {
-        return make_range(static_cast<typename yato::remove_cvref<Ty_>::type>(0), std::forward<Ty_>(right));
-    }
-
-    /**
-     *  Generic version. Calls begin() and end()
+     *  Generic version. Calls std::begin() and std::end()
      */
     template <typename Ty_>
     YATO_CONSTEXPR_FUNC
     auto make_range(Ty_ && object)
-        -> typename std::enable_if<std::is_class<typename yato::remove_cvref<Ty_>::type>::value, range<decltype(object.begin())> >::type
     {
-        return range<decltype(object.begin())>(object.begin(), object.end());
+        return make_range(std::begin(std::forward<Ty_>(object)), std::end(std::forward<Ty_>(object)));
     }
 
     /**
-     *  Generic version. Calls cbegin() and cend()
+     *  Generic version. Calls std::cbegin() and std::cend()
      */
     template <typename Ty_>
     YATO_CONSTEXPR_FUNC
-    auto make_crange(const Ty_ & object)
-        -> typename std::enable_if<std::is_class<typename yato::remove_cvref<Ty_>::type>::value, range<decltype(object.cbegin())> >::type
+    auto make_crange(Ty_ && object)
     {
-        return range<decltype(object.cbegin())>(object.cbegin(), object.cend());
+        return make_range(std::cbegin(std::forward<Ty_>(object)), std::cend(std::forward<Ty_>(object)));
+    }
+
+
+    /**
+     *  Helper functions to make numeric ranges (e.g. for ranged for-loops)
+     */
+    template <typename Ty_>
+    YATO_CONSTEXPR_FUNC
+    auto numeric_range(Ty_ && last)
+    {
+        using iter_type = numeric_iterator<yato::remove_cvref_t<Ty_>>;
+        return make_range(iter_type{static_cast<Ty_>(0)}, iter_type{std::forward<Ty_>(last)});
+    }
+
+    /**
+     *  Helper functions to make numeric ranges (e.g. for ranged for-loops)
+     */
+    template <typename Ty1_, typename Ty2_>
+    YATO_CONSTEXPR_FUNC
+    auto numeric_range(Ty1_ && first, Ty2_ && last)
+    {
+        using iter1_type = numeric_iterator<yato::remove_cvref_t<Ty1_>>;
+        using iter2_type = numeric_iterator<yato::remove_cvref_t<Ty2_>>;
+        return make_range(iter1_type{std::forward<Ty1_>(first)}, iter2_type{std::forward<Ty2_>(last)});
     }
 }
 
