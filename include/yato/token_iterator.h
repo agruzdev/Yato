@@ -21,6 +21,35 @@
 
 namespace yato
 {
+    // Default compare operation
+    template <typename ValueTy_>
+    struct equal_to_value
+    {
+    private:
+        ValueTy_ m_value;
+
+    public:
+        equal_to_value(ValueTy_ val)
+            : m_value(std::move(val))
+        { }
+
+        equal_to_value(const equal_to_value&) = default;
+        equal_to_value(equal_to_value&&) = default;
+
+        equal_to_value& operator=(const equal_to_value&) = default;
+        equal_to_value& operator=(equal_to_value&&) = default;
+
+        ~equal_to_value() = default;
+
+        template <typename Ty_>
+        bool operator()(const Ty_ & v) const
+        {
+            return m_value == v;
+        }
+    };
+
+
+
     // End iterator for tokenizer
     class tokens_end_t
     {
@@ -37,9 +66,14 @@ namespace yato
 #endif
 
 
-    template <typename IterBeg_, typename IterEnd_, typename Predicate_>
+    template <typename IterBeg_,
+              typename IterEnd_ = IterBeg_,
+              typename Predicate_ = yato::equal_to_value<typename std::iterator_traits<IterBeg_>::value_type>
+    >
     class token_iterator
     {
+        static_assert(yato::is_iterator<IterBeg_>::value, "Invalid iterator type");
+
     private:
         using this_type = token_iterator<IterBeg_, IterEnd_, Predicate_>;
 
@@ -220,33 +254,33 @@ namespace yato
 
 
     template <typename CharTy_>
-    auto ctokenize(const std::basic_string<CharTy_> & str, CharTy_ sep, bool skip_empty = false)
+    auto tokenize(const std::basic_string<CharTy_> & str, CharTy_ sep, bool skip_empty = false)
     {
-        return make_token_iterator(std::cbegin(str), std::cend(str), [sep](const auto & c) {return c == sep; }, skip_empty);
+        return make_token_iterator(std::cbegin(str), std::cend(str), yato::equal_to_value<CharTy_>{sep}, skip_empty);
     }
 
     template <typename CharTy_>
     auto tokenize(std::basic_string<CharTy_> & str, CharTy_ sep, bool skip_empty = false)
     {
-        return make_token_iterator(std::begin(str), std::end(str), [sep](const auto & c) { return c == sep; }, skip_empty);
+        return make_token_iterator(std::begin(str), std::end(str), yato::equal_to_value<CharTy_>{sep}, skip_empty);
     }
 
     template <typename CharTy_>
-    auto ctokenize_n(const CharTy_* str, size_t n, CharTy_ sep, bool skip_empty = false)
+    auto tokenize_n(const CharTy_* str, size_t n, CharTy_ sep, bool skip_empty = false)
     {
-        return make_token_iterator(str, str + n, [sep](const auto & c) { return c == sep; }, skip_empty);
+        return make_token_iterator(str, str + n, yato::equal_to_value<CharTy_>{sep}, skip_empty);
     }
 
     template <typename CharTy_>
     auto tokenize_n(CharTy_* str, size_t n, CharTy_ sep, bool skip_empty = false)
     {
-        return make_token_iterator(str, str + n, [sep](const auto & c) { return c == sep; }, skip_empty);
+        return make_token_iterator(str, str + n, yato::equal_to_value<CharTy_>{sep}, skip_empty);
     }
 
     template <typename Iter1_, typename Iter2_, typename CharTy_>
     auto tokenize(Iter1_ && first, Iter2_ && last, CharTy_ sep, bool skip_empty = false)
     {
-        return make_token_iterator(std::forward<Iter1_>(first), std::forward<Iter2_>(last), [sep](const auto & c) { return c == sep; }, skip_empty);
+        return make_token_iterator(std::forward<Iter1_>(first), std::forward<Iter2_>(last), yato::equal_to_value<CharTy_>{sep}, skip_empty);
     }
 
     template <typename Iter1_, typename Iter2_, typename Pred_>
@@ -258,7 +292,7 @@ namespace yato
     template <typename Iter1_, typename Iter2_, typename CharTy_>
     auto tokenize(const yato::range<Iter1_, Iter2_> & range, CharTy_ sep, bool skip_empty = false)
     {
-        return make_token_iterator(range.begin(), range.end(), [sep](const auto & c) { return c == sep; }, skip_empty);
+        return make_token_iterator(range.begin(), range.end(), yato::equal_to_value<CharTy_>{sep}, skip_empty);
     }
 
     template <typename Iter1_, typename Iter2_, typename Pred_>
@@ -271,7 +305,7 @@ namespace yato
     template <typename CharTy_>
     auto tokens_crange(const std::basic_string<CharTy_> & str, CharTy_ sep, bool skip_empty = false)
     {
-        return yato::make_range(ctokenize(str, sep, skip_empty), tokens_end_t{});
+        return yato::make_range(tokenize(str, sep, skip_empty), tokens_end_t{});
     }
 
     template <typename CharTy_>
@@ -283,7 +317,7 @@ namespace yato
     template <typename CharTy_>
     auto tokens_crange_n(const CharTy_* & str, size_t n, CharTy_ sep, bool skip_empty = false)
     {
-        return yato::make_range(ctokenize_n(str, n, sep, skip_empty), tokens_end_t{});
+        return yato::make_range(tokenize_n(str, n, sep, skip_empty), tokens_end_t{});
     }
 
     template <typename CharTy_>
@@ -295,7 +329,7 @@ namespace yato
     template <typename Iter1_, typename Iter2_, typename CharTy_>
     auto tokens_range(Iter1_ && first, Iter2_ && last, CharTy_ sep, bool skip_empty = false)
     {
-        return yato::make_range(make_token_iterator(std::forward<Iter1_>(first), std::forward<Iter2_>(last), [sep](const auto & c) { return c == sep; }, skip_empty), tokens_end_t{});
+        return yato::make_range(make_token_iterator(std::forward<Iter1_>(first), std::forward<Iter2_>(last), yato::equal_to_value<CharTy_>{sep}, skip_empty), tokens_end_t{});
     }
 
     template <typename Iter1_, typename Iter2_, typename Pred_>
@@ -307,7 +341,7 @@ namespace yato
     template <typename Iter1_, typename Iter2_, typename CharTy_>
     auto tokens_range(const yato::range<Iter1_, Iter2_> & range, CharTy_ sep, bool skip_empty = false)
     {
-        return yato::make_range(make_token_iterator(range.begin(), range.end(), [sep](const auto & c) { return c == sep; }, skip_empty), tokens_end_t{});
+        return yato::make_range(make_token_iterator(range.begin(), range.end(), yato::equal_to_value<CharTy_>{sep}, skip_empty), tokens_end_t{});
     }
 
     template <typename Iter1_, typename Iter2_, typename Pred_>

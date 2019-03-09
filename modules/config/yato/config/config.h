@@ -11,6 +11,7 @@
 #include <memory>
 
 #include "config_backend.h"
+#include "path.h"
 
 namespace yato {
 
@@ -46,6 +47,9 @@ namespace conf {
         config cast_result_(backend_ptr && val) {
             return config(std::move(val));
         }
+
+        template <typename Ty_, typename Tokenizer_, typename Converter_ = typename config_value_trait<Ty_>::converter_type>
+        yato::optional<Ty_> value_(Tokenizer_ & path_tokens, const Converter_ & converter = Converter_()) const;
 
         //---------------------------------------------------------------------
 
@@ -113,7 +117,22 @@ namespace conf {
          * Valid only if is_object() returned `true`
          */
         template <typename Ty_, typename Converter_ = typename config_value_trait<Ty_>::converter_type>
-        yato::optional<Ty_> value(const std::string & name, const Converter_ & converter = Converter_()) const;
+        yato::optional<Ty_> value(const conf::path & name, const Converter_ & converter = Converter_()) const
+        {
+            auto path_tokens = name.tokenize();
+            return value_<Ty_>(path_tokens, converter);
+        }
+
+        /**
+         * Get named value.
+         * Valid only if is_object() returned `true`
+         */
+        template <typename Ty_, typename Converter_ = typename config_value_trait<Ty_>::converter_type>
+        yato::optional<Ty_> value(const std::string & name, const Converter_ & converter = Converter_()) const
+        {
+            auto path_tokens = yato::tokenize(name, conf::path_separator<char>(), conf::path::skips_empty_names);
+            return value_<Ty_>(path_tokens, converter);
+        }
 
         /**
          * Get value of array by index.
@@ -183,18 +202,28 @@ namespace conf {
         static constexpr config_type stored_type = config_type::config;
     };
 
-
-    template <typename Ty_, typename Converter_>
+    template <typename Ty_, typename Tokenizer_, typename Converter_>
     inline
-    yato::optional<Ty_> config::value(const std::string & name, const Converter_ & converter) const
+    yato::optional<Ty_> config::value_(Tokenizer_ & path_tokens, const Converter_ & converter) const
     {
-        if(m_backend) {
-            using trait = yato::conf::config_value_trait<Ty_>;
-            using return_type = typename stored_type_trait<trait::stored_type>::return_type;
-
-            return m_backend->get_by_name(name, trait::stored_type).template get_opt<return_type>().map(
-                [&converter](return_type && val){ return converter(cast_result_(std::move(val))); }
-            );
+        if (!path_tokens.empty()) {
+            backend_ptr current_backend = m_backend;
+            while (current_backend) {
+                const auto t = path_tokens.next();
+                const std::string name{ t.begin(), t.end() };
+                if (path_tokens.has_next()) {
+                    // We need to go deeper
+                    current_backend = current_backend->get_by_name(name, config_type::config).get_as<backend_ptr>(nullptr);
+                }
+                else {
+                    // Fetch a value
+                    using trait = yato::conf::config_value_trait<Ty_>;
+                    using return_type = typename stored_type_trait<trait::stored_type>::return_type;
+                    return current_backend->get_by_name(name, trait::stored_type).template get_opt<return_type>().map(
+                        [&converter](return_type && val){ return converter(cast_result_(std::move(val))); }
+                    );
+                }
+            }
         }
         return yato::nullopt_t{};
     }

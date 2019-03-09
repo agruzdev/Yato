@@ -13,7 +13,7 @@
 TEST(Yato_TokenIterator, common)
 {
     const std::string str = "The quick brown fox jumps over the lazy dog";
-    auto t = yato::ctokenize(str, ' ');
+    auto t = yato::tokenize(str, ' ');
     std::vector<std::string> words;
     while(t.has_next()) {
         auto token = t.next();
@@ -34,7 +34,7 @@ TEST(Yato_TokenIterator, common)
 TEST(Yato_TokenIterator, wcommon)
 {
     const std::wstring str = L"The quick brown fox jumps over the lazy dog";
-    auto t = yato::ctokenize(str, L' ');
+    auto t = yato::tokenize(str, L' ');
     std::vector<std::wstring> words;
     while(t.has_next()) {
         auto token = t.next();
@@ -56,7 +56,7 @@ TEST(Yato_TokenIterator, common_2)
 {
     const char* url = "/dir/etc//folder///img.jpeg";
     {
-        auto t = yato::ctokenize_n(url, std::strlen(url), '/');
+        auto t = yato::tokenize_n(url, std::strlen(url), '/');
         std::vector<std::string> all_words;
         while(t.has_next()) {
             auto token = t.next();
@@ -69,7 +69,7 @@ TEST(Yato_TokenIterator, common_2)
         ASSERT_EQ("img.jpeg", all_words[7]);
     }
     {
-        auto t = yato::ctokenize_n(url, std::strlen(url), '/', true);
+        auto t = yato::tokenize_n(url, std::strlen(url), '/', true);
         std::vector<std::string> words;
         for(; t != yato::tokens_end; ++t) {
             words.emplace_back(t->begin(), t->end());

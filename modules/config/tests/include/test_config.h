@@ -85,6 +85,12 @@ void TestConfig_Object(const yato::conf::config & conf)
 
     const auto v = c2.value<float>("val").get_or(-1.0f);
     EXPECT_FLOAT_EQ(7.0f, v);
+
+    const auto v2 = conf.value<float>("subobj.val").get_or(-1.0f);
+    EXPECT_FLOAT_EQ(7.0f, v2);
+
+    const auto v3 = conf.value<float>(yato::conf::path("/subobj/val", '/')).get_or(-1.0f);
+    EXPECT_FLOAT_EQ(7.0f, v3);
 }
 
 /**
@@ -178,6 +184,14 @@ void TestConfig_Example(const yato::conf::config & conf)
         const int y = point.value<int>("y").get_or(-1);
         EXPECT_EQ(174, x);
         EXPECT_EQ(34,  y);
+
+        EXPECT_EQ(174, conf.value<int>("location.x").get_or(-1));
+        EXPECT_EQ(34,  conf.value<int>("location.y").get_or(-1));
+        EXPECT_EQ(174, conf.value<int>(yato::conf::path("location:x", ':')).get_or(-1));
+        EXPECT_EQ(34,  conf.value<int>(yato::conf::path("location:y", ':')).get_or(-1));
+
+        EXPECT_EQ(-1,  conf.value<int>(yato::conf::path("location.z.x", ':')).get_or(-1));
+        EXPECT_EQ(-1,  conf.value<int>(yato::conf::path("location.x.z", ':')).get_or(-1));
     }
 }
 
