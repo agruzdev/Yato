@@ -1,3 +1,10 @@
+/**
+ * YATO library
+ *
+ * Apache License, Version 2.0
+ * Copyright (c) 2016-2019 Alexey Gruzdev
+ */
+
 #include "gtest/gtest.h"
 
 #include <thread>

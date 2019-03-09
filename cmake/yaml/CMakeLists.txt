@@ -1,3 +1,9 @@
+#
+# YATO library
+#
+# Apache License, Version 2.0
+# Copyright (c) 2018 Alexey Gruzdev
+#
 
 # Use the common set of flags
 include(${TARGET_CONFIG_LISTS})

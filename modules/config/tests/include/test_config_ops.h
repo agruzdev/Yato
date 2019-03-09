@@ -1,3 +1,10 @@
+/**
+ * YATO library
+ *
+ * Apache License, Version 2.0
+ * Copyright (c) 2016-2019 Alexey Gruzdev
+ */
+
 #ifndef _YATO_CONFIG_TEST_CONFIG_OPS_COMMON_H_
 #define _YATO_CONFIG_TEST_CONFIG_OPS_COMMON_H_
 
