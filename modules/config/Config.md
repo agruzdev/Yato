@@ -4,7 +4,7 @@ Yato Config is an universal facade for reading config of any origin. It provides
 
 Each config is a hierarchihal structure. 
 Each node of config can be either *object* (key:value entries) or *array* (indexed values).
-The stored value can be eitehr scalar (*integer*, *floating*, *boolean*, *string*) or child config node.
+The stored value can be eitehr scalar (*integer*, *real*, *boolean*, *string*) or child config node.
 
 Read scalar values:
 

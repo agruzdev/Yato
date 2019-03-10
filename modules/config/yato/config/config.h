@@ -199,7 +199,7 @@ namespace conf {
     struct config_value_trait<yato::conf::config>
     {
         using converter_type = details::identity_converter<yato::conf::config, yato::conf::config>;
-        static constexpr config_type stored_type = config_type::config;
+        static constexpr stored_type fetch_type = stored_type::config;
     };
 
     template <typename Ty_, typename Tokenizer_, typename Converter_>
@@ -213,13 +213,13 @@ namespace conf {
                 const std::string name{ t.begin(), t.end() };
                 if (path_tokens.has_next()) {
                     // We need to go deeper
-                    current_backend = current_backend->get_by_name(name, config_type::config).get_as<backend_ptr>(nullptr);
+                    current_backend = current_backend->get_by_name(name, stored_type::config).get_as<backend_ptr>(nullptr);
                 }
                 else {
                     // Fetch a value
                     using trait = yato::conf::config_value_trait<Ty_>;
-                    using return_type = typename stored_type_trait<trait::stored_type>::return_type;
-                    return current_backend->get_by_name(name, trait::stored_type).template get_opt<return_type>().map(
+                    using return_type = typename stored_type_trait<trait::fetch_type>::return_type;
+                    return current_backend->get_by_name(name, trait::fetch_type).template get_opt<return_type>().map(
                         [&converter](return_type && val){ return converter(cast_result_(std::move(val))); }
                     );
                 }
@@ -234,9 +234,9 @@ namespace conf {
     {
         if(m_backend) {
             using trait = yato::conf::config_value_trait<Ty_>;
-            using return_type = typename stored_type_trait<trait::stored_type>::return_type;
+            using return_type = typename stored_type_trait<trait::fetch_type>::return_type;
 
-            return m_backend->get_by_index(idx, trait::stored_type).template get_opt<return_type>().map(
+            return m_backend->get_by_index(idx, trait::fetch_type).template get_opt<return_type>().map(
                 [&converter](return_type && val){ return converter(cast_result_(std::move(val))); }
             );
         }
@@ -291,7 +291,7 @@ namespace conf {
 
     // import names
     using conf::config;
-    using conf::config_type;
+    using conf::stored_type;
     using conf::config_error;
 
 } // namespace yato

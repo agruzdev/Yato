@@ -87,7 +87,7 @@ namespace conf
     struct config_value_trait<actors::execution_context>
     {
         using converter_type = actors::execution_context_converter;
-        static constexpr config_type stored_type = config_type::config;
+        static constexpr stored_type fetch_type = stored_type::config;
     };
 
 } // namespace conf

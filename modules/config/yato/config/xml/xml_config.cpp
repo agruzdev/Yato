@@ -70,47 +70,47 @@ namespace conf {
     }
 
     static
-    stored_variant get_impl_(const xml_config_state& state, const tinyxml2::XMLElement* elem, config_type type) noexcept
+    stored_variant get_impl_(const xml_config_state& state, const tinyxml2::XMLElement* elem, stored_type type) noexcept
     {
         stored_variant res{};
         if(elem != nullptr) {
             switch (type)
             {
-            case config_type::integer: {
+            case stored_type::integer: {
                     int64_t val = 0;
                     if (query_value_(elem, val, &tinyxml2::XMLUtil::ToInt64)) {
-                        using return_type = stored_type_trait<config_type::integer>::return_type;
+                        using return_type = stored_type_trait<stored_type::integer>::return_type;
                         res.emplace<return_type>(yato::narrow_cast<return_type>(val));
                     }
                 }
                 break;
-            case config_type::floating: {
+            case stored_type::real: {
                     double val = 0.0;
                     if (query_value_(elem, val, &tinyxml2::XMLUtil::ToDouble)) {
-                        using return_type = stored_type_trait<config_type::floating>::return_type;
+                        using return_type = stored_type_trait<stored_type::real>::return_type;
                         res.emplace<return_type>(yato::float_cast<return_type>(val));
                     }
                 }
                 break;
-            case config_type::boolean: {
+            case stored_type::boolean: {
                     bool val = false;
                     if (query_value_(elem, val, &tinyxml2::XMLUtil::ToBool)) {
-                        using return_type = stored_type_trait<config_type::boolean>::return_type;
+                        using return_type = stored_type_trait<stored_type::boolean>::return_type;
                         res.emplace<return_type>(yato::narrow_cast<return_type>(val));
                     }
                 }
                 break;
-            case config_type::string: {
+            case stored_type::string: {
                     const char* val = nullptr;
                     if (query_value_(elem, val, &cstring_converter_)) {
                         YATO_ENSURES(val != nullptr);
-                        using return_type = stored_type_trait<config_type::string>::return_type;
+                        using return_type = stored_type_trait<stored_type::string>::return_type;
                         res.emplace<return_type>(val);
                     }
                 }
                 break;
-            case config_type::config: {
-                    using return_type = stored_type_trait<config_type::config>::return_type;
+            case stored_type::config: {
+                    using return_type = stored_type_trait<stored_type::config>::return_type;
                     auto child_state = std::make_unique<xml_config_state>();
                     child_state->document = state.document;
                     child_state->current_element = elem;
@@ -152,7 +152,7 @@ namespace conf {
         }
     }
 
-    stored_variant xml_config::get_by_name(const std::string & name, config_type type) const noexcept
+    stored_variant xml_config::get_by_name(const std::string & name, stored_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr && m_impl->document != nullptr && m_impl->current_element != nullptr);
         if (!is_array_tag()) {
@@ -162,7 +162,7 @@ namespace conf {
         return stored_variant{};
     }
 
-    stored_variant xml_config::get_by_index(size_t index, config_type type) const noexcept
+    stored_variant xml_config::get_by_index(size_t index, stored_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr && m_impl->document != nullptr && m_impl->current_element != nullptr);
         if (is_array_tag()) {

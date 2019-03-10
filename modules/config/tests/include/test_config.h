@@ -241,14 +241,14 @@ namespace yato
         struct config_value_trait<TestEnum>
         {
             using converter_type = enum_converter;
-            static constexpr config_type stored_type = config_type::integer;
+            static constexpr stored_type fetch_type = stored_type::integer;
         };
 
         template<>
         struct config_value_trait<TestVec3>
         {
             using converter_type = vec3_converter;
-            static constexpr config_type stored_type = config_type::config;
+            static constexpr stored_type fetch_type = stored_type::config;
         };
     }
 }

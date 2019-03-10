@@ -71,7 +71,7 @@ namespace conf
     struct config_value_trait<actors::log_level>
     {
         using converter_type = actors::config_converter_log;
-        static constexpr config_type stored_type = config_type::string;
+        static constexpr stored_type fetch_type = stored_type::string;
     };
 
 } // namespace conf

@@ -62,14 +62,14 @@ namespace conf {
     }
 
     static
-    stored_variant get_impl(config_type type, const YAML::Node & it)
+    stored_variant get_impl(stored_type type, const YAML::Node & it)
     {
         stored_variant res{ };
         switch (type)
         {
-        case yato::conf::config_type::integer:
+        case yato::conf::stored_type::integer:
             if(it.IsScalar()) {
-                using return_type = stored_type_trait<config_type::integer>::return_type;
+                using return_type = stored_type_trait<stored_type::integer>::return_type;
                 try {
                     res.emplace<return_type>(it.as<return_type>());
                 }
@@ -78,9 +78,9 @@ namespace conf {
                 }
             }
             break;
-        case yato::conf::config_type::boolean:
+        case yato::conf::stored_type::boolean:
             if(it.IsScalar()) {
-                using return_type = stored_type_trait<config_type::boolean>::return_type;
+                using return_type = stored_type_trait<stored_type::boolean>::return_type;
                 try {
                     res.emplace<return_type>(it.as<return_type>());
                 }
@@ -89,9 +89,9 @@ namespace conf {
                 }
             }
             break;
-        case yato::conf::config_type::floating:
+        case yato::conf::stored_type::real:
             if(it.IsScalar()) {
-                using return_type = stored_type_trait<config_type::floating>::return_type;
+                using return_type = stored_type_trait<stored_type::real>::return_type;
                 try {
                     res.emplace<return_type>(it.as<return_type>());
                 }
@@ -100,9 +100,9 @@ namespace conf {
                 }
             }
             break;
-        case yato::conf::config_type::string:
+        case yato::conf::stored_type::string:
             if(it.IsScalar()) {
-                using return_type = stored_type_trait<config_type::string>::return_type;
+                using return_type = stored_type_trait<stored_type::string>::return_type;
                 try {
                     res.emplace<return_type>(it.as<return_type>());
                 }
@@ -111,9 +111,9 @@ namespace conf {
                 }
             }
             break;
-        case yato::conf::config_type::config:
+        case yato::conf::stored_type::config:
             if(it.IsMap() || it.IsSequence()) {
-                using return_type = stored_type_trait<config_type::config>::return_type;
+                using return_type = stored_type_trait<stored_type::config>::return_type;
                 auto impl = std::make_unique<yaml_config_state>();
                 impl->node = it;
                 return_type subconfig = std::make_unique<yaml_config>(std::move(impl));
@@ -126,7 +126,7 @@ namespace conf {
         return res;
     }
 
-    stored_variant yaml_config::get_by_name(const std::string & name, config_type type) const noexcept
+    stored_variant yaml_config::get_by_name(const std::string & name, stored_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
         stored_variant res{ };
@@ -147,7 +147,7 @@ namespace conf {
         return res;
     }
 
-    stored_variant yaml_config::get_by_index(size_t index, config_type type) const noexcept
+    stored_variant yaml_config::get_by_index(size_t index, stored_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
         stored_variant res{ };

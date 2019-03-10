@@ -24,10 +24,10 @@ namespace conf {
         std::unique_ptr<cmd_config_state> m_impl;
 
         bool is_object() const noexcept override;
-        stored_variant get_by_name(const std::string & name, config_type type) const noexcept override;
+        stored_variant get_by_name(const std::string & name, stored_type type) const noexcept override;
 
         bool is_array() const noexcept override;
-        stored_variant get_by_index(size_t index, config_type type) const noexcept override;
+        stored_variant get_by_index(size_t index, stored_type type) const noexcept override;
 
         size_t size() const noexcept override;
         std::vector<std::string> keys() const noexcept override;

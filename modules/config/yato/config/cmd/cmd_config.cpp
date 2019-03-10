@@ -41,7 +41,7 @@ namespace conf {
     struct argument_info  // NOLINT
     {
         std::unique_ptr<TCLAP::Arg> value;
-        config_type type;
+        stored_type type;
         bool has_default;
     };
 
@@ -71,7 +71,7 @@ namespace conf {
         }
 
         // Return not const pointer since ValueArg::getValue() is not const
-        const argument_info* find(const std::string & name, config_type type) const
+        const argument_info* find(const std::string & name, stored_type type) const
         {
             const auto it = m_args.find(name);
             if(it != m_args.cend() && (*it).second.type == type) {
@@ -120,7 +120,7 @@ namespace conf {
         return m_impl->keys();
     }
 
-    stored_variant cmd_config::get_by_name(const std::string & name, config_type type) const noexcept
+    stored_variant cmd_config::get_by_name(const std::string & name, stored_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
         stored_variant res{};
@@ -129,34 +129,34 @@ namespace conf {
         if((arg != nullptr) && (arg->value->isSet() || arg->has_default)) {
             switch (type)
             {
-            case yato::conf::config_type::integer: {
+            case yato::conf::stored_type::integer: {
                     auto value = dynamic_cast<TCLAP::ValueArg<integer_wrapper>*>(arg->value.get());
                     if(value != nullptr) {
-                        using return_type = stored_type_trait<config_type::integer>::return_type;
+                        using return_type = stored_type_trait<stored_type::integer>::return_type;
                         res.emplace<return_type>(yato::narrow_cast<return_type>(value->getValue().val));
                     }
                 }
                 break;
-            case yato::conf::config_type::boolean: {
+            case yato::conf::stored_type::boolean: {
                     auto value = dynamic_cast<TCLAP::SwitchArg*>(arg->value.get());
                     if(value != nullptr) {
-                        using return_type = stored_type_trait<config_type::boolean>::return_type;
+                        using return_type = stored_type_trait<stored_type::boolean>::return_type;
                         res.emplace<return_type>(value->getValue());
                     }
                 }
                 break;
-            case yato::conf::config_type::floating: {
+            case yato::conf::stored_type::real: {
                     auto value = dynamic_cast<TCLAP::ValueArg<double>*>(arg->value.get());
                     if(value != nullptr) {
-                        using return_type = stored_type_trait<config_type::floating>::return_type;
+                        using return_type = stored_type_trait<stored_type::real>::return_type;
                         res.emplace<return_type>(yato::float_cast<return_type>(value->getValue()));
                     }
                 }
                 break;
-            case yato::conf::config_type::string: {
+            case yato::conf::stored_type::string: {
                     auto value = dynamic_cast<TCLAP::ValueArg<std::string>*>(arg->value.get());
                     if(value != nullptr) {
-                        using return_type = stored_type_trait<config_type::string>::return_type;
+                        using return_type = stored_type_trait<stored_type::string>::return_type;
                         res.emplace<return_type>(value->getValue());
                     }
                 }
@@ -169,7 +169,7 @@ namespace conf {
         return res;
     }
 
-    stored_variant cmd_config::get_by_index(size_t index, config_type type) const noexcept
+    stored_variant cmd_config::get_by_index(size_t index, stored_type type) const noexcept
     {
         YATO_MAYBE_UNUSED(index);
         YATO_MAYBE_UNUSED(type);
@@ -212,7 +212,7 @@ namespace conf {
         }
 
         argument_info arg;
-        arg.type  = config_type::integer;
+        arg.type  = stored_type::integer;
         switch(kind) {
         case cmd_argument::positional:
             arg.value = std::make_unique<TCLAP::UnlabeledValueArg<integer_wrapper>>(name, description, true, 0, "Integer type");
@@ -241,7 +241,7 @@ namespace conf {
         }
 
         argument_info arg;
-        arg.type  = config_type::floating;
+        arg.type  = stored_type::real;
         switch(kind) {
         case cmd_argument::positional:
             arg.value = std::make_unique<TCLAP::UnlabeledValueArg<double>>(name, description, true, 0.0, "Floating-point type");
@@ -270,7 +270,7 @@ namespace conf {
         }
 
         argument_info arg;
-        arg.type  = config_type::string;
+        arg.type  = stored_type::string;
         switch(kind) {
         case cmd_argument::positional:
             arg.value = std::make_unique<TCLAP::UnlabeledValueArg<std::string>>(name, description, true, std::string(), "String");
@@ -299,7 +299,7 @@ namespace conf {
         }
 
         argument_info arg;
-        arg.type  = config_type::boolean;
+        arg.type  = stored_type::boolean;
         arg.value = std::make_unique<TCLAP::SwitchArg>(flag, name, description, false);
         arg.has_default = true; // always false by default
 

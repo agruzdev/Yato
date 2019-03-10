@@ -53,7 +53,7 @@ namespace conf {
                 return m_left->is_object();
             }
 
-            stored_variant get_by_name(const std::string & name, config_type type) const noexcept override
+            stored_variant get_by_name(const std::string & name, stored_type type) const noexcept override
             {
                 const auto left_res = m_left->get_by_name(name, type);
                 if(!left_res.is_type<void>()) {
@@ -81,7 +81,7 @@ namespace conf {
                 return false;
             }
 
-            stored_variant get_by_index(size_t index, config_type type) const noexcept override
+            stored_variant get_by_index(size_t index, stored_type type) const noexcept override
             {
                 YATO_MAYBE_UNUSED(index);
                 YATO_MAYBE_UNUSED(type);
@@ -129,7 +129,7 @@ namespace conf {
                 return m_left->is_object();
             }
 
-            stored_variant get_by_name(const std::string & name, config_type type) const noexcept override
+            stored_variant get_by_name(const std::string & name, stored_type type) const noexcept override
             {
                 const auto left_res  = m_left->get_by_name(name, type);
                 const auto right_res = m_right->get_by_name(name, type);
@@ -156,7 +156,7 @@ namespace conf {
                 return false;
             }
 
-            stored_variant get_by_index(size_t index, config_type type) const noexcept override
+            stored_variant get_by_index(size_t index, stored_type type) const noexcept override
             {
                 YATO_MAYBE_UNUSED(index);
                 YATO_MAYBE_UNUSED(type);
@@ -204,7 +204,7 @@ namespace conf {
                 return false;
             }
 
-            stored_variant get_by_name(const std::string & name, config_type type) const noexcept override
+            stored_variant get_by_name(const std::string & name, stored_type type) const noexcept override
             {
                 YATO_MAYBE_UNUSED(name);
                 YATO_MAYBE_UNUSED(type);
@@ -221,7 +221,7 @@ namespace conf {
                 return true;
             }
 
-            stored_variant get_by_index(size_t index, config_type type) const noexcept override
+            stored_variant get_by_index(size_t index, stored_type type) const noexcept override
             {
                 const size_t offset = m_left->size();
                 if(index < offset) {

@@ -73,38 +73,38 @@ namespace conf {
     }
 
     static
-    stored_variant get_impl(const json_config_state* self, config_type type, const nlohmann::json::const_iterator & it)
+    stored_variant get_impl(const json_config_state* self, stored_type type, const nlohmann::json::const_iterator & it)
     {
         stored_variant res{};
         switch (type)
         {
-        case yato::conf::config_type::integer:
+        case yato::conf::stored_type::integer:
             if(it->is_number_integer()) {
-                using return_type = stored_type_trait<config_type::integer>::return_type;
+                using return_type = stored_type_trait<stored_type::integer>::return_type;
                 res.emplace<return_type>(yato::narrow_cast<return_type>(it->get<nlohmann::json::number_integer_t>()));
             }
             break;
-        case yato::conf::config_type::boolean:
+        case yato::conf::stored_type::boolean:
             if(it->is_boolean()) {
-                using return_type = stored_type_trait<config_type::boolean>::return_type;
+                using return_type = stored_type_trait<stored_type::boolean>::return_type;
                 res.emplace<return_type>(it->get<nlohmann::json::boolean_t>());
             }
             break;
-        case yato::conf::config_type::floating:
+        case yato::conf::stored_type::real:
             if(it->is_number_float()) {
-                using return_type = stored_type_trait<config_type::floating>::return_type;
+                using return_type = stored_type_trait<stored_type::real>::return_type;
                 res.emplace<return_type>(yato::float_cast<return_type>(it->get<nlohmann::json::number_float_t>()));
             }
             break;
-        case yato::conf::config_type::string:
+        case yato::conf::stored_type::string:
             if(it->is_string()) {
-                using return_type = stored_type_trait<config_type::string>::return_type;
+                using return_type = stored_type_trait<stored_type::string>::return_type;
                 res.emplace<return_type>(it->get<nlohmann::json::string_t>());
             }
             break;
-        case yato::conf::config_type::config:
+        case yato::conf::stored_type::config:
             if(it->is_object() || it->is_array()) {
-                using return_type = stored_type_trait<config_type::config>::return_type;
+                using return_type = stored_type_trait<stored_type::config>::return_type;
                 auto impl = std::make_unique<json_config_state>(*self, it);
                 return_type subconfig = std::make_unique<json_config>(std::move(impl));
                 res.emplace<return_type>(std::move(subconfig));
@@ -116,7 +116,7 @@ namespace conf {
         return res;
     }
 
-    stored_variant json_config::get_by_name(const std::string & name, config_type type) const noexcept
+    stored_variant json_config::get_by_name(const std::string & name, stored_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
         stored_variant res{};
@@ -137,7 +137,7 @@ namespace conf {
         return res;
     }
 
-    stored_variant json_config::get_by_index(size_t index, config_type type) const noexcept
+    stored_variant json_config::get_by_index(size_t index, stored_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
         stored_variant res{};

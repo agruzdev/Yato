@@ -66,49 +66,49 @@ namespace conf {
             }
         }
 
-        stored_variant get_impl_(const manual_value_type & value, config_type type)
+        stored_variant get_impl_(const manual_value_type & value, stored_type type)
         {
             stored_variant res{};
             switch (type) {
-            case config_type::integer:
+            case stored_type::integer:
                 if(value.is_type<details::manual_scalar>()) {
                     const auto & scalar = value.get_as_unsafe<details::manual_scalar>();
                     if(scalar.is_type<int64_t>()) {
-                        using return_type = stored_type_trait<config_type::integer>::return_type;
+                        using return_type = stored_type_trait<stored_type::integer>::return_type;
                         res.emplace<return_type>(scalar.get_as_unsafe<int64_t>());
                     }
                 }
                 break;
-            case config_type::floating:
+            case stored_type::real:
                 if(value.is_type<details::manual_scalar>()) {
                     const auto & scalar = value.get_as_unsafe<details::manual_scalar>();
                     if(scalar.is_type<double>()) {
-                        using return_type = stored_type_trait<config_type::floating>::return_type;
+                        using return_type = stored_type_trait<stored_type::real>::return_type;
                         res.emplace<return_type>(scalar.get_as_unsafe<double>());
                     }
                 }
                 break;
-            case config_type::boolean:
+            case stored_type::boolean:
                 if(value.is_type<details::manual_scalar>()) {
                     const auto & scalar = value.get_as_unsafe<details::manual_scalar>();
                     if(scalar.is_type<bool>()) {
-                        using return_type = stored_type_trait<config_type::boolean>::return_type;
+                        using return_type = stored_type_trait<stored_type::boolean>::return_type;
                         res.emplace<return_type>(scalar.get_as_unsafe<bool>());
                     }
                 }
                 break;
-            case config_type::string:
+            case stored_type::string:
                 if(value.is_type<details::manual_scalar>()) {
                     const auto & scalar = value.get_as_unsafe<details::manual_scalar>();
                     if(scalar.is_type<std::string>()) {
-                        using return_type = stored_type_trait<config_type::string>::return_type;
+                        using return_type = stored_type_trait<stored_type::string>::return_type;
                         res.emplace<return_type>(scalar.get_as_unsafe<std::string>());
                     }
                 }
                 break;
-            case config_type::config:
+            case stored_type::config:
                 if(value.is_type<backend_ptr>()) {
-                    using return_type = stored_type_trait<config_type::config>::return_type;
+                    using return_type = stored_type_trait<stored_type::config>::return_type;
                     res.emplace<return_type>(value.get_as_unsafe<backend_ptr>());
                 }
                 break;
@@ -182,7 +182,7 @@ namespace conf {
             append_impl_(manual_value_type(std::move(val)));
         }
 
-        stored_variant get(const std::string & key, config_type type)
+        stored_variant get(const std::string & key, stored_type type)
         {
             if(!is_object()) {
                 return yato::nullvar_t{};
@@ -199,7 +199,7 @@ namespace conf {
             return get_impl_(value, type);
         }
 
-        stored_variant get(size_t idx, config_type type)
+        stored_variant get(size_t idx, stored_type type)
         {
             if(!is_array()) {
                 return yato::nullvar_t{};
@@ -238,7 +238,7 @@ namespace conf {
         return m_impl->keys();
     }
 
-    stored_variant manual_config::get_by_name(const std::string & name, config_type type) const noexcept
+    stored_variant manual_config::get_by_name(const std::string & name, stored_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
         return m_impl->get(name, type);
@@ -250,7 +250,7 @@ namespace conf {
         return m_impl->is_array();
     }
 
-    stored_variant manual_config::get_by_index(size_t index, config_type type) const noexcept
+    stored_variant manual_config::get_by_index(size_t index, stored_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
         return m_impl->get(index, type);

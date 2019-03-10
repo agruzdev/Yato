@@ -35,11 +35,11 @@ namespace conf {
         { }
     };
 
-    enum class config_type
+    enum class stored_type
         : int32_t
     {
         integer,
-        floating,
+        real,
         boolean,
         string,
         config
@@ -50,36 +50,36 @@ namespace conf {
 
 
 
-    template <config_type StoredTy_>
+    template <stored_type StoredTy_>
     struct stored_type_trait
     { };
 
     template <>
-    struct stored_type_trait<config_type::integer>
+    struct stored_type_trait<stored_type::integer>
     {
         using return_type = int64_t;
     };
 
     template <>
-    struct stored_type_trait<config_type::floating>
+    struct stored_type_trait<stored_type::real>
     {
         using return_type = double;
     };
 
     template <>
-    struct stored_type_trait<config_type::boolean>
+    struct stored_type_trait<stored_type::boolean>
     {
         using return_type = bool;
     };
 
     template <>
-    struct stored_type_trait<config_type::string>
+    struct stored_type_trait<stored_type::string>
     {
         using return_type = std::string;
     };
 
     template <>
-    struct stored_type_trait<config_type::config>
+    struct stored_type_trait<stored_type::config>
     {
         using return_type = backend_ptr;
     };
@@ -128,91 +128,91 @@ namespace conf {
     struct config_value_trait<uint8_t>
     {
         using converter_type = details::narrow_converter<uint8_t, int64_t>;
-        static constexpr config_type stored_type = config_type::integer;
+        static constexpr stored_type fetch_type = stored_type::integer;
     };
 
     template <>
     struct config_value_trait<uint16_t>
     {
         using converter_type = details::narrow_converter<uint16_t, int64_t>;
-        static constexpr config_type stored_type = config_type::integer;
+        static constexpr stored_type fetch_type = stored_type::integer;
     };
 
     template <>
     struct config_value_trait<uint32_t>
     {
         using converter_type = details::narrow_converter<uint32_t, int64_t>;
-        static constexpr config_type stored_type = config_type::integer;
+        static constexpr stored_type fetch_type = stored_type::integer;
     };
 
     template <>
     struct config_value_trait<uint64_t>
     {
         using converter_type = details::narrow_converter<uint64_t, int64_t>;
-        static constexpr config_type stored_type = config_type::integer;
+        static constexpr stored_type fetch_type = stored_type::integer;
     };
 
     template <>
     struct config_value_trait<int8_t>
     {
         using converter_type = details::narrow_converter<int8_t, int64_t>;
-        static constexpr config_type stored_type = config_type::integer;
+        static constexpr stored_type fetch_type = stored_type::integer;
     };
 
     template <>
     struct config_value_trait<int16_t>
     {
         using converter_type = details::narrow_converter<int16_t, int64_t>;
-        static constexpr config_type stored_type = config_type::integer;
+        static constexpr stored_type fetch_type = stored_type::integer;
     };
 
     template <>
     struct config_value_trait<int32_t>
     {
         using converter_type = details::narrow_converter<int32_t, int64_t>;
-        static constexpr config_type stored_type = config_type::integer;
+        static constexpr stored_type fetch_type = stored_type::integer;
     };
 
     template <>
     struct config_value_trait<int64_t>
     {
         using converter_type = details::identity_converter<int64_t, int64_t>;
-        static constexpr config_type stored_type = config_type::integer;
+        static constexpr stored_type fetch_type = stored_type::integer;
     };
 
     template <>
     struct config_value_trait<float>
     {
         using converter_type = details::checked_limits_converter<float, double>;
-        static constexpr config_type stored_type = config_type::floating;
+        static constexpr stored_type fetch_type = stored_type::real;
     };
 
     template <>
     struct config_value_trait<double>
     {
         using converter_type = details::identity_converter<double, double>;
-        static constexpr config_type stored_type = config_type::floating;
+        static constexpr stored_type fetch_type = stored_type::real;
     };
 
     template <>
     struct config_value_trait<long double>
     {
         using converter_type = details::identity_converter<long double, double>;
-        static constexpr config_type stored_type = config_type::floating;
+        static constexpr stored_type fetch_type = stored_type::real;
     };
 
     template <>
     struct config_value_trait<bool>
     {
         using converter_type = details::identity_converter<bool, bool>;
-        static constexpr config_type stored_type = config_type::boolean;
+        static constexpr stored_type fetch_type = stored_type::boolean;
     };
 
     template <>
     struct config_value_trait<std::string>
     {
         using converter_type = details::identity_converter<std::string, std::string>;
-        static constexpr config_type stored_type = config_type::string;
+        static constexpr stored_type fetch_type = stored_type::string;
     };
 
 
@@ -222,11 +222,11 @@ namespace conf {
      */
     using stored_variant = yato::variant<
         void,
-        typename stored_type_trait<config_type::integer>::return_type,
-        typename stored_type_trait<config_type::floating>::return_type,
-        typename stored_type_trait<config_type::boolean>::return_type,
-        typename stored_type_trait<config_type::string>::return_type,
-        typename stored_type_trait<config_type::config>::return_type
+        typename stored_type_trait<stored_type::integer>::return_type,
+        typename stored_type_trait<stored_type::real>::return_type,
+        typename stored_type_trait<stored_type::boolean>::return_type,
+        typename stored_type_trait<stored_type::string>::return_type,
+        typename stored_type_trait<stored_type::config>::return_type
     >;
 
 
@@ -238,13 +238,37 @@ namespace conf {
     public:
         virtual ~config_backend() = 0;
 
+
+        /**
+         * Returns true if config stores key-value pairs
+         */
         virtual bool is_object() const noexcept = 0;
-        virtual stored_variant get_by_name(const std::string & name, config_type type) const noexcept = 0;
 
+        /**
+         * Fetch value by name (key)
+         */
+        virtual stored_variant get_by_name(const std::string & name, stored_type type) const noexcept = 0;
+
+
+        /**
+         * Returns true if config stores an indexed sequence of values
+         */
         virtual bool is_array() const noexcept = 0;
-        virtual stored_variant get_by_index(size_t index, config_type type) const noexcept = 0;
 
+        /**
+         * Fetch value by index
+         */
+        virtual stored_variant get_by_index(size_t index, stored_type type) const noexcept = 0;
+
+
+        /**
+         * Get number of stored values
+         */
         virtual size_t size() const noexcept = 0;
+
+        /**
+         * Get all stored keys. Valid only for key-value config.
+         */
         virtual std::vector<std::string> keys() const noexcept = 0;
     };
 

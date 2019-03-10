@@ -43,7 +43,7 @@ namespace conf {
         return true;
     }
 
-    stored_variant ini_config::get_by_name(const std::string & name, config_type type) const noexcept
+    stored_variant ini_config::get_by_name(const std::string & name, stored_type type) const noexcept
     {
         assert(m_impl != nullptr);
         stored_variant res{};
@@ -51,27 +51,27 @@ namespace conf {
         if(raw_value != nullptr && raw_value[0] != '\0') {
             switch (type)
             {
-            case yato::conf::config_type::integer: {
-                    using return_type = stored_type_trait<config_type::integer>::return_type;
+            case yato::conf::stored_type::integer: {
+                    using return_type = stored_type_trait<stored_type::integer>::return_type;
                     res.emplace<return_type>(yato::narrow_cast<return_type>(m_impl->reader.GetLongValue(GLOBAL_SECTION, name.c_str())));
                 }
                 break;
-            case yato::conf::config_type::boolean: {
-                    using return_type = stored_type_trait<config_type::boolean>::return_type;
+            case yato::conf::stored_type::boolean: {
+                    using return_type = stored_type_trait<stored_type::boolean>::return_type;
                     res.emplace<return_type>(yato::narrow_cast<return_type>(m_impl->reader.GetBoolValue(GLOBAL_SECTION, name.c_str())));
                 }
                 break;
-            case yato::conf::config_type::floating: {
-                    using return_type = stored_type_trait<config_type::floating>::return_type;
+            case yato::conf::stored_type::real: {
+                    using return_type = stored_type_trait<stored_type::real>::return_type;
                     res.emplace<return_type>(static_cast<return_type>(m_impl->reader.GetDoubleValue(GLOBAL_SECTION, name.c_str())));
                 }
                 break;
-            case yato::conf::config_type::string: {
-                    using return_type = stored_type_trait<config_type::string>::return_type;
+            case yato::conf::stored_type::string: {
+                    using return_type = stored_type_trait<stored_type::string>::return_type;
                     res.emplace<return_type>(static_cast<return_type>(raw_value));
                 }
                 break;
-            case yato::conf::config_type::config:
+            case yato::conf::stored_type::config:
             default:
                 break;
             }
@@ -84,7 +84,7 @@ namespace conf {
         return false;
     }
 
-    stored_variant ini_config::get_by_index(size_t /*index*/, config_type /*type*/) const noexcept
+    stored_variant ini_config::get_by_index(size_t /*index*/, stored_type /*type*/) const noexcept
     {
         return stored_variant{};
     }
