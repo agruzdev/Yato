@@ -16,8 +16,6 @@ YATO_MSCV_WARNING_IGNORE(4127)
 YATO_PRAGMA_WARNING_POP
 
 #include "yaml_config.h"
-#include "yato/config/json/json_config.h"
-
 
 namespace yato {
 
