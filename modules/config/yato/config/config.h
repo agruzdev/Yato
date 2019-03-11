@@ -24,32 +24,48 @@ namespace conf {
         //---------------------------------------------------------------------
 
         static constexpr
-        int64_t cast_result_(int64_t val) {
+        int64_t wrap_result_(int64_t val) {
             return val;
         }
 
         static constexpr
-        double cast_result_(double val) {
+        double wrap_result_(double val) {
             return val;
         }
 
         static constexpr
-        bool cast_result_(bool val) {
+        bool wrap_result_(bool val) {
             return val;
-        }
-
-        static constexpr
-        std::string && cast_result_(std::string && val) {
-            return std::move(val);
         }
 
         static
-        config cast_result_(backend_ptr && val) {
+        std::string wrap_result_(std::string && val) {
+            return std::string(std::move(val));
+        }
+
+        static
+        config wrap_result_(backend_ptr && val) {
             return config(std::move(val));
         }
 
-        template <typename Ty_, typename Tokenizer_, typename Converter_ = typename config_value_trait<Ty_>::converter_type>
-        yato::optional<Ty_> value_(Tokenizer_ & path_tokens, const Converter_ & converter = Converter_()) const;
+        // Applies converter to x-value returned from backend call
+        template <typename Ty_, typename Converter_>
+        static
+        auto apply_convertion_(Ty_ && val, Converter_ && cvt)
+        {
+            return std::forward<Converter_>(cvt)(wrap_result_(std::forward<Ty_>(val)));
+        }
+
+        template <conf::stored_type FetchType_, typename Converter_>
+        using converted_result_type = decltype(apply_convertion_(std::declval<typename stored_type_trait<FetchType_>::return_type>(), std::declval<Converter_>()));
+
+        template <conf::stored_type FetchType_, typename Tokenizer_, typename Converter_>
+        auto value_(Tokenizer_ & path_tokens, Converter_ && converter) const
+            -> yato::optional<converted_result_type<FetchType_, Converter_>>;
+
+        template <conf::stored_type FetchType_, typename Converter_>
+        auto value_(size_t index, Converter_ && converter) const
+            -> yato::optional<converted_result_type<FetchType_, Converter_>>;
 
         //---------------------------------------------------------------------
 
@@ -115,31 +131,125 @@ namespace conf {
         /**
          * Get named value.
          * Valid only if is_object() returned `true`
+         * @return Optional value of type Ty_
          */
-        template <typename Ty_, typename Converter_ = typename config_value_trait<Ty_>::converter_type>
-        yato::optional<Ty_> value(const conf::path & name, const Converter_ & converter = Converter_()) const
+        template <typename Ty_>
+        yato::optional<Ty_> value(const conf::path & name) const
         {
+            constexpr conf::stored_type fetch_type = conf::config_value_trait<Ty_>::fetch_type;
+            using default_converter = typename config_value_trait<Ty_>::converter_type;
+            static_assert(std::is_same<Ty_, converted_result_type<fetch_type, default_converter>>::value, "Provided converter must return exactly type Ty_");
             auto path_tokens = name.tokenize();
-            return value_<Ty_>(path_tokens, converter);
+            return value_<fetch_type>(path_tokens, default_converter{});
         }
-
+        
         /**
          * Get named value.
          * Valid only if is_object() returned `true`
+         * @return Optional value of type Ty_
          */
-        template <typename Ty_, typename Converter_ = typename config_value_trait<Ty_>::converter_type>
-        yato::optional<Ty_> value(const std::string & name, const Converter_ & converter = Converter_()) const
+        template <typename Ty_>
+        yato::optional<Ty_> value(const std::string & name) const
         {
+            constexpr conf::stored_type fetch_type = conf::config_value_trait<Ty_>::fetch_type;
+            using default_converter = typename config_value_trait<Ty_>::converter_type;
+            static_assert(std::is_same<Ty_, converted_result_type<fetch_type, default_converter>>::value, "Provided converter must return exactly type Ty_");
             auto path_tokens = yato::tokenize(name, conf::path_separator<char>(), conf::path::skips_empty_names);
-            return value_<Ty_>(path_tokens, converter);
+            return value_<fetch_type>(path_tokens, default_converter{});
         }
 
         /**
          * Get value of array by index.
          * Valid only if is_array() returned `true`
+         * @return Optional value of type Ty_
          */
-        template <typename Ty_, typename Converter_ = typename config_value_trait<Ty_>::converter_type>
-        yato::optional<Ty_> value(size_t idx, const Converter_ & converter = Converter_()) const;
+        template <typename Ty_>
+        yato::optional<Ty_> value(size_t idx) const
+        {
+            constexpr conf::stored_type fetch_type = conf::config_value_trait<Ty_>::fetch_type;
+            using default_converter = typename config_value_trait<Ty_>::converter_type;
+            static_assert(std::is_same<Ty_, converted_result_type<fetch_type, default_converter>>::value, "Provided converter must return exactly type Ty_");
+            return value_<fetch_type>(idx, default_converter{});
+        }
+
+        /**
+         * Get named value.
+         * Valid only if is_object() returned `true`
+         * @return Optional value of type Ty_
+         */
+        template <typename Ty_, typename Converter_>
+        yato::optional<Ty_> value(const conf::path & name, Converter_ && converter) const
+        {
+            constexpr conf::stored_type fetch_type = conf::config_value_trait<Ty_>::fetch_type;
+            static_assert(std::is_same<Ty_, converted_result_type<fetch_type, Converter_>>::value, "Provided converter must return exactly type Ty_");
+            auto path_tokens = name.tokenize();
+            return value_<fetch_type>(path_tokens, std::forward<Converter_>(converter));
+        }
+
+        /**
+         * Get named value.
+         * Valid only if is_object() returned `true`
+         * @return Optional value of type Ty_
+         */
+        template <typename Ty_, typename Converter_>
+        yato::optional<Ty_> value(const std::string & name, Converter_ && converter) const
+        {
+            constexpr conf::stored_type fetch_type = conf::config_value_trait<Ty_>::fetch_type;
+            static_assert(std::is_same<Ty_, converted_result_type<fetch_type, Converter_>>::value, "Provided converter must return exactly type Ty_");
+            auto path_tokens = yato::tokenize(name, conf::path_separator<char>(), conf::path::skips_empty_names);
+            return value_<fetch_type>(path_tokens, std::forward<Converter_>(converter));
+        }
+
+        /**
+         * Get value of array by index.
+         * Valid only if is_array() returned `true`
+         * @return Optional value of type Ty_
+         */
+        template <typename Ty_, typename Converter_>
+        yato::optional<Ty_> value(size_t idx, Converter_ && converter) const
+        {
+            constexpr conf::stored_type fetch_type = conf::config_value_trait<Ty_>::fetch_type;
+            static_assert(std::is_same<Ty_, converted_result_type<fetch_type, Converter_>>::value, "Provided converter must return exactly type Ty_");
+            return value_<fetch_type>(idx, std::forward<Converter_>(converter));
+        }
+
+        /**
+         * Get a named value obtained with a provided converter.
+         * Valid only if is_object() returned `true`
+         * @return Optional value returned from the converter
+         */
+        template <conf::stored_type FetchType_, typename Converter_>
+        auto value(const conf::path & name, Converter_ && converter) const
+            -> yato::optional<converted_result_type<FetchType_, Converter_>>
+        {
+            auto path_tokens = name.tokenize();
+            return value_<FetchType_>(path_tokens, std::forward<Converter_>(converter));
+        }
+
+        /**
+         * Get a named value obtained with a provided converter.
+         * Valid only if is_object() returned `true`
+         * @return Optional value returned from the converter
+         */
+        template <conf::stored_type FetchType_, typename Converter_ >
+        auto value(const std::string & name, Converter_ && converter) const
+            -> yato::optional<converted_result_type<FetchType_, Converter_>>
+        {
+            auto path_tokens = yato::tokenize(name, conf::path_separator<char>(), conf::path::skips_empty_names);
+            return value_<FetchType_>(path_tokens, std::forward<Converter_>(converter));
+        }
+
+        /**
+         * Get a value, obtained with a provided converter, by index.
+         * Valid only if is_array() returned `true`
+         * @return Optional value returned from the converter
+         */
+        template <conf::stored_type FetchType_, typename Converter_ >
+        auto value(size_t idx, Converter_ && converter) const
+            -> yato::optional<converted_result_type<FetchType_, Converter_>>
+        {
+            return value_<FetchType_>(idx, std::forward<Converter_>(converter));
+        }
 
         /**
          * Get nested object config.
@@ -202,9 +312,10 @@ namespace conf {
         static constexpr stored_type fetch_type = stored_type::config;
     };
 
-    template <typename Ty_, typename Tokenizer_, typename Converter_>
+    template <conf::stored_type FetchType_, typename Tokenizer_, typename Converter_>
     inline
-    yato::optional<Ty_> config::value_(Tokenizer_ & path_tokens, const Converter_ & converter) const
+    auto config::value_(Tokenizer_ & path_tokens, Converter_ && converter) const
+        -> yato::optional<converted_result_type<FetchType_, Converter_>>
     {
         if (!path_tokens.empty()) {
             backend_ptr current_backend = m_backend;
@@ -217,10 +328,9 @@ namespace conf {
                 }
                 else {
                     // Fetch a value
-                    using trait = yato::conf::config_value_trait<Ty_>;
-                    using return_type = typename stored_type_trait<trait::fetch_type>::return_type;
-                    return current_backend->get_by_name(name, trait::fetch_type).template get_opt<return_type>().map(
-                        [&converter](return_type && val){ return converter(cast_result_(std::move(val))); }
+                    using return_type = typename stored_type_trait<FetchType_>::return_type;
+                    return current_backend->get_by_name(name, FetchType_).template get_opt<return_type>().map(
+                        [&converter](return_type && val){ return apply_convertion_(std::move(val), std::forward<Converter_>(converter)); }
                     );
                 }
             }
@@ -228,16 +338,15 @@ namespace conf {
         return yato::nullopt_t{};
     }
 
-    template <typename Ty_, typename Converter_>
+    template <conf::stored_type FetchType_, typename Converter_>
     inline
-    yato::optional<Ty_> config::value(size_t idx, const Converter_ & converter) const
+    auto config::value_(size_t index, Converter_ && converter) const
+        -> yato::optional<converted_result_type<FetchType_, Converter_>>
     {
         if(m_backend) {
-            using trait = yato::conf::config_value_trait<Ty_>;
-            using return_type = typename stored_type_trait<trait::fetch_type>::return_type;
-
-            return m_backend->get_by_index(idx, trait::fetch_type).template get_opt<return_type>().map(
-                [&converter](return_type && val){ return converter(cast_result_(std::move(val))); }
+            using return_type = typename stored_type_trait<FetchType_>::return_type;
+            return m_backend->get_by_index(index, FetchType_).template get_opt<return_type>().map(
+                [&converter](return_type && val){ return apply_convertion_(std::move(val), std::forward<Converter_>(converter)); }
             );
         }
         return yato::nullopt_t{};

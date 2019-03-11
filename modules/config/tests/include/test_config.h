@@ -220,6 +220,7 @@ namespace
         int32_t z = 0;
     };
 
+
     struct vec3_converter
     {
         TestVec3 operator()(const yato::conf::config & arr) const
@@ -228,6 +229,28 @@ namespace
             v.x = arr.value<int32_t>(0).get_or(-1);
             v.y = arr.value<int32_t>(1).get_or(-1);
             v.z = arr.value<int32_t>(2).get_or(-1);
+            return v;
+        }
+    };
+
+
+    struct TestVec4
+    {
+        int32_t x = 0;
+        int32_t y = 0;
+        int32_t z = 0;
+        int32_t w = 1;
+    };
+
+    struct vec4_converter
+    {
+        TestVec4 operator()(const yato::conf::config & arr) const
+        {
+            TestVec4 v;
+            v.x = arr.value<int32_t>(0).get_or(-1);
+            v.y = arr.value<int32_t>(1).get_or(-1);
+            v.z = arr.value<int32_t>(2).get_or(-1);
+            v.w = arr.value<int32_t>(3).get_or(-1);
             return v;
         }
     };
@@ -283,6 +306,14 @@ void TestConfig_Conversion(const yato::conf::config & conf)
         EXPECT_EQ(20, vecOpt.get().x);
         EXPECT_EQ(98, vecOpt.get().y);
         EXPECT_EQ(-7, vecOpt.get().z);
+
+        // Access without registered converter, pass it ad hoc
+        const auto v4 = conf.value<yato::conf::stored_type::config>("vec", vec4_converter{});
+        ASSERT_FALSE(vecOpt.empty());
+        EXPECT_EQ(20, v4.get().x);
+        EXPECT_EQ(98, v4.get().y);
+        EXPECT_EQ(-7, v4.get().z);
+        EXPECT_EQ(-1, v4.get().w);
     }
 }
 
