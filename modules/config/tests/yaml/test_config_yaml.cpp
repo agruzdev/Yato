@@ -53,19 +53,17 @@ TEST(Yato_Config, yaml_array)
 TEST(Yato_Config, yaml_example)
 {
     const char* yaml = R"YAML(
-        {
-            "answer": 42,
-            "comment": "everything",
-            "precision" : 0.01,
-    
-            "manual_mode" : true,
+        answer: 42
+        comment: everything
+        precision: 0.01
 
-            "fruits": [apple, banana, kiwi],
+        manual_mode: true
 
-            location: {
-                "x" : 174,
-                "y" : 34,
-            }
+        fruits: [apple, banana, kiwi]
+
+        location: {
+            "x" : 174,
+            "y" : 34,
         }
     )YAML";
     const auto conf = yato::conf::yaml_builder().parse(yaml);

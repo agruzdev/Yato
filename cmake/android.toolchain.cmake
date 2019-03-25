@@ -120,13 +120,13 @@ set(CMAKE_OBJDUMP       ${toolchain_objdump}      CACHE STRING "Path to program"
 set(CMAKE_RANLIB        ${toolchain_ranlib}       CACHE STRING "Path to program" FORCE)
 set(CMAKE_STRIP         ${toolchain_strip}        CACHE STRING "Path to program" FORCE)
 
-set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${clang_c_flags}  -fpic -std=c11 -Wno-unused-command-line-argument "   CACHE STRING "C flags" FORCE)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${clang_cxx_flags} -fpic -std=c++17 " CACHE STRING "C++ flags" FORCE)
-set(CMAKE_SHARED_LINKER_FLAGS  "${CMAKE_SHARED_LINKER_FLAGS} -fPIE " CACHE STRING "shared linker flags" FORCE)
-set(CMAKE_EXE_LINKER_FLAGS     "${CMAKE_EXE_LINKER_FLAGS} -fPIE -pie " CACHE STRING "exe linker flags" FORCE)
+set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${clang_c_flags}  -fpic -std=c11 -Wno-unused-command-line-argument " CACHE STRING "C flags")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${clang_cxx_flags} -fpic -std=c++17 " CACHE STRING "C++ flags")
+set(CMAKE_SHARED_LINKER_FLAGS  "${CMAKE_SHARED_LINKER_FLAGS} -fPIE " CACHE STRING "shared linker flags")
+set(CMAKE_EXE_LINKER_FLAGS     "${CMAKE_EXE_LINKER_FLAGS} -fPIE -pie " CACHE STRING "exe linker flags")
 
-set(CMAKE_C_STANDARD_LIBRARIES   "${CMAKE_C_STANDARD_LIBRARIES}  -lgcc "    CACHE STRING "Standard C Libraries" FORCE)
-set(CMAKE_CXX_STANDARD_LIBRARIES "${MAKE_CXX_STANDARD_LIBRARIES} -lstdc++ " CACHE STRING "Standard C++ Libraries" FORCE)
+set(CMAKE_C_STANDARD_LIBRARIES   "${CMAKE_C_STANDARD_LIBRARIES}  -lgcc "    CACHE STRING "Standard C Libraries")
+set(CMAKE_CXX_STANDARD_LIBRARIES "${MAKE_CXX_STANDARD_LIBRARIES} -lstdc++ " CACHE STRING "Standard C++ Libraries")
 
 
 set(CMAKE_SYSTEM_NAME Linux)
