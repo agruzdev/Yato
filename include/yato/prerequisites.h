@@ -25,13 +25,20 @@
 
 
 #ifdef _MSC_VER
-# define YATO_MSVC
-# if (_MSC_VER == 1800)
-#  define YATO_MSVC_2013
-# elif (_MSC_VER == 1900)
-#  define YATO_MSVC_2015
+# if (_MSC_VER >= 1920)
+#  define YATO_MSVC_2019
+#  define YATO_MSVC 16
 # elif (_MSC_VER >= 1910)
 #  define YATO_MSVC_2017
+#  define YATO_MSVC 15
+# elif (_MSC_VER >= 1900)
+#  define YATO_MSVC_2015
+#  define YATO_MSVC 14
+# elif (_MSC_VER >= 1800)
+#  define YATO_MSVC 12
+#  define YATO_MSVC_2013
+# else
+#  define YATO_MSVC 1
 # endif
 #endif
 
@@ -51,7 +58,7 @@
 
 
 
-#if (defined(_MSC_VER) && (_MSC_VER >= 1900)) || (defined(__cplusplus) && __cplusplus > 201300L)
+#if (defined(YATO_MSVC) && (YATO_MSVC >= 14)) || (defined(__cplusplus) && __cplusplus > 201300L)
 #define YATO_CONSTEXPR_VAR constexpr
 #define YATO_CONSTEXPR_FUNC constexpr
 #define YATO_NOEXCEPT_KEYWORD noexcept
@@ -70,29 +77,29 @@
 #endif
 
 // Extended constexpr
-#if (defined(_MSC_VER) && (_MSC_VER > 1900)) || (defined(__cplusplus) && __cplusplus >= 201400L)
+#if (defined(YATO_MSVC) && (YATO_MSVC >= 15)) || (defined(__cplusplus) && (__cplusplus >= 201400L))
 #define YATO_HAS_CONSTEXPR_CXX14
 #define YATO_CONSTEXPR_FUNC_CXX14 constexpr 
 #else
 #define YATO_CONSTEXPR_FUNC_CXX14 inline
 #endif
 
-#if (defined(_MSC_VER) && (_MSC_VER >= 1900)) || (defined(__cplusplus) && (__cplusplus >= 201400L))
+#if (defined(YATO_MSVC) && (YATO_MSVC >= 14)) || (defined(__cplusplus) && (__cplusplus >= 201400L))
 # define YATO_HAS_LITERALS
 #endif
 
-// ToDo (a.gruzdev): The condition will be made more precise after releasing C++17
+// ToDo (a.gruzdev): Change to HAS_FEATURE flag
 #if defined(__cplusplus) && (__cplusplus >= 201700L)
 # define YATO_CXX17
 #endif
 
-#if defined(__cplusplus) && (__cplusplus >= 201700L)
+#if (defined(__cplusplus) && (__cplusplus >= 201700L))
 # define YATO_INLINE_VARIABLE inline
 #else
 # define YATO_INLINE_VARIABLE
 #endif
 
-#ifndef YATO_MSVC_2013
+#if (defined(YATO_MSVC) && (YATO_MSVC >= 14)) || (defined(__cplusplus) && (__cplusplus > 201300L))
 # define YATO_ALIGN(Alignment)  alignas(Alignment)
 # define YATO_ALIGN_OF(Type)    alignof(Type)
 #else
@@ -152,4 +159,4 @@
 # define YATO_FORCED_INLINE inline
 #endif
 
-#endif
+#endif //_YATO_PREREQUISITES_H_
