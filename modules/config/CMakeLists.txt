@@ -17,6 +17,8 @@ file(GLOB config_sources
     "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/*.cpp"
 )
 
+list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests")
+
 # Manual
 option(YATO_CONFIG_MANUAL "Enable manual config" ON)
 if(YATO_CONFIG_MANUAL)

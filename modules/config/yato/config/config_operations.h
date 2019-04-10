@@ -50,17 +50,17 @@ namespace conf {
 
             bool is_object() const noexcept override
             {
-                return m_left->is_object();
+                return true;
             }
 
-            stored_variant get_by_name(const std::string & name, stored_type type) const noexcept override
+            stored_variant get_by_key(const std::string & name, stored_type type) const noexcept override
             {
-                const auto left_res = m_left->get_by_name(name, type);
+                const auto left_res = m_left->get_by_key(name, type);
                 if(!left_res.is_type<void>()) {
                     return left_res;
                 }
                 else {
-                    return m_right->get_by_name(name, type);
+                    return m_right->get_by_key(name, type);
                 }
             }
             
@@ -76,11 +76,6 @@ namespace conf {
                 return res;
             }
 
-            bool is_array() const noexcept override
-            {
-                return false;
-            }
-
             stored_variant get_by_index(size_t index, stored_type type) const noexcept override
             {
                 YATO_MAYBE_UNUSED(index);
@@ -90,7 +85,8 @@ namespace conf {
 
             size_t size() const noexcept override
             {
-                return 0;
+                // ToDo (a.gruzdev): Make O(1) complexity
+                return keys().size();
             }
         };
 
@@ -126,13 +122,13 @@ namespace conf {
 
             bool is_object() const noexcept override
             {
-                return m_left->is_object();
+                return true;
             }
 
-            stored_variant get_by_name(const std::string & name, stored_type type) const noexcept override
+            stored_variant get_by_key(const std::string & name, stored_type type) const noexcept override
             {
-                const auto left_res  = m_left->get_by_name(name, type);
-                const auto right_res = m_right->get_by_name(name, type);
+                const auto left_res  = m_left->get_by_key(name, type);
+                const auto right_res = m_right->get_by_key(name, type);
                 if(!left_res.is_type<void>() && !right_res.is_type<void>()) {
                     return left_res;
                 }
@@ -151,11 +147,6 @@ namespace conf {
                 return res;
             }
 
-            bool is_array() const noexcept override
-            {
-                return false;
-            }
-
             stored_variant get_by_index(size_t index, stored_type type) const noexcept override
             {
                 YATO_MAYBE_UNUSED(index);
@@ -165,7 +156,8 @@ namespace conf {
 
             size_t size() const noexcept override
             {
-                return 0;
+                // ToDo (a.gruzdev): Make O(1) complexity
+                return keys().size();
             }
         };
 
@@ -186,9 +178,9 @@ namespace conf {
             {
                 YATO_REQUIRES(m_left  != nullptr);
                 YATO_REQUIRES(m_right != nullptr);
-                if(!(m_left->is_array() && m_right->is_array())) {
-                    throw yato::argument_error("Config concatination can be created only for two arrays");
-                }
+                //if(!(!m_left->is_object() && !m_right->is_object())) {
+                //    throw yato::argument_error("Config concatenation can be created only for two arrays");
+                //}
             }
 
             ~concatenation_backend() override = default;
@@ -204,21 +196,17 @@ namespace conf {
                 return false;
             }
 
-            stored_variant get_by_name(const std::string & name, stored_type type) const noexcept override
+            stored_variant get_by_key(const std::string & name, stored_type type) const noexcept override
             {
                 YATO_MAYBE_UNUSED(name);
                 YATO_MAYBE_UNUSED(type);
+                // ToDo (a.gruzdev): Allow objects concatenation?
                 return stored_variant{};
             }
 
             std::vector<std::string> keys() const noexcept override
             {
                 return std::vector<std::string>{};
-            }
-
-            bool is_array() const noexcept override
-            {
-                return true;
             }
 
             stored_variant get_by_index(size_t index, stored_type type) const noexcept override
@@ -251,7 +239,7 @@ namespace conf {
     /**
      * Creates a union of two configurations
      * Requested key will be found if and only if it is presented in the left or right sub-config.
-     * If the requested key is presented in the both sub-configs, then the value is choosen according to the priority flag.
+     * If the requested key is presented in the both sub-configs, then the value is chosen according to the priority flag.
      * 
      * Union can be applied only to objects.
      */
@@ -278,7 +266,7 @@ namespace conf {
     /**
      * Creates an intersection of two configurations
      * Requested key will be found if and only if it is found in the both sub-config.
-     * The value is choosen according to the priority flag.
+     * The value is chosen according to the priority flag.
      * 
      * Intersection can be applied only to objects.
      */
@@ -297,7 +285,7 @@ namespace conf {
     }
 
     /**
-     * Creates concatination of two config arrays
+     * Creates concatenation of two configs. Produces indexed config.
      */
     inline
     config array_cat(const config & left, const config & right)

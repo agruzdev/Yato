@@ -110,11 +110,11 @@ namespace conf {
          * Return true if config is an array, i.e. contains indexed values.
          */
         bool is_array() const {
-            return m_backend ? m_backend->is_array() : false;
+            return !is_object();
         }
 
         /**
-         * Return number of entires in the config, if config is an array.
+         * Return number of entries in the config for both object and array.
          */
         size_t size() const {
             return m_backend ? m_backend->size() : 0u;
@@ -324,12 +324,12 @@ namespace conf {
                 const std::string name{ t.begin(), t.end() };
                 if (path_tokens.has_next()) {
                     // We need to go deeper
-                    current_backend = current_backend->get_by_name(name, stored_type::config).get_as<backend_ptr>(nullptr);
+                    current_backend = current_backend->get_by_key(name, stored_type::config).get_as<backend_ptr>(nullptr);
                 }
                 else {
                     // Fetch a value
                     using return_type = typename stored_type_trait<FetchType_>::return_type;
-                    return current_backend->get_by_name(name, FetchType_).template get_opt<return_type>().map(
+                    return current_backend->get_by_key(name, FetchType_).template get_opt<return_type>().map(
                         [&converter](return_type && val){ return apply_convertion_(std::move(val), std::forward<Converter_>(converter)); }
                     );
                 }

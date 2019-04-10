@@ -22,14 +22,17 @@ namespace conf {
     private:
         std::unique_ptr<ini_config_state> m_impl;
 
-        bool is_object() const noexcept override;
-        stored_variant get_by_name(const std::string & name, stored_type type) const noexcept override;
+        size_t size() const noexcept override;
 
-        bool is_array() const noexcept override;
+        bool is_object() const noexcept override;
+
+        stored_variant get_by_key(const std::string & name, stored_type type) const noexcept override;
+
         stored_variant get_by_index(size_t index, stored_type type) const noexcept override;
 
-        size_t size() const noexcept override;
         std::vector<std::string> keys() const noexcept override;
+
+        stored_variant decode_value_(const char* raw, stored_type type) const noexcept;
 
     public:
         ini_config(std::unique_ptr<ini_config_state> && impl);
@@ -47,6 +50,8 @@ namespace conf {
     {
         std::unique_ptr<ini_config_state> m_impl;
 
+        config finalize();
+
     public:
         ini_builder();
 
@@ -57,11 +62,6 @@ namespace conf {
 
         ini_builder& operator=(const ini_builder&) = delete;
         ini_builder& operator=(ini_builder&&) noexcept = default;
-
-        /**
-         * Enable unicode mode. Assumes input is Unicode (UTF-8), otherwise native OS encoding
-         */
-        ini_builder& unicode(bool enable);
 
         /**
          * Allow data values to span multiple lines in the input

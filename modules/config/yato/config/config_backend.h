@@ -238,38 +238,30 @@ namespace conf {
     public:
         virtual ~config_backend() = 0;
 
-
         /**
-         * Returns true if config stores key-value pairs
-         */
-        virtual bool is_object() const noexcept = 0;
-
-        /**
-         * Fetch value by name (key)
-         */
-        virtual stored_variant get_by_name(const std::string & name, stored_type type) const noexcept = 0;
-
-
-        /**
-         * Returns true if config stores an indexed sequence of values
-         */
-        virtual bool is_array() const noexcept = 0;
-
-        /**
-         * Fetch value by index
-         */
-        virtual stored_variant get_by_index(size_t index, stored_type type) const noexcept = 0;
-
-
-        /**
-         * Get number of stored values
+         * Get number of stored values.
          */
         virtual size_t size() const noexcept = 0;
 
         /**
+         * Fetch value by index.
+         */
+        virtual stored_variant get_by_index(size_t index, stored_type type) const noexcept = 0;
+
+        /**
+         * Returns true if config stores key-value pairs, otherwise only indexed access is supported.
+         */
+        virtual bool is_object() const noexcept = 0;
+
+        /**
+         * Fetch value by key. Valid only if has_keys() returns true.
+         */
+        virtual stored_variant get_by_key(const std::string & /*name*/, stored_type /*type*/) const noexcept { return {}; }
+
+        /**
          * Get all stored keys. Valid only for key-value config.
          */
-        virtual std::vector<std::string> keys() const noexcept = 0;
+        virtual std::vector<std::string> keys() const noexcept { return {}; }
     };
 
 } // namespace conf

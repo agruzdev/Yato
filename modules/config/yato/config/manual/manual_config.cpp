@@ -141,10 +141,17 @@ namespace conf {
 
         size_t size() const
         {
-            if(!is_array()) {
-                return 0;
-            }
-            return m_node.get_as_unsafe<manual_array_type>().size();
+            return yato::variant_match(
+                [](const manual_object_type & obj) {
+                    return obj.size();
+                },
+                [](const manual_array_type & arr) {
+                    return arr.size();
+                },
+                [](yato::match_default_t) -> size_t {
+                    return 0;
+                }
+            )(m_node);
         }
 
         std::vector<std::string> keys() const
@@ -238,16 +245,10 @@ namespace conf {
         return m_impl->keys();
     }
 
-    stored_variant manual_config::get_by_name(const std::string & name, stored_type type) const noexcept
+    stored_variant manual_config::get_by_key(const std::string & name, stored_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
         return m_impl->get(name, type);
-    }
-
-    bool manual_config::is_array() const noexcept
-    {
-        YATO_REQUIRES(m_impl != nullptr);
-        return m_impl->is_array();
     }
 
     stored_variant manual_config::get_by_index(size_t index, stored_type type) const noexcept

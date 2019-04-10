@@ -124,7 +124,7 @@ namespace conf {
         return res;
     }
 
-    stored_variant yaml_config::get_by_name(const std::string & name, stored_type type) const noexcept
+    stored_variant yaml_config::get_by_key(const std::string & name, stored_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
         stored_variant res{ };
@@ -164,12 +164,6 @@ namespace conf {
             }
         }
         return res;
-    }
-
-    bool yaml_config::is_array() const noexcept
-    {
-        YATO_REQUIRES(m_impl != nullptr);
-        return m_impl->node.IsSequence();
     }
 
     size_t yaml_config::size() const noexcept

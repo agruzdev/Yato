@@ -19,8 +19,7 @@ namespace conf {
     {
         std::shared_ptr<tinyxml2::XMLDocument> document;
         const tinyxml2::XMLElement* current_element = nullptr;
-        mutable std::vector<const tinyxml2::XMLElement*> array_lut;
-        mutable bool cache_is_valid = false;
+        std::vector<const tinyxml2::XMLElement*> children;
     };
 
     template <typename Visitor_>
@@ -130,7 +129,13 @@ namespace conf {
 
     xml_config::xml_config(std::unique_ptr<xml_config_state> && impl)
         : m_impl(std::move(impl))
-    { }
+    {
+        YATO_REQUIRES(m_impl != nullptr && m_impl->document != nullptr && m_impl->current_element != nullptr);
+        m_impl->children.clear();
+        visit_childs_(m_impl->current_element, [this](const tinyxml2::XMLElement* elem) {
+            m_impl->children.push_back(elem);
+        });
+    }
 
     xml_config::~xml_config() = default;
 
@@ -138,21 +143,7 @@ namespace conf {
 
     xml_config& xml_config::operator=(xml_config&&) noexcept = default;
 
-    void xml_config::init_array_cache() const
-    {
-        YATO_REQUIRES(m_impl != nullptr && m_impl->document != nullptr && m_impl->current_element != nullptr);
-        YATO_REQUIRES(is_array_tag());
-        
-        if(!m_impl->cache_is_valid) {
-            m_impl->array_lut.clear();
-            visit_childs_(m_impl->current_element, [this](const tinyxml2::XMLElement* elem) {
-                m_impl->array_lut.push_back(elem);
-            });
-            m_impl->cache_is_valid = true;
-        }
-    }
-
-    stored_variant xml_config::get_by_name(const std::string & name, stored_type type) const noexcept
+    stored_variant xml_config::get_by_key(const std::string & name, stored_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr && m_impl->document != nullptr && m_impl->current_element != nullptr);
         if (!is_array_tag()) {
@@ -165,12 +156,9 @@ namespace conf {
     stored_variant xml_config::get_by_index(size_t index, stored_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr && m_impl->document != nullptr && m_impl->current_element != nullptr);
-        if (is_array_tag()) {
-            init_array_cache();
-            if(index < m_impl->array_lut.size()) {
-                const tinyxml2::XMLElement* child = m_impl->array_lut[index];
-                return get_impl_(*m_impl, child, type);
-            }
+        if(index < m_impl->children.size()) {
+            const tinyxml2::XMLElement* child = m_impl->children[index];
+            return get_impl_(*m_impl, child, type);
         }
         return stored_variant{};
     }
@@ -190,11 +178,6 @@ namespace conf {
         return !is_array_tag();
     }
 
-    bool xml_config::is_array() const noexcept
-    {
-        return is_array_tag();
-    }
-
     std::vector<std::string> xml_config::keys() const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr && m_impl->current_element != nullptr);
@@ -210,11 +193,7 @@ namespace conf {
     size_t xml_config::size() const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
-        if (is_array_tag()) {
-            init_array_cache();
-            return m_impl->array_lut.size();
-        }
-        return 0;
+        return m_impl->children.size();
     }
 
     //---------------------------------------------------------------------------------------------

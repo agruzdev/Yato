@@ -70,11 +70,25 @@ namespace conf {
             m_args[name] = std::move(arg);
         }
 
+        size_t size() const
+        {
+            return m_args.size();
+        }
+
+        const argument_info* at(size_t idx) const
+        {
+            if (idx < m_args.size()) {
+                const auto it = std::next(m_args.cbegin(), idx);
+                return &(*it).second;
+            }
+            return nullptr;
+        }
+
         // Return not const pointer since ValueArg::getValue() is not const
-        const argument_info* find(const std::string & name, stored_type type) const
+        const argument_info* find(const std::string & name) const
         {
             const auto it = m_args.find(name);
-            if(it != m_args.cend() && (*it).second.type == type) {
+            if (it != m_args.cend()) {
                 return &(*it).second;
             }
             return nullptr;
@@ -94,6 +108,7 @@ namespace conf {
             }
             return res;
         }
+
     };
 
     //-------------------------------------------------------------------------
@@ -120,12 +135,10 @@ namespace conf {
         return m_impl->keys();
     }
 
-    stored_variant cmd_config::get_by_name(const std::string & name, stored_type type) const noexcept
+    static
+    stored_variant get_impl_(const argument_info* arg, stored_type type)
     {
-        YATO_REQUIRES(m_impl != nullptr);
         stored_variant res{};
-
-        const argument_info* arg = m_impl->find(name, type);
         if((arg != nullptr) && (arg->value->isSet() || arg->has_default)) {
             switch (type)
             {
@@ -165,25 +178,25 @@ namespace conf {
                 break;
             }
         }
-
         return res;
+    }
+
+    stored_variant cmd_config::get_by_key(const std::string & name, stored_type type) const noexcept
+    {
+        YATO_REQUIRES(m_impl != nullptr);
+        return get_impl_(m_impl->find(name), type);
     }
 
     stored_variant cmd_config::get_by_index(size_t index, stored_type type) const noexcept
     {
-        YATO_MAYBE_UNUSED(index);
-        YATO_MAYBE_UNUSED(type);
-        return yato::nullvar_t{};
-    }
-
-    bool cmd_config::is_array() const noexcept
-    {
-        return false;
+        YATO_REQUIRES(m_impl != nullptr);
+        return get_impl_(m_impl->at(index), type);
     }
 
     size_t cmd_config::size() const noexcept
     {
-        return 0;
+        YATO_REQUIRES(m_impl != nullptr);
+        return m_impl->size();
     }
 
     //-------------------------------------------------------------------------------------

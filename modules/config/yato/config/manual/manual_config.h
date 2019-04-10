@@ -30,13 +30,14 @@ namespace conf {
     private:
         std::unique_ptr<manual_config_state> m_impl;
 
-        bool is_object() const noexcept override;
-        stored_variant get_by_name(const std::string & name, stored_type type) const noexcept override;
+        size_t size() const noexcept override;
 
-        bool is_array() const noexcept override;
+        bool is_object() const noexcept override;
+
         stored_variant get_by_index(size_t index, stored_type type) const noexcept override;
 
-        size_t size() const noexcept override;
+        stored_variant get_by_key(const std::string & name, stored_type type) const noexcept override;
+
         std::vector<std::string> keys() const noexcept override;
 
     public:

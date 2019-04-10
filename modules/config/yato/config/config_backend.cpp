@@ -12,7 +12,7 @@ namespace yato
 
 namespace conf
 {
-    // In order to avoid linker warning, that file defones no symbols
+    // In order to avoid linker warning, that file defines no symbols
     config_backend::~config_backend() //NOLINT
     { }
 

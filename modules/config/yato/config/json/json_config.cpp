@@ -116,7 +116,7 @@ namespace conf {
         return res;
     }
 
-    stored_variant json_config::get_by_name(const std::string & name, stored_type type) const noexcept
+    stored_variant json_config::get_by_key(const std::string & name, stored_type type) const noexcept
     {
         YATO_REQUIRES(m_impl != nullptr);
         stored_variant res{};
@@ -156,14 +156,6 @@ namespace conf {
             }
         }
         return res;
-    }
-
-    bool json_config::is_array() const noexcept
-    {
-        YATO_REQUIRES(m_impl != nullptr);
-
-        const auto & json = m_impl->get();
-        return json.is_array();
     }
 
     size_t json_config::size() const noexcept

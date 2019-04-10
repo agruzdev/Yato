@@ -32,6 +32,7 @@ void TestConfig_PlainObject(const yato::conf::config & conf)
 
     const auto keys = conf.keys();
     EXPECT_EQ(5u, keys.size());
+    EXPECT_EQ(5u, conf.size());
 
     EXPECT_TRUE(std::find(keys.cbegin(), keys.cend(), "int") != keys.cend());
     EXPECT_TRUE(std::find(keys.cbegin(), keys.cend(), "message") != keys.cend());
@@ -72,6 +73,8 @@ void TestConfig_Object(const yato::conf::config & conf)
 {
     EXPECT_FALSE(conf.empty());
     EXPECT_TRUE(conf.is_object());
+
+    EXPECT_EQ(3u, conf.size());
 
     const auto i = conf.value<int32_t>("int");
     EXPECT_EQ(42, i.get_or(0));
@@ -114,6 +117,7 @@ void TestConfig_Array(const yato::conf::config & conf)
 
     const auto c2 = conf.object(5);
     ASSERT_FALSE(c2.empty());
+    EXPECT_EQ(1u, c2.size());
 
     const auto arr = c2.array("arr");
     ASSERT_FALSE(arr.empty());
@@ -166,6 +170,8 @@ void TestConfig_Example(const yato::conf::config & conf)
     EXPECT_EQ(true, is_manual);
     EXPECT_EQ(true, conf.flag("manual_mode"));
 
+    size_t conf_size = 4;
+
     const yato::conf::config arr = conf.array("fruits");
     if(arr) {
         ASSERT_TRUE(arr.is_array());
@@ -175,11 +181,13 @@ void TestConfig_Example(const yato::conf::config & conf)
             EXPECT_EQ(std::string("banana"), arr.value<std::string>(1).get());
             EXPECT_EQ(std::string("kiwi"),   arr.value<std::string>(2).get());
         );
+        ++conf_size;
     }
 
     const yato::conf::config point = conf.object("location");
     if(point) {
         ASSERT_TRUE(point.is_object());
+        EXPECT_EQ(2u, point.size());
         const int x = point.value<int>("x").get_or(-1);
         const int y = point.value<int>("y").get_or(-1);
         EXPECT_EQ(174, x);
@@ -192,7 +200,11 @@ void TestConfig_Example(const yato::conf::config & conf)
 
         EXPECT_EQ(-1,  conf.value<int>(yato::conf::path("location.z.x", ':')).get_or(-1));
         EXPECT_EQ(-1,  conf.value<int>(yato::conf::path("location.x.z", ':')).get_or(-1));
+        
+        ++conf_size;
     }
+
+    EXPECT_EQ(conf_size, conf.size());
 }
 
 namespace
