@@ -26,7 +26,7 @@ namespace
         }
         *(dst.data() + 1) = 20;
 
-        auto v = yato::make_view(dst);
+        auto v = yato::view(dst);
         static_assert(!std::is_const<typename decltype(v)::value_type>::value, "Fail");
         EXPECT_TRUE(v.size(0)   == dst.size(0));
         EXPECT_TRUE(v.size(1)   == dst.size(1));
@@ -42,7 +42,7 @@ namespace
         }
         EXPECT_EQ(20, *(src.cdata() + 1));
 
-        auto v = yato::make_view(src);
+        auto v = yato::cview(src);
         static_assert(std::is_const<typename decltype(v)::value_type>::value, "Fail");
         EXPECT_TRUE(v.size(0)   == src.size(0));
         EXPECT_TRUE(v.size(1)   == src.size(1));
@@ -61,7 +61,7 @@ namespace
         }
         *(dst.data() + 1) = 20;
 
-        auto v = yato::make_view(dst);
+        auto v = yato::view(dst);
         static_assert(!std::is_const<typename decltype(v)::value_type>::value, "Fail");
         EXPECT_TRUE(v.size(0) == dst.size(0));
     }
@@ -75,7 +75,7 @@ namespace
         }
         EXPECT_EQ(20, *(src.cdata() + 1));
 
-        auto v = yato::make_view(src);
+        auto v = yato::cview(src);
         static_assert(std::is_const<typename decltype(v)::value_type>::value, "Fail");
         EXPECT_TRUE(v.size(0) == src.size(0));
     }
@@ -111,7 +111,7 @@ TEST(Yato_ContainerND, access_array)
     yato::array_nd<int, 4, 4> arr2;
     arr2.fill(-1);
 
-    auto v = yato::make_view(arr2);
+    auto v = yato::view(arr2);
     //test_write(arr2);  // to be done
     test_write(v);
 

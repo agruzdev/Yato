@@ -1073,14 +1073,14 @@ YATO_PRAGMA_WARNING_POP
 
     template <typename Ty_, typename Shape_>
     YATO_CONSTEXPR_FUNC
-    array_view_nd<std::add_const_t<Ty_>, Shape_::dimensions_number> make_view(const details::array_nd_impl<Ty_, Shape_> & arr) YATO_NOEXCEPT_KEYWORD
+    auto cview(const details::array_nd_impl<Ty_, Shape_> & arr) YATO_NOEXCEPT_KEYWORD
     {
         return array_view_nd<std::add_const_t<Ty_>, Shape_::dimensions_number>(arr.cdata(), arr.dimensions(), arr.strides());
     }
 
     template <typename Ty_, typename Shape_>
     YATO_CONSTEXPR_FUNC
-    array_view_nd<Ty_, Shape_::dimensions_number> make_view(details::array_nd_impl<Ty_, Shape_> & arr) YATO_NOEXCEPT_KEYWORD
+    auto view(details::array_nd_impl<Ty_, Shape_> & arr) YATO_NOEXCEPT_KEYWORD
     {
         return array_view_nd<Ty_, Shape_::dimensions_number>(arr.data(), arr.dimensions(), arr.strides());
     }

@@ -176,40 +176,40 @@ TEST(Yato_ArrayView, array_view_const)
 TEST(Yato_ArrayView, make_view)
 {
     int arr_1[10] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    auto view_1 = yato::make_view(arr_1);
+    auto view_1 = yato::cview(arr_1);
     EXPECT_TRUE(view_1.size() == 10);
     for (int i = 0; i < 10; ++i) {
         EXPECT_TRUE(view_1[i] == i);
     }
 
     const float arr_2[10] = { 0 };
-    auto view_2 = yato::make_view(arr_2);
+    auto view_2 = yato::view(arr_2);
     EXPECT_TRUE(view_2.size() == 10);
 
 
     std::array<int, 4> arr_3;
-    auto view_3 = yato::make_view(arr_3);
+    auto view_3 = yato::view(arr_3);
     EXPECT_TRUE(view_3.size() == 4);
     view_3[0] = 0;
 
     const std::array<int, 4> arr_4 = { { 0 } };
-    auto view_4 = yato::make_view(arr_4);
+    auto view_4 = yato::cview(arr_4);
     YATO_MAYBE_UNUSED(view_4);
 
     std::vector<int> arr_5(5, 0);
-    auto view_5 = yato::make_view(arr_5);
+    auto view_5 = yato::view(arr_5);
     EXPECT_TRUE(view_5.size() == 5);
     view_5[0] = 10;
 
     const std::vector<int> arr_6(5, 0);
-    auto view_6 = yato::make_view(arr_6);
+    auto view_6 = yato::cview(arr_6);
     EXPECT_TRUE(view_6.size() == 5);
 }
 
 TEST(Yato_ArrayView, array_view_range)
 {
     uint8_t arr[10] = { 0 };
-    for (uint8_t & x : yato::make_view(arr)) {
+    for (uint8_t & x : yato::view(arr)) {
         x = 1;
     }
     for (int i = 0; i < 10; ++i) {
@@ -223,7 +223,7 @@ TEST(Yato_ArrayView, array_view_range)
 TEST(Yato_ArrayView, array_view_nd)
 {
     int arr_2d[2][3] = { {1, 1, 1}, {2, 2, 2} };
-    auto view = yato::make_view(arr_2d);
+    auto view = yato::view(arr_2d);
     
     EXPECT_TRUE(view.total_size() == 6);
     EXPECT_TRUE(view[0].total_size() == 3);
@@ -245,7 +245,7 @@ TEST(Yato_ArrayView, array_view_nd)
 TEST(Yato_ArrayView, array_view_nd_1)
 {
     int arr_2d[2][3] = { { 1, 1, 1 },{ 2, 2, 2 } };
-    auto view = yato::make_view(arr_2d);
+    auto view = yato::view(arr_2d);
 
     EXPECT_TRUE(view.total_size() == 6);
     EXPECT_TRUE(view[0].total_size() == 3);
@@ -269,7 +269,7 @@ TEST(Yato_ArrayView, array_view_nd_2)
     static const size_t Size_1 = 10;
     yato::uint8_t arr_1d[Size_1];
 
-    auto view = yato::make_view(arr_1d);
+    auto view = yato::view(arr_1d);
 
     for (size_t i = 0; i < Size_1; ++i) {
         yato::uint8_t x = static_cast<yato::uint8_t>(std::rand() % 256);
@@ -277,7 +277,7 @@ TEST(Yato_ArrayView, array_view_nd_2)
         view[i] = x;
     }
 
-    const auto const_view = yato::make_view(arr_1d);
+    const auto const_view = yato::cview(arr_1d);
     for (size_t i = 0; i < Size_1; ++i) {
         EXPECT_TRUE(arr_1d[i] == view[i]);
         EXPECT_TRUE(const_view[i] == view[i]);
@@ -290,7 +290,7 @@ TEST(Yato_ArrayView, array_view_nd_3)
     static const size_t Size_2 = 20;
     yato::uint8_t arr_2d[Size_1][Size_2];
 
-    auto view = yato::make_view(arr_2d);
+    auto view = yato::view(arr_2d);
 
     for (size_t i = 0; i < Size_1; ++i) {
         for (size_t j = 0; j < Size_2; ++j) {
@@ -300,7 +300,7 @@ TEST(Yato_ArrayView, array_view_nd_3)
         }
     }
 
-    const auto const_view = yato::make_view(arr_2d);
+    const auto const_view = yato::cview(arr_2d);
     for (size_t i = 0; i < Size_1; ++i) {
         for (size_t j = 0; j < Size_2; ++j) {
             EXPECT_TRUE(arr_2d[i][j] == view[i][j]);
@@ -316,7 +316,7 @@ TEST(Yato_ArrayView, array_view_nd_4)
     static const size_t Size_3 = 15;
     yato::uint8_t arr_3d[Size_1][Size_2][Size_3];
 
-    auto view = yato::make_view(arr_3d);
+    auto view = yato::view(arr_3d);
 
     for (size_t i = 0; i < Size_1; ++i) {
         for (size_t j = 0; j < Size_2; ++j) {
@@ -328,7 +328,7 @@ TEST(Yato_ArrayView, array_view_nd_4)
         }
     }
 
-    const auto const_view = yato::make_view(arr_3d);
+    const auto const_view = yato::cview(arr_3d);
     for (size_t i = 0; i < Size_1; ++i) {
         for (size_t j = 0; j < Size_2; ++j) {
             for (size_t k = 0; k < Size_3; ++k) {
@@ -344,7 +344,7 @@ TEST(Yato_ArrayView, array_view_nd_5)
     static const size_t Size_1 = 10;
     yato::uint8_t arr_1d[Size_1];
 
-    auto view = yato::make_view(arr_1d);
+    auto view = yato::view(arr_1d);
 
     for (size_t i = 0; i < Size_1; ++i) {
         yato::uint8_t x = static_cast<yato::uint8_t>(std::rand() % 256);
@@ -352,7 +352,7 @@ TEST(Yato_ArrayView, array_view_nd_5)
         view.at(i) = x;
     }
 
-    const auto const_view = yato::make_view(arr_1d);
+    const auto const_view = yato::cview(arr_1d);
     for (size_t i = 0; i < Size_1; ++i) {
         EXPECT_TRUE(arr_1d[i] == view.at(i));
         EXPECT_TRUE(const_view[i] == view.at(i));
@@ -365,7 +365,7 @@ TEST(Yato_ArrayView, array_view_nd_6)
     static const size_t Size_2 = 20;
     yato::uint8_t arr_2d[Size_1][Size_2];
 
-    auto view = yato::make_view(arr_2d);
+    auto view = yato::view(arr_2d);
 
     for (size_t i = 0; i < Size_1; ++i) {
         for (size_t j = 0; j < Size_2; ++j) {
@@ -375,7 +375,7 @@ TEST(Yato_ArrayView, array_view_nd_6)
         }
     }
 
-    const auto const_view = yato::make_view(arr_2d);
+    const auto const_view = yato::cview(arr_2d);
     for (size_t i = 0; i < Size_1; ++i) {
         for (size_t j = 0; j < Size_2; ++j) {
             EXPECT_TRUE(arr_2d[i][j] == view.at(i, j));
@@ -392,7 +392,7 @@ TEST(Yato_ArrayView, array_view_nd_7)
     static const size_t Size_3 = 15;
     yato::uint8_t arr_3d[Size_1][Size_2][Size_3];
 
-    auto view = yato::make_view(arr_3d);
+    auto view = yato::view(arr_3d);
 
     for (size_t i = 0; i < Size_1; ++i) {
         for (size_t j = 0; j < Size_2; ++j) {
@@ -404,7 +404,7 @@ TEST(Yato_ArrayView, array_view_nd_7)
         }
     }
 
-    const auto const_view = yato::make_view(arr_3d);
+    const auto const_view = yato::cview(arr_3d);
     for (size_t i = 0; i < Size_1; ++i) {
         for (size_t j = 0; j < Size_2; ++j) {
             for (size_t k = 0; k < Size_3; ++k) {
@@ -420,7 +420,7 @@ TEST(Yato_ArrayView, array_view_nd_8)
 {
     int arr[2][2] = {};
 
-    auto view = yato::make_view(arr);
+    auto view = yato::view(arr);
 
     std::fill(view.plain_begin(), view.plain_end(), 1);
     EXPECT_TRUE(arr[0][0] == 1);
@@ -439,8 +439,8 @@ TEST(Yato_ArrayView, array_view_nd_8)
         { { 2, 2 },{ 2, 2 } },
         { { 3, 3 },{ 3, 3 } }
     };
-    auto view_3d_1 = yato::make_view(arr_3d_1);
-    auto view_3d_2 = yato::make_view(arr_3d_2);
+    auto view_3d_1 = yato::view(arr_3d_1);
+    auto view_3d_2 = yato::view(arr_3d_2);
 
     for (auto && x : view_3d_1[1].plain_range()) {
         x = 2;
@@ -462,7 +462,7 @@ TEST(Yato_ArrayView, reshape)
     auto dim1 = yato::dims(6);
     EXPECT_EQ(6U, dim1.total_size());
 
-    auto plain_view = yato::make_view(raw);
+    auto plain_view = yato::view(raw);
     EXPECT_EQ(6U, plain_view.size(0));
     EXPECT_EQ(6U, plain_view.total_size());
 
@@ -668,4 +668,25 @@ TEST(Yato_ArrayView, cv_cast)
         EXPECT_EQ(test9.dimensions(), view4.dimensions());
     }
 
+}
+
+
+
+TEST(Yato_ArrayView, view_cview_cast)
+{
+    {
+        int arr1[6] = { 1, 2, 3, 4, 5, 6 };
+        yato::array_view_1d<int> view1(&arr1[0], yato::dims(6));
+
+        yato::array_view_1d<int> v1 = yato::view(view1);
+        yato::array_view_1d<const int> v2 = yato::cview(view1);
+    }
+
+    {
+        int arr1[6] = { 1, 2, 3, 4, 5, 6 };
+        yato::array_view_1d<const int> view1(&arr1[0], yato::dims(6));
+
+        yato::array_view_1d<const int> v1 = yato::view(view1);
+        yato::array_view_1d<const int> v2 = yato::cview(view1);
+    }
 }

@@ -3137,6 +3137,20 @@ namespace yato
         typename CapacityPolicy_ = details::default_capacity_policy
     >
     using vector_4d = vector_nd<DataType_, 4, Allocator_, CapacityPolicy_>;
+
+
+    template <typename DataType_, size_t DimensionsNum_, typename Allocator_, typename CapacityPolicy_>
+    auto view(yato::vector_nd<DataType_, DimensionsNum_, Allocator_, CapacityPolicy_> & v)
+    {
+        return v.view();
+    }
+
+    template <typename DataType_, size_t DimensionsNum_, typename Allocator_, typename CapacityPolicy_>
+    auto cview(const yato::vector_nd<DataType_, DimensionsNum_, Allocator_, CapacityPolicy_> & v)
+    {
+        return v.cview();
+    }
+
 }
 
 #endif //_YATO_VECTOR_ND_H_

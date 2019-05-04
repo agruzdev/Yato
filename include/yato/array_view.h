@@ -677,29 +677,133 @@ namespace yato
     using array_view_3d = array_view_nd<_DataType, 3>;
 
 
+    template<typename Ty_, size_t Size_>
+    auto view(Ty_ (& arr)[Size_])
+    {
+        return array_view<Ty_>(arr, yato::dims(Size_));
+    }
+
+    template<typename Ty_, size_t Size_>
+    auto view(std::array<Ty_, Size_> & arr)
+    {
+        return array_view<Ty_>(arr.data(), yato::dims(Size_));
+    }
+
+    template<typename Ty_>
+    auto view(std::vector<Ty_> & vec) 
+        -> std::enable_if_t<!std::is_same<Ty_, bool>::value, array_view<Ty_>>
+    {
+        return array_view<Ty_>(vec.data(), yato::dims(vec.size()));
+    }
+
+    template<typename Ty_, size_t Size1_, size_t Size2_>
+    auto view(Ty_(&arr)[Size1_][Size2_])
+    {
+        return array_view_nd<Ty_, 2>(&arr[0][0], yato::dims(Size1_, Size2_));
+    }
+
+    template<typename Ty_, size_t Size1_, size_t Size2_, size_t Size3_>
+    auto view(Ty_(&arr)[Size1_][Size2_][Size3_])
+    {
+        return array_view_nd<Ty_, 3>(&arr[0][0][0], yato::dims(Size1_, Size2_, Size3_));
+    }
+
+    template<typename Ty_, size_t Dims_ , typename Impl_>
+    auto view(const container_nd<Ty_, Dims_, Impl_> & c)
+    {
+        return array_view_nd<Ty_, Dims_>(c.data(), c.dimensions(), c.strides());
+    }
+
+    template <typename Ty_, size_t Dims_>
+    array_view_nd<Ty_, Dims_> & view(array_view_nd<Ty_, Dims_> & v)
+    {
+        return v;
+    }
+
+
+    template<typename Ty_, size_t Size_>
+    auto cview(Ty_ (& arr)[Size_]) YATO_NOEXCEPT_KEYWORD
+    {
+        return array_view<std::add_const_t<Ty_>>(arr, yato::dims(Size_));
+    }
+
+    template<typename Ty_, size_t Size_>
+    auto cview(const std::array<Ty_, Size_> & arr) YATO_NOEXCEPT_KEYWORD
+    {
+        return array_view<std::add_const_t<Ty_>>(arr.data(), yato::dims(Size_));
+    }
+
+    template<typename Ty_>
+    auto cview(const std::vector<Ty_> & vec) YATO_NOEXCEPT_KEYWORD 
+        -> std::enable_if_t<!std::is_same<Ty_, bool>::value, array_view<std::add_const_t<Ty_>>>
+    {
+        return array_view<std::add_const_t<Ty_>>(vec.data(), yato::dims(vec.size()));
+    }
+
+    template<typename Ty_, size_t Size1_, size_t Size2_>
+    auto cview(Ty_(&arr)[Size1_][Size2_])
+    {
+        return array_view_nd<std::add_const_t<Ty_>, 2>(&arr[0][0], yato::dims(Size1_, Size2_));
+    }
+
+    template<typename Ty_, size_t Size1_, size_t Size2_, size_t Size3_>
+    auto cview(Ty_(&arr)[Size1_][Size2_][Size3_])
+    {
+        return array_view_nd<std::add_const_t<Ty_>, 3>(&arr[0][0][0], yato::dims(Size1_, Size2_, Size3_));
+    }
+
+    template<typename Ty_, size_t Dims_ , typename Impl_>
+    auto cview(const const_container_nd<Ty_, Dims_, Impl_> & c)
+    {
+        return array_view_nd<std::add_const_t<Ty_>, Dims_>(c.cdata(), c.dimensions(), c.strides());
+    }
+
+    template <typename Ty_, size_t Dims_>
+    auto cview(const array_view_nd<Ty_, Dims_> & v)
+        -> std::enable_if_t<!std::is_const<Ty_>::value, array_view_nd<std::add_const_t<Ty_>, Dims_>>
+    {
+        return static_cast<array_view_nd<std::add_const_t<Ty_>, Dims_>>(v);
+    }
+
+    template <typename Ty_, size_t Dims_>
+    auto cview(array_view_nd<Ty_, Dims_> & v)
+        -> std::enable_if_t<std::is_const<Ty_>::value, array_view_nd<Ty_, Dims_> & >
+    {
+        return v;
+    }
+
+    template <typename Ty_, size_t Dims_>
+    auto cview(const array_view_nd<Ty_, Dims_> & v)
+        -> std::enable_if_t<std::is_const<Ty_>::value, const array_view_nd<Ty_, Dims_> & >
+    {
+        return v;
+    }
+
+
+
     template<typename T, size_t Size>
-    inline
+    YATO_DEPRECATED("Use yato::view/yato::cview")
     array_view<T> make_view(T (& arr)[Size]) YATO_NOEXCEPT_KEYWORD
     {
         return array_view<T>(arr, yato::dims(Size));
     }
 
     template<typename T, size_t Size>
-    inline
+    YATO_DEPRECATED("Use yato::view/yato::cview")
     array_view<T> make_view(std::array<T, Size> & arr) YATO_NOEXCEPT_KEYWORD
     {
         return array_view<T>(arr.data(), yato::dims(Size));
     }
 
     template<typename T, size_t Size>
-    inline
+    YATO_DEPRECATED("Use yato::view/yato::cview")
     array_view<const T> make_view(const std::array<T, Size> & arr) YATO_NOEXCEPT_KEYWORD
     {
         return array_view<const T>(arr.data(), yato::dims(Size));
     }
 
     template<typename T>
-    inline
+    YATO_DEPRECATED("Use yato::view/yato::cview")
     auto make_view(std::vector<T> & vec) YATO_NOEXCEPT_KEYWORD 
         -> typename std::enable_if<!std::is_same<T, bool>::value, array_view<T> >::type
     {
@@ -707,7 +811,7 @@ namespace yato
     }
 
     template<typename T>
-    inline
+    YATO_DEPRECATED("Use yato::view/yato::cview")
     auto make_view(const std::vector<T> & vec) YATO_NOEXCEPT_KEYWORD
         -> typename std::enable_if<!std::is_same<T, bool>::value, array_view<const T> >::type
     {
@@ -715,21 +819,20 @@ namespace yato
     }
 
     template<typename T, typename Size1, typename... Sizes>
-    inline
     array_view_nd<T, sizeof...(Sizes) + 1> make_view(T* ptr, Size1 && size1, Sizes && ...sizes)
     {
         return array_view_nd<T, sizeof...(Sizes) + 1>(ptr, yato::dims(std::forward<Size1>(size1), std::forward<Sizes>(sizes)...));
     }
 
     template<typename T, size_t Size1, size_t Size2>
-    inline
+    YATO_DEPRECATED("Use yato::view/yato::cview")
     array_view_nd<T, 2> make_view(T(&arr)[Size1][Size2])
     {
         return array_view_nd<T, 2>(&arr[0][0], yato::dims(Size1, Size2));
     }
 
     template<typename T, size_t Size1, size_t Size2, size_t Size3>
-    inline
+    YATO_DEPRECATED("Use yato::view/yato::cview")
     array_view_nd<T, 3> make_view(T(&arr)[Size1][Size2][Size3])
     {
         return array_view_nd<T, 3>(&arr[0][0][0], yato::dims(Size1, Size2, Size3));
@@ -737,14 +840,14 @@ namespace yato
 
 
     template<typename Ty_, size_t Dims_ , typename Impl_>
-    inline
+    YATO_DEPRECATED("Use yato::view/yato::cview")
     array_view_nd<std::add_const_t<Ty_>, Dims_> make_view(const const_container_nd<Ty_, Dims_, Impl_> & c) YATO_NOEXCEPT_KEYWORD
     {
         return array_view_nd<std::add_const_t<Ty_>, Dims_>(c.cdata(), c.dimensions(), c.strides());
     }
 
     template<typename Ty_, size_t Dims_ , typename Impl_>
-    inline
+    YATO_DEPRECATED("Use yato::view/yato::cview")
     array_view_nd<Ty_, Dims_> make_view(const container_nd<Ty_, Dims_, Impl_> & c) YATO_NOEXCEPT_KEYWORD
     {
         return array_view_nd<Ty_, Dims_>(c.data(), c.dimensions(), c.strides());
