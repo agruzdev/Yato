@@ -31,12 +31,9 @@ namespace conf {
     using manual_array_t  = std::vector<manual_value>;
 
 
-    class manual_config
+    class manual_config final
         : public config_backend
     {
-    private:
-        yato::variant<manual_object_t, manual_array_t> m_data;
-
     public:
         manual_config(details::object_tag_t)
             : m_data(in_place_type_t<manual_object_t>{})
@@ -62,65 +59,7 @@ namespace conf {
         manual_config& operator=(const manual_config&) = delete;
         manual_config& operator=(manual_config&&) = delete;
 
-        size_t size() const noexcept override
-        {
-            return yato::variant_match(
-                [](const manual_object_t & obj) {
-                    return obj.size();
-                },
-                [](const manual_array_t & arr) {
-                    return arr.size();
-                }
-            )(m_data);
-        }
-
-        bool is_object() const noexcept override
-        {
-            return m_data.is_type<manual_object_t>();
-        }
-
-        key_value_t get_by_index(size_t index) const noexcept override
-        {
-            key_value_t kv{};
-            yato::variant_match(
-                [&](const manual_object_t & obj) {
-                    if(index < obj.size()) {
-                        const auto it = std::next(obj.cbegin(), index);
-                        kv.first  = (*it).first;
-                        kv.second = &((*it).second);
-                    }
-                },
-                [&](const manual_array_t & arr) {
-                    if(index < arr.size()) {
-                        kv.second = &arr[index];
-                    }
-                }
-            )(m_data);
-            return kv;
-        }
-
-        key_value_t get_by_key(const std::string & name) const noexcept override
-        {
-            key_value_t kv{};
-            yato::variant_match(
-                [&](const manual_object_t & obj) {
-                    const auto it = obj.find(name);
-                    if(it != obj.cend()) {
-                        kv.first  = (*it).first;
-                        kv.second = &((*it).second);
-                    }
-                },
-                [&](match_default_t) {
-                }
-            )(m_data);
-            return kv;
-        }
-
-        void release_value(const config_value* /*val*/) const noexcept override
-        {
-            return;
-        }
-
+        
         void put(std::string name, manual_value value)
         {
             yato::variant_match(
@@ -144,6 +83,69 @@ namespace conf {
                 }
              )(m_data);
         }
+
+    private:
+        size_t do_size() const noexcept override
+        {
+            return yato::variant_match(
+                [](const manual_object_t & obj) {
+                    return obj.size();
+                },
+                [](const manual_array_t & arr) {
+                    return arr.size();
+                }
+            )(m_data);
+        }
+
+        bool do_is_object() const noexcept override
+        {
+            return m_data.is_type<manual_object_t>();
+        }
+
+        key_value_t do_find(size_t index) const noexcept override
+        {
+            key_value_t kv{};
+            yato::variant_match(
+                [&](const manual_object_t & obj) {
+                    if(index < obj.size()) {
+                        const auto it = std::next(obj.cbegin(), index);
+                        kv.first  = (*it).first;
+                        kv.second = &((*it).second);
+                    }
+                },
+                [&](const manual_array_t & arr) {
+                    if(index < arr.size()) {
+                        kv.second = &arr[index];
+                    }
+                }
+            )(m_data);
+            return kv;
+        }
+
+        key_value_t do_find(const std::string & name) const noexcept override
+        {
+            key_value_t kv{};
+            yato::variant_match(
+                [&](const manual_object_t & obj) {
+                    const auto it = obj.find(name);
+                    if(it != obj.cend()) {
+                        kv.first  = (*it).first;
+                        kv.second = &((*it).second);
+                    }
+                },
+                [&](match_default_t) {
+                }
+            )(m_data);
+            return kv;
+        }
+
+        void do_release(const config_value* /*val*/) const noexcept override
+        {
+            return;
+        }
+
+    private:
+        yato::variant<manual_object_t, manual_array_t> m_data;
     };
 
 

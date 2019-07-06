@@ -261,7 +261,7 @@ namespace conf {
     };
 
     /**
-     * Interface for config implementation
+     * Facade class providing a non-virtual interface for config implementations 
      */
     class config_backend  // NOLINT
     {
@@ -276,68 +276,52 @@ namespace conf {
 
         virtual ~config_backend() = default;
 
-
         /**
          * Get number of stored values.
          */
-        virtual size_t size() const noexcept = 0;
-
-        /**
-         * Fetch value by index.
-         */
-        virtual key_value_t get_by_index(size_t index) const noexcept = 0;
-
-        /**
-         * Release value handle obtained from get_by_index() or get_by_key()
-         */
-        virtual void release_value(const config_value* val) const noexcept = 0;
+        size_t size() const
+        {
+            return do_size();
+        }
 
         /**
          * Returns true if config stores key-value pairs, otherwise only indexed access is supported.
          */
-        virtual bool is_object() const noexcept {
-            return false;
+        bool is_object() const
+        {
+            return do_is_object();
         }
 
         /**
-         * Fetch value by key. Valid only if is_object() returns true.
+         * Find value by index.
          */
-        virtual key_value_t get_by_key(const std::string & name) const noexcept { 
-            YATO_MAYBE_UNUSED(name); 
-            return std::make_pair(std::string{}, nullptr); 
-        };
+        key_value_t find(size_t index) const
+        {
+            return do_find(index);
+        }
+
+        /**
+         * Find value by name.
+         */
+        key_value_t find(const std::string & name) const
+        {
+            return do_find(name);
+        }
+
+        /**
+         * Release value handle obtained from find().
+         */
+        void release(const config_value* val) const
+        {
+            do_release(val);
+        }
 
         /**
          * Enumerate object's keys
          */
-        virtual std::vector<std::string> keys() const noexcept
+        std::vector<std::string> keys() const
         {
-            std::vector<std::string> res;
-            if (is_object()) {
-                try {
-                    const size_t count = size();
-                    std::vector<std::string> tmp;
-                    tmp.reserve(count);
-                    for (size_t i = 0; i < count; ++i) {
-                        auto kv = get_by_index(i);
-                        tmp.push_back(kv.first);
-                        release_value(kv);
-                    }
-                    res.swap(tmp);
-                }
-                catch(...) {
-                    //ToDo (a.gruzdev): Add error callbacks
-                }
-            }
-            return res;
-        }
-
-        /**
-         * Overloading or key-value pair
-         */
-        void release_value(const key_value_t & kv) const
-        {
-            release_value(kv.second);
+            return do_keys();
         }
 
         /**
@@ -346,9 +330,9 @@ namespace conf {
         template <typename Ty_>
         yato::optional<Ty_> get(size_t index, stored_type dst_type) const 
         {
-            const config_value* value = get_by_index(index).second;
+            const config_value* value = find(index).second;
             if (value) {
-                yato_finally(([this, value]{ release_value(value); }));
+                yato_finally(([this, value]{ release(value); }));
                 return value->get<Ty_>(dst_type);
             }
             return yato::nullopt_t{};
@@ -358,16 +342,48 @@ namespace conf {
          * Helper method wrapping returned type into optional
          */
         template <typename Ty_>
-        yato::optional<Ty_> get(const std::string & key, stored_type dst_type) const 
+        yato::optional<Ty_> get(const std::string & name, stored_type dst_type) const 
         {
-            const config_value* value = get_by_key(key).second;
+            const config_value* value = find(name).second;
             if (value) {
-                yato_finally(([this, value]{ release_value(value); }));
+                yato_finally(([this, value]{ release(value); }));
                 return value->get<Ty_>(dst_type);
             }
             return yato::nullopt_t{};
         }
 
+    protected:
+
+        /**
+         * Get number of stored values.
+         */
+        virtual size_t do_size() const noexcept = 0;
+
+        /**
+         * Find value by index.
+         */
+        virtual key_value_t do_find(size_t index) const noexcept = 0;
+        
+        /**
+         * Release value handle obtained from do_find().
+         */
+        virtual void do_release(const config_value* val) const noexcept = 0;
+
+        /**
+         * Returns false by default
+         */
+        virtual bool do_is_object() const noexcept;
+
+        /**
+         * Find value by name.
+         * Returns config_backend::novalue by default;
+         */
+        virtual key_value_t do_find(const std::string & name) const noexcept;
+
+        /**
+         * Default implementation calls find() for all valid indexes.
+         */
+        virtual std::vector<std::string> do_keys() const noexcept;
     };
 
 } // namespace conf

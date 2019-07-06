@@ -161,75 +161,57 @@ namespace conf {
             join_backend& operator=(const join_backend&) = default;
             join_backend& operator=(join_backend&&) noexcept = default;
 
-            bool is_object() const noexcept override
+            bool do_is_object() const noexcept override
             {
                 return m_is_object;
             }
 
-            key_value_t get_by_key(const std::string & name) const noexcept override
+            key_value_t do_find(const std::string & name) const noexcept override
             {
                 key_value_t res = config_backend::novalue;
                 if (m_is_object) {
-                    res = wrap_value_(m_left->get_by_key(name), value_origin::left);
+                    res = wrap_value_(m_left->find(name), value_origin::left);
                     if (!res.second) {
-                        res = wrap_value_(m_right->get_by_key(name), value_origin::right);
+                        res = wrap_value_(m_right->find(name), value_origin::right);
                     }
                 }
                 return res;
-#if 0
-                    key_value_t tmp_res = m_left->get_by_key(name);
-                    if (tmp_res.second) {
-                        res = wrap_value_()
-                        res.first  = tmp_res.first;
-                        res.second = new value_wrapper(tmp_res.second, value_origin::left);
-                    }
-                    else {
-                        //res = m_right->get_by_key(name);
-                        tmp_res = m_right->get_by_key(name);
-                        if (tmp_res.swap) {
-                            res.first  = tmp_res.first;
-                            res.second = new value_wrapper(tmp_res.second, value_origin::right);
-                        }
-                    }
-                }
-                return res;
-#endif
             }
             
-            std::vector<std::string> keys() const noexcept override
+            std::vector<std::string> do_keys() const noexcept override
             {
                 return m_keys;
             }
 
-            key_value_t get_by_index(size_t index) const noexcept override
+            key_value_t do_find(size_t index) const noexcept override
             {
                 key_value_t res = config_backend::novalue;
                 if (index < m_left_size) {
-                    res = wrap_value_(m_left->get_by_index(index), value_origin::left);
+                    res = wrap_value_(m_left->find(index), value_origin::left);
                 }
                 else if(index < m_keys.size()) {
                     YATO_ASSERT(index - m_left_size < m_right_index.size(), "join_backend[get_by_index]: Invalid index remapping.");
-                    res = wrap_value_(m_right->get_by_index(m_right_index[index - m_left_size]), value_origin::right);
+                    res = wrap_value_(m_right->find(m_right_index[index - m_left_size]), value_origin::right);
                 }
                 return res;
             }
 
-            size_t size() const noexcept override
+            size_t do_size() const noexcept override
             {
                 return m_keys.size();
             }
 
-            void release_value(const config_value* val) const noexcept override
+            void do_release(const config_value* val) const noexcept override
             {
                 YATO_REQUIRES(dynamic_cast<const value_wrapper*>(val) != nullptr);
                 const value_wrapper* wrapper = static_cast<const value_wrapper*>(val);
                 if (wrapper && wrapper->get()) {
                     switch (wrapper->tag()) {
                         case value_origin::left:
-                            m_left->release_value(wrapper->get());
+                            m_left->release(wrapper->get());
                             break;
                         case value_origin::right:
-                            m_right->release_value(wrapper->get());
+                            m_right->release(wrapper->get());
                             break;
                     }
                     delete wrapper;
@@ -283,45 +265,45 @@ namespace conf {
             filter_backend& operator=(const filter_backend&) = default;
             filter_backend& operator=(filter_backend&&) noexcept = default;
 
-            bool is_object() const noexcept override
+            bool do_is_object() const noexcept override
             {
                 return true;
             }
 
-            key_value_t get_by_key(const std::string & name) const noexcept override
+            key_value_t do_find(const std::string & name) const noexcept override
             {
                 key_value_t res{};
                 const auto it = std::lower_bound(m_keys.cbegin(), m_keys.cend(), name);
                 if ((it != m_keys.cend()) && (*it == name)) {
-                    res = m_conf->get_by_key(name);
+                    res = m_conf->find(name);
                 }
                 return res;
             }
 
-            std::vector<std::string> keys() const noexcept override
+            std::vector<std::string> do_keys() const noexcept override
             {
                 return m_keys;
             }
 
-            key_value_t get_by_index(size_t index) const noexcept override
+            key_value_t do_find(size_t index) const noexcept override
             {
                 key_value_t res{};
                 const auto it = std::lower_bound(m_indexes.cbegin(), m_indexes.cend(), index);
                 if ((it != m_indexes.cend()) && (*it == index)) {
                     const size_t orig_idx = m_indexes[std::distance(m_indexes.cbegin(), it)];
-                    res = m_conf->get_by_index(orig_idx);
+                    res = m_conf->find(orig_idx);
                 }
                 return res;
             }
 
-            size_t size() const noexcept override
+            size_t do_size() const noexcept override
             {
                 return m_keys.size();
             }
 
-            void release_value(const config_value* val) const noexcept override
+            void do_release(const config_value* val) const noexcept override
             {
-                m_conf->release_value(val);
+                m_conf->release(val);
             }
         };
 
