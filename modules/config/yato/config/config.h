@@ -17,7 +17,12 @@ namespace yato {
 
 namespace conf {
 
-    class config
+    namespace details {
+        struct object_tag_t {};
+        struct array_tag_t {};
+    }
+
+    class config final
     {
     private:
         backend_ptr m_backend{ nullptr };
@@ -324,13 +329,13 @@ namespace conf {
                 const std::string name{ t.begin(), t.end() };
                 if (path_tokens.has_next()) {
                     // We need to go deeper
-                    current_backend = current_backend->get_by_key(name, stored_type::config).get_as<backend_ptr>(nullptr);
+                    current_backend = current_backend->get<backend_ptr>(name, stored_type::config).get_or(nullptr);
                 }
                 else {
                     // Fetch a value
                     using return_type = typename stored_type_trait<FetchType_>::return_type;
-                    return current_backend->get_by_key(name, FetchType_).template get_opt<return_type>().map(
-                        [&converter](return_type && val){ return apply_convertion_(std::move(val), std::forward<Converter_>(converter)); }
+                    return current_backend->get<return_type>(name, FetchType_).map(
+                        [&converter](return_type && val) { return apply_convertion_(std::move(val), std::forward<Converter_>(converter)); }
                     );
                 }
             }
@@ -343,9 +348,9 @@ namespace conf {
     auto config::value_(size_t index, Converter_ && converter) const
         -> yato::optional<converted_result_type<FetchType_, Converter_>>
     {
-        if(m_backend) {
+        if (m_backend) {
             using return_type = typename stored_type_trait<FetchType_>::return_type;
-            return m_backend->get_by_index(index, FetchType_).template get_opt<return_type>().map(
+            return m_backend->get<return_type>(index, FetchType_).map(
                 [&converter](return_type && val){ return apply_convertion_(std::move(val), std::forward<Converter_>(converter)); }
             );
         }

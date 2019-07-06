@@ -12,9 +12,8 @@ namespace yato
 
 namespace conf
 {
-    // In order to avoid linker warning, that file defines no symbols
-    config_backend::~config_backend() //NOLINT
-    { }
+
+    const config_backend::key_value_t config_backend::novalue = std::make_pair(std::string{}, nullptr);
 
 } // namespace conf
 

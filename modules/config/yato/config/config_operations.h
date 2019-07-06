@@ -8,85 +8,232 @@
 #ifndef _YATO_CONFIG_OPERATIONS_H_
 #define _YATO_CONFIG_OPERATIONS_H_
 
+#include <algorithm>
+#include <set>
+#include <vector>
+
 #include "config.h"
+#include "yato/assertion.h"
 
 namespace yato {
 
 namespace conf {
 
+    enum class filter_mode
+    {
+        whitelist,
+        blacklist
+    };
+
 
     namespace details
     {
+        template <typename Ty1_, typename Ty2_, typename Pred_>
+        void erase2_if(std::vector<Ty1_> & vec1, std::vector<Ty2_> & vec2, const Pred_ & predicate)
+        {
+            YATO_REQUIRES(vec1.size() == vec2.size());
+            size_t size = vec1.size();
+            size_t src_idx = 0, dst_idx = 0;
+            for (; src_idx < size; ++src_idx) {
+                if (!predicate(vec1[src_idx])) {
+                    if (dst_idx != src_idx) {
+                        vec1[dst_idx] = std::move(vec1[src_idx]);
+                        vec2[dst_idx] = std::move(vec2[src_idx]);
+                    }
+                    ++dst_idx;
+                }
+            }
+            vec1.erase(std::next(vec1.cbegin(), dst_idx), vec1.cend());
+            vec2.erase(std::next(vec2.cbegin(), dst_idx), vec2.cend());
+        }
+
+
+        template <typename TagType_>
+        class tagged_config_value
+            : public config_value
+        {
+        public:
+            using tag_type = TagType_;
+
+            tagged_config_value(const config_value* value, tag_type tag)
+                : m_value(value), m_tag(std::move(tag))
+            { }
+
+            ~tagged_config_value() override = default;
+
+            stored_type type() const noexcept override
+            {
+                return m_value->type();
+            }
+
+            stored_variant get_as(stored_type dst_type) const noexcept override
+            {
+                return m_value->get_as(dst_type);
+            }
+
+            const config_value* get() const
+            {
+                return m_value;
+            }
+
+            const tag_type & tag() const
+            {
+                return m_tag;
+            }
+
+        private:
+            const config_value* m_value;
+            tag_type m_tag;
+        };
+
 
         /**
-         * Union implementation
+         * Join implementation
          * Left is always high priority
          */
-        class union_backend
+        class join_backend
             : public config_backend
         {
         private:
+            enum class value_origin
+            {
+                left,
+                right
+            };
+
+            using value_wrapper = tagged_config_value<value_origin>;
+
             backend_ptr m_left;
             backend_ptr m_right;
+            bool m_is_object;
+            size_t m_left_size;
+            std::vector<std::string> m_keys;
+            std::vector<size_t> m_right_index;
+
+            static
+            key_value_t wrap_value_(key_value_t kv, value_origin tag)
+            {
+                key_value_t res = std::make_pair(std::string{}, nullptr);
+                if (kv.second) {
+                    res.first = std::move(kv.first);
+                    res.second = new value_wrapper(kv.second, tag);
+                }
+                return res;
+            }
 
         public:
-            union_backend(const backend_ptr & left, const backend_ptr & right)
+            join_backend(const backend_ptr & left, const backend_ptr & right)
                 : m_left(left), m_right(right)
             {
                 YATO_REQUIRES(m_left  != nullptr);
                 YATO_REQUIRES(m_right != nullptr);
-                if(!(m_left->is_object() && m_right->is_object())) {
-                    throw yato::argument_error("Config union can be created only for two objects");
+
+                const bool left_is_object  = m_left->is_object();
+                const bool right_is_object = m_right->is_object();
+
+                if (left_is_object != right_is_object) {
+                    throw yato::argument_error("Only two objects or two arrays can be joined.");
                 }
+
+                m_is_object = left_is_object;
+
+                std::vector<std::string> left_keys  = m_left->keys();
+                std::vector<std::string> right_keys = m_right->keys();
+
+                m_right_index.resize(right_keys.size());
+                std::iota(m_right_index.begin(), m_right_index.end(), static_cast<size_t>(0));
+
+                const auto left_set = std::set<std::string>(left_keys.cbegin(), left_keys.cend());
+
+                erase2_if(right_keys, m_right_index, [&](const std::string & k) { return left_set.find(k) != left_set.cend(); });
+
+                m_left_size = left_keys.size();
+
+                m_keys = std::move(left_keys);
+                m_keys.insert(m_keys.cend(), std::make_move_iterator(right_keys.begin()), std::make_move_iterator(right_keys.end()));
             }
 
-            ~union_backend() override = default;
+            ~join_backend() override = default;
 
-            union_backend(const union_backend&) = default;
-            union_backend(union_backend&&) noexcept = default;
+            join_backend(const join_backend&) = default;
+            join_backend(join_backend&&) noexcept = default;
 
-            union_backend& operator=(const union_backend&) = default;
-            union_backend& operator=(union_backend&&) noexcept = default;
+            join_backend& operator=(const join_backend&) = default;
+            join_backend& operator=(join_backend&&) noexcept = default;
 
             bool is_object() const noexcept override
             {
-                return true;
+                return m_is_object;
             }
 
-            stored_variant get_by_key(const std::string & name, stored_type type) const noexcept override
+            key_value_t get_by_key(const std::string & name) const noexcept override
             {
-                const auto left_res = m_left->get_by_key(name, type);
-                if(!left_res.is_type<void>()) {
-                    return left_res;
+                key_value_t res = config_backend::novalue;
+                if (m_is_object) {
+                    res = wrap_value_(m_left->get_by_key(name), value_origin::left);
+                    if (!res.second) {
+                        res = wrap_value_(m_right->get_by_key(name), value_origin::right);
+                    }
                 }
-                else {
-                    return m_right->get_by_key(name, type);
+                return res;
+#if 0
+                    key_value_t tmp_res = m_left->get_by_key(name);
+                    if (tmp_res.second) {
+                        res = wrap_value_()
+                        res.first  = tmp_res.first;
+                        res.second = new value_wrapper(tmp_res.second, value_origin::left);
+                    }
+                    else {
+                        //res = m_right->get_by_key(name);
+                        tmp_res = m_right->get_by_key(name);
+                        if (tmp_res.swap) {
+                            res.first  = tmp_res.first;
+                            res.second = new value_wrapper(tmp_res.second, value_origin::right);
+                        }
+                    }
                 }
+                return res;
+#endif
             }
             
             std::vector<std::string> keys() const noexcept override
             {
-                auto left_keys = m_left->keys();
-                auto right_keys = m_right->keys();
-                std::sort(left_keys.begin(), left_keys.end());
-                std::sort(right_keys.begin(), right_keys.end());
-                std::vector<std::string> res;
-                res.reserve(left_keys.size() + right_keys.size());
-                std::set_union(left_keys.cbegin(), left_keys.cend(), right_keys.cbegin(), right_keys.cend(), std::back_inserter(res));
-                return res;
+                return m_keys;
             }
 
-            stored_variant get_by_index(size_t index, stored_type type) const noexcept override
+            key_value_t get_by_index(size_t index) const noexcept override
             {
-                YATO_MAYBE_UNUSED(index);
-                YATO_MAYBE_UNUSED(type);
-                return stored_variant{};
+                key_value_t res = config_backend::novalue;
+                if (index < m_left_size) {
+                    res = wrap_value_(m_left->get_by_index(index), value_origin::left);
+                }
+                else if(index < m_keys.size()) {
+                    YATO_ASSERT(index - m_left_size < m_right_index.size(), "join_backend[get_by_index]: Invalid index remapping.");
+                    res = wrap_value_(m_right->get_by_index(m_right_index[index - m_left_size]), value_origin::right);
+                }
+                return res;
             }
 
             size_t size() const noexcept override
             {
-                // ToDo (a.gruzdev): Make O(1) complexity
-                return keys().size();
+                return m_keys.size();
+            }
+
+            void release_value(const config_value* val) const noexcept override
+            {
+                YATO_REQUIRES(dynamic_cast<const value_wrapper*>(val) != nullptr);
+                const value_wrapper* wrapper = static_cast<const value_wrapper*>(val);
+                if (wrapper && wrapper->get()) {
+                    switch (wrapper->tag()) {
+                        case value_origin::left:
+                            m_left->release_value(wrapper->get());
+                            break;
+                        case value_origin::right:
+                            m_right->release_value(wrapper->get());
+                            break;
+                    }
+                    delete wrapper;
+                }
             }
         };
 
@@ -94,137 +241,90 @@ namespace conf {
          * Intersection implementation
          * Left is always high priority
          */
-        class intersection_backend
+        class filter_backend
             : public config_backend
         {
         private:
-            backend_ptr m_left;
-            backend_ptr m_right;
+            backend_ptr m_conf;
+            std::vector<std::string> m_keys;
+            std::vector<size_t> m_indexes;
+            filter_mode m_mode;
 
         public:
-            intersection_backend(const backend_ptr & left, const backend_ptr & right)
-                : m_left(left), m_right(right)
+            filter_backend(const backend_ptr & conf, const std::vector<std::string> & filter_keys, filter_mode mode)
+                : m_conf(conf), m_mode(mode)
             {
-                YATO_REQUIRES(m_left  != nullptr);
-                YATO_REQUIRES(m_right != nullptr);
-                if(!(m_left->is_object() && m_right->is_object())) {
-                    throw yato::argument_error("Config union can be created only for two objects");
+                YATO_REQUIRES(m_conf != nullptr);
+                if(!conf->is_object()) {
+                    throw yato::argument_error("Config filter can be created only for an objects");
+                }
+
+                m_keys = m_conf->keys();
+                m_indexes.resize(m_keys.size());
+                std::iota(m_indexes.begin(), m_indexes.end(), static_cast<size_t>(0));
+
+                const auto filter_set = std::set<std::string>(std::make_move_iterator(filter_keys.cbegin()), std::make_move_iterator(filter_keys.cend()));
+
+                switch(m_mode) {
+                    case filter_mode::whitelist:
+                        erase2_if(m_keys, m_indexes, [&](const std::string & k){ return filter_set.find(k) == filter_set.cend(); });
+                        break;
+                    case filter_mode::blacklist:
+                        erase2_if(m_keys, m_indexes, [&](const std::string & k){ return filter_set.find(k) != filter_set.cend(); });
+                        break;
                 }
             }
 
-            ~intersection_backend() override = default;
+            ~filter_backend() override = default;
 
-            intersection_backend(const intersection_backend&) = default;
-            intersection_backend(intersection_backend&&) noexcept = default;
+            filter_backend(const filter_backend&) = default;
+            filter_backend(filter_backend&&) noexcept = default;
 
-            intersection_backend& operator=(const intersection_backend&) = default;
-            intersection_backend& operator=(intersection_backend&&) noexcept = default;
+            filter_backend& operator=(const filter_backend&) = default;
+            filter_backend& operator=(filter_backend&&) noexcept = default;
 
             bool is_object() const noexcept override
             {
                 return true;
             }
 
-            stored_variant get_by_key(const std::string & name, stored_type type) const noexcept override
+            key_value_t get_by_key(const std::string & name) const noexcept override
             {
-                const auto left_res  = m_left->get_by_key(name, type);
-                const auto right_res = m_right->get_by_key(name, type);
-                if(!left_res.is_type<void>() && !right_res.is_type<void>()) {
-                    return left_res;
+                key_value_t res{};
+                const auto it = std::lower_bound(m_keys.cbegin(), m_keys.cend(), name);
+                if ((it != m_keys.cend()) && (*it == name)) {
+                    res = m_conf->get_by_key(name);
                 }
-                return stored_variant{};
-            }
-
-            std::vector<std::string> keys() const noexcept override
-            {
-                auto left_keys = m_left->keys();
-                auto right_keys = m_right->keys();
-                std::sort(left_keys.begin(), left_keys.end());
-                std::sort(right_keys.begin(), right_keys.end());
-                std::vector<std::string> res;
-                res.reserve(std::max(left_keys.size(), right_keys.size()));
-                std::set_intersection(left_keys.cbegin(), left_keys.cend(), right_keys.cbegin(), right_keys.cend(), std::back_inserter(res));
                 return res;
             }
 
-            stored_variant get_by_index(size_t index, stored_type type) const noexcept override
-            {
-                YATO_MAYBE_UNUSED(index);
-                YATO_MAYBE_UNUSED(type);
-                return stored_variant{};
-            }
-
-            size_t size() const noexcept override
-            {
-                // ToDo (a.gruzdev): Make O(1) complexity
-                return keys().size();
-            }
-        };
-
-
-        /**
-         * Implemets arrays concatination
-         */
-        class concatenation_backend
-            : public config_backend
-        {
-        private:
-            backend_ptr m_left;
-            backend_ptr m_right;
-
-        public:
-            concatenation_backend(const backend_ptr & left, const backend_ptr & right)
-                : m_left(left), m_right(right)
-            {
-                YATO_REQUIRES(m_left  != nullptr);
-                YATO_REQUIRES(m_right != nullptr);
-                //if(!(!m_left->is_object() && !m_right->is_object())) {
-                //    throw yato::argument_error("Config concatenation can be created only for two arrays");
-                //}
-            }
-
-            ~concatenation_backend() override = default;
-
-            concatenation_backend(const concatenation_backend&) = default;
-            concatenation_backend(concatenation_backend&&) noexcept = default;
-
-            concatenation_backend& operator=(const concatenation_backend&) = default;
-            concatenation_backend& operator=(concatenation_backend&&) noexcept = default;
-
-            bool is_object() const noexcept override
-            {
-                return false;
-            }
-
-            stored_variant get_by_key(const std::string & name, stored_type type) const noexcept override
-            {
-                YATO_MAYBE_UNUSED(name);
-                YATO_MAYBE_UNUSED(type);
-                // ToDo (a.gruzdev): Allow objects concatenation?
-                return stored_variant{};
-            }
-
             std::vector<std::string> keys() const noexcept override
             {
-                return std::vector<std::string>{};
+                return m_keys;
             }
 
-            stored_variant get_by_index(size_t index, stored_type type) const noexcept override
+            key_value_t get_by_index(size_t index) const noexcept override
             {
-                const size_t offset = m_left->size();
-                if(index < offset) {
-                    return m_left->get_by_index(index, type);
+                key_value_t res{};
+                const auto it = std::lower_bound(m_indexes.cbegin(), m_indexes.cend(), index);
+                if ((it != m_indexes.cend()) && (*it == index)) {
+                    const size_t orig_idx = m_indexes[std::distance(m_indexes.cbegin(), it)];
+                    res = m_conf->get_by_index(orig_idx);
                 }
-                else {
-                    return m_right->get_by_index(index - offset, type);
-                }
+                return res;
             }
 
             size_t size() const noexcept override
             {
-                return m_left->size() + m_right->size();
+                return m_keys.size();
+            }
+
+            void release_value(const config_value* val) const noexcept override
+            {
+                m_conf->release_value(val);
             }
         };
+
     }
 
     /**
@@ -237,69 +337,49 @@ namespace conf {
     };
 
     /**
-     * Creates a union of two configurations
-     * Requested key will be found if and only if it is presented in the left or right sub-config.
-     * If the requested key is presented in the both sub-configs, then the value is chosen according to the priority flag.
+     * Joins two configurations. 
+     * If configurations have no same keys, then the join result will be equvalent to their concatenation (in priority order),
+     * otherwise the result will be equal to the first configuration (in priority order) with added unique keys from the second configuration.
+     * In other words, the first configuration always remainds unchanged.
      * 
-     * Union can be applied only to objects.
+     * Join can be applied to two objects or two arrays.
+     *
+     * Examples:
+     *  Join( {'a', 'b'}, {'c'}) = {'a', 'b', 'c'}
+     *  Join( {'a', 'b'}, {'c', 'b'}) = {'a', 'b', 'c'}
+     *  Join( {'a', 'b'}, {'b'}) = {'a', 'b'}
+     *  Join( { }, {'b'}) = {'b'}
+     *  Join( { }, { }) = { }
      */
     inline
-    config object_union(const config & left, const config & right, priority p = priority::left)
+    config join(const config & left, const config & right, priority p = priority::left)
     {
         backend_ptr left_backend  = left.get_backend();
         backend_ptr right_backend = right.get_backend();
-        if(left_backend != nullptr && right_backend != nullptr) {
-            if(p != priority::left) {
+        if (left_backend != nullptr && right_backend != nullptr) {
+            if (p != priority::left) {
                 left_backend.swap(right_backend);
             }
-            return config(std::make_shared<details::union_backend>(left_backend, right_backend));
+            return config(std::make_shared<details::join_backend>(left_backend, right_backend));
         }
-        if(left_backend != nullptr) {
+        if (left_backend != nullptr) {
             return left;
         }
-        if(right_backend != nullptr) {
+        if (right_backend != nullptr) {
             return right;
         }
         return config{};
     }
 
     /**
-     * Creates an intersection of two configurations
-     * Requested key will be found if and only if it is found in the both sub-config.
-     * The value is chosen according to the priority flag.
-     * 
-     * Intersection can be applied only to objects.
+     * Creates a new configuration with white-listed or black-listed keys.
      */
     inline
-    config object_intersection(const config & left, const config & right, priority p = priority::left)
+    config filter(const config & conf, const std::vector<std::string> & filter_keys, filter_mode mode = filter_mode::whitelist)
     {
-        backend_ptr left_backend  = left.get_backend();
-        backend_ptr right_backend = right.get_backend();
-        if(left_backend == nullptr || right_backend == nullptr) {
-            return config{};
-        }
-        if(p != priority::left) {
-            left_backend.swap(right_backend);
-        }
-        return config(std::make_shared<details::intersection_backend>(left_backend, right_backend));
-    }
-
-    /**
-     * Creates concatenation of two configs. Produces indexed config.
-     */
-    inline
-    config array_cat(const config & left, const config & right)
-    {
-        backend_ptr left_backend  = left.get_backend();
-        backend_ptr right_backend = right.get_backend();
-        if(left_backend != nullptr && right_backend != nullptr) {
-            return config(std::make_shared<details::concatenation_backend>(left_backend, right_backend));
-        }
-        if(left_backend != nullptr) {
-            return left;
-        }
-        if(right_backend != nullptr) {
-            return right;
+        backend_ptr conf_backend = conf.get_backend();
+        if(conf_backend != nullptr) {
+            return config(std::make_shared<details::filter_backend>(conf_backend, filter_keys, mode));
         }
         return config{};
     }

@@ -25,6 +25,8 @@ if(YATO_CONFIG_MANUAL)
     file(GLOB manual_sources
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/manual/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/manual/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/manual/private/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/manual/private/*.cpp"
     )
     list(APPEND config_sources ${manual_sources})
     list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/manual")

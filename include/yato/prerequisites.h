@@ -115,6 +115,10 @@
 #define YATO_MAYBE_UNUSED(X) ((void)(X));
 
 
+#define _YATO_JOIN(X, Y) X##Y
+#define _YATO_JOIN2(X, Y) _YATO_JOIN(X, Y)
+#define YATO_UNIQUE_NAME(Prefix_) _YATO_JOIN2(Prefix_, __COUNTER__)
+
 
 #if defined(YATO_MSVC)
 # define YATO_PRAGMA_WARNING_PUSH __pragma(warning(push))

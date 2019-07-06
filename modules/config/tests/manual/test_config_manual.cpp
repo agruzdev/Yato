@@ -6,7 +6,7 @@
  */
 
 #include "../include/test_config.h"
-#include <yato/config/manual/manual_config.h>
+#include <yato/config/manual/manual.h>
 
 TEST(Yato_Config, manual_object)
 {

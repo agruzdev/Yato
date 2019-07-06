@@ -17,6 +17,7 @@
 #include <yato/variant.h>
 #include <yato/assertion.h>
 #include "yato/any.h"
+#include "yato/finally.h"
 
 namespace yato {
 
@@ -38,7 +39,7 @@ namespace conf {
     enum class stored_type
         : int32_t
     {
-        integer,
+        integer = 0,
         real,
         boolean,
         string,
@@ -231,12 +232,50 @@ namespace conf {
 
 
     /**
+     * Config element handle
+     */
+    class config_value
+    {
+    public:
+        virtual ~config_value() = default;
+
+        /**
+         * Gives a hint what is an original type for the value.
+         * Usually string for text configs.
+         */
+        virtual stored_type type() const noexcept = 0;
+
+        /**
+         * Get value with possible convertion.
+         */
+        virtual stored_variant get_as(stored_type dst_type) const noexcept = 0;
+
+        /**
+         * Helper method wrapping returned type into optional
+         */
+        template <typename Ty_>
+        yato::optional<Ty_> get(stored_type dst_type) const 
+        {
+            return get_as(dst_type).get_opt<Ty_>();
+        }
+    };
+
+    /**
      * Interface for config implementation
      */
     class config_backend  // NOLINT
     {
     public:
-        virtual ~config_backend() = 0;
+        using key_value_t = std::pair<std::string, const config_value*>;
+
+        /**
+         * Constant representing null key value pair
+         */
+        const static key_value_t novalue;
+
+
+        virtual ~config_backend() = default;
+
 
         /**
          * Get number of stored values.
@@ -246,22 +285,89 @@ namespace conf {
         /**
          * Fetch value by index.
          */
-        virtual stored_variant get_by_index(size_t index, stored_type type) const noexcept = 0;
+        virtual key_value_t get_by_index(size_t index) const noexcept = 0;
+
+        /**
+         * Release value handle obtained from get_by_index() or get_by_key()
+         */
+        virtual void release_value(const config_value* val) const noexcept = 0;
 
         /**
          * Returns true if config stores key-value pairs, otherwise only indexed access is supported.
          */
-        virtual bool is_object() const noexcept = 0;
+        virtual bool is_object() const noexcept {
+            return false;
+        }
 
         /**
-         * Fetch value by key. Valid only if has_keys() returns true.
+         * Fetch value by key. Valid only if is_object() returns true.
          */
-        virtual stored_variant get_by_key(const std::string & /*name*/, stored_type /*type*/) const noexcept { return {}; }
+        virtual key_value_t get_by_key(const std::string & name) const noexcept { 
+            YATO_MAYBE_UNUSED(name); 
+            return std::make_pair(std::string{}, nullptr); 
+        };
 
         /**
-         * Get all stored keys. Valid only for key-value config.
+         * Enumerate object's keys
          */
-        virtual std::vector<std::string> keys() const noexcept { return {}; }
+        virtual std::vector<std::string> keys() const noexcept
+        {
+            std::vector<std::string> res;
+            if (is_object()) {
+                try {
+                    const size_t count = size();
+                    std::vector<std::string> tmp;
+                    tmp.reserve(count);
+                    for (size_t i = 0; i < count; ++i) {
+                        auto kv = get_by_index(i);
+                        tmp.push_back(kv.first);
+                        release_value(kv);
+                    }
+                    res.swap(tmp);
+                }
+                catch(...) {
+                    //ToDo (a.gruzdev): Add error callbacks
+                }
+            }
+            return res;
+        }
+
+        /**
+         * Overloading or key-value pair
+         */
+        void release_value(const key_value_t & kv) const
+        {
+            release_value(kv.second);
+        }
+
+        /**
+         * Helper method wrapping returned type into optional
+         */
+        template <typename Ty_>
+        yato::optional<Ty_> get(size_t index, stored_type dst_type) const 
+        {
+            const config_value* value = get_by_index(index).second;
+            if (value) {
+                yato_finally(([this, value]{ release_value(value); }));
+                return value->get<Ty_>(dst_type);
+            }
+            return yato::nullopt_t{};
+        }
+
+        /**
+         * Helper method wrapping returned type into optional
+         */
+        template <typename Ty_>
+        yato::optional<Ty_> get(const std::string & key, stored_type dst_type) const 
+        {
+            const config_value* value = get_by_key(key).second;
+            if (value) {
+                yato_finally(([this, value]{ release_value(value); }));
+                return value->get<Ty_>(dst_type);
+            }
+            return yato::nullopt_t{};
+        }
+
     };
 
 } // namespace conf

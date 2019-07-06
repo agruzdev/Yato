@@ -10,8 +10,8 @@
 
 #include <cstring>
 #include <cctype>
-#include <string>
 #include <limits>
+#include <string>
 
 #include "config.h"
 
@@ -84,15 +84,36 @@ namespace conf {
         }
 
         static
-        bool from_string(const char* str, size_t len, value_type* dst)
+        bool cvt_from(const char* str, size_t len, value_type* dst)
         {
             return details::decode(str, len, dst, [](const char* str, char** str_end) { return std::strtoll(str, str_end, 0); });
         }
 
         static
-        bool from_string(const std::string & str, value_type* dst)
+        bool cvt_from(const std::string & str, value_type* dst)
         {
-            return from_string(str.data(), str.size(), dst);
+            return cvt_from(str.data(), str.size(), dst);
+        }
+
+        static
+        bool cvt_from(const conf::stored_type_trait<stored_type::integer>::return_type & val, value_type* dst)
+        {
+            *dst = val;
+            return true;
+        }
+
+        static
+        bool cvt_from(const conf::stored_type_trait<stored_type::real>::return_type & val, value_type* dst)
+        {
+            *dst = static_cast<value_type>(val);
+            return true;
+        }
+
+        static
+        bool cvt_from(const conf::stored_type_trait<stored_type::boolean>::return_type & val, value_type* dst)
+        {
+            *dst = val ? 1 : 0;
+            return true;
         }
     };
 
@@ -108,15 +129,35 @@ namespace conf {
         }
 
         static
-        bool from_string(const char* str, size_t len, value_type* dst)
+        bool cvt_from(const char* str, size_t len, value_type* dst)
         {
             return details::decode(str, len, dst, &std::strtod);
         }
 
         static
-        bool from_string(const std::string & str, value_type* dst)
+        bool cvt_from(const std::string & str, value_type* dst)
         {
-            return from_string(str.data(), str.size(), dst);
+            return cvt_from(str.data(), str.size(), dst);
+        }
+
+        static
+        bool cvt_from(const conf::stored_type_trait<stored_type::integer>::return_type & val, value_type* dst)
+        {
+            *dst = static_cast<value_type>(val);
+            return true;
+        }
+
+        static
+        bool cvt_from(const conf::stored_type_trait<stored_type::real>::return_type & val, value_type* dst)
+        {
+            *dst = val;
+            return true;
+        }
+
+        static
+        bool cvt_from(const conf::stored_type_trait<stored_type::boolean>::return_type & /*val*/, value_type* /*dst*/)
+        {
+            return false;
         }
     };
 
@@ -180,17 +221,148 @@ namespace conf {
         }
 
         static
-        bool from_string(const char* str, size_t len, value_type* dst)
+        bool cvt_from(const char* str, size_t len, value_type* dst)
         {
             return details::decode(str, len, dst, &strtobool);
         }
 
         static
-        bool from_string(const std::string & str, value_type* dst)
+        bool cvt_from(const std::string & str, value_type* dst)
         {
-            return from_string(str.data(), str.size(), dst);
+            return cvt_from(str.data(), str.size(), dst);
+        }
+
+        static
+        bool cvt_from(const conf::stored_type_trait<stored_type::integer>::return_type & val, value_type* dst)
+        {
+            switch (val) {
+                case 0:
+                    *dst = false;
+                    return true;
+                case 1:
+                    *dst = true;
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        static
+        bool cvt_from(const conf::stored_type_trait<stored_type::real>::return_type & /*val*/, value_type* /*dst*/)
+        {
+            return false;
+        }
+
+        static
+        bool cvt_from(const conf::stored_type_trait<stored_type::boolean>::return_type & val, value_type* dst)
+        {
+            *dst = val;
+            return true;
         }
     };
+
+    template <>
+    struct serializer<stored_type::string>
+    {
+        using value_type = conf::stored_type_trait<stored_type::string>::return_type;
+
+        static
+        std::string to_string(value_type val)
+        {
+            return val;
+        }
+
+        static
+        bool cvt_from(const char* str, size_t len, value_type* dst)
+        {
+            if (!dst) {
+                return false;
+            }
+
+            if(!str) {
+                if (len == 0) {
+                    *dst = std::string{};
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+
+            if (len == 0) { 
+                *dst = std::string{};
+            }
+            else if (len != conf::nolength) {
+                *dst = std::string(str, len);
+            }
+            else {
+                *dst = std::string(str); // C-string
+            }
+            return true;
+        }
+
+        static
+        bool cvt_from(const std::string & str, value_type* dst)
+        {
+            if (!dst) {
+                return false;
+            }
+            *dst = str;
+            return true;
+        }
+
+        static
+        bool cvt_from(const conf::stored_type_trait<stored_type::integer>::return_type & val, value_type* dst)
+        {
+            *dst = std::to_string(val);
+            return true;
+        }
+
+        static
+        bool cvt_from(const conf::stored_type_trait<stored_type::real>::return_type & val, value_type* dst)
+        {
+            *dst = std::to_string(val);
+            return true;
+        }
+
+        static
+        bool cvt_from(const conf::stored_type_trait<stored_type::boolean>::return_type & val, value_type* dst)
+        {
+            *dst = val ? "1" : "0";
+            return true;
+        }
+    };
+
+
+    template <stored_type DstTy_, typename SrcTy_>
+    bool cvt_from(SrcTy_ && src, stored_variant & dst)
+    {
+        using return_type = stored_type_trait<DstTy_>::return_type;
+        return_type tmp{};
+        const bool success = serializer<DstTy_>::cvt_from(std::forward<SrcTy_>(src), &tmp);
+        if (success) {
+            dst.emplace<return_type>(std::move(tmp));
+        }
+        return success;
+    }
+
+
+    template <typename SrcTy_>
+    bool cvt_from(SrcTy_ && src, stored_variant & dst, stored_type dst_type)
+    {
+        switch(dst_type) {
+            case stored_type::integer:
+                return cvt_from<stored_type::integer>(std::forward<SrcTy_>(src), dst);
+            case stored_type::real:
+                return cvt_from<stored_type::real>(std::forward<SrcTy_>(src), dst);
+            case stored_type::boolean:
+                return cvt_from<stored_type::boolean>(std::forward<SrcTy_>(src), dst);
+            case stored_type::string:
+                return cvt_from<stored_type::string>(std::forward<SrcTy_>(src), dst);
+            default:
+                return false;
+        }
+    }
 
 
 } // namespace conf
