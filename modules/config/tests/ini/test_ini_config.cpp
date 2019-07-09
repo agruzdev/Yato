@@ -6,7 +6,7 @@
  */
 
 #include "../include/test_config.h"
-#include <yato/config/ini/ini_config.h>
+#include <yato/config/ini/ini.h>
 
 TEST(Yato_Config, ini_object)
 {

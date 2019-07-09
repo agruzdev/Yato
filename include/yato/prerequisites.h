@@ -95,8 +95,10 @@
 
 #if (defined(__cplusplus) && (__cplusplus >= 201700L))
 # define YATO_INLINE_VARIABLE inline
+# define YATO_ATTR_FALLTHROUGH fallthrough
 #else
 # define YATO_INLINE_VARIABLE
+# define YATO_ATTR_FALLTHROUGH
 #endif
 
 #if (defined(YATO_MSVC) && (YATO_MSVC >= 14)) || (defined(__cplusplus) && (__cplusplus > 201300L))

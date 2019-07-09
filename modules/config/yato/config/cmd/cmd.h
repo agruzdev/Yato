@@ -5,49 +5,23 @@
  * Copyright (c) 2016-2019 Alexey Gruzdev
  */
 
-#ifndef _YATO_CONFIG_CMD_CONFIG_H_
-#define _YATO_CONFIG_CMD_CONFIG_H_
+#ifndef _YATO_CONFIG_CMD_CMD_H_
+#define _YATO_CONFIG_CMD_CMD_H_
 
-#include <yato/array_view.h>
+#include <string>
+#include <vector>
+
 #include "../config.h"
+#include "yato/array_view.h"
 
 namespace yato {
 
 namespace conf {
 
-    class cmd_config_state;
-
-    class cmd_config
-        : public config_backend
-    {
-    private:
-        std::unique_ptr<cmd_config_state> m_impl;
-
-        size_t size() const noexcept override;
-
-        bool is_object() const noexcept override;
-
-        stored_variant get_by_index(size_t index, stored_type type) const noexcept override;
-
-        stored_variant get_by_key(const std::string & name, stored_type type) const noexcept override;
-
-        std::vector<std::string> keys() const noexcept override;
-
-    public:
-        cmd_config(std::unique_ptr<cmd_config_state> && impl);
-        ~cmd_config();
-
-        cmd_config(const cmd_config&) = delete;
-        cmd_config(cmd_config&&) noexcept;
-
-        cmd_config& operator=(const cmd_config&) = delete;
-        cmd_config& operator=(cmd_config&&) noexcept;
-    };
-
     /**
      * Types of supported arguments
      */
-    enum class cmd_argument
+    enum class argument_type
     {
         /**
          * Identified by their position in the command line. 
@@ -66,13 +40,13 @@ namespace conf {
         optional
     };
 
+    class cmd_config;
+
     /**
      * Specifies required arguments and parces command line generating config instance.
      */
     class cmd_builder
     {
-        std::unique_ptr<cmd_config_state> m_impl;
-        
     public:
         explicit
         cmd_builder(const std::string & description);
@@ -89,35 +63,35 @@ namespace conf {
 
         /**
          * Add integer argument.
-         * @param kind Type of parameter, defining parsing requirements.
+         * @param arg_type Type of parameter, defining parsing requirements.
          * @param flag One letter flag. In the case of positional argument, flag is ignored.
          * @param name Full argument name.
          * @param description Argumant description.
          * @param default_value Default value for optional arguments, otherwise ignored.
          */
-        cmd_builder& integer(cmd_argument kind, const std::string & flag, const std::string & name, const std::string & description,
+        cmd_builder& integer(argument_type arg_type, const std::string & flag, const std::string & name, const std::string & description,
             const yato::optional<int64_t> & default_value  = yato::nullopt_t{});
 
         /**
          * Add floating-point argument.
-         * @param kind Type of parameter, defining parsing requirements.
+         * @param arg_type Type of parameter, defining parsing requirements.
          * @param flag One letter flag. In the case of positional argument, flag is ignored.
          * @param name Full argument name.
          * @param description Argumant description.
          * @param default_value Default value for optional arguments, otherwise ignored.
          */
-        cmd_builder& floating(cmd_argument kind, const std::string & flag, const std::string & name, const std::string & description,
+        cmd_builder& floating(argument_type arg_type, const std::string & flag, const std::string & name, const std::string & description,
             const yato::optional<double> & default_value  = yato::nullopt_t{});
 
         /**
          * Add string argument.
-         * @param kind Type of parameter, defining parsing requirements.
+         * @param arg_type Type of parameter, defining parsing requirements.
          * @param flag One letter flag. In the case of positional argument, flag is ignored.
          * @param name Full argument name.
          * @param description Argumant description.
          * @param default_value Default value for optional arguments, otherwise ignored.
          */
-        cmd_builder& string(cmd_argument kind, const std::string & flag, const std::string & name, const std::string & description,
+        cmd_builder& string(argument_type arg_type, const std::string & flag, const std::string & name, const std::string & description,
             const yato::optional<std::string> & default_value  = yato::nullopt_t{});
 
         /**
@@ -137,10 +111,19 @@ namespace conf {
          * Parce command line
          */
         config parse(const yato::array_view_1d<std::string> & args);
+
+        /**
+         * Parce command line
+         */
+        config parse(const std::vector<std::string> & args);
+
+    private:
+        std::unique_ptr<cmd_config> m_conf;
     };
+
 
 } // namespace conf
 
 } // namespace yato
 
-#endif // _YATO_CONFIG_CMD_CONFIG_H_
+#endif //_YATO_CONFIG_CMD_CMD_H_

@@ -47,6 +47,23 @@ namespace conf
         return res;
     }
 
+    std::string to_string(stored_type type)
+    {
+        switch(type)
+        {
+            case stored_type::boolean:
+                return "Boolean";
+            case stored_type::integer:
+                return "Integer";
+            case stored_type::real:
+                return "Real";
+            case stored_type::string:
+                return "String";
+            case stored_type::config:
+                return "Config";
+        }
+    }
+
 } // namespace conf
 
 } // namespace yato

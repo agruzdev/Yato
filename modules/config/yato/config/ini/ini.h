@@ -5,53 +5,22 @@
  * Copyright (c) 2016-2019 Alexey Gruzdev
  */
 
-#ifndef _YATO_CONFIG_INI_CONFIG_H_
-#define _YATO_CONFIG_INI_CONFIG_H_
+#ifndef _YATO_CONFIG_INI_INI_H_
+#define _YATO_CONFIG_INI_INI_H_
 
-#include "../config.h"
+#include <memory>
+#include <string>
+
+#include "yato/config/config.h"
 
 namespace yato {
 
 namespace conf {
 
-    struct ini_config_state;
-
-    class ini_config
-        : public config_backend
-    {
-    private:
-        std::unique_ptr<ini_config_state> m_impl;
-
-        size_t size() const noexcept override;
-
-        bool is_object() const noexcept override;
-
-        stored_variant get_by_key(const std::string & name, stored_type type) const noexcept override;
-
-        stored_variant get_by_index(size_t index, stored_type type) const noexcept override;
-
-        std::vector<std::string> keys() const noexcept override;
-
-        stored_variant decode_value_(const char* raw, stored_type type) const noexcept;
-
-    public:
-        ini_config(std::unique_ptr<ini_config_state> && impl);
-        ~ini_config();
-
-        ini_config(const ini_config&) = delete;
-        ini_config(ini_config&&) noexcept;
-
-        ini_config& operator=(const ini_config&) = delete;
-        ini_config& operator=(ini_config&&) noexcept;
-    };
-
+    struct ini_builder_state;
 
     class ini_builder
     {
-        std::unique_ptr<ini_config_state> m_impl;
-
-        config finalize();
-
     public:
         ini_builder();
 
@@ -92,10 +61,15 @@ namespace conf {
          * Parse from string
          */
         config parse(const std::string & ini);
+
+    private:
+        config finalize_();
+
+        std::unique_ptr<ini_builder_state> m_impl;
     };
 
 } // namespace conf
 
 } // namespace yato
 
-#endif // _YATO_CONFIG_INI_CONFIG_H_
+#endif //_YATO_CONFIG_INI_INI_H_

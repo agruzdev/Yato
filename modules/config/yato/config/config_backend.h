@@ -217,6 +217,10 @@ namespace conf {
     };
 
 
+    /**
+     * Return type description string
+     */
+    std::string to_string(stored_type type);
 
     /**
      * Represents any stored type

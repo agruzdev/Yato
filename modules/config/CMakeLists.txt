@@ -55,6 +55,8 @@ if(YATO_CONFIG_CMD)
     file(GLOB cmd_sources
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/cmd/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/cmd/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/cmd/private/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/cmd/private/*.cpp"
     )
     list(APPEND config_sources ${cmd_sources})
     list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/cmd")
@@ -85,6 +87,8 @@ if(YATO_CONFIG_INI)
     file(GLOB ini_sources
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/ini/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/ini/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/ini/private/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/ini/private/*.cpp"
     )
     list(APPEND config_sources ${ini_sources})
     list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/ini")
