@@ -11,6 +11,7 @@
 #include <cstring>
 #include <cctype>
 #include <limits>
+#include <map>
 #include <string>
 
 #include "config.h"
@@ -363,6 +364,30 @@ namespace conf {
                 return false;
         }
     }
+
+
+    stored_type get_type(const stored_variant & var);
+
+
+    class value_converter
+    {
+    public:
+        using cvt_funtion_t = std::function<stored_variant(const stored_variant&)>;
+
+        static
+        value_converter & instance();
+
+        ~value_converter() = default;
+
+        const cvt_funtion_t* dispatch(stored_type dst_type, stored_type src_type) const;
+
+        stored_variant apply(stored_type dst_type, const stored_variant & src) const;
+
+    private:
+        value_converter();
+
+        std::map<std::pair<stored_type, stored_type>, cvt_funtion_t> m_cvt_functions;
+    };
 
 
 } // namespace conf

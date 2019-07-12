@@ -252,16 +252,33 @@ namespace conf {
         /**
          * Get value with possible convertion.
          */
-        virtual stored_variant get_as(stored_type dst_type) const noexcept = 0;
+        //virtual stored_variant get_as(stored_type dst_type) const noexcept = 0;
+        virtual stored_variant get() const noexcept = 0;
+
+        ///**
+        // * Helper method wrapping returned type into optional
+        // */
+        //template <typename Ty_>
+        //yato::optional<Ty_> get_opt(stored_type dst_type) const 
+        //{
+        //    return get_as(dst_type).get_opt<Ty_>();
+        //}
 
         /**
-         * Helper method wrapping returned type into optional
+         * Converts stored value to desired type if possible.
          */
         template <typename Ty_>
-        yato::optional<Ty_> get(stored_type dst_type) const 
+        yato::optional<Ty_> get_with_conversion(stored_type dst_type) const 
         {
-            return get_as(dst_type).get_opt<Ty_>();
+            auto val = get();
+            if (!val.is_type<void>()) {
+                val = convert_(dst_type, val);
+            }
+            return val.get_opt<Ty_>();
         }
+
+    private:
+        stored_variant convert_(stored_type dst_type, const stored_variant & src) const;
     };
 
     /**
@@ -337,7 +354,7 @@ namespace conf {
             const config_value* value = find(index).second;
             if (value) {
                 yato_finally(([this, value]{ release(value); }));
-                return value->get<Ty_>(dst_type);
+                return value->get_with_conversion<Ty_>(dst_type);
             }
             return yato::nullopt_t{};
         }
@@ -351,7 +368,7 @@ namespace conf {
             const config_value* value = find(name).second;
             if (value) {
                 yato_finally(([this, value]{ release(value); }));
-                return value->get<Ty_>(dst_type);
+                return value->get_with_conversion<Ty_>(dst_type);
             }
             return yato::nullopt_t{};
         }

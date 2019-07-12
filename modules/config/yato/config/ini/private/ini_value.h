@@ -38,13 +38,9 @@ namespace conf {
             return stored_type::string;
         }
 
-        stored_variant get_as(stored_type dst_type) const noexcept override
+        stored_variant get() const noexcept override
         {
-            stored_variant res{};
-            if (!cvt_from(m_data, res, dst_type)) {
-                // ToDo (a.gruzdev): Report warning
-            }
-            return res;
+            return stored_variant(yato::in_place_type_t<std::string>{}, m_data);
         }
 
     private:

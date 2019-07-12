@@ -37,7 +37,7 @@ namespace conf {
             return stored_type::config;
         }
 
-        stored_variant get_as(stored_type dst_type) const noexcept override;
+        stored_variant get() const noexcept override;
 
     private:
         std::shared_ptr<ini_config> m_subsection;

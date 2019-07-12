@@ -6,7 +6,7 @@
  */
 
 #include "../include/test_config.h"
-#include <yato/config/json/json_config.h>
+#include <yato/config/json/json.h>
 
 TEST(Yato_Config, json_object)
 {

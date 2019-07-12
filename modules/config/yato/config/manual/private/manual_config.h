@@ -23,12 +23,12 @@ namespace conf {
     /**
      * Implements object
      */
-    using manual_object_t = std::map<std::string, manual_value>;
+    using manual_object_t = std::map<std::string, std::unique_ptr<config_value>>;
     
     /**
      * Implements array
      */
-    using manual_array_t  = std::vector<manual_value>;
+    using manual_array_t  = std::vector<std::unique_ptr<config_value>>;
 
 
     class manual_config final
@@ -59,8 +59,7 @@ namespace conf {
         manual_config& operator=(const manual_config&) = delete;
         manual_config& operator=(manual_config&&) = delete;
 
-        
-        void put(std::string name, manual_value value)
+        void put(std::string name, std::unique_ptr<config_value> && value)
         {
             yato::variant_match(
                 [&](manual_object_t & obj) {
@@ -72,7 +71,7 @@ namespace conf {
             )(m_data);
         }
 
-        void add(manual_value value)
+        void add(std::unique_ptr<config_value> && value)
         {
             yato::variant_match(
                 [&](manual_array_t & arr) {
@@ -110,12 +109,12 @@ namespace conf {
                     if(index < obj.size()) {
                         const auto it = std::next(obj.cbegin(), index);
                         kv.first  = (*it).first;
-                        kv.second = &((*it).second);
+                        kv.second = (*it).second.get();
                     }
                 },
                 [&](const manual_array_t & arr) {
                     if(index < arr.size()) {
-                        kv.second = &arr[index];
+                        kv.second = arr[index].get();
                     }
                 }
             )(m_data);
@@ -130,7 +129,7 @@ namespace conf {
                     const auto it = obj.find(name);
                     if(it != obj.cend()) {
                         kv.first  = (*it).first;
-                        kv.second = &((*it).second);
+                        kv.second = (*it).second.get();
                     }
                 },
                 [&](match_default_t) {

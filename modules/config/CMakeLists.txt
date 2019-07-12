@@ -41,6 +41,8 @@ if(YATO_CONFIG_JSON)
     file(GLOB json_sources
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/json/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/json/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/json/private/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/json/private/*.cpp"
     )
     list(APPEND config_sources ${json_sources})
     list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/json")

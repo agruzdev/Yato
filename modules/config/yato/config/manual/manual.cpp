@@ -44,180 +44,180 @@ namespace conf {
 
     manual_builder & manual_builder::put(const std::string & name, int8_t val)
     {
-        checked_handle_()->conf->put(name, manual_value(static_cast<int64_t>(val)));
+        checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::integer>>(static_cast<int64_t>(val)));
         return *this;
     }
 
     manual_builder & manual_builder::put(const std::string & name, int16_t val)
     {
-        checked_handle_()->conf->put(name, manual_value(static_cast<int64_t>(val)));
+        checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::integer>>(static_cast<int64_t>(val)));
         return *this;
     }
 
     manual_builder & manual_builder::put(const std::string & name, int32_t val)
     {
-        checked_handle_()->conf->put(name, manual_value(static_cast<int64_t>(val)));
+        checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::integer>>(static_cast<int64_t>(val)));
         return *this;
     }
 
     manual_builder & manual_builder::put(const std::string & name, int64_t val)
     {
-        checked_handle_()->conf->put(name, manual_value(val));
+        checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::integer>>(val));
         return *this;
     }
 
 
     manual_builder & manual_builder::put(const std::string & name, uint8_t val)
     {
-        checked_handle_()->conf->put(name, manual_value(static_cast<int64_t>(val)));
+        checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::integer>>(static_cast<int64_t>(val)));
         return *this;
     }
 
     manual_builder & manual_builder::put(const std::string & name, uint16_t val)
     {
-        checked_handle_()->conf->put(name, manual_value(static_cast<int64_t>(val)));
+        checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::integer>>(static_cast<int64_t>(val)));
         return *this;
     }
 
     manual_builder & manual_builder::put(const std::string & name, uint32_t val)
     {
-        checked_handle_()->conf->put(name, manual_value(static_cast<int64_t>(val)));
+        checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::integer>>(static_cast<int64_t>(val)));
         return *this;
     }
 
     manual_builder & manual_builder::put(const std::string & name, uint64_t val)
     {
-        checked_handle_()->conf->put(name, manual_value(yato::narrow_cast<int64_t>(val)));
+        checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::integer>>(yato::narrow_cast<int64_t>(val)));
         return *this;
     }
 
 
     manual_builder & manual_builder::put(const std::string & name, float val)
     {
-        checked_handle_()->conf->put(name, manual_value(static_cast<double>(val)));
+        checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::real>>(static_cast<double>(val)));
         return *this;
     }
 
     manual_builder & manual_builder::put(const std::string & name, double val)
     {
-        checked_handle_()->conf->put(name, manual_value(val));
+        checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::real>>(val));
         return *this;
     }
 
 
     manual_builder & manual_builder::put(const std::string & name, bool val)
     {
-        checked_handle_()->conf->put(name, manual_value(val));
+        checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::boolean>>(val));
         return *this;
     }
 
 
     manual_builder & manual_builder::put(const std::string & name, const char* val)
     {
-        checked_handle_()->conf->put(name, manual_value(std::string(val)));
+        checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::string>>(std::string(val)));
         return *this;
     }
 
     manual_builder & manual_builder::put(const std::string & name, std::string val)
     {
-        checked_handle_()->conf->put(name, manual_value(std::move(val)));
+        checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::string>>(std::move(val)));
         return *this;
     }
 
 
     manual_builder & manual_builder::put(const std::string & name, config val)
     {
-        checked_handle_()->conf->put(name, manual_value(val.get_backend()));
+        checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::config>>(val.get_backend()));
         return *this;
     }
 
 
     manual_builder & manual_builder::add(int8_t val)
     {
-        checked_handle_()->conf->add(manual_value(static_cast<int64_t>(val)));
+        checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::integer>>(static_cast<int64_t>(val)));
         return *this;
     }
 
     manual_builder & manual_builder::add(int16_t val)
     {
-        checked_handle_()->conf->add(manual_value(static_cast<int64_t>(val)));
+        checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::integer>>(static_cast<int64_t>(val)));
         return *this;
     }
 
     manual_builder & manual_builder::add(int32_t val)
     {
-        checked_handle_()->conf->add(manual_value(static_cast<int64_t>(val)));
+        checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::integer>>(static_cast<int64_t>(val)));
         return *this;
     }
 
     manual_builder & manual_builder::add(int64_t val)
     {
-        checked_handle_()->conf->add(manual_value(val));
+        checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::integer>>(val));
         return *this;
     }
 
 
     manual_builder & manual_builder::add(uint8_t val)
     {
-        checked_handle_()->conf->add(manual_value(static_cast<int64_t>(val)));
+        checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::integer>>(static_cast<int64_t>(val)));
         return *this;
     }
 
     manual_builder & manual_builder::add(uint16_t val)
     {
-        checked_handle_()->conf->add(manual_value(static_cast<int64_t>(val)));
+        checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::integer>>(static_cast<int64_t>(val)));
         return *this;
     }
 
     manual_builder & manual_builder::add(uint32_t val)
     {
-        checked_handle_()->conf->add(manual_value(static_cast<int64_t>(val)));
+        checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::integer>>(static_cast<int64_t>(val)));
         return *this;
     }
 
     manual_builder & manual_builder::add(uint64_t val)
     {
-        checked_handle_()->conf->add(manual_value(yato::narrow_cast<int64_t>(val)));
+        checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::integer>>(yato::narrow_cast<int64_t>(val)));
         return *this;
     }
 
 
     manual_builder & manual_builder::add(float val)
     {
-        checked_handle_()->conf->add(manual_value(static_cast<double>(val)));
+        checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::real>>(static_cast<double>(val)));
         return *this;
     }
 
     manual_builder & manual_builder::add(double val)
     {
-        checked_handle_()->conf->add(manual_value(val));
+        checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::real>>(val));
         return *this;
     }
 
 
     manual_builder & manual_builder::add(bool val)
     {
-        checked_handle_()->conf->add(manual_value(val));
+        checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::boolean>>(val));
         return *this;
     }
 
 
     manual_builder & manual_builder::add(const char* val)
     {
-        checked_handle_()->conf->add(manual_value(std::string(val)));
+        checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::string>>(std::string(val)));
         return *this;
     }
 
     manual_builder & manual_builder::add(std::string val)
     {
-        checked_handle_()->conf->add(manual_value(std::move(val)));
+        checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::string>>(std::move(val)));
         return *this;
     }
 
 
     manual_builder & manual_builder::add(config val)
     {
-        checked_handle_()->conf->add(manual_value(val.get_backend()));
+        checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::config>>(val.get_backend()));
         return *this;
     }
 

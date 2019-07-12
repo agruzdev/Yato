@@ -18,13 +18,9 @@ namespace conf {
 
     ini_section::~ini_section() = default;
 
-    stored_variant ini_section::get_as(stored_type dst_type) const noexcept
+    stored_variant ini_section::get() const noexcept
     {
-        stored_variant res;
-        if (dst_type == stored_type::config) {
-            res.emplace<backend_ptr>(m_subsection);
-        }
-        return res;
+        return stored_variant(yato::in_place_type_t<backend_ptr>{}, m_subsection);
     }
 
 } // namespace conf

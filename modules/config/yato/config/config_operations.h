@@ -66,12 +66,12 @@ namespace conf {
                 return m_value->type();
             }
 
-            stored_variant get_as(stored_type dst_type) const noexcept override
+            stored_variant get() const noexcept override
             {
-                return m_value->get_as(dst_type);
+                return m_value->get();
             }
 
-            const config_value* get() const
+            const config_value* value() const
             {
                 return m_value;
             }
@@ -205,13 +205,13 @@ namespace conf {
             {
                 YATO_REQUIRES(dynamic_cast<const value_wrapper*>(val) != nullptr);
                 const value_wrapper* wrapper = static_cast<const value_wrapper*>(val);
-                if (wrapper && wrapper->get()) {
+                if (wrapper && wrapper->value()) {
                     switch (wrapper->tag()) {
                         case value_origin::left:
-                            m_left->release(wrapper->get());
+                            m_left->release(wrapper->value());
                             break;
                         case value_origin::right:
-                            m_right->release(wrapper->get());
+                            m_right->release(wrapper->value());
                             break;
                     }
                     delete wrapper;

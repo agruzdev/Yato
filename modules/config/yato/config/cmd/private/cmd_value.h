@@ -22,6 +22,7 @@ namespace yato {
 
 namespace conf {
 
+
     class cmd_value final
         : public config_value
     {
@@ -63,7 +64,7 @@ namespace conf {
             return m_type;
         }
 
-        stored_variant get_as(stored_type dst_type) const noexcept override
+        stored_variant get() const noexcept override
         {
             stored_variant res{};
             if (m_arg && m_arg->isSet()) {
@@ -72,7 +73,7 @@ namespace conf {
                     case stored_type::real:
                     case stored_type::string: {
                             auto string_arg = static_cast<TCLAP::ValueArg<std::string>*>(m_arg.get());
-                            if (!cvt_from(string_arg->getValue(), res, dst_type)) {
+                            if (!cvt_from(string_arg->getValue(), res, m_type)) {
                                 // ToDo (a.gruzdev): Report error here
                             }
                         }

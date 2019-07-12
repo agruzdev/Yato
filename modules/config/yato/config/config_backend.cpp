@@ -6,12 +6,17 @@
  */
 
 #include "config_backend.h"
+#include "utility.h"
 
-namespace yato
-{
+namespace yato {
 
-namespace conf
-{
+namespace conf {
+
+    stored_variant config_value::convert_(stored_type dst_type, const stored_variant & src) const
+    {
+        return value_converter::instance().apply(dst_type, src);
+    }
+
 
     const config_backend::key_value_t config_backend::novalue = std::make_pair(std::string{}, nullptr);
 
@@ -61,6 +66,8 @@ namespace conf
                 return "String";
             case stored_type::config:
                 return "Config";
+            default:
+                return "Unknown";
         }
     }
 
