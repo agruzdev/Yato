@@ -75,6 +75,8 @@ if(YATO_CONFIG_XML)
     file(GLOB xml_sources
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/xml/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/xml/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/xml/private/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/xml/private/*.cpp"
     )
     list(APPEND config_sources ${xml_sources})
     list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/xml")

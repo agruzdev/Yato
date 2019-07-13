@@ -27,7 +27,7 @@
 inline
 void TestConfig_PlainObject(const yato::conf::config & conf)
 {
-    EXPECT_FALSE(conf.empty());
+    EXPECT_FALSE(conf.is_null());
     EXPECT_TRUE(conf.is_object());
 
     const auto keys = conf.keys();
@@ -71,7 +71,7 @@ void TestConfig_PlainObject(const yato::conf::config & conf)
 inline
 void TestConfig_Object(const yato::conf::config & conf)
 {
-    EXPECT_FALSE(conf.empty());
+    EXPECT_FALSE(conf.is_null());
     EXPECT_TRUE(conf.is_object());
 
     EXPECT_EQ(3u, conf.size());
@@ -83,6 +83,7 @@ void TestConfig_Object(const yato::conf::config & conf)
     EXPECT_EQ("test", str.get_or(""));
 
     const yato::conf::config c2 = conf.object("subobj");
+    ASSERT_FALSE(c2.is_null());
     ASSERT_FALSE(c2.empty());
     EXPECT_TRUE(c2.is_object());
 
@@ -105,8 +106,7 @@ void TestConfig_Object(const yato::conf::config & conf)
 inline
 void TestConfig_Array(const yato::conf::config & conf)
 {
-    EXPECT_FALSE(conf.empty());
-    EXPECT_TRUE(conf.is_array());
+    EXPECT_FALSE(conf.is_null());
     EXPECT_EQ(6U, conf.size());
 
     EXPECT_EQ(10, conf.value<int>(0).get_or(-1));
@@ -116,13 +116,14 @@ void TestConfig_Array(const yato::conf::config & conf)
     EXPECT_EQ(true, conf.flag(3));
 
     const auto c2 = conf.object(5);
+    ASSERT_FALSE(c2.is_null());
     ASSERT_FALSE(c2.empty());
     EXPECT_EQ(1u, c2.size());
 
     const auto arr = c2.array("arr");
-    ASSERT_FALSE(arr.empty());
+    ASSERT_FALSE(arr.is_null());
+    ASSERT_TRUE(arr.empty());
 
-    EXPECT_TRUE(arr.is_array());
     EXPECT_EQ(0U, arr.size());
 }
 
@@ -150,7 +151,7 @@ void TestConfig_Array(const yato::conf::config & conf)
 inline
 void TestConfig_Example(const yato::conf::config & conf)
 {
-    EXPECT_FALSE(conf.empty());
+    EXPECT_FALSE(conf.is_null());
 
     const int answer = conf.value<int>("answer").get_or(-1);
     EXPECT_EQ(42, answer);
@@ -174,7 +175,6 @@ void TestConfig_Example(const yato::conf::config & conf)
 
     const yato::conf::config arr = conf.array("fruits");
     if(arr) {
-        ASSERT_TRUE(arr.is_array());
         EXPECT_EQ(3U, arr.size());
         EXPECT_NO_THROW(
             EXPECT_EQ(std::string("apple"),  arr.value<std::string>(0).get());
@@ -300,7 +300,7 @@ namespace yato
 inline
 void TestConfig_Conversion(const yato::conf::config & conf)
 {
-    EXPECT_FALSE(conf.empty());
+    EXPECT_FALSE(conf.is_null());
 
     const TestEnum e1 = conf.value<TestEnum>("enum1").get_or(TestEnum::eNull);
     const TestEnum e2 = conf.value<TestEnum>("enum2").get_or(TestEnum::eNull);

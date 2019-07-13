@@ -6,7 +6,7 @@
  */
 
 #include "../include/test_config.h"
-#include <yato/config/xml/xml_config.h>
+#include <yato/config/xml/xml.h>
 
 TEST(Yato_Config, xml_object_attr)
 {
@@ -53,14 +53,14 @@ TEST(Yato_Config, xml_object2_attr)
 TEST(Yato_Config, xml_array_attr)
 {
     const auto conf = yato::conf::xml_builder().parse(R"XML(
-        <root is_array="true">
+        <root>
             <item value="10"/>
             <item value="20"/>
             <item value="30"/>
             <item value="true"/>
             <item value="4"/>
             <item>
-                <arr is_array="true"/>
+                <arr/>
             </item>
         </root>
     )XML");
@@ -77,7 +77,7 @@ TEST(Yato_Config, xml_example_attr)
     
             <manual_mode value="true"/>
 
-            <fruits is_array="true">
+            <fruits>
                 <i value="apple"/>
                 <i value="banana"/>
                 <i value="kiwi"/>
@@ -99,7 +99,7 @@ TEST(Yato_Config, xml_conversion_attr)
         <root>
             <enum1 value="7"/>
             <enum2 value="14"/>
-            <vec is_array="true"> 
+            <vec>
                 <v0 value="20"/>
                 <v1 value="98"/>
                 <v2 value="-7"/>

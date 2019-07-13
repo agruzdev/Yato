@@ -133,7 +133,7 @@ const char* xml = R"XML(
 
         <manual_mode value="true"/>
 
-        <fruits is_array="true">
+        <fruits>
             <i value="apple"/>
             <i value="banana"/>
             <i value="kiwi"/>

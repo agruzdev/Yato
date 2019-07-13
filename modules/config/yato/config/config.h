@@ -94,42 +94,52 @@ namespace conf {
         config& operator = (config&&) noexcept = default;
 
         /**
-         * Check is config is empty
+         * True if config doesn't exist, i.e. a query hasn't found a nested object.
+         * Config may be not null, but empty.
          */
-        bool empty() const {
+        bool is_null() const
+        {
             return !static_cast<bool>(m_backend);
         }
 
-        operator bool () const {
-            return static_cast<bool>(m_backend);
+        /**
+         * Converts to true if not null
+         */
+        operator bool () const 
+        {
+            return !is_null();
         }
 
         /**
          * Return true if config is an object, i.e. contains named values.
          */
-        bool is_object() const {
+        bool is_object() const
+        {
             return m_backend ? m_backend->is_object() : false;
         }
 
         /**
-         * Return true if config is an array, i.e. contains indexed values.
+         * Return number of entries in the config for both object and array.
+         * If config is null, then retuns 0.
          */
-        bool is_array() const {
-            return !is_object();
+        size_t size() const
+        {
+            return m_backend ? m_backend->size() : 0u;
         }
 
         /**
-         * Return number of entries in the config for both object and array.
+         * Check is config has no elements, size() equal to 0.
          */
-        size_t size() const {
-            return m_backend ? m_backend->size() : 0u;
+        bool empty() const {
+            return size() == 0;
         }
 
         /**
          * Returns all keys stored in the config object.
          * Order of keys is arbitrary.
          */
-        std::vector<std::string> keys() const {
+        std::vector<std::string> keys() const
+        {
             return m_backend ? m_backend->keys() : std::vector<std::string>{};
         }
 
@@ -165,7 +175,7 @@ namespace conf {
 
         /**
          * Get value of array by index.
-         * Valid only if is_array() returned `true`
+         * Valid for any configs.
          * @return Optional value of type Ty_
          */
         template <typename Ty_>
@@ -207,7 +217,7 @@ namespace conf {
 
         /**
          * Get value of array by index.
-         * Valid only if is_array() returned `true`
+         * Valid for any configs.
          * @return Optional value of type Ty_
          */
         template <typename Ty_, typename Converter_>
@@ -246,7 +256,7 @@ namespace conf {
 
         /**
          * Get a value, obtained with a provided converter, by index.
-         * Valid only if is_array() returned `true`
+         * Valid for any configs.
          * @return Optional value returned from the converter
          */
         template <conf::stored_type FetchType_, typename Converter_ >
@@ -376,17 +386,13 @@ namespace conf {
     inline
     config config::array(const std::string & name) const
     {
-        config conf = value<config>(name).get_or(config{});
-        YATO_ENSURES(conf.empty() || conf.is_array());
-        return conf;
+        return value<config>(name).get_or(config{});
     }
 
     inline
     config config::array(size_t idx) const
     {
-        config conf = value<config>(idx).get_or(config{});
-        YATO_ENSURES(conf.empty() || conf.is_array());
-        return conf;
+        return value<config>(idx).get_or(config{});
     }
 
     inline
