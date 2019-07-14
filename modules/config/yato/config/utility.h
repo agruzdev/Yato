@@ -338,7 +338,7 @@ namespace conf {
     template <stored_type DstTy_, typename SrcTy_>
     bool cvt_from(SrcTy_ && src, stored_variant & dst)
     {
-        using return_type = stored_type_trait<DstTy_>::return_type;
+        using return_type = typename stored_type_trait<DstTy_>::return_type;
         return_type tmp{};
         const bool success = serializer<DstTy_>::cvt_from(std::forward<SrcTy_>(src), &tmp);
         if (success) {

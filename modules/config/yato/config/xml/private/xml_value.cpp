@@ -18,7 +18,8 @@ namespace conf {
         if (m_element) {
             const auto first = m_element->FirstChildElement();
             const auto last  = m_element->LastChildElement();
-            if (const bool is_leaf =  !first || !last) {
+            const bool is_leaf =  !first || !last;
+            if (is_leaf) {
                 const tinyxml2::XMLAttribute* attribute = m_element->FindAttribute("value");
                 if (attribute) {
                     m_text = attribute->Value();

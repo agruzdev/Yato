@@ -49,7 +49,7 @@ namespace conf {
     template <stored_type DstType_>
     stored_variant cvt_from_string_(const stored_variant & src)
     {
-        using string_t = stored_type_trait<stored_type::string>::return_type;
+        using string_t = typename stored_type_trait<stored_type::string>::return_type;
         YATO_REQUIRES(src.is_type<string_t>());
         stored_variant dst;
         if (!cvt_from<DstType_>(src.get_as<string_t>(), dst)) {
@@ -61,8 +61,8 @@ namespace conf {
     template <stored_type DstType_>
     stored_variant cvt_to_string_(const stored_variant & src)
     {
-        using dst_t    = stored_type_trait<DstType_>::return_type;
-        using string_t = stored_type_trait<stored_type::string>::return_type;
+        using dst_t    = typename stored_type_trait<DstType_>::return_type;
+        using string_t = typename stored_type_trait<stored_type::string>::return_type;
         YATO_REQUIRES(src.is_type<dst_t>());
         return stored_variant(yato::in_place_type_t<string_t>{}, serializer<DstType_>::to_string(src.get_as<dst_t>()));
     }
@@ -76,7 +76,6 @@ namespace conf {
     value_converter::value_converter() {
         using integer_t = stored_type_trait<stored_type::integer>::return_type;
         using real_t    = stored_type_trait<stored_type::real>::return_type;
-        using string_t  = stored_type_trait<stored_type::string>::return_type;
         using boolean_t = stored_type_trait<stored_type::boolean>::return_type;
 
         m_cvt_functions[std::make_pair(stored_type::integer, stored_type::integer)] = &cvt_identity_<stored_type::integer>;

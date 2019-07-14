@@ -44,6 +44,8 @@ namespace conf {
                         res.emplace<config_t>(std::make_shared<yaml_config>(m_node));
                     }
                     break;
+                default:
+                    break;
             }
         }
         catch(std::exception & /*err*/) {

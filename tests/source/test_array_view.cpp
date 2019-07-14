@@ -680,6 +680,9 @@ TEST(Yato_ArrayView, view_cview_cast)
 
         yato::array_view_1d<int> v1 = yato::view(view1);
         yato::array_view_1d<const int> v2 = yato::cview(view1);
+
+        YATO_MAYBE_UNUSED(v1);
+        YATO_MAYBE_UNUSED(v2);
     }
 
     {
@@ -688,5 +691,8 @@ TEST(Yato_ArrayView, view_cview_cast)
 
         yato::array_view_1d<const int> v1 = yato::view(view1);
         yato::array_view_1d<const int> v2 = yato::cview(view1);
+
+        YATO_MAYBE_UNUSED(v1);
+        YATO_MAYBE_UNUSED(v2);
     }
 }
