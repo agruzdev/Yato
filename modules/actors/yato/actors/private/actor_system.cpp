@@ -103,10 +103,9 @@ namespace actors
         }
 
         // Read custom executors
-        const auto executors_array = conf.array("execution_contexts");
-        if(executors_array && executors_array.is_array()) {
+        if (const auto executors_array = conf.array("execution_contexts")) {
             const execution_context_converter converter(this);
-            for(size_t i = 0; i < executors_array.size(); ++i) {
+            for (size_t i = 0; i < executors_array.size(); ++i) {
                 m_context->executions.push_back(executors_array.value<execution_context>(i, converter).get());
             }
         }

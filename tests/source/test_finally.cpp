@@ -71,10 +71,11 @@ TEST(Yato_Finally, exception2)
         yato_finally([&]{ 
             flag1 = 1;
             throw FinalError{};
+            flag1 = 2;
         });
         throw TestError{};
     },
-    FinalError);
+    TestError);
 
     ASSERT_EQ(1, flag1);
 }

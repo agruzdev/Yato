@@ -8,7 +8,7 @@
 #ifndef _YATO_TEST_ACTORS_COMMON_H_
 #define _YATO_TEST_ACTORS_COMMON_H_
 
-#include <yato/config/manual/manual_config.h>
+#include <yato/config/manual/manual.h>
 
 inline
 yato::config actors_debug_config()

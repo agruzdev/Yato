@@ -20,7 +20,7 @@ namespace conf
 {
 
     template <stored_type StoredType_>
-    class manual_value
+    class manual_value final
         : public config_value
     {
     public:

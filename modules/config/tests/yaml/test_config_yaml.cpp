@@ -6,7 +6,7 @@
  */
 
 #include "../include/test_config.h"
-#include <yato/config/yaml/yaml_config.h>
+#include <yato/config/yaml/yaml.h>
 
 TEST(Yato_Config, yaml_object)
 {

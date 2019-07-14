@@ -26,10 +26,14 @@ namespace yato
             : m_action(action)
         { }
 
-        ~finally() noexcept(false)
+        ~finally()
         {
             if (m_invoke) {
-                m_action();
+                try {
+                    m_action();
+                }
+                catch (...) {
+                }
             }
         }
 

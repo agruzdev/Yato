@@ -105,7 +105,7 @@ namespace conf {
         /**
          * Converts to true if not null
          */
-        operator bool () const 
+        operator bool() const 
         {
             return !is_null();
         }

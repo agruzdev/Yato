@@ -109,6 +109,8 @@ if(YATO_CONFIG_YAML)
     file(GLOB yaml_sources
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/yaml/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/yaml/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/yaml/private/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/yaml/private/*.cpp"
     )
     list(APPEND config_sources ${yaml_sources})
     list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/yaml")

@@ -255,14 +255,6 @@ namespace conf {
         //virtual stored_variant get_as(stored_type dst_type) const noexcept = 0;
         virtual stored_variant get() const noexcept = 0;
 
-        ///**
-        // * Helper method wrapping returned type into optional
-        // */
-        //template <typename Ty_>
-        //yato::optional<Ty_> get_opt(stored_type dst_type) const 
-        //{
-        //    return get_as(dst_type).get_opt<Ty_>();
-        //}
 
         /**
          * Converts stored value to desired type if possible.
