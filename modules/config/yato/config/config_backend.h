@@ -93,7 +93,7 @@ namespace conf {
         {
             constexpr
             ToType_ operator()(FromType_ && val) const {
-                return static_cast<ToType_>(val);
+                return static_cast<ToType_>(std::forward<FromType_>(val));
             }
         };
 
@@ -260,7 +260,7 @@ namespace conf {
          * Converts stored value to desired type if possible.
          */
         template <typename Ty_>
-        yato::optional<Ty_> get_with_conversion(stored_type dst_type) const 
+        yato::optional<Ty_> get(stored_type dst_type) const 
         {
             auto val = get();
             if (!val.is_type<void>()) {
@@ -346,7 +346,7 @@ namespace conf {
             const config_value* value = find(index).second;
             if (value) {
                 yato_finally(([this, value]{ release(value); }));
-                return value->get_with_conversion<Ty_>(dst_type);
+                return value->get<Ty_>(dst_type);
             }
             return yato::nullopt_t{};
         }
@@ -360,7 +360,7 @@ namespace conf {
             const config_value* value = find(name).second;
             if (value) {
                 yato_finally(([this, value]{ release(value); }));
-                return value->get_with_conversion<Ty_>(dst_type);
+                return value->get<Ty_>(dst_type);
             }
             return yato::nullopt_t{};
         }

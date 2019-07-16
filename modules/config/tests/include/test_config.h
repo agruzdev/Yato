@@ -56,6 +56,30 @@ void TestConfig_PlainObject(const yato::conf::config & conf)
 
     const auto v = conf.value<float>("flt").get_or(-1.0f);
     EXPECT_FLOAT_EQ(7.0f, v);
+
+    EXPECT_NO_THROW(
+        for (const auto & entry : conf) {
+            EXPECT_FALSE(entry.is_null());
+            if (entry.key() == "int") {
+                EXPECT_EQ(42, entry.value<int>().get());
+            }
+            else if (entry.key() == "message") {
+                EXPECT_EQ("somestr", entry.value<std::string>().get());
+            }
+            else if (entry.key() == "flt") {
+                EXPECT_EQ(7.0, entry.value<double>().get());
+            }
+            else if (entry.key() == "flag1") {
+                EXPECT_EQ(false, entry.value<bool>().get());
+            }
+            else if (entry.key() == "flag2") {
+                EXPECT_EQ(true, entry.value<bool>().get());
+            }
+            else {
+                GTEST_FAIL() << "Invalid entry key.";
+            }
+        }
+    );
 }
 
 /**
@@ -125,6 +149,38 @@ void TestConfig_Array(const yato::conf::config & conf)
     ASSERT_TRUE(arr.empty());
 
     EXPECT_EQ(0U, arr.size());
+
+    EXPECT_NO_THROW(
+        auto it = conf.begin();
+
+        ASSERT_TRUE(it.has_next());
+        const auto e0 = it.next();
+        ASSERT_EQ(10, e0.value<int>().get());
+
+        ASSERT_TRUE(it.has_next());
+        const auto e1 = it.next();
+        ASSERT_EQ(20, e1.value<int>().get());
+
+        ASSERT_TRUE(it.has_next());
+        const auto e2 = it.next();
+        ASSERT_EQ(30, e2.value<int>().get());
+
+        ASSERT_TRUE(it.has_next());
+        const auto e3 = it.next();
+        ASSERT_EQ(true, e3.value<bool>().get());
+
+        ASSERT_TRUE(it.has_next());
+        const auto e4 = it.next();
+        ASSERT_EQ(4, e4.value<int>().get());
+
+        ASSERT_TRUE(it.has_next());
+        const auto e5 = it.next();
+        ASSERT_EQ(yato::conf::stored_type::config, e5.type());
+        const auto c3 = e5.object();
+        ASSERT_FALSE(c3.is_null());
+
+        ASSERT_FALSE(it.has_next());
+    );
 }
 
 /**
