@@ -387,7 +387,10 @@ namespace yato
         /**
          * Destroyes held value.
          */
-        ~basic_optional() = default;
+        ~basic_optional()
+        {
+            destroy_();
+        }
 
         /**
          * Constructs the contained value in-place.
