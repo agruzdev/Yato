@@ -51,16 +51,17 @@ TEST(Yato_Optional, common_2)
 
     yato::optional<char> y(static_cast<char>(38));
     yato::optional<int> opt5(std::move(y));
+    EXPECT_TRUE(y.empty());
     EXPECT_EQ(38, opt5.get_or(0));
 
     //optional<int> opt5(nullptr);
 
-    yato::optional<short> opt6(37);
+    yato::optional<short> opt6(static_cast<short>(37));
     opt1 = opt6;
     EXPECT_EQ(37, opt1.get_or(0));
     EXPECT_EQ(37, opt6.get_or(0));
     
-    yato::optional<short> opt7(36);
+    yato::optional<short> opt7(static_cast<short>(36));
     opt1 = std::move(opt7);
     EXPECT_EQ(36, opt1.get_or(0));
 
@@ -155,6 +156,97 @@ namespace
     };
 }
 
+TEST(Yato_Optional, traits)
+{
+    using FooOpt = yato::optional<Foo>;
+    
+    static_assert(std::is_copy_constructible<Foo>::value == false, "Wrong copy/move support.");
+    static_assert(std::is_move_constructible<Foo>::value == false, "Wrong copy/move support.");
+    static_assert(std::is_copy_assignable<Foo>::value == false, "Wrong copy/move support.");
+    static_assert(std::is_move_assignable<Foo>::value == false, "Wrong copy/move support.");
+
+    static_assert(std::is_copy_constructible<FooOpt>::value == false, "Wrong copy/move support.");
+    static_assert(std::is_move_constructible<FooOpt>::value == false, "Wrong copy/move support.");
+    static_assert(std::is_copy_assignable<FooOpt>::value == false, "Wrong copy/move support.");
+    static_assert(std::is_move_assignable<FooOpt>::value == false, "Wrong copy/move support.");
+
+    static_assert(FooOpt::is_copy_constructible_v == false, "Wrong copy/move support.");
+    static_assert(FooOpt::is_move_constructible_v == false, "Wrong copy/move support.");
+    static_assert(FooOpt::is_copy_assignable_v == false, "Wrong copy/move support.");
+    static_assert(FooOpt::is_move_assignable_v == false, "Wrong copy/move support.");
+
+    static_assert(FooOpt::is_constructible<const Foo&>::value == false, "Wrong copy/move support.");
+    static_assert(FooOpt::is_constructible<Foo&&>::value == false, "Wrong copy/move support.");
+    static_assert(FooOpt::is_assignable<const Foo&>::value == false, "Wrong copy/move support.");
+    static_assert(FooOpt::is_assignable<Foo&&>::value == false, "Wrong copy/move support.");
+
+    using FooCopyOpt = yato::optional<FooCopy>;
+
+    static_assert(std::is_copy_constructible<FooCopy>::value == true, "Wrong copy/move support.");
+    static_assert(std::is_move_constructible<FooCopy>::value == false, "Wrong copy/move support.");
+    static_assert(std::is_copy_assignable<FooCopy>::value == true, "Wrong copy/move support.");
+    static_assert(std::is_move_assignable<FooCopy>::value == false, "Wrong copy/move support.");
+
+    static_assert(std::is_copy_constructible<FooCopyOpt>::value == true, "Wrong copy/move support.");
+    static_assert(std::is_move_constructible<FooCopyOpt>::value == false, "Wrong copy/move support.");
+    static_assert(std::is_copy_assignable<FooCopyOpt>::value == true, "Wrong copy/move support.");
+    static_assert(std::is_move_assignable<FooCopyOpt>::value == false, "Wrong copy/move support.");
+
+    static_assert(FooCopyOpt::is_copy_constructible_v == true, "Wrong copy/move support.");
+    static_assert(FooCopyOpt::is_move_constructible_v == false, "Wrong copy/move support.");
+    static_assert(FooCopyOpt::is_copy_assignable_v == true, "Wrong copy/move support.");
+    static_assert(FooCopyOpt::is_move_assignable_v == false, "Wrong copy/move support.");
+
+    static_assert(FooCopyOpt::is_constructible<const FooCopy&>::value == true, "Wrong copy/move support.");
+    static_assert(FooCopyOpt::is_constructible<FooCopy&&>::value == false, "Wrong copy/move support.");
+    static_assert(FooCopyOpt::is_assignable<const FooCopy&>::value == true, "Wrong copy/move support.");
+    static_assert(FooCopyOpt::is_assignable<FooCopy&&>::value == false, "Wrong copy/move support.");
+
+    using FooMoveOpt = yato::optional<FooMove>;
+    
+    static_assert(std::is_copy_constructible<FooMove>::value == false, "Wrong copy/move support.");
+    static_assert(std::is_move_constructible<FooMove>::value == true, "Wrong copy/move support.");
+    static_assert(std::is_copy_assignable<FooMove>::value == false, "Wrong copy/move support.");
+    static_assert(std::is_move_assignable<FooMove>::value == true, "Wrong copy/move support.");
+
+    static_assert(std::is_copy_constructible<FooMoveOpt>::value == false, "Wrong copy/move support.");
+    static_assert(std::is_move_constructible<FooMoveOpt>::value == true, "Wrong copy/move support.");
+    static_assert(std::is_copy_assignable<FooMoveOpt>::value == false, "Wrong copy/move support.");
+    static_assert(std::is_move_assignable<FooMoveOpt>::value == true, "Wrong copy/move support.");
+
+    static_assert(FooMoveOpt::is_copy_constructible_v == false, "Wrong copy/move support.");
+    static_assert(FooMoveOpt::is_move_constructible_v == true, "Wrong copy/move support.");
+    static_assert(FooMoveOpt::is_copy_assignable_v == false, "Wrong copy/move support.");
+    static_assert(FooMoveOpt::is_move_assignable_v == true, "Wrong copy/move support.");
+
+    static_assert(FooMoveOpt::is_constructible<const FooMove&>::value == false, "Wrong copy/move support.");
+    static_assert(FooMoveOpt::is_constructible<FooMove&&>::value == true, "Wrong copy/move support.");
+    static_assert(FooMoveOpt::is_assignable<const FooMove&>::value == false, "Wrong copy/move support.");
+    static_assert(FooMoveOpt::is_assignable<FooMove&&>::value == true, "Wrong copy/move support.");
+
+    using FooCopyMoveOpt = yato::optional<FooCopyMove>;
+
+    static_assert(std::is_copy_constructible<FooCopyMove>::value == true, "Wrong copy/move support.");
+    static_assert(std::is_move_constructible<FooCopyMove>::value == true, "Wrong copy/move support.");
+    static_assert(std::is_copy_assignable<FooCopyMove>::value == true, "Wrong copy/move support.");
+    static_assert(std::is_move_assignable<FooCopyMove>::value == true, "Wrong copy/move support.");
+
+    static_assert(std::is_copy_constructible<FooCopyMoveOpt>::value == true, "Wrong copy/move support.");
+    static_assert(std::is_move_constructible<FooCopyMoveOpt>::value == true, "Wrong copy/move support.");
+    static_assert(std::is_copy_assignable<FooCopyMoveOpt>::value == true, "Wrong copy/move support.");
+    static_assert(std::is_move_assignable<FooCopyMoveOpt>::value == true, "Wrong copy/move support.");
+
+    static_assert(FooCopyMoveOpt::is_copy_constructible_v == true, "Wrong copy/move support.");
+    static_assert(FooCopyMoveOpt::is_move_constructible_v == true, "Wrong copy/move support.");
+    static_assert(FooCopyMoveOpt::is_copy_assignable_v == true, "Wrong copy/move support.");
+    static_assert(FooCopyMoveOpt::is_move_assignable_v == true, "Wrong copy/move support.");
+
+    static_assert(FooCopyMoveOpt::is_constructible<const FooCopyMove&>::value == true, "Wrong copy/move support.");
+    static_assert(FooCopyMoveOpt::is_constructible<FooCopyMove&&>::value == true, "Wrong copy/move support.");
+    static_assert(FooCopyMoveOpt::is_assignable<const FooCopyMove&>::value == true, "Wrong copy/move support.");
+    static_assert(FooCopyMoveOpt::is_assignable<FooCopyMove&&>::value == true, "Wrong copy/move support.");
+}
+
 
 TEST(Yato_Optional, common_3) 
 {
@@ -213,11 +305,12 @@ TEST(Yato_Optional, map)
     EXPECT_FLOAT_EQ(42.0f, opt3.get_or(0.0f));
 }
 
+
 namespace
 {
     void foo(yato::optional<const int*> p) {
         if(p) {
-            EXPECT_TRUE(*p > 0);
+            EXPECT_TRUE(**p > 0);
         }
     }
 
@@ -225,9 +318,10 @@ namespace
         return yato::make_optional(new int(x));
     }
 
-    yato::optional<int*> zoo(int) {
-        return yato::nullopt_t{};
+    int zoo(const int* p) {
+        return *p + 1;
     }
+
 }
 
 TEST(Yato_Optional, opt_ptr)
@@ -236,23 +330,48 @@ TEST(Yato_Optional, opt_ptr)
     auto opt = yato::make_optional(&x);
 
     EXPECT_TRUE(!opt.empty());
-    EXPECT_NO_THROW(EXPECT_EQ(42, opt.deref()));
+    EXPECT_NO_THROW(EXPECT_EQ(42, **opt));
 
-    opt.clear();
+    opt.reset();
     EXPECT_THROW(opt.get(), yato::bad_optional_access);
 
     foo(yato::make_optional(&x));
 
     auto opt3 = bar(10);
     EXPECT_EQ(10, *(opt3.get_or(&x)));
-    delete opt3.get_or_null();
+    delete opt3.get_or(nullptr);
 
-    EXPECT_EQ(-1, zoo(1).deref_or(-1));
+    auto opt4 = yato::some<int*>(&x);
+    auto opt5 = yato::some<int*>(nullptr);
+
+    EXPECT_EQ(43, opt4.map(zoo).get_or(-1));
+    EXPECT_EQ(-1, opt5.map(zoo).get_or(-1));
 }
 
+TEST(Yato_Optional, is_optional) 
+{
+    static_assert(yato::is_optional<int>::value == false, "is_optional failed.");
+    static_assert(yato::is_optional<Foo>::value == false, "is_optional failed.");
+    static_assert(yato::is_optional<FooCopy>::value == false, "is_optional failed.");
+    static_assert(yato::is_optional<FooMove>::value == false, "is_optional failed.");
+    static_assert(yato::is_optional<FooCopyMove>::value == false, "is_optional failed.");
+
+    static_assert(yato::is_optional<yato::optional<int>>::value == true, "is_optional failed.");
+    static_assert(yato::is_optional<yato::optional<Foo>>::value == true, "is_optional failed.");
+    static_assert(yato::is_optional<yato::optional<FooCopy>>::value == true, "is_optional failed.");
+    static_assert(yato::is_optional<yato::optional<FooMove>>::value == true, "is_optional failed.");
+    static_assert(yato::is_optional<yato::optional<FooCopyMove>>::value == true, "is_optional failed.");
+    
+    static_assert(yato::is_optional<yato::optional<yato::optional<int>>>::value == true, "is_optional failed.");
+    static_assert(yato::is_optional<yato::optional<yato::optional<Foo>>>::value == true, "is_optional failed.");
+    static_assert(yato::is_optional<yato::optional<yato::optional<FooCopy>>>::value == true, "is_optional failed.");
+    static_assert(yato::is_optional<yato::optional<yato::optional<FooMove>>>::value == true, "is_optional failed.");
+    static_assert(yato::is_optional<yato::optional<yato::optional<FooCopyMove>>>::value == true, "is_optional failed.");
+}
 
 TEST(Yato_Optional, flatten) 
 {
+#if 0
     {
         auto opt1 = yato::make_optional(FooCopy(1));
         auto opt2 = yato::make_optional(yato::make_optional(FooCopy(2)));
@@ -271,7 +390,7 @@ TEST(Yato_Optional, flatten)
         flat = opt4.flatten();
         EXPECT_NO_THROW(EXPECT_EQ(4, flat.get().x()));
     }
-
+#endif
     {
         auto opt1 = yato::make_optional(FooMove(1));
         auto opt2 = yato::make_optional(yato::make_optional(FooMove(2)));
@@ -331,6 +450,7 @@ TEST(Yato_Optional, flatten)
 
 }
 
+
 TEST(Yato_Optional, visit) 
 {
     auto opt = yato::make_optional(1);
@@ -360,3 +480,14 @@ TEST(Yato_Optional, filter)
     EXPECT_FALSE(static_cast<bool>(opt6));
 }
 
+TEST(Yato_Optional, exists) 
+{
+    auto opt = yato::make_optional(1);
+    EXPECT_EQ(true,  opt.exists([](int x){ return x > 0; }));
+    EXPECT_EQ(false, opt.exists([](int x){ return x < 0; }));
+
+
+    yato::optional<int> opt2 = yato::nullopt_t{};
+    EXPECT_EQ(false, opt2.exists([](int x){ return x > 0; }));
+    EXPECT_EQ(false, opt2.exists([](int x){ return x < 0; }));
+}

@@ -20,7 +20,11 @@ namespace conf {
         : m_root(std::move(root)), m_iter(std::move(iter))
     { }
 
-    json_config::~json_config() = default;
+    json_config::~json_config()
+    {
+        m_iter.reset();
+        m_root.reset();
+    }
 
     nlohmann::json::const_reference json_config::get_() const
     {

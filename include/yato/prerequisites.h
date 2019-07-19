@@ -101,6 +101,11 @@
 # define YATO_ATTR_FALLTHROUGH
 #endif
 
+// ToDo (a.gruzdev): Need to check condition more carefully
+#if (defined(YATO_GCC) || defined(YATO_MINGW)) && (defined(__cplusplus) && (__cplusplus >= 201700L))
+# define YATO_HAS_LAUNDER
+#endif
+
 #if (defined(YATO_MSVC) && (YATO_MSVC >= 14)) || (defined(__cplusplus) && (__cplusplus > 201300L))
 # define YATO_ALIGN(Alignment)  alignas(Alignment)
 # define YATO_ALIGN_OF(Type)    alignof(Type)

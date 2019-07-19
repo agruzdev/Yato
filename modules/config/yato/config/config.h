@@ -38,12 +38,18 @@ namespace conf {
                 return std::forward<Converter_>(cvt)(wrap_result_(std::forward<Ty_>(val)));
             }
 
+            // Workaround for vc15
+            template <typename Ty_, typename Converter_>
+            struct converted_type_impl_
+            {
+                using type = decltype(apply(std::declval<Ty_>(), std::declval<Converter_>()));
+            };
 
             template <typename Ty_, typename Converter_>
-            using converted_type = decltype(apply(std::declval<Ty_>(), std::declval<Converter_>()));
+            using converted_type = typename converted_type_impl_<Ty_, Converter_>::type;
 
             template <conf::stored_type FetchType_, typename Converter_>
-            using converted_stored_type = converted_type<typename stored_type_trait<FetchType_>::return_type, Converter_>;
+            using converted_stored_type = typename converted_type_impl_<typename stored_type_trait<FetchType_>::return_type, Converter_>::type;
 
 
             template <typename Ty_, typename Converter_>

@@ -139,7 +139,7 @@ namespace actors
             if(!actor_path::is_valid_actor_name(name)) {
                 throw yato::argument_error("Invalid actor name!");
             }
-            return create_actor_impl_(details::make_cell_builder<ActorType_>(std::forward<Args_>(args)...), yato::some(props), actor_path(*this, actor_scope::user, name), actor_ref{});
+            return create_actor_impl_(details::make_cell_builder<ActorType_>(std::forward<Args_>(args)...), yato::make_optional(props), actor_path(*this, actor_scope::user, name), actor_ref{});
         }
 
         template <typename Ty_>

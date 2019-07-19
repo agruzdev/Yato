@@ -304,7 +304,7 @@ namespace actors
 
         const auto ask_actor_path = actor_path(*this, actor_scope::temp, m_context->names_gen.next_indexed("ask"));
         const auto ask_actor = const_cast<actor_system*>(this)->create_actor_impl_(
-            details::make_cell_builder<asking_actor>(std::move(response)), yato::some(properties()), ask_actor_path, actor_ref{});
+            details::make_cell_builder<asking_actor>(std::move(response)), yato::make_optional(properties()), ask_actor_path, actor_ref{});
         send_user_impl_(addressee, ask_actor, std::move(message));
 
         m_context->global_scheduler.enqueue(std::chrono::high_resolution_clock::now() + timeout, [ask_actor]{ ask_actor.stop(); });
@@ -346,7 +346,7 @@ namespace actors
 
         const auto selector_path = actor_path(*this, actor_scope::temp, m_context->names_gen.next_indexed("find"));
         const auto select_actor  = const_cast<actor_system*>(this)->create_actor_impl_(
-            details::make_cell_builder<selector>(path, std::move(promise)), yato::some(properties()), selector_path, actor_ref{});
+            details::make_cell_builder<selector>(path, std::move(promise)), yato::make_optional(properties()), selector_path, actor_ref{});
 
         m_context->global_scheduler.enqueue(std::chrono::high_resolution_clock::now() + timeout, [select_actor]{ select_actor.stop(); });
 

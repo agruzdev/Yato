@@ -9,9 +9,12 @@
 #define _YATO_MEMORY_UTILITY_H_
 
 #include <cstring>
+#include <new>
 
-#include "type_traits.h"
 #include "assertion.h"
+#include "container_base.h"
+#include "prerequisites.h"
+#include "type_traits.h"
 
 namespace yato
 {
@@ -436,8 +439,22 @@ namespace yato
             details::transfer_right_operation<Alloc_, Ty_>::apply(alloc, src_first, src_last, dst_last);
         }
 
+
+    } // namespace memory
+
+#ifdef YATO_HAS_LAUNDER
+    using std::launder;
+#else
+    template <typename Ty_>
+    YATO_CONSTEXPR_FUNC
+    Ty_* launder(Ty_* p) YATO_NOEXCEPT_KEYWORD
+    {
+        return p;
     }
-}
+#endif
+
+
+} // namespace yato
 
 #endif
 

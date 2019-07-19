@@ -604,6 +604,19 @@ namespace yato
     template <typename Callable_, typename... Args_>
     YATO_INLINE_VARIABLE constexpr bool is_invocable_v = yato::is_invocable<Callable_, Args_...>::value;
 
+
+
+    /**
+     * Return type 'const T&' for type 'T'
+     */
+    template <typename Ty_>
+    struct add_lvalue_reference_to_const
+    {
+        using type = std::add_lvalue_reference_t<std::add_const_t<Ty_>>;
+    };
+
+    template <typename Ty_>
+    using add_lvalue_reference_to_const_t = typename add_lvalue_reference_to_const<Ty_>::type;
 }
 
 #endif

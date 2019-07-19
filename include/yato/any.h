@@ -354,7 +354,7 @@ namespace yato
         yato::optional<Ty_> get_opt()
         {
             return is_type<Ty_>()
-                ? yato::some(get_as_unsafe<Ty_>())
+                ? yato::make_optional(get_as_unsafe<Ty_>())
                 : yato::nullopt_t{};
         }
 
@@ -362,7 +362,7 @@ namespace yato
         yato::optional<Ty_> get_opt() const
         {
             return is_type<Ty_>()
-                ? yato::some(get_as_unsafe<Ty_>())
+                ? yato::make_optional(get_as_unsafe<Ty_>())
                 : yato::nullopt_t{};
         }
     };

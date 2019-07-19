@@ -23,7 +23,7 @@ TEST(Yato_Config, cmd_object)
 
     using yato::conf::argument_type;
     const yato::conf::config conf = yato::conf::cmd_builder("Test")
-        .integer(argument_type::optional,  "i", "int", "test int value", yato::some(1))
+        .integer(argument_type::optional,  "i", "int", "test int value", yato::some<int>(1))
         .floating(argument_type::required, "",  "flt", "test float value")
         .string(argument_type::optional,   "m", "message", "test string", yato::some<std::string>("somestr"))
         .boolean("f", "flag1", "test flag 1")
@@ -43,7 +43,7 @@ TEST(Yato_Config, cmd_object_2)
 
     using yato::conf::argument_type;
     const yato::conf::config conf = yato::conf::cmd_builder("Test")
-        .integer(argument_type::optional,  "i", "int", "test int value", yato::some(42))
+        .integer(argument_type::optional,  "i", "int", "test int value", yato::some<int>(42))
         .floating(argument_type::required, "", "flt", "test float value")
         .string(argument_type::optional,   "m", "message", "test string", yato::some<std::string>("somestr"))
         .boolean("f", "flag1", "test flag 1")
@@ -68,7 +68,7 @@ TEST(Yato_Config, cmd_example)
 
     using yato::conf::argument_type;
     const yato::conf::config conf = yato::conf::cmd_builder("Test")
-        .integer(argument_type::optional,  "", "answer", "integer argument with default value", yato::some(0))
+        .integer(argument_type::optional,  "", "answer", "integer argument with default value", yato::some<int>(0))
         .string(argument_type::required,   "c", "comment", "required string argument with one-letter alias")
         .floating(argument_type::required, "", "precision", "required floating-point argument")
         .boolean("", "manual_mode", "boolean flag")
@@ -88,8 +88,8 @@ TEST(Yato_Config, cmd_conversion)
 
     using yato::conf::argument_type;
     const yato::conf::config conf = yato::conf::cmd_builder("Test")
-        .integer(argument_type::optional, "", "enum1", "first", yato::some(0))
-        .integer(argument_type::optional, "", "enum2", "second", yato::some(0))
+        .integer(argument_type::optional, "", "enum1", "first", yato::some<int>(0))
+        .integer(argument_type::optional, "", "enum2", "second", yato::some<int>(0))
         .parse(yato::make_view(args.data(), args.size()));
 
     TestConfig_Conversion(conf);

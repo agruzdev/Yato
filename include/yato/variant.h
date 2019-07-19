@@ -10,6 +10,7 @@
 
 #include "meta.h"
 #include "types.h"
+#include "memory_utility.h"
 #include "optional.h"
 
 namespace yato
@@ -847,6 +848,19 @@ namespace yato
             storage_type m_storage{};
             //--------------------------------------------------------------------
 
+            template <typename Ty_>
+            const Ty_* caddress_() const
+            {
+                return yato::launder(yato::pointer_cast<const Ty_*>(m_storage.data()));
+            }
+
+            template <typename Ty_>
+            Ty_* address_()
+            {
+                return yato::launder(yato::pointer_cast<Ty_*>(m_storage.data()));
+            }
+            //--------------------------------------------------------------------
+
         public:
             /**
              *  Creates empty variant
@@ -957,7 +971,7 @@ namespace yato
                 -> meta::list_at_t<alternativies_list, Idx>&
             {
                 if (m_storage.type_index() == Idx) {
-                    return *yato::pointer_cast<meta::list_at_t<alternativies_list, Idx>*>(m_storage.data());
+                    return *address_<meta::list_at_t<alternativies_list, Idx>>();
                 }
                 else {
                     throw bad_variant_access("yato::variant_bad_access: Stored type differs from the type by given index");
@@ -972,7 +986,12 @@ namespace yato
             auto get() const
                 -> const meta::list_at_t<alternativies_list, Idx>&
             {
-                return const_cast<this_type*>(this)->get<Idx>();
+                if (m_storage.type_index() == Idx) {
+                    return *caddress_<meta::list_at_t<alternativies_list, Idx>>();
+                }
+                else {
+                    throw bad_variant_access("yato::variant_bad_access: Stored type differs from the type by given index");
+                }
             }
 
             /**
@@ -983,7 +1002,7 @@ namespace yato
             decltype(auto) get(meta::list_at_t<alternativies_list, Idx> & default_value) noexcept
             {
                 if (m_storage.type_index() == Idx) {
-                    return *yato::pointer_cast<typename yato::meta::list_at<alternativies_list, Idx>::type*>(m_storage.data());
+                    return *address_<yato::meta::list_at_t<alternativies_list, Idx>>();
                 }
                 else {
                     return default_value;
@@ -998,7 +1017,7 @@ namespace yato
             decltype(auto) get(const meta::list_at_t<alternativies_list, Idx> & default_value) const noexcept
             {
                 if (m_storage.type_index() == Idx) {
-                    return *yato::pointer_cast<const meta::list_at_t<alternativies_list, Idx>*>(m_storage.data());
+                    return *caddress_<meta::list_at_t<alternativies_list, Idx>>();
                 }
                 else {
                     return default_value;
@@ -1053,8 +1072,8 @@ namespace yato
             template <typename Ty>
             yato::optional<Ty> get_opt() &&
             {
-                if(is_type<Ty>()) {
-                    return yato::make_optional(std::move(*yato::pointer_cast<Ty*>(m_storage.data())));
+                if (is_type<Ty>()) {
+                    return yato::make_optional(std::move(*address_<Ty>()));
                 } else {
                     return yato::nullopt_t{};
                 }
@@ -1068,7 +1087,8 @@ namespace yato
             yato::optional<Ty> get_opt() const &
             {
                 if(is_type<Ty>()) {
-                    return yato::make_optional(*yato::pointer_cast<const Ty*>(m_storage.data()));
+                    //return yato::make_optional(*yato::pointer_cast<const Ty*>(m_storage.data()));
+                    return yato::make_optional(*caddress_<Ty>());
                 } else {
                     return yato::nullopt_t{};
                 }
