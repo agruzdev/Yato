@@ -2,9 +2,11 @@
 
 Yato Config is an universal facade for reading config of any origin. It provides single interface for arbitrary user defined backends, for example json, ini, etc.
 
-Each config is a hierarchihal structure. 
-Each node of config can be either *object* (key:value entries) or *array* (indexed values).
-The stored value can be eitehr scalar (*integer*, *real*, *boolean*, *string*) or child config node.
+Each config can be seen as an unmutable collection of values. The value can be a scalar (*integer*, *real*, *boolean*, *string*) or a nested config.
+The values can be accessed by index or via config iterator. Optionally a config can support access by key.
+
+Additionally there are *join* and *filter* oprations allowing to build new config as expression over existing immutable configs.
+
 
 Read scalar values:
 
