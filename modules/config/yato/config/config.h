@@ -258,8 +258,8 @@ namespace conf {
     public:
         using difference_type = std::ptrdiff_t;
         using value_type = config_entry;
-        using pointer    = void;
-        using reference  = void;
+        using pointer    = std::unique_ptr<config_entry>;
+        using reference  = config_entry;
         using iterator_category = std::random_access_iterator_tag;
 
         using index_type = std::ptrdiff_t; // In order to support position before begin
@@ -272,10 +272,16 @@ namespace conf {
 
         ~config_iterator() = default;
 
-        config_entry operator*() const
+        reference operator*() const
         {
             YATO_ASSERT(is_dereferencable_(), "Invalid iterator state.");
             return config_entry(m_backend, m_idx);
+        }
+
+        pointer operator->() const
+        {
+            YATO_ASSERT(is_dereferencable_(), "Invalid iterator state.");
+            return std::make_unique<config_entry>(m_backend, m_idx);
         }
 
         bool has_next() const

@@ -181,6 +181,49 @@ void TestConfig_Array(const yato::conf::config & conf)
 
         ASSERT_FALSE(it.has_next());
     );
+
+    EXPECT_NO_THROW(
+        auto it = conf.begin();
+        auto eit = conf.end();
+
+        ASSERT_TRUE(it != eit);
+        const auto e0 = *it;
+        ASSERT_EQ(10, e0.value<int>().get());
+        ASSERT_EQ(10, it->value<int>().get());
+
+        ++it;
+        ASSERT_TRUE(it != eit);
+        const auto e1 = *it;
+        ASSERT_EQ(20, e1.value<int>().get());
+        ASSERT_EQ(20, it->value<int>().get());
+
+        ++it;
+        ASSERT_TRUE(it != eit);
+        const auto e2 = *it;
+        ASSERT_EQ(30, e2.value<int>().get());
+        ASSERT_EQ(30, it->value<int>().get());
+
+        it++;
+        ASSERT_TRUE(it != eit);
+        const auto e3 = *it;
+        ASSERT_EQ(true, e3.value<bool>().get());
+        ASSERT_EQ(true, it->value<bool>().get());
+
+        it++;
+        ASSERT_TRUE(it != eit);
+        const auto e4 = *it;
+        ASSERT_EQ(4, e4.value<int>().get());
+        ASSERT_EQ(4, it->value<int>().get());
+
+        ++it;
+        ASSERT_TRUE(it != eit);
+        const auto e5 = *it;
+        ASSERT_EQ(yato::conf::stored_type::config, it->type());
+        const auto c3 = e5.object();
+        ASSERT_FALSE(c3.is_null());
+
+        ASSERT_FALSE(it == eit);
+    );
 }
 
 /**
