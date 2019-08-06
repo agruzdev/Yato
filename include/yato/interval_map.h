@@ -33,7 +33,7 @@ namespace yato
         template <typename _ValRef>
         void _init_whole_range(_ValRef && val)
         {
-            m_map.emplace_hint(m_map.begin(), std::numeric_limits<_Key>::min(), std::forward<_ValRef>(val));
+            m_map.emplace_hint(m_map.begin(), std::numeric_limits<_Key>::lowest(), std::forward<_ValRef>(val));
         }
         //-------------------------------------------------------
 
