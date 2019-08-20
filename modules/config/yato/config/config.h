@@ -372,6 +372,13 @@ namespace conf {
         }
 
         friend
+        difference_type operator-(const config_iterator & lhs, const config_iterator & rhs)
+        {
+            YATO_REQUIRES(lhs.m_backend == rhs.m_backend);
+            return lhs.m_idx - rhs.m_idx;
+        }
+
+        friend
         bool operator==(const config_iterator & lhs, const config_iterator & rhs)
         {
             YATO_REQUIRES(lhs.m_backend == rhs.m_backend);
