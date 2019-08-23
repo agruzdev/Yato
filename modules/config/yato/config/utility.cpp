@@ -114,7 +114,7 @@ namespace conf {
         };
 
         m_cvt_functions[std::make_pair(stored_type::boolean, stored_type::integer)] = [](const stored_variant& src) {
-            YATO_REQUIRES(src.is_type<stored_type_trait<stored_type::string>::return_type>());
+            YATO_REQUIRES(src.is_type<integer_t>());
             return stored_variant(yato::in_place_type_t<boolean_t>{}, static_cast<boolean_t>(src.get_as<integer_t>()));
         };
     }
