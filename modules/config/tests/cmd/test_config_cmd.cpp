@@ -110,3 +110,32 @@ TEST(Yato_Config, cmd_conversion_2)
 
     TestConfig_Conversion(conf);
 }
+
+TEST(Yato_Config, cmd_pruning)
+{
+    std::vector<std::string> args;
+    args.emplace_back("TestApp");
+    args.emplace_back("-a");
+    args.emplace_back("2");
+    args.emplace_back("-b");
+    args.emplace_back("7");
+    args.emplace_back("-d");
+    args.emplace_back("10");
+
+    using yato::conf::argument_type;
+    const yato::conf::config conf = yato::conf::cmd_builder("Test")
+        .integer(argument_type::optional, "a", "aa", "test")
+        .integer(argument_type::optional, "b", "bb", "test")
+        .integer(argument_type::optional, "c", "cc", "test")
+        .integer(argument_type::optional, "d", "dd", "test")
+        .integer(argument_type::optional, "e", "ee", "test")
+        .integer(argument_type::optional, "f", "ff", "test", yato::some(1))
+        .parse(yato::make_view(args.data(), args.size()));
+
+    ASSERT_EQ(4, conf.size());
+    ASSERT_EQ(2,  conf.value<int32_t>("aa").get());
+    ASSERT_EQ(7,  conf.value<int32_t>("bb").get());
+    ASSERT_EQ(10, conf.value<int32_t>("dd").get());
+    ASSERT_EQ(1,  conf.value<int32_t>("ff").get());
+}
+

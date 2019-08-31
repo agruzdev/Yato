@@ -45,12 +45,14 @@ namespace conf {
         void parse(int argc, const char* const* argv)
         {
             m_cmd.parse(argc, argv);
+            prune_();
         }
 
         void parse(const std::vector<std::string> & args)
         {
             std::vector<std::string> tmp(args);
             m_cmd.parse(tmp);
+            prune_();
         }
 
     private:
@@ -84,6 +86,17 @@ namespace conf {
         bool do_is_object() const noexcept override
         {
             return true;
+        }
+
+        void prune_()
+        {
+            decltype(m_args) pruned_args;
+            for (auto & entry : m_args) {
+                if (entry.second->valid()) {
+                    pruned_args.emplace(entry.first, std::move(entry.second));
+                }
+            }
+            m_args = std::move(pruned_args);
         }
 
         TCLAP::CmdLine m_cmd;

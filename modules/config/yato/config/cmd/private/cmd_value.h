@@ -93,6 +93,14 @@ namespace conf {
             return res;
         }
 
+        /**
+         * Is set or has default value.
+         */
+        bool valid() const
+        {
+            return (m_arg && m_arg->isSet()) || !m_default.is_type<void>();
+        }
+
         TCLAP::Arg* arg_handle()
         {
             return m_arg.get();
