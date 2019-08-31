@@ -619,6 +619,22 @@ namespace conf {
         }
 
         /**
+         * Get an entry handle for a key.
+         */
+        config_entry find(const std::string & name) const
+        {
+            return config_entry(m_backend, name);
+        }
+
+        /**
+         * Get an entry handle for a key.
+         */
+        config_entry find(size_type idx) const
+        {
+            return config_entry(m_backend, idx);
+        }
+
+        /**
          * Get nested object config.
          * Alias for value<config>
          */
