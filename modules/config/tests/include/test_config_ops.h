@@ -135,39 +135,42 @@ void TestConfig_ObjFilter(const yato::conf::config & conf)
 }
 
 
-#if 0
+
 /**
  *  JSON 1
- *  [10, 20, 30]
+ *  {
+ *      "int": 42,
+ *      "nested": {
+        }
+ *  }
  *  
- *  JSON 1
- *  [400, 500]
+ *  JSON 2
+ *  {
+ *      "flag" : true,
+ *      "nested": {
+ *          "value": 101
+ *      }
+ *  }
  */
 inline
-void TestConfig_ArrayCat(const yato::conf::config & conf1, const yato::conf::config & conf2)
+void TestConfig_ObjJoin2(const yato::conf::config & conf1, const yato::conf::config & conf2)
 {
-    ASSERT_TRUE(conf1.is_array());
-    ASSERT_TRUE(conf2.is_array());
+    ASSERT_TRUE(conf1.is_object());
+    ASSERT_TRUE(conf2.is_object());
 
-    const auto cat1 = yato::conf::array_cat(conf1, conf2);
-    EXPECT_TRUE(cat1.is_array());
-    EXPECT_EQ(5u, cat1.size());
-    EXPECT_EQ(10,  cat1.value<int>(0).get());
-    EXPECT_EQ(20,  cat1.value<int>(1).get());
-    EXPECT_EQ(30,  cat1.value<int>(2).get());
-    EXPECT_EQ(400, cat1.value<int>(3).get());
-    EXPECT_EQ(500, cat1.value<int>(4).get());
+    const auto join1 = yato::conf::join(conf1, conf2, yato::conf::priority::left);
+    EXPECT_TRUE(join1.is_object());
+    EXPECT_EQ(42, join1.value<int>("int").get_or(-1));
+    EXPECT_EQ(true, join1.value<bool>("flag").get_or(false));
+    EXPECT_EQ(101, join1.value<int>("nested.value").get_or(-1));
 
-    const auto cat2 = yato::conf::array_cat(conf2, conf1);
-    EXPECT_TRUE(cat2.is_array());
-    EXPECT_EQ(5u, cat2.size());
-    EXPECT_EQ(400, cat2.value<int>(0).get());
-    EXPECT_EQ(500, cat2.value<int>(1).get());
-    EXPECT_EQ(10,  cat2.value<int>(2).get());
-    EXPECT_EQ(20,  cat2.value<int>(3).get());
-    EXPECT_EQ(30,  cat2.value<int>(4).get());
+    const auto keys1 = join1.keys();
+    EXPECT_EQ(3u, keys1.size());
+    EXPECT_TRUE(std::find(keys1.cbegin(), keys1.cend(), "int") != keys1.cend());
+    EXPECT_TRUE(std::find(keys1.cbegin(), keys1.cend(), "flag") != keys1.cend());
+    EXPECT_TRUE(std::find(keys1.cbegin(), keys1.cend(), "nested") != keys1.cend());
+
 }
-#endif
 
 
 

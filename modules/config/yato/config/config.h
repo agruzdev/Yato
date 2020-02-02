@@ -121,14 +121,14 @@ namespace conf {
             : m_backend(backend)
         {
             auto path_tokens = path.tokenize();
-            resolve_path_(path_tokens);
+            resolve_path_(path_tokens, m_backend);
         }
 
         config_entry(std::shared_ptr<config_backend> backend, const std::string & name)
              : m_backend(backend)
         {
             auto path_tokens = yato::tokenize(name, conf::path_separator<char>(), conf::path::skips_empty_names);
-            resolve_path_(path_tokens);
+            resolve_path_(path_tokens, m_backend);
         }
 
         config_entry(const config_entry&) = delete;
@@ -224,23 +224,45 @@ namespace conf {
         bool flag() const;
 
     private:
+
         template <typename Tokenizer_>
-        void resolve_path_(Tokenizer_ & path_tokens)
+        bool resolve_path_impl_(Tokenizer_ path_tokens, backend_ptr backend)
         {
-             if (!path_tokens.empty()) {
-                 while (m_backend) {
-                    const auto t = path_tokens.next();
-                    const std::string name{ t.begin(), t.end() };
-                    if (path_tokens.has_next()) {
-                        // We need to go deeper
-                        m_backend = m_backend->get<backend_ptr>(name, stored_type::config).get_or(nullptr);
-                    }
-                    else {
-                        // Fetch a value
-                        std::tie(m_key, m_value) = m_backend->find(name);
-                        break;
+            assert(!path_tokens.empty());
+            const auto t = path_tokens.next();
+            const std::string name{ t.begin(), t.end() };
+            if (path_tokens.has_next()) {
+                // We need to go deeper
+                config_value* value_iter = backend->find(name).second;
+                if (value_iter) {
+                    yato_finally(( [&]{ backend->release(value_iter); } ));
+                    for(;;) {
+                        auto next_backend = value_iter->get<backend_ptr>(stored_type::config);
+                        if (next_backend) {
+                            if (resolve_path_impl_(path_tokens, std::move(next_backend.get()))) {
+                                break;
+                            }
+                        }
+                        if (!value_iter->next()) {
+                            break;
+                        }
                     }
                 }
+            }
+            else {
+                // Fetch a value
+                m_backend = backend;
+                std::tie(m_key, m_value) = backend->find(name);
+                return (m_value != nullptr);
+            }
+            return false;
+        }
+
+        template <typename Tokenizer_>
+        void resolve_path_(const Tokenizer_& path_tokens, backend_ptr root)
+        {
+            if (!path_tokens.empty()) {
+                resolve_path_impl_(path_tokens, std::move(root));
             }
         }
 
@@ -744,7 +766,7 @@ namespace conf {
 
     inline
     config details::value_conversions::wrap_result_(const backend_ptr & val) {
-        return config(std::move(val));
+        return config(val);
     }
 
     inline

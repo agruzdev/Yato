@@ -236,7 +236,7 @@ namespace conf {
 
 
     /**
-     * Config element handle
+     * Config element handle and optionally iterator for multivalue
      */
     class config_value
     {
@@ -252,15 +252,21 @@ namespace conf {
         /**
          * Get value with possible convertion.
          */
-        //virtual stored_variant get_as(stored_type dst_type) const noexcept = 0;
         virtual stored_variant get() const noexcept = 0;
 
+        /**
+         * Goes to a next value and returns true, otherwise returns false.
+         */
+        virtual bool next() noexcept
+        {
+            return false;
+        }
 
         /**
          * Converts stored value to desired type if possible.
          */
         template <typename Ty_>
-        yato::optional<Ty_> get(stored_type dst_type) const 
+        yato::optional<Ty_> get(stored_type dst_type) const
         {
             auto val = get();
             if (!val.is_type<void>()) {
@@ -279,7 +285,7 @@ namespace conf {
     class config_backend  // NOLINT
     {
     public:
-        using key_value_t = std::pair<std::string, const config_value*>;
+        using key_value_t = std::pair<std::string, config_value*>;
 
         /**
          * Constant representing null key value pair

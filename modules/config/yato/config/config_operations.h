@@ -48,18 +48,31 @@ namespace conf {
         }
 
 
-        template <typename TagType_>
-        class tagged_config_value
+
+        class config_value_wrapper
             : public config_value
         {
         public:
-            using tag_type = TagType_;
+            static
+            config_backend::key_value_t wrap_value(const backend_ptr& backend, config_backend::key_value_t kv)
+            {
+                if (kv.second) {
+                    kv.second = new config_value_wrapper(backend, kv.second);
+                }
+                return kv;
+            }
 
-            tagged_config_value(const config_value* value, tag_type tag)
-                : m_value(value), m_tag(std::move(tag))
-            { }
+            config_value_wrapper(backend_ptr backend, config_value* value)
+                : m_backend(std::move(backend)), m_value(value)
+            {
+                YATO_REQUIRES(m_backend != nullptr);
+                YATO_REQUIRES(m_value != nullptr);
+            }
 
-            ~tagged_config_value() override = default;
+            ~config_value_wrapper() override
+            {
+                m_backend->release(m_value);
+            }
 
             stored_type type() const noexcept override
             {
@@ -71,113 +84,223 @@ namespace conf {
                 return m_value->get();
             }
 
-            const config_value* value() const
+            bool next() noexcept override
             {
-                return m_value;
+                return m_value->next();
             }
 
-            const tag_type & tag() const
-            {
-                return m_tag;
-            }
+
+            config_value_wrapper(const config_value_wrapper&) = delete;
+            config_value_wrapper(config_value_wrapper&&) = delete;
+
+            config_value_wrapper& operator=(const config_value_wrapper&) = delete;
+            config_value_wrapper& operator=(config_value_wrapper&&) = delete;
 
         private:
-            const config_value* m_value;
-            tag_type m_tag;
+            backend_ptr m_backend;
+            config_value* m_value;
         };
 
 
-        /**
-         * Join implementation
-         * Left is always high priority
-         */
-        class join_backend
-            : public config_backend
+
+        class joined_named_value
+            : public config_value
         {
-        private:
-            enum class value_origin
+        public:
+            joined_named_value(backend_ptr left_conf, backend_ptr right_conf, std::string key)
+                : m_left(std::move(left_conf)), m_right(std::move(right_conf)), m_key(std::move(key))
             {
-                left,
-                right
-            };
-
-            using value_wrapper = tagged_config_value<value_origin>;
-
-            backend_ptr m_left;
-            backend_ptr m_right;
-            bool m_is_object;
-            size_t m_left_size;
-            std::vector<std::string> m_keys;
-            std::vector<size_t> m_right_index;
-
-            static
-            key_value_t wrap_value_(key_value_t kv, value_origin tag)
-            {
-                key_value_t res = std::make_pair(std::string{}, nullptr);
-                if (kv.second) {
-                    res.first = std::move(kv.first);
-                    res.second = new value_wrapper(kv.second, tag);
+                m_value = m_left->find(m_key).second;
+                if (!m_value) {
+                    m_is_right_value = true;
+                    m_value = m_right->find(m_key).second;
                 }
-                return res;
             }
 
+            ~joined_named_value() override
+            {
+                if (m_value) {
+                    if (m_is_right_value) {
+                        m_right->release(m_value);
+                    }
+                    else {
+                        m_left->release(m_value);
+                    }
+                }
+            }
+
+            stored_type type() const noexcept override
+            {
+                return m_value->type();
+            }
+
+            stored_variant get() const noexcept override
+            {
+                return m_value->get();
+            }
+
+            bool next() noexcept override
+            {
+                if (m_value->next()) {
+                    return true;
+                }
+                if (!m_is_right_value) {
+                    m_is_right_value = true;
+                    m_value = m_right->find(m_key).second;
+                    return (m_value != nullptr);
+                }
+                return false;
+            }
+
+            operator bool() const
+            {
+                return m_value != nullptr;
+            }
+
+
+            joined_named_value(const joined_named_value&) = delete;
+            joined_named_value(joined_named_value&&) = delete;
+
+            joined_named_value& operator=(const joined_named_value&) = delete;
+            joined_named_value& operator=(joined_named_value&&) = delete;
+
+        private:
+            backend_ptr m_left;
+            backend_ptr m_right;
+            std::string m_key;
+            config_value* m_value = nullptr;
+            bool m_is_right_value = false;
+        };
+
+
+
+        /**
+         * Join implementation for arrays
+         * Left is always high priority
+         */
+        class joined_array
+            : public config_backend
+        {
         public:
-            join_backend(const backend_ptr & left, const backend_ptr & right)
+
+            joined_array(const backend_ptr& left, const backend_ptr& right)
                 : m_left(left), m_right(right)
             {
                 YATO_REQUIRES(m_left  != nullptr);
                 YATO_REQUIRES(m_right != nullptr);
 
-                const bool left_is_object  = m_left->is_object();
-                const bool right_is_object = m_right->is_object();
+                YATO_REQUIRES(!m_left->is_object());
+                YATO_REQUIRES(!m_right->is_object());
 
-                if (left_is_object != right_is_object) {
-                    throw yato::argument_error("Only two objects or two arrays can be joined.");
+                m_left_size = m_left->size();
+                m_size = m_left_size + m_right->size();
+            }
+
+            ~joined_array() override = default;
+
+
+            bool do_is_object() const noexcept override
+            {
+                return false;
+            }
+
+            key_value_t do_find(size_t index) const noexcept override
+            {
+                key_value_t res = config_backend::novalue;
+                if (index < m_left_size) {
+                    res = config_value_wrapper::wrap_value(m_left, m_left->find(index));
                 }
+                else if(index < m_size) {
+                    res = config_value_wrapper::wrap_value(m_right, m_right->find(index - m_left_size));
+                }
+                return res;
+            }
 
-                m_is_object = left_is_object;
+            size_t do_size() const noexcept override
+            {
+                return m_size;
+            }
+
+            void do_release(const config_value* val) const noexcept override
+            {
+                YATO_REQUIRES(dynamic_cast<const config_value_wrapper*>(val) != nullptr);
+                delete val;
+            }
+
+
+            joined_array(const joined_array&) = delete;
+            joined_array(joined_array&&) noexcept = delete;
+
+            joined_array& operator=(const joined_array&) = delete;
+            joined_array& operator=(joined_array&&) noexcept = delete;
+
+        private:
+            backend_ptr m_left;
+            backend_ptr m_right;
+            size_t m_left_size = 0;
+            size_t m_size = 0;
+        };
+
+
+        /**
+         * Join implementation for objects
+         * Left is always high priority
+         */
+        class joined_object
+            : public config_backend
+        {
+        public:
+            joined_object(const backend_ptr & left, const backend_ptr & right)
+                : m_left(left), m_right(right)
+            {
+                YATO_REQUIRES(m_left  != nullptr);
+                YATO_REQUIRES(m_right != nullptr);
+
+                YATO_REQUIRES(m_left->is_object());
+                YATO_REQUIRES(m_right->is_object());
 
                 std::vector<std::string> left_keys  = m_left->keys();
                 std::vector<std::string> right_keys = m_right->keys();
 
-                m_right_index.resize(right_keys.size());
-                std::iota(m_right_index.begin(), m_right_index.end(), static_cast<size_t>(0));
+                m_keys.reserve(m_left->size());
 
                 const auto left_set = std::set<std::string>(left_keys.cbegin(), left_keys.cend());
 
-                erase2_if(right_keys, m_right_index, [&](const std::string & k) { return left_set.find(k) != left_set.cend(); });
+                for (auto& lkey : left_keys) {
+                    m_keys.push_back(std::move(lkey));
+                }
 
-                m_left_size = left_keys.size();
-
-                m_keys = std::move(left_keys);
-                m_keys.insert(m_keys.cend(), std::make_move_iterator(right_keys.begin()), std::make_move_iterator(right_keys.end()));
+                for (auto& rkey : right_keys) {
+                    if (left_set.find(rkey) == left_set.cend()) {
+                        m_keys.push_back(std::move(rkey));
+                    }
+                }
             }
 
-            ~join_backend() override = default;
+            ~joined_object() override = default;
 
-            join_backend(const join_backend&) = default;
-            join_backend(join_backend&&) noexcept = default;
+            joined_object(const joined_object&) = default;
+            joined_object(joined_object&&) noexcept = default;
 
-            join_backend& operator=(const join_backend&) = default;
-            join_backend& operator=(join_backend&&) noexcept = default;
+            joined_object& operator=(const joined_object&) = default;
+            joined_object& operator=(joined_object&&) noexcept = default;
 
             bool do_is_object() const noexcept override
             {
-                return m_is_object;
+                return true;
             }
 
             key_value_t do_find(const std::string & name) const noexcept override
             {
                 key_value_t res = config_backend::novalue;
-                if (m_is_object) {
-                    res = wrap_value_(m_left->find(name), value_origin::left);
-                    if (!res.second) {
-                        res = wrap_value_(m_right->find(name), value_origin::right);
-                    }
+                auto joined = std::make_unique<details::joined_named_value>(m_left, m_right, name);
+                if (*joined) {
+                    res.first  = name;
+                    res.second = joined.release();
                 }
                 return res;
             }
-            
+
             std::vector<std::string> do_keys() const noexcept override
             {
                 return m_keys;
@@ -185,15 +308,9 @@ namespace conf {
 
             key_value_t do_find(size_t index) const noexcept override
             {
-                key_value_t res = config_backend::novalue;
-                if (index < m_left_size) {
-                    res = wrap_value_(m_left->find(index), value_origin::left);
-                }
-                else if(index < m_keys.size()) {
-                    YATO_ASSERT(index - m_left_size < m_right_index.size(), "join_backend[get_by_index]: Invalid index remapping.");
-                    res = wrap_value_(m_right->find(m_right_index[index - m_left_size]), value_origin::right);
-                }
-                return res;
+                return (index < m_keys.size())
+                    ? joined_object::do_find(m_keys[index])
+                    : config_backend::novalue;
             }
 
             size_t do_size() const noexcept override
@@ -203,20 +320,14 @@ namespace conf {
 
             void do_release(const config_value* val) const noexcept override
             {
-                YATO_REQUIRES(dynamic_cast<const value_wrapper*>(val) != nullptr);
-                const value_wrapper* wrapper = static_cast<const value_wrapper*>(val);
-                if (wrapper && wrapper->value()) {
-                    switch (wrapper->tag()) {
-                        case value_origin::left:
-                            m_left->release(wrapper->value());
-                            break;
-                        case value_origin::right:
-                            m_right->release(wrapper->value());
-                            break;
-                    }
-                    delete wrapper;
-                }
+                YATO_REQUIRES(dynamic_cast<const details::joined_named_value*>(val) != nullptr);
+                delete val;
             }
+
+        private:
+            backend_ptr m_left;
+            backend_ptr m_right;
+            std::vector<std::string> m_keys;
         };
 
         /**
@@ -270,11 +381,12 @@ namespace conf {
                 return true;
             }
 
+            // ToDo (gruzdev.a): Make at least log(N) check
             key_value_t do_find(const std::string & name) const noexcept override
             {
                 key_value_t res{};
-                const auto it = std::lower_bound(m_keys.cbegin(), m_keys.cend(), name);
-                if ((it != m_keys.cend()) && (*it == name)) {
+                const auto it = std::find(m_keys.cbegin(), m_keys.cend(), name);
+                if (it != m_keys.cend()) {
                     res = m_conf->find(name);
                 }
                 return res;
@@ -334,7 +446,7 @@ namespace conf {
      *  Join( { }, { }) = { }
      */
     inline
-    config join(const config & left, const config & right, priority p = priority::left)
+    config join(const config& left, const config& right, priority p = priority::left)
     {
         backend_ptr left_backend  = left.get_backend();
         backend_ptr right_backend = right.get_backend();
@@ -342,7 +454,19 @@ namespace conf {
             if (p != priority::left) {
                 left_backend.swap(right_backend);
             }
-            return config(std::make_shared<details::join_backend>(left_backend, right_backend));
+
+            const bool left_is_object  = left_backend->is_object();
+            const bool right_is_object = right_backend->is_object();
+
+            if (left_is_object && right_is_object) {
+                return config(std::make_shared<details::joined_object>(left_backend, right_backend));
+            }
+            else if (!left_is_object && !right_is_object) {
+                return config(std::make_shared<details::joined_array>(left_backend, right_backend));
+            }
+            else {
+                throw yato::argument_error("Only two objects or two arrays can be joined.");
+            }
         }
         if (left_backend != nullptr) {
             return left;
