@@ -236,17 +236,14 @@ namespace conf {
                 config_value* value_iter = backend->find(name).second;
                 if (value_iter) {
                     yato_finally(( [&]{ backend->release(value_iter); } ));
-                    for(;;) {
+                    do {
                         auto next_backend = value_iter->get<backend_ptr>(stored_type::config);
                         if (next_backend) {
                             if (resolve_path_impl_(path_tokens, std::move(next_backend.get()))) {
-                                break;
+                                return true;
                             }
                         }
-                        if (!value_iter->next()) {
-                            break;
-                        }
-                    }
+                    } while(value_iter->next());
                 }
             }
             else {
@@ -261,7 +258,7 @@ namespace conf {
         template <typename Tokenizer_>
         void resolve_path_(const Tokenizer_& path_tokens, backend_ptr root)
         {
-            if (!path_tokens.empty()) {
+            if (!path_tokens.empty() && root) {
                 resolve_path_impl_(path_tokens, std::move(root));
             }
         }
