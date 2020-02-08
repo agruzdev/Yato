@@ -32,10 +32,6 @@ namespace conf {
         ini_builder& operator=(const ini_builder&) = delete;
         ini_builder& operator=(ini_builder&&) noexcept = default;
 
-        /**
-         * Allow data values to span multiple lines in the input
-         */
-        ini_builder& multiline(bool enable);
 
         /**
          * Parse ini file
@@ -46,11 +42,6 @@ namespace conf {
          * Parse ini file 
          */
         config parse_file(const std::string & filename);
-
-        /**
-         * Parse from stream
-         */
-        config parse(std::istream & is);
 
         /**
          * Parse from string

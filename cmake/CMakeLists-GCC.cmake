@@ -12,14 +12,15 @@
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wpedantic")
 if(CLANG)
-    if(WIN32 OR ANDROID)
+    if(CLANG_MINGW OR ANDROID)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -femulated-tls")
     endif()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+    if(CLANG_MINGW)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+    endif()
 endif()
 
 #ToDo (a.gruzdev) Temporal workaround

@@ -7,8 +7,6 @@
 
 project(YatoConfig)
 
-include(${TARGET_CONFIG_LISTS})
-
 #==========================================
 # Core sources
 
@@ -88,6 +86,7 @@ option(YATO_CONFIG_INI "Enable INI config background" OFF)
 if(YATO_CONFIG_INI)
     include(${YATO_SOURCE_DIR}/cmake/dependency.ini.cmake)
     include_directories(${INI_INCLUDE_DIR})
+    list(APPEND config_dependency_targets ${INI_LIBRARIES})
     file(GLOB ini_sources
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/ini/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/ini/*.cpp"
@@ -121,6 +120,12 @@ include_directories(${YATO_INCLUDE_DIRS})
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${config_sources})
+
+include(${TARGET_CONFIG_LISTS})
+
+if(CLANG)
+    add_definitions("-D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING=1")
+endif()
 
 add_library(YatoConfig STATIC ${config_sources})
 set_property(TARGET YatoConfig PROPERTY FOLDER "Modules")

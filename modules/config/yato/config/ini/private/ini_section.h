@@ -10,7 +10,7 @@
 
 #include <memory>
 #include "../../config_backend.h"
-#include "ini_lib.h"
+#include "ini_parser.h"
 
 namespace yato {
 
@@ -30,12 +30,9 @@ namespace conf {
         ini_section& operator=(const ini_section&) = delete;
         ini_section& operator=(ini_section&&) = delete;
 
-        ~ini_section();
+        ~ini_section() override;
 
-        stored_type type() const noexcept override
-        {
-            return stored_type::config;
-        }
+        stored_type type() const noexcept override;
 
         stored_variant get() const noexcept override;
 

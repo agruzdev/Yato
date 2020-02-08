@@ -16,79 +16,81 @@ namespace yato {
 
 namespace conf {
 
-    ini_config::ini_config(std::shared_ptr<CSimpleIniA> reader)
-        : m_reader(std::move(reader)), m_section(nullptr)
+    ini_config::ini_config(std::shared_ptr<ini_parser> parser)
+        : m_parser(std::move(parser)), m_is_global(true)
     {
-        // represent global section
-        std::string root_name = "";
-        for (const char* global_name : { "", "GLOBAL", "global" }) {
-            m_section = m_reader->GetSection(global_name);
-            if (m_section) {
-                root_name = global_name;
-                break;
-            }
-        }
-
-        std::list<CSimpleIni::Entry> sections;
-        m_reader->GetAllSections(sections);
-        for (const auto & e : sections) {
-            if (e.pItem == root_name) {
-                continue;
-            }
-            ini_section_ptr nested_section = m_reader->GetSection(e.pItem);
-            m_nested_sections.emplace(std::string(e.pItem), nested_section);
-        }
+        m_values = &m_parser->global_values;
     }
 
-    ini_config::ini_config(std::shared_ptr<CSimpleIniA> reader, ini_section_ptr section)
-        : m_reader(std::move(reader)), m_section(section)
+    ini_config::ini_config(std::shared_ptr<ini_parser> parser, const ini_parser::kv_multimap* section_values)
+        : m_parser(std::move(parser)), m_values(section_values), m_is_global(false)
     {
-        YATO_REQUIRES(section != nullptr);
+        YATO_REQUIRES(section_values != nullptr);
     }
 
     ini_config::~ini_config() = default;
 
     size_t ini_config::do_size() const noexcept
     {
-        size_t count = m_nested_sections.size();
-        if (m_section) {
-            count += m_section->size();
+        if (m_is_global) {
+            return m_parser->sections.size() + m_values->size();
         }
-        return count;
+        else {
+            return m_values->size();
+        }
+    }
+
+    std::vector<std::string> ini_config::do_keys() const noexcept
+    {
+        std::vector<std::string> keys;
+        if (m_is_global) {
+            for (auto it = m_parser->sections.cbegin(); it != m_parser->sections.cend(); ++it) {
+                keys.push_back((*it).first);
+            }
+        }
+        if (m_values) {
+            for (auto it = m_values->cbegin(); it != m_values->cend(); ++it) {
+                keys.push_back((*it).first);
+            }
+        }
+        return keys;
     }
 
     config_backend::key_value_t ini_config::do_find(size_t index) const noexcept
     {
-        std::string key;
-        std::unique_ptr<config_value> value;
-        const size_t section_number = m_nested_sections.size();
-        if (index < section_number) {
-            const auto it = std::next(m_nested_sections.cbegin(), index);
-            key   = (*it).first;
-            value = std::make_unique<ini_section>(std::make_shared<ini_config>(m_reader, (*it).second));
+        config_backend::key_value_t result = config_backend::novalue;
+        if (index < m_parser->sections.size()) {
+            const auto it = std::next(m_parser->sections.cbegin(), index);
+            result.first = (*it).first;
+            result.second = new ini_section(std::make_shared<ini_config>(m_parser, &(*it).second));
         }
-        else if (m_section && (index - section_number < m_section->size())) {
-            const auto it = std::next(m_section->cbegin(), index - section_number);
-            key   = (*it).first.pItem;
-            value = std::make_unique<ini_value>((*it).second);
+        else if (index < m_parser->global_values.size() + m_values->size()) {
+            const auto it = std::next(m_parser->global_values.cbegin(), index - m_parser->sections.size());
+            result.first = (*it).first;
+            result.second = new ini_value((*it).second);
         }
-        return std::make_pair(key, value.release());
+        return result;
     }
 
-    config_backend::key_value_t ini_config::do_find(const std::string & name) const noexcept
+    config_backend::key_value_t ini_config::do_find(const std::string& name) const noexcept
     {
-        std::unique_ptr<config_value> value;
-        const auto sit = m_nested_sections.find(name);
-        if (sit != m_nested_sections.cend()) {
-            value = std::make_unique<ini_section>(std::make_shared<ini_config>(m_reader, (*sit).second));
-        }
-        else if(m_section) {
-            const auto vit = m_section->find(name.c_str());
-            if(vit != m_section->cend()) {
-                value = std::make_unique<ini_value>((*vit).second);
+        config_backend::key_value_t result = config_backend::novalue;
+        if (m_is_global) {
+            const auto sit = m_parser->sections.find(name);
+            if (sit != m_parser->sections.cend()) {
+                result.first = name;
+                result.second = new ini_section(std::make_shared<ini_config>(m_parser, &(*sit).second));
+                return result;
             }
         }
-        return std::make_pair(name, value.release());
+        if (m_values) {
+            const auto vit = m_values->find(name);
+            if (vit != m_values->cend()) {
+                result.first = name;
+                result.second = new ini_value((*vit).second);
+            }
+        }
+        return result;
     }
 
     void ini_config::do_release(const config_value* val) const noexcept

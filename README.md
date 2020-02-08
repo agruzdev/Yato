@@ -27,12 +27,13 @@ The library consists of only headers, so it doesn't require build. The repositor
 
 Currently the library can be successfully built by the following compilers:
 
+* MSVC 2019
 * MSVC 2017
-* MSVC 2015
 * MinGW 8.1
-* Clang 7.0.1
+* Clang 9.0.0 (x86_64-pc-windows-msvc)
+* Clang 9.0.0 (x86_64-mingw32) without tests
 * GCC 8.2
-* Android (llvm, NDK 19)
+* Android (llvm, NDK 21)
 
 ## Description
 

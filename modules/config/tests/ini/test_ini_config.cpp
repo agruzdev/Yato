@@ -35,7 +35,6 @@ TEST(Yato_Config, ini_object2)
 TEST(Yato_Config, ini_example)
 {
     const auto conf = yato::conf::ini_builder().parse(R"INI(
-        [GLOBAL]
         answer=42
         comment=everything
         precision=0.01

@@ -18,6 +18,11 @@ namespace conf {
 
     ini_section::~ini_section() = default;
 
+    stored_type ini_section::type() const noexcept
+    {
+        return stored_type::config;
+    }
+
     stored_variant ini_section::get() const noexcept
     {
         return stored_variant(yato::in_place_type_t<backend_ptr>{}, m_subsection);

@@ -24,13 +24,7 @@ dependency_find_or_download(
 )
 
 if(NOT TARGET tinyxml2)
-    list(APPEND tinyxml2_sources "${XML_FOUND_ROOT}/tinyxml2.h")
-    list(APPEND tinyxml2_sources "${XML_FOUND_ROOT}/tinyxml2.cpp")
-
-    # Use the common set of flags
-    include(${TARGET_CONFIG_LISTS})
-
-    add_library(tinyxml2 STATIC ${tinyxml2_sources})
+    add_subdirectory(${CMAKE_SOURCE_DIR}/cmake/xml ${CMAKE_BINARY_DIR}/dependency/xml)
     set_property(TARGET tinyxml2 PROPERTY FOLDER "Dependencies")
 endif()
 

@@ -12,7 +12,7 @@
 #include <memory>
 
 #include "../../config_backend.h"
-#include "ini_lib.h"
+#include "ini_parser.h"
 
 namespace yato {
 
@@ -25,22 +25,19 @@ namespace conf {
         /**
          * Global section config
          */
-        ini_config(std::shared_ptr<CSimpleIniA> reader);
+        ini_config(std::shared_ptr<ini_parser> parser);
 
         /**
          * Nested section config
          */
-        ini_config(std::shared_ptr<CSimpleIniA> reader, ini_section_ptr section);
+        ini_config(std::shared_ptr<ini_parser> parser, const ini_parser::kv_multimap* section_values);
 
-        ini_config(const ini_config&) = delete;
-        ini_config(ini_config&&) = delete;
 
-        ini_config& operator=(const ini_config&) = delete;
-        ini_config& operator=(ini_config&&) = delete;
-
-        ~ini_config();
+        ~ini_config() override;
 
         size_t do_size() const noexcept override;
+
+        std::vector<std::string> do_keys() const noexcept override;
 
         key_value_t do_find(size_t index) const noexcept override;
 
@@ -50,10 +47,17 @@ namespace conf {
 
         bool do_is_object() const noexcept override;
 
+
+        ini_config(const ini_config&) = delete;
+        ini_config(ini_config&&) = delete;
+
+        ini_config& operator=(const ini_config&) = delete;
+        ini_config& operator=(ini_config&&) = delete;
+
     private:
-        std::shared_ptr<CSimpleIniA> m_reader;
-        ini_section_ptr m_section;
-        std::map<std::string, ini_section_ptr> m_nested_sections;
+        std::shared_ptr<ini_parser> m_parser;
+        const ini_parser::kv_multimap* m_values = nullptr;
+        bool m_is_global;
     };
 
 } // namespace conf

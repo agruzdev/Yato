@@ -18,9 +18,9 @@ include(${YATO_SOURCE_DIR}/cmake/dependency.common.functions.cmake)
 dependency_find_or_download(
     NAME YAML
     VERBOSE_NAME "yaml-cpp"
-    URL "https://github.com/jbeder/yaml-cpp/archive/yaml-cpp-0.6.2.zip"
-    HASH_MD5 "132d42bc018213dda0671ee2ea971523"
-    PREFIX "yaml-cpp-yaml-cpp-0.6.2"
+    URL "https://github.com/jbeder/yaml-cpp/archive/yaml-cpp-0.6.3.zip"
+    HASH_MD5 "e8a182537af663cc45228f7064b2021c"
+    PREFIX "yaml-cpp-yaml-cpp-0.6.3"
 )
 
 if(NOT TARGET yamlcpp)

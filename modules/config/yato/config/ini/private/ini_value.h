@@ -9,8 +9,6 @@
 #define _YATO_CONFIG_INI_PRIVATE_INI_VALUE_H_
 
 #include "../../config_backend.h"
-#include "../../utility.h"
-#include "ini_lib.h"
 
 namespace yato {
 
@@ -21,8 +19,8 @@ namespace conf {
         : public config_value
     {
     public:
-        ini_value(const char* data)
-            : m_data(data)
+        ini_value(std::string data)
+            : m_data(std::move(data))
         { }
 
         ini_value(const ini_value&) = delete;
@@ -31,7 +29,7 @@ namespace conf {
         ini_value& operator=(const ini_value&) = delete;
         ini_value& operator=(ini_value&&) = delete;
 
-        ~ini_value() = default;
+        ~ini_value() override = default;
 
         stored_type type() const noexcept override
         {

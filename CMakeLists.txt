@@ -27,7 +27,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BIN_OUTPUT_DIR})
 
 if(MSVC)
     set(TARGET_CONFIG_LISTS ${YATO_SOURCE_DIR}/cmake/CMakeLists-MSVC.cmake)
-elseif(UNIX OR MINGW OR ANDROID)
+else()
     set(TARGET_CONFIG_LISTS ${YATO_SOURCE_DIR}/cmake/CMakeLists-GCC.cmake)
 endif()
 

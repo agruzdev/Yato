@@ -10,9 +10,6 @@
 
 #include "yato/prerequisites.h"
 
-#ifndef _NOEXCEPT
-# define _NOEXCEPT YATO_NOEXCEPT_KEYWORD
-#endif
 YATO_PRAGMA_WARNING_PUSH
 YATO_MSCV_WARNING_IGNORE(4127)
 #include "yaml-cpp/yaml.h"

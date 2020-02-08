@@ -34,6 +34,11 @@ if(NOT TARGET benchmark)
 
     add_subdirectory(${GBENCH_FOUND_ROOT} ${CMAKE_BINARY_DIR}/dependency/gbench)
 
+    if(CLANG_MSVC)
+        target_compile_options(benchmark      PRIVATE "-std=c++14" "-w")
+        target_compile_options(benchmark_main PRIVATE "-std=c++14" "-w")
+    endif()
+
     set_property(TARGET benchmark      PROPERTY FOLDER "Dependencies")
     set_property(TARGET benchmark_main PROPERTY FOLDER "Dependencies")
 endif()
