@@ -136,9 +136,14 @@ namespace yato
                 return proxy_nd<value_type, dim_descriptor, dimensions_number>(m_base_ptr, &m_descriptors[0]);
             }
 
-            value_iterator get_pointer_() const
+            std::add_pointer_t<value_type> get_pointer_() const
             {
                 return m_base_ptr;
+            }
+
+            void set_pointer_(std::add_pointer_t<value_type> ptr)
+            {
+                m_base_ptr = ptr;
             }
 
             size_type get_size_(size_t idx) const
@@ -288,9 +293,14 @@ namespace yato
                 return proxy_nd<value_type, dim_descriptor, dimensions_number>(m_base_ptr, &m_size, &m_size);
             }
 
-            value_iterator get_pointer_() const
+            std::add_pointer_t<value_type> get_pointer_() const
             {
                 return m_base_ptr;
+            }
+
+            void set_pointer_(std::add_pointer_t<value_type> ptr)
+            {
+                m_base_ptr = ptr;
             }
 
             size_type get_size_(size_t idx) const
@@ -366,16 +376,18 @@ namespace yato
     /**
      *  Non-owning light-weight container for contiguous data 
      */
-    template<typename ValueType, size_t DimsNum>
+    template<typename ValueType_, size_t DimsNum>
     class array_view_nd
-        : public details::choose_container_interface_t<ValueType, DimsNum, array_view_nd<ValueType, DimsNum>>
-        , private details::array_view_base<ValueType, DimsNum>
+        : public details::choose_container_interface_t<ValueType_, DimsNum, array_view_nd<ValueType_, DimsNum>>
+        , private details::array_view_base<ValueType_, DimsNum>
     {
     public:
-        using this_type = array_view_nd<ValueType, DimsNum>;
-        using base_type = details::array_view_base<ValueType, DimsNum>;
+        using this_type = array_view_nd<ValueType_, DimsNum>;
+        using base_type = details::array_view_base<ValueType_, DimsNum>;
 
-        using value_type = ValueType;
+        using value_type = ValueType_;
+        using pointer_type = std::add_pointer_t<ValueType_>;
+        using const_pointer_type = std::add_pointer_t<std::add_const_t<ValueType_>>;
         static YATO_CONSTEXPR_VAR size_t dimensions_number = DimsNum;
 
         using typename base_type::dimensions_type;
@@ -397,15 +409,15 @@ namespace yato
             : base_type(nullptr, dimensions_type{}, element_strides_type{})
         { }
 
-        array_view_nd(value_type* ptr, const dimensions_type & extents)
+        array_view_nd(pointer_type ptr, const dimensions_type & extents)
             : base_type(ptr, extents, extents.sub_dims())
         { }
 
-        array_view_nd(value_type* ptr, const dimensions_type & extents, const element_strides_type & element_strides)
+        array_view_nd(pointer_type ptr, const dimensions_type & extents, const element_strides_type & element_strides)
             : base_type(ptr, extents, element_strides)
         { }
 
-        array_view_nd(value_type* ptr, const dimensions_type & extents, const byte_strides_type & byte_strides)
+        array_view_nd(pointer_type ptr, const dimensions_type & extents, const byte_strides_type & byte_strides)
             : base_type(ptr, extents, byte_strides)
         { }
 
@@ -511,6 +523,23 @@ namespace yato
         size_type size() const
         {
             return base_type::get_size_(0);
+        }
+
+        /**
+         * Returns total view memory range including strides
+         */
+        YATO_DEPRECATED("Legacy naming. Use print_size()")
+        size_type total_stored() const
+        {
+            return base_type::get_total_stored_();
+        }
+
+        /**
+         * Returns total view memory range including strides
+         */
+        size_type print_size() const
+        {
+            return base_type::get_total_stored_();
         }
 
         /**
@@ -643,9 +672,19 @@ namespace yato
         }
 
         /**
+         * Changes base pointer and returnes the old one not changing view extents
+         */
+        pointer_type rebind(pointer_type new_ptr)
+        {
+            auto tmp = base_type::get_pointer_();
+            base_type::set_pointer_(new_ptr);
+            return tmp;
+        }
+
+        /**
          * Get raw pointer to underlying data
          */
-        std::add_pointer_t<value_type> data() const
+        pointer_type data() const
         {
             return base_type::get_pointer_();
         }
@@ -653,7 +692,7 @@ namespace yato
         /**
          * Get raw pointer to underlying data
          */
-        std::add_pointer_t<std::add_const_t<value_type>> cdata() const
+        const_pointer_type cdata() const
         {
             return base_type::get_pointer_();
         }
@@ -675,6 +714,9 @@ namespace yato
 
     template<typename _DataType>
     using array_view_3d = array_view_nd<_DataType, 3>;
+
+    template<typename _DataType>
+    using array_view_4d = array_view_nd<_DataType, 4>;
 
 
     template<typename Ty_, size_t Size_>

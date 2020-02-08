@@ -321,6 +321,25 @@ TEST(Yato_VectorND, construct_from_initializer_list)
         EXPECT_EQ(30, vec4[1][2][0]);
         EXPECT_EQ(30, vec4[1][2][1]);
         EXPECT_EQ(30, vec4[1][2][2]);
+
+        yato::vector_nd<FooCounted, 4> vec5 = { { { { 1, 2 }, { 3, 4 } }, { { 5, 6 }, { 7, 8 } } }, { { { 9, 10 }, { 11, 12 } }, { { 13, 14 }, { 15, 16 } } } };
+        EXPECT_EQ(16u, vec5.total_size());
+        EXPECT_EQ(1,  vec5[0][0][0][0]);
+        EXPECT_EQ(2,  vec5[0][0][0][1]);
+        EXPECT_EQ(3,  vec5[0][0][1][0]);
+        EXPECT_EQ(4,  vec5[0][0][1][1]);
+        EXPECT_EQ(5,  vec5[0][1][0][0]);
+        EXPECT_EQ(6,  vec5[0][1][0][1]);
+        EXPECT_EQ(7,  vec5[0][1][1][0]);
+        EXPECT_EQ(8,  vec5[0][1][1][1]);
+        EXPECT_EQ(9,  vec5[1][0][0][0]);
+        EXPECT_EQ(10, vec5[1][0][0][1]);
+        EXPECT_EQ(11, vec5[1][0][1][0]);
+        EXPECT_EQ(12, vec5[1][0][1][1]);
+        EXPECT_EQ(13, vec5[1][1][0][0]);
+        EXPECT_EQ(14, vec5[1][1][0][1]);
+        EXPECT_EQ(15, vec5[1][1][1][0]);
+        EXPECT_EQ(16, vec5[1][1][1][1]);
     }
     EXPECT_EQ(FooCounted::ctors, FooCounted::dtors);
 }

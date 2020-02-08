@@ -469,62 +469,39 @@ YATO_PRAGMA_WARNING_POP
         return container.size(0);
     }
 
-
-
-    template <typename _ContainerType>
-    YATO_DEPRECATED("Use yato::height() instead")
-    YATO_CONSTEXPR_FUNC 
-    size_t height_2d(_ContainerType && container)
+    template <typename ContainerType_>
+    YATO_CONSTEXPR_FUNC
+    auto layers(ContainerType_ && container)
+        -> std::enable_if_t<yato::remove_cvref_t<ContainerType_>::dimensions_number == 4, size_t>
     {
-#ifdef YATO_HAS_CONSTEXPR_CXX14
-        YATO_REQUIRES(container.dimensions_num() == 2);
-#endif
         return container.size(0);
     }
 
-    template <typename _ContainerType>
-    YATO_DEPRECATED("Use yato::width() instead")
+    template <typename ContainerType_>
     YATO_CONSTEXPR_FUNC
-    size_t width_2d(_ContainerType && container)
+    auto depth(ContainerType_ && container)
+        -> std::enable_if_t<yato::remove_cvref_t<ContainerType_>::dimensions_number == 4, size_t>
     {
-#ifdef YATO_HAS_CONSTEXPR_CXX14
-        YATO_REQUIRES(container.dimensions_num() == 2);
-#endif
         return container.size(1);
     }
 
-    template <typename _ContainerType>
-    YATO_DEPRECATED("Use yato::depth() instead")
+    template <typename ContainerType_>
     YATO_CONSTEXPR_FUNC
-    size_t depth_3d(_ContainerType && container)
+    auto height(ContainerType_ && container)
+        -> std::enable_if_t<yato::remove_cvref_t<ContainerType_>::dimensions_number == 4, size_t>
     {
-#ifdef YATO_HAS_CONSTEXPR_CXX14
-        YATO_REQUIRES(container.dimensions_num() == 3);
-#endif
-        return container.size(0);
-    }
-
-    template <typename _ContainerType>
-    YATO_DEPRECATED("Use yato::height() instead")
-    YATO_CONSTEXPR_FUNC
-    size_t height_3d(_ContainerType && container)
-    {
-#ifdef YATO_HAS_CONSTEXPR_CXX14
-        YATO_REQUIRES(container.dimensions_num() == 3);
-#endif
-        return container.size(1);
-    }
-
-    template <typename _ContainerType>
-    YATO_DEPRECATED("Use yato::width() instead")
-    YATO_CONSTEXPR_FUNC
-    size_t width_3d(_ContainerType && container)
-    {
-#ifdef YATO_HAS_CONSTEXPR_CXX14
-        YATO_REQUIRES(container.dimensions_num() == 3);
-#endif
         return container.size(2);
     }
+
+    template <typename ContainerType_>
+    YATO_CONSTEXPR_FUNC
+    auto width(ContainerType_ && container)
+        -> std::enable_if_t<yato::remove_cvref_t<ContainerType_>::dimensions_number == 4, size_t>
+    {
+        return container.size(3);
+    }
+
+
 
     //-----------------------------------------------------------------------------
     // Multidim iterator/container trait
