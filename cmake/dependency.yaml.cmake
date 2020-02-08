@@ -2,7 +2,7 @@
 # YATO library
 #
 # Apache License, Version 2.0
-# Copyright (c) 2018 Alexey Gruzdev
+# Copyright 2016-2020 Alexey Gruzdev
 #
 
 # YAML dependency
@@ -24,14 +24,6 @@ dependency_find_or_download(
 )
 
 if(NOT TARGET yamlcpp)
-    #file(GLOB yaml_sources "${YAML_FOUND_ROOT}/src/*.h" "${YAML_FOUND_ROOT}/src/*.cpp" "${YAML_FOUND_ROOT}/include/yaml-cpp/*.h")
-
-    # Use the common set of flags
-    #include(${TARGET_CONFIG_LISTS})
-
-    #add_library(yamlcpp STATIC ${yaml_sources})
-    #target_include_directories(yamlcpp PRIVATE "${YAML_FOUND_ROOT}/include")
-
     add_subdirectory(${CMAKE_SOURCE_DIR}/cmake/yaml ${CMAKE_BINARY_DIR}/dependency/yaml)
     set_property(TARGET yamlcpp PROPERTY FOLDER "Dependencies")
 endif()

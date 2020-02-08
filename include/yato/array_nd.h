@@ -2,7 +2,7 @@
 * YATO library
 *
 * Apache License, Version 2.0
-* Copyright (c) 2016-2019 Alexey Gruzdev
+* Copyright (c) 2016-2020 Alexey Gruzdev
 */
 
 #ifndef _YATO_ARRAY_ND_H_

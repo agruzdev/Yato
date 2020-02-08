@@ -1,3 +1,9 @@
+#
+# YATO library
+#
+# Apache License, Version 2.0
+# Copyright (c) 2016-2020 Alexey Gruzdev
+#
 
 project(YatoActors)
 
