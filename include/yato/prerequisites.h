@@ -42,14 +42,16 @@
 # endif
 #endif
 
-#ifdef __GNUC__
-# if defined(__clang__)
-#  define YATO_CLANG
-# elif defined(__MINGW32__)
-#  define YATO_MINGW
-# else
-#  define YATO_GCC
-# endif
+#ifdef __clang__
+# define YATO_CLANG
+#endif
+
+#if defined(__MINGW32__)
+# define YATO_MINGW
+#endif
+
+#if defined(__GNUC__) && !defined(YATO_CLANG) && !defined(__MINGW32__)
+# define YATO_GCC
 #endif
 
 #ifdef __ANDROID__
@@ -127,7 +129,7 @@
 #define YATO_UNIQUE_NAME(Prefix_) _YATO_JOIN2(Prefix_, __COUNTER__)
 
 
-#if defined(YATO_MSVC)
+#if defined(YATO_MSVC) && !defined(YATO_CLANG)
 # define YATO_PRAGMA_WARNING_PUSH __pragma(warning(push))
 # define YATO_PRAGMA_WARNING_POP  __pragma(warning(pop))
 # define YATO_MSCV_WARNING_IGNORE(Number) __pragma(warning( disable: Number ))

@@ -47,7 +47,7 @@ namespace yato
         {
             YATO_ASSERT(m_data == nullptr, "dynamic_array[_allocate]: Previous memory was not deallocated!");
             m_size = size;
-            m_data = m_allocator.allocate(m_size);
+            m_data = std::allocator_traits<allocator_type>::allocate(m_allocator, m_size);
             YATO_ASSERT(m_data != nullptr, "dynamic_array[_allocate]: failed to allocate memory!");
         }
 
@@ -55,7 +55,7 @@ namespace yato
         void _construct(_Args && ... args)
         {
             for (pointer ptr = m_data; ptr != m_data + m_size; ++ptr) {
-                m_allocator.construct(ptr, std::forward<_Args>(args)...);
+                std::allocator_traits<allocator_type>::construct(m_allocator, ptr, std::forward<_Args>(args)...);
             }
         }
 
@@ -63,7 +63,7 @@ namespace yato
         void _copy_construct(_Iter src)
         {
             for (pointer ptr = m_data; ptr != m_data + m_size; ++ptr, ++src) {
-                m_allocator.construct(ptr, *src);
+                std::allocator_traits<allocator_type>::construct(m_allocator, ptr, *src);
             }
         }
 
@@ -71,9 +71,9 @@ namespace yato
         {
             if (m_data != nullptr) {
                 for (pointer ptr = m_data + m_size - 1; ptr != m_data - 1; --ptr) {
-                    m_allocator.destroy(ptr);
+                    std::allocator_traits<allocator_type>::destroy(m_allocator, ptr);
                 }
-                m_allocator.deallocate(m_data, m_size);
+                std::allocator_traits<allocator_type>::deallocate(m_allocator, m_data, m_size);
                 m_data = nullptr;
                 m_size = 0;
             }

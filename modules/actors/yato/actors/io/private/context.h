@@ -11,7 +11,10 @@
 #include <memory>
 #include <thread>
 
+YATO_PRAGMA_WARNING_PUSH
+YATO_CLANG_WARNING_IGNORE("-Wlanguage-extension-token")
 #include <asio.hpp>
+YATO_PRAGMA_WARNING_POP
 
 #include "../../logger.h"
 

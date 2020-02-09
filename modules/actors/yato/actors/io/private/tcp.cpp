@@ -8,8 +8,6 @@
 #include <string>
 #include <map>
 
-#include <asio.hpp>
-
 #include <yato/any_match.h>
 
 #include "../../actor_system.h"

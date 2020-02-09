@@ -42,6 +42,11 @@ if(NOT TARGET gtest)
     _gtest_fix_definitions(gtest)
     _gtest_fix_definitions(gtest_main)
 
+    if(CLANG_MSVC)
+        target_compile_options(gtest      PRIVATE "-w")
+        target_compile_options(gtest_main PRIVATE "-w")
+    endif()
+
     set_property(TARGET gtest      PROPERTY FOLDER "Dependencies")
     set_property(TARGET gtest_main PROPERTY FOLDER "Dependencies")
 endif()

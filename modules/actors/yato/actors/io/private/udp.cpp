@@ -5,8 +5,6 @@
 * Copyright (c) 2016-2020 Alexey Gruzdev
 */
 
-#include <asio.hpp>
-
 #include <yato/any_match.h>
 
 #include "../../actor_system.h"
