@@ -48,17 +48,18 @@ TEST(Yato_Variant, common)
     EXPECT_EQ(typeid(int),   v3.type());
     EXPECT_EQ(typeid(float), v4.type());
 
-    v3.emplace<void>();
-    EXPECT_EQ(typeid(void), v3.type());
+    v1.emplace<int>(10);
+    EXPECT_EQ(typeid(int), v1.type());
 }
 
 TEST(Yato_Variant, copy)
 {
     //static_assert(yato::variant<void, int>::is_copy_constructible, "yato::variant<void, int> must be copyable");
     yato::variant<void, int> v1(1);
-    yato::variant<void, int> v2 = yato::variant<void, int>(v1);
+    yato::variant<void, int> v2;
+    v2 = v1;
 
-    yato::variant<float, void> v3;
+    yato::variant<float, void> v3(2.0f);
     yato::variant<float, void> v4(v3);
 
     yato::variant<void, int> v5(std::move(v2));
@@ -199,10 +200,10 @@ TEST(Yato_Variant, get)
     EXPECT_EQ(1, v3.get<0>());
     EXPECT_EQ(1.0f, v4.get<1>());
 
-    EXPECT_EQ(2, v1.get<1>(2));
-    EXPECT_EQ(3.0f, v3.get<1>(3.0f));
-    EXPECT_EQ(1, v3.get<0>(1));
-    EXPECT_EQ(1.0f, v4.get<1>(2.0f));
+    EXPECT_EQ(2, v1.get_or<1>(2));
+    EXPECT_EQ(3.0f, v3.get_or<1>(3.0f));
+    EXPECT_EQ(1, v3.get_or<0>(1));
+    EXPECT_EQ(1.0f, v4.get_or<1>(2.0f));
 }
 
 TEST(Yato_Variant, get2)
@@ -211,15 +212,15 @@ TEST(Yato_Variant, get2)
     yato::variant<int, float> v3(1);
     yato::variant<int, float> v4(1.0f);
 
-    EXPECT_THROW(v1.get_as<int>(), yato::bad_variant_access);
-    EXPECT_THROW(v3.get_as<float>(), yato::bad_variant_access);
-    EXPECT_EQ(1, v3.get_as<int>());
-    EXPECT_EQ(1.0f, v4.get_as<float>());
+    EXPECT_THROW(v1.get<int>(), yato::bad_variant_access);
+    EXPECT_THROW(v3.get<float>(), yato::bad_variant_access);
+    EXPECT_EQ(1, v3.get<int>());
+    EXPECT_EQ(1.0f, v4.get<float>());
 
-    EXPECT_EQ(2, v1.get_as<int>(2));
-    EXPECT_EQ(3.0f, v3.get_as<float>(3.0f));
-    EXPECT_EQ(1, v3.get_as<int>(1));
-    EXPECT_EQ(1.0f, v4.get_as<float>(2.0f));
+    EXPECT_EQ(2, v1.get_or<int>(2));
+    EXPECT_EQ(3.0f, v3.get_or<float>(3.0f));
+    EXPECT_EQ(1, v3.get_or<int>(1));
+    EXPECT_EQ(1.0f, v4.get_or<float>(2.0f));
 }
 
 TEST(Yato_Variant, atomic)
@@ -234,12 +235,12 @@ TEST(Yato_Variant, cast1)
     yato::variant<short, int, float> v1(42);
     yato::variant<short, char, int> v2('c');
 
-    EXPECT_EQ(42,  v1.get_as<int>(0));
-    EXPECT_EQ('c', v2.get_as<char>(0));
+    EXPECT_EQ(42,  v1.get_or<int>(0));
+    EXPECT_EQ('c', v2.get_or<char>(0));
 
     v2 = yato::variant_cast<decltype(v2)::alternativies_list>(v1);
 
-    EXPECT_EQ(42,  v2.get_as<int>(0));
+    EXPECT_EQ(42,  v2.get_or<int>(0));
 }
 
 TEST(Yato_Variant, cast2)
@@ -247,12 +248,12 @@ TEST(Yato_Variant, cast2)
     yato::variant<void, int, float> v1(42);
     yato::variant<void, char, int> v2('c');
 
-    EXPECT_EQ(42,  v1.get_as<int>(0));
-    EXPECT_EQ('c', v2.get_as<char>(0));
+    EXPECT_EQ(42,  v1.get_or<int>(0));
+    EXPECT_EQ('c', v2.get_or<char>(0));
 
     v2 = yato::variant_cast<decltype(v2)::alternativies_list>(v1);
 
-    EXPECT_EQ(42,  v2.get_as<int>(0));
+    EXPECT_EQ(42,  v2.get_or<int>(0));
 }
 
 TEST(Yato_Variant, cast3)
@@ -260,12 +261,12 @@ TEST(Yato_Variant, cast3)
     yato::variant<void, int, float> v1(42);
     yato::variant<short, char, int> v2('c');
 
-    EXPECT_EQ(42,  v1.get_as<int>(0));
-    EXPECT_EQ('c', v2.get_as<char>(0));
+    EXPECT_EQ(42,  v1.get_or<int>(0));
+    EXPECT_EQ('c', v2.get_or<char>(0));
 
     v2 = yato::variant_cast<decltype(v2)::alternativies_list>(v1);
 
-    EXPECT_EQ(42,  v2.get_as<int>(0));
+    EXPECT_EQ(42,  v2.get_or<int>(0));
 }
 
 TEST(Yato_Variant, cast4)
@@ -273,12 +274,12 @@ TEST(Yato_Variant, cast4)
     yato::variant<short, int, float> v1(42);
     yato::variant<void, char, int> v2('c');
 
-    EXPECT_EQ(42,  v1.get_as<int>(0));
-    EXPECT_EQ('c', v2.get_as<char>(0));
+    EXPECT_EQ(42,  v1.get_or<int>(0));
+    EXPECT_EQ('c', v2.get_or<char>(0));
 
     v2 = yato::variant_cast<decltype(v2)::alternativies_list>(v1);
 
-    EXPECT_EQ(42,  v2.get_as<int>(0));
+    EXPECT_EQ(42,  v2.get_or<int>(0));
 }
 
 TEST(Yato_Variant, cast5)
@@ -296,8 +297,8 @@ TEST(Yato_Variant, cast6)
     yato::variant<short, int, float> v1(1.0f);
     yato::variant<void, char, int> v2('c');
 
-    EXPECT_EQ(1.0f,  v1.get_as<float>(0));
-    EXPECT_EQ('c', v2.get_as<char>(0));
+    EXPECT_EQ(1.0f,  v1.get_or<float>(0));
+    EXPECT_EQ('c', v2.get_or<char>(0));
 
     EXPECT_THROW(v2 = yato::variant_cast<decltype(v2)::alternativies_list>(v1), yato::bad_variant_cast);
 }
@@ -307,12 +308,12 @@ TEST(Yato_Variant, cast7)
     yato::variant<void, int, float> v1(42);
     yato::variant<short, char, int> v2('c');
 
-    EXPECT_EQ(42,  v1.get_as<int>(0));
-    EXPECT_EQ('c', v2.get_as<char>(0));
+    EXPECT_EQ(42,  v1.get_or<int>(0));
+    EXPECT_EQ('c', v2.get_or<char>(0));
 
     v2 = yato::variant_cast<decltype(v2)::alternativies_list>(std::move(v1));
 
-    EXPECT_EQ(42,  v2.get_as<int>(0));
+    EXPECT_EQ(42,  v2.get_or<int>(0));
 }
 
 TEST(Yato_Variant, non_copy)
@@ -328,4 +329,12 @@ TEST(Yato_Variant, non_copy)
     vec.push_back(std::move(v2));
     vec.emplace_back(std::make_unique<int>(7));
 }
+
+
+TEST(Yato_Variant, non_copy2)
+{
+    using variant_t = yato::variant<std::vector<std::unique_ptr<int>>, std::map<std::string, std::unique_ptr<float>>>;
+    variant_t v1(std::vector<std::unique_ptr<int>>{});
+}
+
 

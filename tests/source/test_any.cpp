@@ -105,9 +105,9 @@ TEST(Yato_Any, common_2)
 TEST(Yato_Any, bad_any_cast)
 {
     yato::any anyInt(1);
-    EXPECT_THROW(anyInt.get_as<float>(), yato::bad_any_cast);
-    EXPECT_THROW(anyInt.get_as<short>(), yato::bad_any_cast);
-    EXPECT_NO_THROW(anyInt.get_as<int>());
+    EXPECT_THROW(anyInt.get<float>(), yato::bad_any_cast);
+    EXPECT_THROW(anyInt.get<short>(), yato::bad_any_cast);
+    EXPECT_NO_THROW(anyInt.get<int>());
 }
 
 // is_copy_constructible is broken in MSVC2013 
@@ -117,9 +117,9 @@ TEST(Yato_Any, atomic)
 {
     yato::any a;
     a.emplace<std::atomic<int>>(1);
-    EXPECT_EQ(1, a.get_as<std::atomic<int>>().load());
+    EXPECT_EQ(1, a.get<std::atomic<int>>().load());
 
     yato::any a2(yato::in_place_type_t<std::atomic<float>> (), 2.0f);
-    EXPECT_EQ(2.0f, a2.get_as<std::atomic<float>>().load());
+    EXPECT_EQ(2.0f, a2.get<std::atomic<float>>().load());
 }
 #endif

@@ -79,7 +79,7 @@ namespace yato
         { };
 
         template <>
-        struct max_types_size <yato::meta::null_list>
+        struct max_types_size<yato::meta::null_list>
             : public std::integral_constant<size_t, 1>
         { };
 
@@ -93,7 +93,7 @@ namespace yato
         { };
 
         template <>
-        struct max_types_alignment <yato::meta::null_list>
+        struct max_types_alignment<yato::meta::null_list>
             : public std::integral_constant<size_t, 1>
         { };
 
@@ -110,21 +110,21 @@ namespace yato
         { };
 
         template <>
-        struct all_copy_constructible <yato::meta::null_list>
+        struct all_copy_constructible<yato::meta::null_list>
             : public std::integral_constant<bool, true>
         { };
 
 
         template <typename TypesList_>
-        struct all_nothrow_copy_constructible
+        struct all_copy_assignable
             : public std::integral_constant<bool,
-                (std::is_same<void, typename TypesList_::head>::value || std::is_nothrow_copy_constructible<typename TypesList_::head>::value) &&
-                all_nothrow_copy_constructible<typename TypesList_::tail>::value
+                (std::is_same<void, typename TypesList_::head>::value || std::is_copy_assignable<typename TypesList_::head>::value) &&
+                all_copy_assignable<typename TypesList_::tail>::value
             >
         { };
 
         template <>
-        struct all_nothrow_copy_constructible <yato::meta::null_list>
+        struct all_copy_assignable<yato::meta::null_list>
             : public std::integral_constant<bool, true>
         { };
 
@@ -142,7 +142,7 @@ namespace yato
         { };
 
         template <>
-        struct all_move_constructible <yato::meta::null_list>
+        struct all_move_constructible<yato::meta::null_list>
             : public std::integral_constant<bool, true>
         { };
 
@@ -156,312 +156,38 @@ namespace yato
         { };
 
         template <>
-        struct all_nothrow_move_constructible <yato::meta::null_list>
+        struct all_nothrow_move_constructible<yato::meta::null_list>
             : public std::integral_constant<bool, true>
         { };
 
 
+        template <typename TypesList_>
+        struct all_move_assignable
+            : public std::integral_constant<bool,
+                (std::is_same<void, typename TypesList_::head>::value || std::is_move_assignable<typename TypesList_::head>::value) &&
+                all_move_assignable<typename TypesList_::tail>::value
+            >
+        { };
+
+        template <>
+        struct all_move_assignable<yato::meta::null_list>
+            : public std::integral_constant<bool, true>
+        { };
 
 
-        /**
-         *  Calls operator new for stored type
-         */
-        template <typename Ty_, typename = void>
-        struct variant_creator
-        {
-            template <typename ... Args>
-            auto placement_new(void* prt, Args && ... args) YATO_NOEXCEPT_OPERATOR((std::is_nothrow_constructible<Ty_, Args...>::value))
-                -> std::enable_if_t<std::is_constructible<Ty_, Args...>::value>
-            {
-                new (yato::pointer_cast<Ty_*>(prt)) Ty_(std::forward<Args>(args)...);
-            }
-        };
+        template <typename TypesList_>
+        struct all_nothrow_move_assignable
+            : public std::integral_constant<bool,
+                (std::is_same<void, typename TypesList_::head>::value || std::is_nothrow_move_assignable<typename TypesList_::head>::value) &&
+                all_nothrow_move_assignable<typename TypesList_::tail>::value
+            >
+        { };
 
-        template <typename Ty_>
-        struct variant_creator<Ty_, typename std::enable_if<
-            std::is_same<Ty_, void>::value
-        >::type>
-        {
-            template <typename ... Args>
-            void placement_new(void*, Args && ...) YATO_NOEXCEPT_KEYWORD
-            { }
-        };
+        template <>
+        struct all_nothrow_move_assignable<yato::meta::null_list>
+            : public std::integral_constant<bool, true>
+        { };
 
-
-        /**
-         *  Calls destructor for stored type
-         */
-        template <typename Ty_, typename = void>
-        struct variant_destructor
-        {
-            void destroy(void* prt) YATO_NOEXCEPT_KEYWORD
-            {
-                yato::pointer_cast<Ty_*>(prt)->~Ty_();
-            }
-        };
-
-        template <typename Ty_>
-        struct variant_destructor<Ty_, typename std::enable_if<
-            std::is_same<Ty_, void>::value
-        >::type>
-        {
-            void destroy(void*) YATO_NOEXCEPT_KEYWORD
-            { }
-        };
-
-        /**
-         *  Dereferences pointer to raw pointer corresponding to actual type 
-         */
-        template <typename Ty_, typename = void>
-        struct variant_dereference
-        {
-            Ty_ & operator()(Ty_* ptr) YATO_NOEXCEPT_KEYWORD
-            {
-                return *ptr;
-            }
-
-            const Ty_ & operator()(const Ty_* ptr) YATO_NOEXCEPT_KEYWORD
-            {
-                return *ptr;
-            }
-        };
-
-        template <typename Ty_>
-        struct variant_dereference<Ty_, typename std::enable_if<
-            std::is_same<Ty_, void>::value
-        >::type>
-        {
-            void* operator()(void* ptr) YATO_NOEXCEPT_KEYWORD
-            {
-                return ptr;
-            }
-
-            const void* operator()(const void* ptr) YATO_NOEXCEPT_KEYWORD
-            {
-                return ptr;
-            }
-        };
-
-        //-----------------------------------------------------------------
-        // Destroy
-
-        /**
-         * Calls correct destructor according the stored type
-         */
-        template <typename TypesList_, variant_index_t TypeIdx_ = 0, typename = void>
-        struct variant_dispatcher_destroy
-        {
-            using stored_type = typename yato::meta::list_at<TypesList_, TypeIdx_>::type;
-
-            void apply(variant_index_t idx, void* ptr) YATO_NOEXCEPT_KEYWORD
-            {
-                if (idx == TypeIdx_) {
-                    variant_destructor<stored_type>().destroy(ptr);
-                }
-                else {
-                    variant_dispatcher_destroy<TypesList_, TypeIdx_ + 1>().apply(idx, ptr);
-                }
-            }
-        };
-
-        template <typename TypesList_, variant_index_t TypeIdx_>
-        struct variant_dispatcher_destroy < TypesList_, TypeIdx_, typename std::enable_if<
-            (TypeIdx_ >= yato::meta::list_length<TypesList_>::value)
-        >::type>
-        {
-            void apply(variant_index_t, void*) YATO_NOEXCEPT_KEYWORD
-            { }
-        };
-
-        //-----------------------------------------------------------------
-        // Copy
-
-        /**
-         *  Creates with copy constructor
-         */
-        template <typename TypesList_, variant_index_t TypeIdx_ = 0, typename = void>
-        struct variant_dispatcher_copy
-        {
-            using stored_type = typename yato::meta::list_at<TypesList_, TypeIdx_>::type;
-
-            void apply(variant_index_t idx, void* dst, const void* src)
-            {
-                if (idx == TypeIdx_) {
-                    variant_creator<stored_type>().placement_new(dst, variant_dereference<stored_type>()(yato::pointer_cast<const stored_type*>(src)));
-                }
-                else {
-                    variant_dispatcher_copy<TypesList_, TypeIdx_ + 1>().apply(idx, dst, src);
-                }
-            }
-        };
-
-        template <typename TypesList, variant_index_t TypeIdx>
-        struct variant_dispatcher_copy < TypesList, TypeIdx, typename std::enable_if<
-            (TypeIdx >= yato::meta::list_length<TypesList>::value)
-        >::type>
-        {
-            void apply(variant_index_t, void*, const void*) YATO_NOEXCEPT_KEYWORD
-            { }
-        };
-
-        //-----------------------------------------------------------------
-        // Move
-
-        /**
-         *  Creates with move constructor
-         */
-        template <typename TypesList, variant_index_t TypeIdx = 0, typename = void>
-        struct variant_dispatcher_move
-        {
-            using stored_type = typename yato::meta::list_at<TypesList, TypeIdx>::type;
-
-            void apply(variant_index_t idx, void* dst, void* src)
-            {
-                if (idx == TypeIdx) {
-                    variant_creator<stored_type>().placement_new(dst, std::move(variant_dereference<stored_type>()(yato::pointer_cast<stored_type*>(src))));
-                }
-                else {
-                    variant_dispatcher_move<TypesList, TypeIdx + 1>().apply(idx, dst, src);
-                }
-            }
-        };
-
-        template <typename TypesList, variant_index_t TypeIdx>
-        struct variant_dispatcher_move < TypesList, TypeIdx, typename std::enable_if<
-            (TypeIdx >= yato::meta::list_length<TypesList>::value)
-        >::type>
-        {
-            void apply(variant_index_t, void*, const void*) YATO_NOEXCEPT_KEYWORD
-            { }
-        };
-
-        //-----------------------------------------------------------------
-        // Copy assign
-
-        template <typename TypesList, variant_index_t TypeIdx = 0, typename = void>
-        struct variant_dispatcher_copy_assign
-        {
-            using stored_type = typename yato::meta::list_at<TypesList, TypeIdx>::type;
-
-            template <typename Type = stored_type>
-            auto apply(variant_index_t idx, void* dst, const void* src)
-                -> typename std::enable_if<!std::is_same<Type, void>::value && std::is_copy_assignable<Type>::value, void>::type
-            {
-                if (idx == TypeIdx) {
-                    *yato::pointer_cast<stored_type*>(dst) = *yato::pointer_cast<const stored_type*>(src);
-                }
-                else {
-                    variant_dispatcher_copy_assign<TypesList, TypeIdx + 1>().apply(idx, dst, src);
-                }
-            }
-
-            /**
-             *  If assignment operator is not available fall back to copy
-             */
-            template <typename Type = stored_type>
-            auto apply(variant_index_t idx, void* dst, const void* src)
-                -> typename std::enable_if<std::is_same<Type, void>::value || !std::is_copy_assignable<Type>::value, void>::type
-            {
-                if (idx == TypeIdx) {
-                    variant_dispatcher_destroy<TypesList, TypeIdx>().apply(idx, dst);
-                    variant_dispatcher_copy<TypesList, TypeIdx>().apply(idx, dst, src);
-                }
-                else {
-                    variant_dispatcher_copy_assign<TypesList, TypeIdx + 1>().apply(idx, dst, src);
-                }
-            }
-        };
-
-        template <typename TypesList, variant_index_t TypeIdx>
-        struct variant_dispatcher_copy_assign < TypesList, TypeIdx, typename std::enable_if<
-            (TypeIdx >= yato::meta::list_length<TypesList>::value)
-        >::type>
-        {
-            void apply(variant_index_t, void*, const void*) YATO_NOEXCEPT_KEYWORD
-            { }
-        };
-
-        //-----------------------------------------------------------------
-        // Move assign
-
-        template <typename TypesList, variant_index_t TypeIdx = 0, typename = void>
-        struct variant_dispatcher_move_assign
-        {
-            using stored_type = typename yato::meta::list_at<TypesList, TypeIdx>::type;
-
-            template <typename Type = stored_type>
-            auto apply(variant_index_t idx, void* dst, void* src)
-                -> typename std::enable_if<std::is_same<Type, void>::value || !std::is_move_assignable<Type>::value, void>::type
-            {
-                if (idx == TypeIdx) {
-                    variant_dispatcher_destroy<TypesList, TypeIdx>().apply(idx, dst);
-                    variant_dispatcher_move<TypesList, TypeIdx>().apply(idx, dst, src);
-                }
-                else {
-                    variant_dispatcher_move_assign<TypesList, TypeIdx + 1>().apply(idx, dst, src);
-                }
-            }
-
-            template <typename Type = stored_type>
-            auto apply(variant_index_t idx, void* dst, void* src)
-                -> typename std::enable_if<!std::is_same<Type, void>::value && std::is_move_assignable<Type>::value, void>::type
-            {
-                if (idx == TypeIdx) {
-                    *yato::pointer_cast<stored_type*>(dst) = std::move(*yato::pointer_cast<stored_type*>(src));
-                }
-                else {
-                    variant_dispatcher_move_assign<TypesList, TypeIdx + 1>().apply(idx, dst, src);
-                }
-            }
-
-        };
-
-        template <typename TypesList, variant_index_t TypeIdx>
-        struct variant_dispatcher_move_assign < TypesList, TypeIdx, typename std::enable_if<
-            (TypeIdx >= yato::meta::list_length<TypesList>::value)
-        >::type>
-        {
-            void apply(variant_index_t, void*, const void*) YATO_NOEXCEPT_KEYWORD
-            { }
-        };
-
-        //-----------------------------------------------------------------------------------------
-        // Get type
-
-        /**
-         *  Gets typeid of the currently stored type
-         *  Returns typeid(void) if no type is stored
-         */
-        template <typename TypesList, variant_index_t TypeIdx = 0, typename = void>
-        struct variant_dispatcher_get_type
-        {
-            using stored_type = typename yato::meta::list_at<TypesList, TypeIdx>::type;
-
-            const std::type_info & apply(variant_index_t idx) YATO_NOEXCEPT_KEYWORD
-            {
-                if (idx == TypeIdx) {
-                    return typeid(stored_type);
-                }
-                else {
-                    return variant_dispatcher_get_type<TypesList, TypeIdx + 1>().apply(idx);
-                }
-            }
-        };
-
-        template <typename TypesList, variant_index_t TypeIdx>
-        struct variant_dispatcher_get_type < TypesList, TypeIdx, typename std::enable_if<
-            (TypeIdx >= yato::meta::list_length<TypesList>::value)
-        >::type>
-        {
-            const std::type_info & apply(variant_index_t) YATO_NOEXCEPT_KEYWORD
-            {
-                return typeid(void);
-            }
-        };
-
-        //-----------------------------------------------------------------------------------------
-
-        struct construct_empty_t {};
 
         class bad_variant_access
             : public std::runtime_error
@@ -473,356 +199,171 @@ namespace yato
         };
 
 
-        template <typename AltsList_, bool IsCopy_ = false, bool IsMove_ = false>
-        class variant_storage
+        struct nullvar_t {};
+
+
+        template <typename Ty_>
+        struct variant_create
         {
-        private:
-            using alternativies_list = AltsList_;
-            using storage_type = typename std::aligned_storage<
-                details::max_types_size<alternativies_list>::value,
-                details::max_types_alignment<alternativies_list>::value >::type;
-
-            storage_type m_storage{};
-            variant_index_t m_type_idx = variant_no_index;
-
-        public:
-            variant_storage() = default;
-
-            variant_storage(variant_index_t idx) // for void idx
-                : m_type_idx(idx)
-            { }
-
-            ~variant_storage() {
-                if (m_type_idx != variant_no_index) {
-                    destroy();
-                }
-            }
-
-            variant_storage(const variant_storage&) = delete;
-            variant_storage& operator = (const variant_storage&) = delete;
-
-            variant_storage(variant_storage&&) = delete;
-            variant_storage& operator = (variant_storage&&) = delete;
-
-            template <typename Ty, typename ... Args> 
-            void create(Args && ... args)
+            template <typename... Args_>
+            static
+            void apply(void* ptr, Args_&&... args)
             {
-                details::variant_creator<Ty>().placement_new(&m_storage, std::forward<Args>(args)...);
-                m_type_idx = details::find_index<alternativies_list, Ty>::value;
-            }
-
-            void destroy() YATO_NOEXCEPT_KEYWORD
-            {
-                if (m_type_idx != variant_no_index) {
-                    details::variant_dispatcher_destroy<alternativies_list>().apply(m_type_idx, yato::pointer_cast<void*>(&m_storage));
-                    m_type_idx = variant_no_index;
-                }
-            }
-
-            variant_index_t type_index() const {
-                return m_type_idx;
-            }
-
-            const void* data() const {
-                return static_cast<const void*>(&m_storage);
-            }
-
-            void* data() {
-                return static_cast<void*>(&m_storage);
+                new(ptr) Ty_(std::forward<Args_>(args)...);
             }
         };
 
-        template <typename AltsList_>
-        class variant_storage <
-            AltsList_,
-            /*IsCopy_=*/true,
-            /*IsMove_=*/false
+        template <>
+        struct variant_create<void>
+        {
+            template <typename... Args_>
+            static
+            void apply(void* /*ptr*/)
+            { }
+        };
+
+
+        template <typename Ty_>
+        struct variant_destroy
+        {
+            static
+            void apply(void* ptr)
+            {
+                yato::launder(yato::pointer_cast<Ty_*>(ptr))->~Ty_();
+            }
+        };
+
+        template <>
+        struct variant_destroy<void>
+        {
+            static
+            void apply(void* /*ptr*/)
+            { }
+        };
+
+
+        template <typename Ty_, typename = 
+            yato::boolean_constant<std::is_copy_constructible<Ty_>::value>
         >
+        struct variant_copy_construct
         {
-        protected:
-            using alternativies_list = AltsList_;
-            using storage_type = typename std::aligned_storage<
-                details::max_types_size<alternativies_list>::value,
-                details::max_types_alignment<alternativies_list>::value >::type;
-
-            storage_type m_storage{};
-            variant_index_t m_type_idx = variant_no_index;
-
-        public:
-            variant_storage() = default;
-
-            variant_storage(variant_index_t idx) // for void idx
-                : m_type_idx(idx)
-            { }
-
-            ~variant_storage()
+            static
+            void apply(const void* src, void* dst)
             {
-                if (m_type_idx != variant_no_index) {
-                    destroy();
-                }
-            }
-
-            variant_storage(const variant_storage & other)
-                : m_type_idx(other.m_type_idx)
-            {
-                if (other.m_type_idx != variant_no_index) {
-                    details::variant_dispatcher_copy<alternativies_list>().apply(other.m_type_idx, &m_storage, &other.m_storage);
-                }
-            };
-
-            variant_storage& operator = (const variant_storage & other)
-            {
-                if (this != &other) {
-                    if (m_type_idx != other.m_type_idx) {
-                        destroy();
-                        details::variant_dispatcher_copy<alternativies_list>().apply(other.m_type_idx, &m_storage, &other.m_storage);
-                        m_type_idx = other.m_type_idx;
-                    } else {
-                        details::variant_dispatcher_copy_assign<alternativies_list>().apply(other.m_type_idx, &m_storage, &other.m_storage);
-                    }
-                }
-                return *this;
-            }
-
-            // Copy
-            variant_storage(variant_storage && other) YATO_NOEXCEPT_OPERATOR(all_nothrow_copy_constructible<alternativies_list>::value)
-                : m_type_idx(other.m_type_idx)
-            {
-                if (other.m_type_idx != variant_no_index) {
-                    details::variant_dispatcher_copy<alternativies_list>().apply(other.m_type_idx, &m_storage, &other.m_storage);
-                }
-            };
-
-            // Copy
-            variant_storage& operator = (variant_storage && other) YATO_NOEXCEPT_OPERATOR(all_nothrow_copy_constructible<alternativies_list>::value)
-            {
-                return this->operator=(other);
-            }
-
-            template <typename Ty, typename ... Args> 
-            void create(Args && ... args)
-            {
-                details::variant_creator<Ty>().placement_new(&m_storage, std::forward<Args>(args)...);
-                m_type_idx = details::find_index<alternativies_list, Ty>::value;
-            }
-
-            void destroy() YATO_NOEXCEPT_KEYWORD
-            {
-                if (m_type_idx != variant_no_index) {
-                    details::variant_dispatcher_destroy<alternativies_list>().apply(m_type_idx, yato::pointer_cast<void*>(&m_storage));
-                    m_type_idx = variant_no_index;
-                }
-            }
-
-            variant_index_t type_index() const {
-                return m_type_idx;
-            }
-
-            const void* data() const {
-                return static_cast<const void*>(&m_storage);
-            }
-
-            void* data() {
-                return static_cast<void*>(&m_storage);
+                const Ty_& other = *yato::launder(yato::pointer_cast<const Ty_*>(src));
+                variant_create<Ty_>::apply(dst, other);
             }
         };
 
+        template <typename Ty_>
+        struct variant_copy_construct<Ty_, std::false_type>
+        {
+            static
+            void apply(const void* /*src*/, void* /*dst*/)
+            { }
+        };
 
 
-        template <typename AltsList_>
-        class variant_storage <
-            AltsList_,
-            /*IsCopy_=*/true,
-            /*IsMove_=*/true
+        template <typename Ty_, typename = 
+            yato::boolean_constant<std::is_copy_assignable<Ty_>::value>
         >
+        struct variant_copy_assign
         {
-        protected:
-            using alternativies_list = AltsList_;
-            using storage_type = typename std::aligned_storage<
-                details::max_types_size<alternativies_list>::value,
-                details::max_types_alignment<alternativies_list>::value >::type;
-
-            storage_type m_storage{};
-            variant_index_t m_type_idx = variant_no_index;
-
-        public:
-            variant_storage() = default;
-
-            variant_storage(variant_index_t idx) // for void idx
-                : m_type_idx(idx)
-            { }
-
-            ~variant_storage()
+            static
+            void apply(const void* src, void* dst)
             {
-                if (m_type_idx != variant_no_index) {
-                    destroy();
-                }
-            }
-
-            variant_storage(const variant_storage & other)
-                : m_type_idx(other.m_type_idx)
-            {
-                if (other.m_type_idx != variant_no_index) {
-                    details::variant_dispatcher_copy<alternativies_list>().apply(other.m_type_idx, &m_storage, &other.m_storage);
-                }
-            };
-
-            variant_storage& operator = (const variant_storage & other)
-            {
-                if (this != &other) {
-                    if (m_type_idx != other.m_type_idx) {
-                        destroy();
-                        details::variant_dispatcher_copy<alternativies_list>().apply(other.m_type_idx, &m_storage, &other.m_storage);
-                        m_type_idx = other.m_type_idx;
-                    } else {
-                        details::variant_dispatcher_copy_assign<alternativies_list>().apply(other.m_type_idx, &m_storage, &other.m_storage);
-                    }
-                }
-                return *this;
-            }
-
-            variant_storage(variant_storage && other) YATO_NOEXCEPT_OPERATOR(all_nothrow_move_constructible<alternativies_list>::value)
-                : m_type_idx(other.m_type_idx)
-            {
-                if (other.m_type_idx != variant_no_index) {
-                    details::variant_dispatcher_move<alternativies_list>().apply(other.m_type_idx, &m_storage, &other.m_storage);
-                }
-            };
-
-            variant_storage& operator = (variant_storage && other) YATO_NOEXCEPT_OPERATOR(all_nothrow_move_constructible<alternativies_list>::value)
-            {
-                if (this != &other) {
-                    if (m_type_idx != other.m_type_idx) {
-                        destroy();
-                        details::variant_dispatcher_move<alternativies_list>().apply(other.m_type_idx, &m_storage, &other.m_storage);
-                        m_type_idx = other.m_type_idx;
-                    } else {
-                        details::variant_dispatcher_move_assign<alternativies_list>().apply(other.m_type_idx, &m_storage, &other.m_storage);
-                    }
-                }
-                return *this;
-            }
-
-            template <typename Ty, typename ... Args> 
-            void create(Args && ... args)
-            {
-                details::variant_creator<Ty>().placement_new(&m_storage, std::forward<Args>(args)...);
-                m_type_idx = details::find_index<alternativies_list, Ty>::value;
-            }
-
-            void destroy() YATO_NOEXCEPT_KEYWORD
-            {
-                if(m_type_idx != variant_no_index) {
-                    details::variant_dispatcher_destroy<alternativies_list>().apply(m_type_idx, yato::pointer_cast<void*>(&m_storage));
-                    m_type_idx = variant_no_index;
-                }
-            }
-
-            variant_index_t type_index() const {
-                return m_type_idx;
-            }
-
-            const void* data() const {
-                return static_cast<const void*>(&m_storage);
-            }
-
-            void* data() {
-                return static_cast<void*>(&m_storage);
+                Ty_& dst_ref = *yato::launder(yato::pointer_cast<Ty_*>(dst));
+                const Ty_& src_ref = *yato::launder(yato::pointer_cast<const Ty_*>(src));
+                dst_ref = src_ref;
             }
         };
 
+        template <typename Ty_>
+        struct variant_copy_assign<Ty_, std::false_type>
+        {
+            static
+            void apply(const void* /*src*/, void* /*dst*/)
+            { }
+        };
 
-        template <typename AltsList_>
-        class variant_storage <
-            AltsList_,
-            /*IsCopy_=*/false,
-            /*IsMove_=*/true
+
+        template <typename Ty_, typename = 
+            yato::boolean_constant<std::is_move_constructible<Ty_>::value>
         >
+        struct variant_move_construct
         {
-        protected:
-            using alternativies_list = AltsList_;
-            using storage_type = typename std::aligned_storage<
-                details::max_types_size<alternativies_list>::value,
-                details::max_types_alignment<alternativies_list>::value >::type;
-
-            storage_type m_storage{};
-            variant_index_t m_type_idx = variant_no_index;
-
-        public:
-            variant_storage() = default;
-
-            variant_storage(variant_index_t idx) // for void idx
-                : m_type_idx(idx)
-            { }
-
-            ~variant_storage()
+            static
+            void apply(void* src, void* dst)
             {
-                if (m_type_idx != variant_no_index) {
-                    destroy();
-                }
-            }
-
-            variant_storage(const variant_storage & other) = delete;
-
-            variant_storage& operator = (const variant_storage & other) = delete;
-
-            variant_storage(variant_storage && other) YATO_NOEXCEPT_OPERATOR(all_nothrow_move_constructible<alternativies_list>::value)
-                : m_type_idx(other.m_type_idx)
-            {
-                if (other.m_type_idx != variant_no_index) {
-                    details::variant_dispatcher_move<alternativies_list>().apply(other.m_type_idx, &m_storage, &other.m_storage);
-                }
-            };
-
-            variant_storage& operator = (variant_storage && other) YATO_NOEXCEPT_OPERATOR(all_nothrow_move_constructible<alternativies_list>::value)
-            {
-                if (this != &other) {
-                    if (m_type_idx != other.m_type_idx) {
-                        destroy();
-                        details::variant_dispatcher_move<alternativies_list>().apply(other.m_type_idx, &m_storage, &other.m_storage);
-                        m_type_idx = other.m_type_idx;
-                    } else {
-                        details::variant_dispatcher_move_assign<alternativies_list>().apply(other.m_type_idx, &m_storage, &other.m_storage);
-                    }
-                }
-                return *this;
-            }
-
-            template <typename Ty, typename ... Args> 
-            void create(Args && ... args)
-            {
-                details::variant_creator<Ty>().placement_new(&m_storage, std::forward<Args>(args)...);
-                m_type_idx = details::find_index<alternativies_list, Ty>::value;
-            }
-
-            void destroy() YATO_NOEXCEPT_KEYWORD
-            {
-                if (m_type_idx != variant_no_index) {
-                    details::variant_dispatcher_destroy<alternativies_list>().apply(m_type_idx, yato::pointer_cast<void*>(&m_storage));
-                    m_type_idx = variant_no_index;
-                }
-            }
-
-            variant_index_t type_index() const {
-                return m_type_idx;
-            }
-
-            const void* data() const {
-                return static_cast<const void*>(&m_storage);
-            }
-
-            void* data() {
-                return static_cast<void*>(&m_storage);
+                Ty_& other = *yato::launder(yato::pointer_cast<Ty_*>(src));
+                variant_create<Ty_>::apply(dst, std::move(other));
             }
         };
 
-        template <typename AltsList_>
-        using choose_variant_storage = variant_storage<
-            AltsList_, 
-            all_copy_constructible<AltsList_>::value, 
-            all_move_constructible<AltsList_>::value
-        >;
+        template <typename Ty_>
+        struct variant_move_construct<Ty_, std::false_type>
+        {
+            static
+            void apply(void* /*src*/, void* /*dst*/)
+            { }
+        };
 
+
+        template <typename Ty_, typename = 
+            yato::boolean_constant<std::is_move_assignable<Ty_>::value>
+        >
+        struct variant_move_assign
+        {
+            static
+            auto apply(void* src, void* dst)
+            {
+                Ty_& dst_ref = *yato::launder(yato::pointer_cast<Ty_*>(dst));
+                Ty_& src_ref = *yato::launder(yato::pointer_cast<Ty_*>(src));
+                dst_ref = std::move(src_ref);
+            }
+        };
+
+        template <typename Ty_>
+        struct variant_move_assign<Ty_, std::false_type>
+        {
+            static
+            void apply(void* /*src*/, void* /*dst*/)
+            { }
+        };
+
+
+        template <typename Ty_>
+        struct variant_get_type
+        {
+            static
+            const std::type_info& apply()
+            {
+                return typeid(Ty_);
+            }
+        };
+
+
+
+        template <template <typename, typename...> class Operation_, typename... AltTypes_>
+        struct variant_dispatch_table
+        {
+            static constexpr std::array<typename yato::callable_trait<decltype(&Operation_<void>::apply)>::pointer_type, sizeof...(AltTypes_)> apply = { &Operation_<AltTypes_>::apply... };
+        };
+
+        template <typename AltList_, template <typename, typename...> class Operation_, typename... Types_>
+        struct variant_dispatch_impl
+        {
+            using type = typename variant_dispatch_impl<typename AltList_::tail, Operation_, Types_..., typename AltList_::head>::type;
+        };
+
+        template <template <typename, typename...> class Operation_, typename... Types_>
+        struct variant_dispatch_impl<yato::meta::null_list, Operation_, Types_...>
+        {
+            using type = variant_dispatch_table<Operation_, Types_...>;
+        };
+
+        template <typename AltList_, template <typename, typename...> class Operation_>
+        using variant_dispatch = typename variant_dispatch_impl<AltList_, Operation_>::type;
 
 
         /**
@@ -835,30 +376,121 @@ namespace yato
         {
         private:
             using this_type = basic_variant<AltsList_>;
-        public: 
+        public:
             using alternativies_list = AltsList_;
-            using storage_type = choose_variant_storage<alternativies_list>;
+
+            using storage_type = std::aligned_storage_t<details::max_types_size<alternativies_list>::value, details::max_types_alignment<alternativies_list>::value>;
+
             static YATO_CONSTEXPR_VAR size_t alternativies_number = yato::meta::list_length<alternativies_list>::value;
 
             static_assert(alternativies_number > 0, "yato::variant: alternatives must be not empty.");
             static_assert(alternativies_number <= details::variant_max_index, "yato::variant: too many alternatives.");
             static_assert(std::is_same<typename meta::list_unique<alternativies_list>::type, alternativies_list>::value, "yato::variant: alternatives must have unique types");
+
+            /**
+             * Variant can be null if the 'void' type is presented in the alternatives list
+             */
+            static YATO_CONSTEXPR_VAR bool is_nullable = (meta::list_find<AltsList_, void>::value != yato::meta::list_npos);
+
+            static YATO_CONSTEXPR_VAR bool is_copy_constructible_v = details::all_copy_constructible<alternativies_list>::value;
+            static YATO_CONSTEXPR_VAR bool is_move_constructible_v = details::all_move_constructible<alternativies_list>::value;
+            static YATO_CONSTEXPR_VAR bool is_copy_assignable_v    = is_copy_constructible_v && details::all_copy_assignable<alternativies_list>::value;
+            static YATO_CONSTEXPR_VAR bool is_move_assignable_v    = is_move_constructible_v && details::all_move_assignable<alternativies_list>::value;
+
+            static YATO_CONSTEXPR_VAR bool is_nothrow_move_constructible_v = details::all_nothrow_move_constructible<alternativies_list>::value;
+            static YATO_CONSTEXPR_VAR bool is_nothrow_move_assignable_v    = is_nothrow_move_constructible_v && details::all_nothrow_move_assignable<alternativies_list>::value;
+
+            // ToDo (a.gruzdev): Add swap()
+            //static constexpr bool is_swappable_v         = this_type::is_move_constructible_v && this_type::is_move_assignable_v;
+            //static constexpr bool is_nothrow_swappable_v = this_type::is_nothrow_move_assignable_v;
+
             //--------------------------------------------------------------------
         private:
             storage_type m_storage{};
+            variant_index_t m_type_idx;
+
             //--------------------------------------------------------------------
 
             template <typename Ty_>
             const Ty_* caddress_() const
             {
-                return yato::launder(yato::pointer_cast<const Ty_*>(m_storage.data()));
+                return yato::launder(yato::pointer_cast<const Ty_*>(&m_storage));
             }
 
             template <typename Ty_>
             Ty_* address_()
             {
-                return yato::launder(yato::pointer_cast<Ty_*>(m_storage.data()));
+                return yato::launder(yato::pointer_cast<Ty_*>(&m_storage));
             }
+
+            const void* storage_caddress_() const
+            {
+                return &m_storage;
+            }
+
+            void* storage_address_()
+            {
+                return &m_storage;
+            }
+
+            void copy_construct_(const this_type& other)
+            {
+                m_type_idx = other.m_type_idx;
+                variant_dispatch<alternativies_list, variant_copy_construct>::apply[m_type_idx](other.storage_caddress_(), storage_address_());
+            }
+
+            void copy_construct_(yato::disabled_t)
+            {
+                YATO_ASSERT(false, "Disabled method should not be invoked.");
+            }
+
+            void copy_assign_(const this_type& other)
+            {
+                YATO_REQUIRES(this != &other);
+                if (m_type_idx == other.m_type_idx) {
+                    variant_dispatch<alternativies_list, variant_copy_assign>::apply[m_type_idx](other.storage_caddress_(), storage_address_());
+                }
+                else {
+                    variant_dispatch<alternativies_list, variant_destroy>::apply[m_type_idx](storage_address_());
+                    m_type_idx = other.m_type_idx;
+                    variant_dispatch<alternativies_list, variant_copy_construct>::apply[m_type_idx](other.storage_caddress_(), storage_address_());
+                }
+            }
+
+            void copy_assign_(yato::disabled_t)
+            {
+                YATO_ASSERT(false, "Disabled method should not be invoked.");
+            }
+
+            void move_construct_(this_type&& other) YATO_NOEXCEPT_OPERATOR(is_nothrow_move_constructible_v)
+            {
+                m_type_idx = other.m_type_idx;
+                variant_dispatch<alternativies_list, variant_move_construct>::apply[m_type_idx](other.storage_address_(), storage_address_());
+            }
+
+            void move_construct_(yato::disabled_t) YATO_NOEXCEPT_KEYWORD
+            {
+                YATO_ASSERT(false, "Disabled method should not be invoked.");
+            }
+
+            void move_assign_(this_type&& other) YATO_NOEXCEPT_OPERATOR(is_nothrow_move_assignable_v)
+            {
+                YATO_REQUIRES(this != &other);
+                if (m_type_idx == other.m_type_idx) {
+                    variant_dispatch<alternativies_list, variant_move_assign>::apply[m_type_idx](other.storage_address_(), storage_address_());
+                }
+                else {
+                    variant_dispatch<alternativies_list, variant_destroy>::apply[m_type_idx](storage_address_());
+                    m_type_idx = other.m_type_idx;
+                    variant_dispatch<alternativies_list, variant_move_construct>::apply[m_type_idx](other.storage_address_(), storage_address_());
+                }
+            }
+
+            void move_assign_(yato::disabled_t) YATO_NOEXCEPT_KEYWORD
+            {
+                YATO_ASSERT(false, "Disabled method should not be invoked.");
+            }
+
             //--------------------------------------------------------------------
 
         public:
@@ -866,90 +498,126 @@ namespace yato
              *  Creates empty variant
              *  As is void is stored
              */
-            template <typename Types_ = alternativies_list, typename = 
-                std::enable_if_t<meta::list_find<Types_, void>::value != yato::meta::list_npos>
+            template <typename ThisType_ = this_type, typename = 
+                std::enable_if_t<ThisType_::is_nullable>
             >
             YATO_CONSTEXPR_FUNC
-            basic_variant(details::construct_empty_t = details::construct_empty_t{}) YATO_NOEXCEPT_KEYWORD
-                : m_storage(meta::list_find<Types_, void>::value)
+            basic_variant(nullvar_t = nullvar_t{}) YATO_NOEXCEPT_KEYWORD
+                : m_type_idx(meta::list_find<typename ThisType_::alternativies_list, void>::value)
             { }
 
             /**
              *  Create variant from value
              */
-            template <typename Ty, typename = typename std::enable_if<
-                (yato::meta::list_find<alternativies_list, yato::remove_cvref_t<Ty>>::value != yato::meta::list_npos)
-            >::type>
-            explicit
-            basic_variant(Ty && value)
+            template <typename Ty_, typename = 
+                std::enable_if_t<(yato::meta::list_find<alternativies_list, yato::remove_cvref_t<Ty_>>::value != yato::meta::list_npos)>
+            >
+            explicit YATO_CONSTEXPR_FUNC_CXX14
+            basic_variant(Ty_ && value)
+                : m_type_idx(details::find_index<alternativies_list, yato::remove_cvref_t<Ty_>>::value)
             {
-                m_storage.template create<yato::remove_cvref_t<Ty>>(std::forward<Ty>(value));
+                details::variant_create<yato::remove_cvref_t<Ty_>>::apply(storage_address_(), std::forward<Ty_>(value));
             }
 
             /**
              *  Create variant in place
              */
-            template <typename Ty, typename = typename std::enable_if<(yato::meta::list_find<alternativies_list, Ty>::value != yato::meta::list_npos)>::type, typename ... Args>
-            explicit
-            basic_variant(yato::in_place_type_t<Ty>, Args && ... args)
+            template <typename Ty_,
+                typename = std::enable_if_t<(yato::meta::list_find<alternativies_list, Ty_>::value != yato::meta::list_npos)>,
+                typename... Args_
+            >
+            explicit YATO_CONSTEXPR_FUNC_CXX14
+            basic_variant(yato::in_place_type_t<Ty_>, Args_&&... args)
+                : m_type_idx(details::find_index<alternativies_list, Ty_>::value)
             {
-                m_storage.template create<Ty>(std::forward<Args>(args)...);
+                details::variant_create<Ty_>::apply(storage_address_(), std::forward<Args_>(args)...);
             }
 
             /**
              *  Create variant in place
              */
-            template <size_t Idx, typename = typename std::enable_if<(Idx < yato::meta::list_length<alternativies_list>::value)>::type, typename ... Args>
-            explicit
-            basic_variant(yato::in_place_index_t<Idx>, Args && ... args)
+            template <size_t Idx_,
+                typename = std::enable_if_t<(Idx_ < yato::meta::list_length<alternativies_list>::value)>, 
+                typename... Args_
+            >
+            explicit YATO_CONSTEXPR_FUNC_CXX14
+            basic_variant(yato::in_place_index_t<Idx_>, Args_&&... args)
+                : m_type_idx(Idx_)
             {
-                m_storage.template create<meta::list_at_t<alternativies_list, Idx>>(std::forward<Args>(args)...);
+                details::variant_create<yato::meta::list_at_t<alternativies_list, Idx_>>::apply(storage_address_(), std::forward<Args_>(args)...);
             }
 
-            ~basic_variant() = default;
+            YATO_CONSTEXPR_FUNC_CXX14
+            basic_variant(const yato::disable_if_not_t<this_type::is_copy_constructible_v, this_type>& other)
+            {
+                copy_construct_(other);
+            }
 
-            basic_variant(const basic_variant & other) = default;
+            YATO_CONSTEXPR_FUNC_CXX14
+            basic_variant(yato::disable_if_not_t<this_type::is_move_constructible_v, this_type>&& other) YATO_NOEXCEPT_OPERATOR(is_nothrow_move_constructible_v)
+            {
+                move_construct_(std::move(other));
+            }
 
-            basic_variant(basic_variant && other) = default;
+            ~basic_variant()
+            {
+                variant_dispatch<alternativies_list, variant_destroy>::apply[m_type_idx](storage_address_());
+            }
 
             /**
              *  If stored types of both variants are same, then calls copy assignment operator
              *  If the types are different or copy assignment is not available, then destroys current instance and creates copy
              */
-            basic_variant& operator = (const basic_variant & other) = default;
+            YATO_CONSTEXPR_FUNC_CXX14
+            this_type& operator=(const yato::disable_if_not_t<this_type::is_copy_assignable_v, this_type>& other)
+            {
+                copy_assign_(other);
+                return *this;
+            }
 
             /**
              *  If stored types of both variants are same, then calls move assignment operator
              *  If the types are different or copy assignment is not available, then destroys current instance and creates moved copy
              */
-            basic_variant& operator = (basic_variant && other) = default;
+            YATO_CONSTEXPR_FUNC_CXX14
+            this_type& operator = (yato::disable_if_not_t<this_type::is_move_assignable_v, this_type>&& other) YATO_NOEXCEPT_OPERATOR(is_nothrow_move_assignable_v)
+            {
+                move_assign_(std::move(other));
+                return *this;
+            }
 
             /**
              *  Replaces content of the variant with a new type 
              *  Calling with Ty = void will clear the variant
              */
-            template <typename Ty, typename ... Args>
-            void emplace(Args && ... args)
+            template <typename Ty_,
+                typename = std::enable_if_t<(yato::meta::list_find<alternativies_list, Ty_>::value != yato::meta::list_npos)>,
+                typename... Args_
+            >
+            YATO_CONSTEXPR_FUNC_CXX14
+            void emplace(Args_&& ... args)
             {
-                m_storage.destroy();
-                m_storage.template create<Ty>(std::forward<Args>(args)...);
+                variant_dispatch<alternativies_list, variant_destroy>::apply[m_type_idx](storage_address_());
+                m_type_idx = details::find_index<alternativies_list, Ty_>::value;
+                details::variant_create<Ty_>::apply(storage_address_(), std::forward<Args_>(args)...);
             }
 
             /**
              *  Get typeid of the currently stored type
              *  Returns typeid(void) if variant is empty
              */
-            const std::type_info & type() const noexcept
+            const std::type_info & type() const YATO_NOEXCEPT_KEYWORD
             {
-                return details::variant_dispatcher_get_type<alternativies_list>().apply(m_storage.type_index());
+                return variant_dispatch<alternativies_list, variant_get_type>::apply[m_type_idx]();
             }
 
             /**
              * Get stored type index
              */
-            size_t type_index() const noexcept
+            YATO_CONSTEXPR_FUNC
+            size_t type_index() const YATO_NOEXCEPT_KEYWORD
             {
-                return m_storage.type_index();
+                return m_type_idx;
             }
 
             /**
@@ -957,21 +625,22 @@ namespace yato
              */
             template <typename Ty_>
             YATO_CONSTEXPR_FUNC
-            bool is_type() const noexcept
+            bool is_type() const YATO_NOEXCEPT_KEYWORD
             {
-                return (meta::list_find<alternativies_list, Ty_>::value == m_storage.type_index());
+                return (meta::list_find<alternativies_list, Ty_>::value == m_type_idx);
             }
 
             /**
              *  Get value by type index
              *  On error throws bad_variant_access
              */
-            template <size_t Idx>
-            auto get()
-                -> meta::list_at_t<alternativies_list, Idx>&
+            template <size_t Idx_>
+            YATO_CONSTEXPR_FUNC_CXX14
+            auto get() &
+                -> std::enable_if_t<(Idx_ < alternativies_number), yato::meta::list_at_t<alternativies_list, Idx_>&>
             {
-                if (m_storage.type_index() == Idx) {
-                    return *address_<meta::list_at_t<alternativies_list, Idx>>();
+                if (m_type_idx == Idx_) {
+                    return *address_<yato::meta::list_at_t<alternativies_list, Idx_>>();
                 }
                 else {
                     throw bad_variant_access("yato::variant_bad_access: Stored type differs from the type by given index");
@@ -982,12 +651,13 @@ namespace yato
              *  Get value by type index
              *  On error throws bad_variant_access 
              */
-            template <size_t Idx>
-            auto get() const
-                -> const meta::list_at_t<alternativies_list, Idx>&
+            template <size_t Idx_>
+            YATO_CONSTEXPR_FUNC_CXX14
+            auto get() const &
+                -> std::enable_if_t<(Idx_ < alternativies_number), const yato::meta::list_at_t<alternativies_list, Idx_>&>
             {
-                if (m_storage.type_index() == Idx) {
-                    return *caddress_<meta::list_at_t<alternativies_list, Idx>>();
+                if (m_type_idx == Idx_) {
+                    return *caddress_<yato::meta::list_at_t<alternativies_list, Idx_>>();
                 }
                 else {
                     throw bad_variant_access("yato::variant_bad_access: Stored type differs from the type by given index");
@@ -996,16 +666,98 @@ namespace yato
 
             /**
              *  Get value by type index
-             *  On error returns default value
+             *  On error throws bad_variant_access
              */
-            template <size_t Idx>
-            decltype(auto) get(meta::list_at_t<alternativies_list, Idx> & default_value) noexcept
+            template <size_t Idx_>
+            YATO_CONSTEXPR_FUNC_CXX14
+            auto get() &&
+                -> std::enable_if_t<(Idx_ < alternativies_number), yato::meta::list_at_t<alternativies_list, Idx_>&&>
             {
-                if (m_storage.type_index() == Idx) {
-                    return *address_<yato::meta::list_at_t<alternativies_list, Idx>>();
+                if (m_type_idx == Idx_) {
+                    return std::move(*address_<yato::meta::list_at_t<alternativies_list, Idx_>>());
                 }
                 else {
-                    return default_value;
+                    throw bad_variant_access("yato::variant_bad_access: Stored type differs from the type by given index");
+                }
+            }
+
+            /**
+             *  Get value by type index
+             *  On error throws bad_variant_access 
+             */
+            template <size_t Idx_>
+            YATO_CONSTEXPR_FUNC_CXX14
+            auto get() const &&
+                -> std::enable_if_t<(Idx_ < alternativies_number), const yato::meta::list_at_t<alternativies_list, Idx_>&&>
+            {
+                if (m_type_idx == Idx_) {
+                    return std::move(*caddress_<yato::meta::list_at_t<alternativies_list, Idx_>>());
+                }
+                else {
+                    throw bad_variant_access("yato::variant_bad_access: Stored type differs from the type by given index");
+                }
+            }
+
+
+            /**
+             *  Get value by type
+             *  On error throws bad_variant_access
+             */
+            template <typename Ty_>
+            YATO_CONSTEXPR_FUNC_CXX14
+            Ty_& get() &
+            {
+                return get<yato::meta::list_find<alternativies_list, Ty_>::value>();
+            }
+
+            /**
+             *  Get value by type
+             *  On error throws bad_variant_access
+             */
+            template <typename Ty_>
+            YATO_CONSTEXPR_FUNC_CXX14
+            const Ty_& get() const &
+            {
+                return get<yato::meta::list_find<alternativies_list, Ty_>::value>();
+            }
+
+            /**
+             *  Get value by type
+             *  On error throws bad_variant_access
+             */
+            template <typename Ty_>
+            YATO_CONSTEXPR_FUNC_CXX14
+            Ty_&& get() &&
+            {
+                return std::move(get<yato::meta::list_find<alternativies_list, Ty_>::value>());
+            }
+
+            /**
+             *  Get value by type
+             *  On error throws bad_variant_access
+             */
+            template <typename Ty_>
+            YATO_CONSTEXPR_FUNC_CXX14
+            const Ty_&& get() const &&
+            {
+                return std::move(get<yato::meta::list_find<alternativies_list, Ty_>::value>());
+            }
+
+
+            /**
+             *  Get value by type index
+             *  On error returns default value
+             */
+            template <size_t Idx_, typename Uy_>
+            YATO_CONSTEXPR_FUNC_CXX14
+            auto get_or(Uy_&& default_value) const & YATO_NOEXCEPT_KEYWORD
+                -> std::enable_if_t<(Idx_ < alternativies_number), yato::meta::list_at_t<alternativies_list, Idx_>>
+            {
+                if (m_type_idx == Idx_) {
+                    return *caddress_<yato::meta::list_at_t<alternativies_list, Idx_>>();
+                }
+                else {
+                    return static_cast<yato::meta::list_at_t<alternativies_list, Idx_>>(std::forward<Uy_>(default_value));
                 }
             }
 
@@ -1013,55 +765,39 @@ namespace yato
              *  Get value by type index
              *  On error returns default value
              */
-            template <size_t Idx>
-            decltype(auto) get(const meta::list_at_t<alternativies_list, Idx> & default_value) const noexcept
+            template <size_t Idx_, typename Uy_>
+            YATO_CONSTEXPR_FUNC_CXX14
+            auto get_or(Uy_&& default_value) && YATO_NOEXCEPT_KEYWORD
+                -> std::enable_if_t<(Idx_ < alternativies_number), yato::meta::list_at_t<alternativies_list, Idx_>>
             {
-                if (m_storage.type_index() == Idx) {
-                    return *caddress_<meta::list_at_t<alternativies_list, Idx>>();
+                if (m_type_idx == Idx_) {
+                    return std::move(*address_<yato::meta::list_at_t<alternativies_list, Idx_>>());
                 }
                 else {
-                    return default_value;
+                    return static_cast<yato::meta::list_at_t<alternativies_list, Idx_>>(std::forward<Uy_>(default_value));
                 }
             }
 
             /**
-             *  Get value by type
-             *  On error throws bad_variant_access
+             *  Get value by type index
+             *  On error returns default value
              */
-            template <typename Ty>
-            Ty & get_as()
+            template <typename Ty_, typename Uy_>
+            YATO_CONSTEXPR_FUNC_CXX14
+            Ty_ get_or(Uy_&& default_value) const & YATO_NOEXCEPT_KEYWORD
             {
-                return get<meta::list_find<alternativies_list, Ty>::value>();
+                return get_or<yato::meta::list_find<alternativies_list, Ty_>::value>(std::forward<Uy_>(default_value));
             }
 
             /**
-             *  Get value by type
-             *  On error throws bad_variant_access
+             *  Get value by type index
+             *  On error returns default value
              */
-            template <typename Ty>
-            const Ty & get_as() const
+            template <typename Ty_, typename Uy_>
+            YATO_CONSTEXPR_FUNC_CXX14
+            Ty_ get_or(Uy_&& default_value) && YATO_NOEXCEPT_KEYWORD
             {
-                return get<meta::list_find<alternativies_list, Ty>::value>();
-            }
-
-            /**
-             *  Get value by type
-             *  On error returns default error
-             */
-            template <typename Ty>
-            Ty & get_as(Ty & default_value) YATO_NOEXCEPT_KEYWORD
-            {
-                return get<meta::list_find<alternativies_list, Ty>::value>(default_value);
-            }
-
-            /**
-             *  Get value by type
-             *  On error returns default error
-             */
-            template <typename Ty>
-            const Ty & get_as(const Ty & default_value) const YATO_NOEXCEPT_KEYWORD
-            {
-                return get<meta::list_find<alternativies_list, Ty>::value>(default_value);
+                return get_or<yato::meta::list_find<alternativies_list, Ty_>::value>(std::forward<Uy_>(default_value));
             }
 
 
@@ -1069,11 +805,13 @@ namespace yato
              *  Get value by type
              *  On error throws bad_variant_access
              */
-            template <typename Ty>
-            yato::optional<Ty> get_opt() &&
+            template <typename Ty_>
+            YATO_CONSTEXPR_FUNC_CXX14
+            auto get_opt() const & YATO_NOEXCEPT_KEYWORD
+                -> std::enable_if_t<(yato::meta::list_find<alternativies_list, Ty_>::value != yato::meta::list_npos), yato::optional<Ty_>>
             {
-                if (is_type<Ty>()) {
-                    return yato::make_optional(std::move(*address_<Ty>()));
+                if (is_type<Ty_>()) {
+                    return yato::make_optional(*caddress_<Ty_>());
                 } else {
                     return yato::nullopt_t{};
                 }
@@ -1083,12 +821,13 @@ namespace yato
              *  Get value by type
              *  On error throws bad_variant_access
              */
-            template <typename Ty>
-            yato::optional<Ty> get_opt() const &
+            template <typename Ty_>
+            YATO_CONSTEXPR_FUNC_CXX14
+            auto get_opt() && YATO_NOEXCEPT_KEYWORD
+                -> std::enable_if_t<(yato::meta::list_find<alternativies_list, Ty_>::value != yato::meta::list_npos), yato::optional<Ty_>>
             {
-                if(is_type<Ty>()) {
-                    //return yato::make_optional(*yato::pointer_cast<const Ty*>(m_storage.data()));
-                    return yato::make_optional(*caddress_<Ty>());
+                if (is_type<Ty_>()) {
+                    return yato::make_optional(std::move(*address_<Ty_>()));
                 } else {
                     return yato::nullopt_t{};
                 }
@@ -1099,20 +838,44 @@ namespace yato
              *  Get value without check
              *  Use only if you are sure what is stored type
              */
-            template <typename Ty>
-            Ty & get_as_unsafe()
+            template <typename Ty_>
+            YATO_CONSTEXPR_FUNC_CXX14
+            Ty_& get_unsafe() & YATO_NOEXCEPT_KEYWORD
             {
-                return *yato::pointer_cast<Ty*>(m_storage.data());
+                return *address_<Ty_>();
             }
 
             /**
              *  Get value without check
              *  Use only if you are sure what is stored type
              */
-            template <typename Ty>
-            const Ty & get_as_unsafe() const
+            template <typename Ty_>
+            YATO_CONSTEXPR_FUNC_CXX14
+            const Ty_& get_unsafe() const & YATO_NOEXCEPT_KEYWORD
             {
-                return *yato::pointer_cast<const Ty*>(m_storage.data());
+                return *caddress_<Ty_>();
+            }
+
+             /**
+             *  Get value without check
+             *  Use only if you are sure what is stored type
+             */
+            template <typename Ty_>
+            YATO_CONSTEXPR_FUNC_CXX14
+            Ty_&& get_unsafe() && YATO_NOEXCEPT_KEYWORD
+            {
+                return static_cast<Ty_&&>(*address_<Ty_>());
+            }
+
+            /**
+             *  Get value without check
+             *  Use only if you are sure what is stored type
+             */
+            template <typename Ty_>
+            YATO_CONSTEXPR_FUNC_CXX14
+            const Ty_&& get_unsafe() const && YATO_NOEXCEPT_KEYWORD
+            {
+                return static_cast<const Ty_&&>(*caddress_<Ty_>());
             }
 
         };
@@ -1148,11 +911,11 @@ namespace yato
         >
         {
             basic_variant<AltsDst_> create(const basic_variant<AltsSrc_> & var) {
-                return basic_variant<AltsDst_>(var.template get_as_unsafe<StoredTy_>());
+                return basic_variant<AltsDst_>(var.template get_unsafe<StoredTy_>());
             }
 
             basic_variant<AltsDst_> create(basic_variant<AltsSrc_> && var) {
-                return basic_variant<AltsDst_>(std::move(var.template get_as_unsafe<StoredTy_>()));
+                return basic_variant<AltsDst_>(std::move(var.template get_unsafe<StoredTy_>()));
             }
         };
 
@@ -1163,11 +926,11 @@ namespace yato
         >
         {
             basic_variant<AltsDst_> create(const basic_variant<AltsSrc_> &) {
-                return basic_variant<AltsDst_>(construct_empty_t{});
+                return basic_variant<AltsDst_>(nullvar_t{});
             }
 
             basic_variant<AltsDst_> create(basic_variant<AltsSrc_> &&) {
-                return basic_variant<AltsDst_>(construct_empty_t{});
+                return basic_variant<AltsDst_>(nullvar_t{});
             }
         };
 
@@ -1201,6 +964,7 @@ namespace yato
 
     }
 
+
     /**
      * Exception used to indicate variant access error
      */
@@ -1220,13 +984,13 @@ namespace yato
     /**
      * Construct empty variant, if void state is supported
      */
-    using nullvar_t = details::construct_empty_t;
+    using details::nullvar_t;
 
 #ifndef YATO_MSVC_2013
     YATO_INLINE_VARIABLE constexpr nullvar_t nullvar{};
 #endif
 
-    /**
+    /**`
      * Cast variants with different alternatives lists
      */
     template <typename AltsListTo_, typename AltsListFrom_>

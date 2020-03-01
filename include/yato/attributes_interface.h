@@ -290,7 +290,7 @@ namespace yato
             if (attr.type() != typeid(AttrType)) {
                 throw yato::bad_attribute();
             }
-            return attr.get_as<AttrType>();
+            return attr.get<AttrType>();
         }
 
         /**
@@ -305,7 +305,7 @@ namespace yato
                 return default_value;
             }
             const yato::any & attr = (*it).second;
-            return attr.get_as<AttrType>(default_value);
+            return attr.get_or<AttrType>(default_value);
         }
 
         /**

@@ -105,7 +105,7 @@ namespace yato
             decltype(auto) invoke_case_impl_(std::true_type /* invocable */, const std::type_index & stored_type, const CasesTuple_ & functions, const OnDefault_ & on_default, const AnyTy_ & anyval)
             {
                 return (std::type_index(typeid(arg_decay_type)) == stored_type)
-                    ? std::get<case_index>(functions)(anyval.template get_as_unsafe<arg_decay_type>())
+                    ? std::get<case_index>(functions)(anyval.template get_unsafe<arg_decay_type>())
                     : try_next_(stored_type, functions, on_default, anyval);
             }
 
@@ -119,7 +119,7 @@ namespace yato
             decltype(auto) invoke_case_impl_(std::true_type /* invocable */, const std::type_index & stored_type, const CasesTuple_ & functions, const OnDefault_ & on_default, AnyTy_ && anyval)
             {
                 return (std::type_index(typeid(arg_decay_type)) == stored_type)
-                    ? std::get<case_index>(functions)(static_cast<arg_type&&>(anyval.template get_as_unsafe<arg_decay_type>()))
+                    ? std::get<case_index>(functions)(static_cast<arg_type&&>(anyval.template get_unsafe<arg_decay_type>()))
                     : try_next_(stored_type, functions, on_default, std::move(anyval));
             }
 
@@ -134,14 +134,14 @@ namespace yato
             static
             decltype(auto) invoke_case(const std::type_index & stored_type, const CasesTuple_ & functions, const OnDefault_ & on_default, const AnyTy_ & anyval)
             {
-                using callable_trait = yato::is_invocable<callable_type, decltype(anyval.template get_as_unsafe<arg_decay_type>())>;
+                using callable_trait = yato::is_invocable<callable_type, decltype(anyval.template get_unsafe<arg_decay_type>())>;
                 return invoke_case_impl_(callable_trait{}, stored_type, functions, on_default, anyval);
             }
 
             static
             decltype(auto) invoke_case(const std::type_index & stored_type, const CasesTuple_ & functions, const OnDefault_ & on_default, AnyTy_ && anyval)
             {
-                using callable_trait = yato::is_invocable<callable_type, decltype(static_cast<arg_type&&>(anyval.template get_as_unsafe<arg_decay_type>()))>;
+                using callable_trait = yato::is_invocable<callable_type, decltype(static_cast<arg_type&&>(anyval.template get_unsafe<arg_decay_type>()))>;
                 return invoke_case_impl_(callable_trait{}, stored_type, functions, on_default, std::move(anyval));
             }
         };

@@ -64,22 +64,22 @@ TEST(Yato_Actors, behaviour)
 
     auto response = inbox.receive(std::chrono::seconds(1));
     ASSERT_NO_THROW(
-        ASSERT_EQ("ping", response.get_as<std::string>())
+        ASSERT_EQ("ping", response.get<std::string>())
     );
 
     response = inbox.receive(std::chrono::seconds(1));
     ASSERT_NO_THROW(
-        ASSERT_EQ("pong", response.get_as<std::string>())
+        ASSERT_EQ("pong", response.get<std::string>())
     );
 
     response = inbox.receive(std::chrono::seconds(1));
     ASSERT_NO_THROW(
-        ASSERT_EQ("ping", response.get_as<std::string>())
+        ASSERT_EQ("ping", response.get<std::string>())
     );
 
     response = inbox.receive(std::chrono::seconds(1));
     ASSERT_NO_THROW(
-        ASSERT_EQ("pong", response.get_as<std::string>())
+        ASSERT_EQ("pong", response.get<std::string>())
     );
 
     actor.tell(yato::actors::poison_pill);

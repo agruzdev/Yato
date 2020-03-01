@@ -17,10 +17,10 @@ TEST(Yato_AnyPtr, common)
 
     EXPECT_TRUE(px);
     EXPECT_EQ(std::type_index(typeid(int*)), std::type_index(px.type()));
-    EXPECT_NE(nullptr, px.get_as<int*>());
-    EXPECT_EQ(nullptr, px.get_as<float*>());
-    //EXPECT_EQ(nullptr, px.get_as<int>()); // compilation error
-    EXPECT_EQ(1, *(px.get_as<int*>()));
+    EXPECT_NE(nullptr, px.get<int*>());
+    EXPECT_EQ(nullptr, px.get<float*>());
+    //EXPECT_EQ(nullptr, px.get<int>()); // compilation error
+    EXPECT_EQ(1, *(px.get<int*>()));
 
 }
 
@@ -53,24 +53,24 @@ TEST(Yato_AnyPtr, common2)
     EXPECT_NE(std::type_index(typeid(volatile int*)), std::type_index(cvpx.type()));
     EXPECT_EQ(std::type_index(typeid(const volatile int*)), std::type_index(cvpx.type()));
 
-    EXPECT_TRUE(nullptr != px.get_as<int*>());
-    EXPECT_TRUE(nullptr == px.get_as<const int*>());
-    EXPECT_TRUE(nullptr == px.get_as<volatile int*>());
-    EXPECT_TRUE(nullptr == px.get_as<const volatile int*>());
+    EXPECT_TRUE(nullptr != px.get<int*>());
+    EXPECT_TRUE(nullptr == px.get<const int*>());
+    EXPECT_TRUE(nullptr == px.get<volatile int*>());
+    EXPECT_TRUE(nullptr == px.get<const volatile int*>());
 
-    EXPECT_TRUE(nullptr == cpx.get_as<int*>());
-    EXPECT_TRUE(nullptr != cpx.get_as<const int*>());
-    EXPECT_TRUE(nullptr == cpx.get_as<volatile int*>());
-    EXPECT_TRUE(nullptr == cpx.get_as<const volatile int*>());
+    EXPECT_TRUE(nullptr == cpx.get<int*>());
+    EXPECT_TRUE(nullptr != cpx.get<const int*>());
+    EXPECT_TRUE(nullptr == cpx.get<volatile int*>());
+    EXPECT_TRUE(nullptr == cpx.get<const volatile int*>());
 
-    EXPECT_TRUE(nullptr == vpx.get_as<int*>());
-    EXPECT_TRUE(nullptr == vpx.get_as<const int*>());
-    EXPECT_TRUE(nullptr != vpx.get_as<volatile int*>());
-    EXPECT_TRUE(nullptr == vpx.get_as<const volatile int*>());
+    EXPECT_TRUE(nullptr == vpx.get<int*>());
+    EXPECT_TRUE(nullptr == vpx.get<const int*>());
+    EXPECT_TRUE(nullptr != vpx.get<volatile int*>());
+    EXPECT_TRUE(nullptr == vpx.get<const volatile int*>());
 
-    EXPECT_TRUE(nullptr == cvpx.get_as<int*>());
-    EXPECT_TRUE(nullptr == cvpx.get_as<const int*>());
-    EXPECT_TRUE(nullptr == cvpx.get_as<volatile int*>());
-    EXPECT_TRUE(nullptr != cvpx.get_as<const volatile int*>());
+    EXPECT_TRUE(nullptr == cvpx.get<int*>());
+    EXPECT_TRUE(nullptr == cvpx.get<const int*>());
+    EXPECT_TRUE(nullptr == cvpx.get<volatile int*>());
+    EXPECT_TRUE(nullptr != cvpx.get<const volatile int*>());
 
 }

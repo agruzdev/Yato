@@ -52,7 +52,7 @@ namespace conf {
         using string_t = typename stored_type_trait<stored_type::string>::return_type;
         YATO_REQUIRES(src.is_type<string_t>());
         stored_variant dst;
-        if (!cvt_from<DstType_>(src.get_as<string_t>(), dst)) {
+        if (!cvt_from<DstType_>(src.get<string_t>(), dst)) {
             dst = src;
         }
         return dst;
@@ -64,7 +64,7 @@ namespace conf {
         using dst_t    = typename stored_type_trait<DstType_>::return_type;
         using string_t = typename stored_type_trait<stored_type::string>::return_type;
         YATO_REQUIRES(src.is_type<dst_t>());
-        return stored_variant(yato::in_place_type_t<string_t>{}, serializer<DstType_>::to_string(src.get_as<dst_t>()));
+        return stored_variant(yato::in_place_type_t<string_t>{}, serializer<DstType_>::to_string(src.get<dst_t>()));
     }
 
     template <stored_type DstType_>
@@ -94,7 +94,7 @@ namespace conf {
 
         m_cvt_functions[std::make_pair(stored_type::integer, stored_type::real)] = [](const stored_variant& src) {
             YATO_REQUIRES(src.is_type<real_t>());
-            const auto real_val = src.get_as<real_t>();
+            const auto real_val = src.get<real_t>();
             const auto int_val = static_cast<integer_t>(real_val);
             stored_variant dst;
             if (real_val == static_cast<real_t>(int_val)) {
@@ -105,17 +105,17 @@ namespace conf {
 
         m_cvt_functions[std::make_pair(stored_type::integer, stored_type::boolean)] = [](const stored_variant& src) {
             YATO_REQUIRES(src.is_type<boolean_t>());
-            return stored_variant(yato::in_place_type_t<integer_t>{}, static_cast<integer_t>(src.get_as<boolean_t>()));
+            return stored_variant(yato::in_place_type_t<integer_t>{}, static_cast<integer_t>(src.get<boolean_t>()));
         };
 
         m_cvt_functions[std::make_pair(stored_type::real, stored_type::integer)] = [](const stored_variant& src) {
             YATO_REQUIRES(src.is_type<integer_t>());
-            return stored_variant(yato::in_place_type_t<real_t>{}, static_cast<real_t>(src.get_as<integer_t>()));
+            return stored_variant(yato::in_place_type_t<real_t>{}, static_cast<real_t>(src.get<integer_t>()));
         };
 
         m_cvt_functions[std::make_pair(stored_type::boolean, stored_type::integer)] = [](const stored_variant& src) {
             YATO_REQUIRES(src.is_type<integer_t>());
-            return stored_variant(yato::in_place_type_t<boolean_t>{}, static_cast<boolean_t>(src.get_as<integer_t>()));
+            return stored_variant(yato::in_place_type_t<boolean_t>{}, static_cast<boolean_t>(src.get<integer_t>()));
         };
     }
 

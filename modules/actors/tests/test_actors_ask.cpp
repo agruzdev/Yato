@@ -47,9 +47,9 @@ TEST(Yato_Actors, ask)
     auto res2 = actor.ask(42, std::chrono::seconds(1)).get();
     auto res3 = actor.ask(43, std::chrono::seconds(1)).get();
 
-    ASSERT_EQ(42, res1.get_as<int>(0));
-    ASSERT_EQ(43, res2.get_as<int>(0));
-    ASSERT_EQ(44, res3.get_as<int>(0));
+    ASSERT_EQ(42, res1.get_or<int>(0));
+    ASSERT_EQ(43, res2.get_or<int>(0));
+    ASSERT_EQ(44, res3.get_or<int>(0));
 
     // shoould not wait sop long, will be killed by the system
     actor.ask(1.0f, std::chrono::seconds(1000));

@@ -9,6 +9,7 @@
 #define _YATO_CONFIG_MANUAL_PRIVATE_MANUAL_CONFIG_H_
 
 #include <map>
+#include <memory>
 #include <vector>
 
 #include "yato/config/config.h"

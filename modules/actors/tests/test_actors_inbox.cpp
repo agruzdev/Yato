@@ -46,7 +46,7 @@ TEST(Yato_Actors, inbox)
 
     auto res = inbox.receive(std::chrono::seconds(2));
     int res_int = 0;
-    EXPECT_NO_THROW(res_int = res.get_as<int>());
+    EXPECT_NO_THROW(res_int = res.get<int>());
     EXPECT_EQ(2, res_int);
 
     inbox.watch(actor);
@@ -57,7 +57,7 @@ TEST(Yato_Actors, inbox)
 
     system.send_message(inbox.ref(), std::string("ping"));
     std::string res2;
-    EXPECT_NO_THROW(res2 = inbox.receive(std::chrono::seconds(2)).get_as<std::string>());
+    EXPECT_NO_THROW(res2 = inbox.receive(std::chrono::seconds(2)).get<std::string>());
     EXPECT_EQ(std::string("ping"), res2);
 
     auto empty_res = inbox.receive();

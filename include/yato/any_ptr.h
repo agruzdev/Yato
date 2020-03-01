@@ -60,7 +60,7 @@ namespace yato
         }
 
         template <typename Ty>
-        Ty get_as(Ty default_value) const
+        Ty get_or(Ty default_value) const
         {
             if (std::type_index(typeid(Ty)) == std::type_index(type())) {
                 return static_cast<Ty>(const_cast<typename details::make_void_ptr<Ty>::type>(m_pointer));
@@ -71,9 +71,9 @@ namespace yato
         }
 
         template <typename Ty>
-        Ty get_as() const
+        Ty get() const
         {
-            return get_as<Ty>(nullptr);
+            return get_or<Ty>(nullptr);
         }
     };
 

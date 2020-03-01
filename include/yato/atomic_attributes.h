@@ -39,12 +39,12 @@ namespace yato
         {
             void from_atomic(yato::any & dst, const yato::any & src) const override
             {
-                dst.emplace<std::atomic<Ty>>(src.get_as<std::atomic<Ty>>().load(MemOrder));
+                dst.emplace<std::atomic<Ty>>(src.get<std::atomic<Ty>>().load(MemOrder));
             }
 
             void from_value(yato::any & dst, const yato::any & src) const override
             {
-                dst.get_as<std::atomic<Ty>>().store(src.get_as<Ty>(), MemOrder);
+                dst.get<std::atomic<Ty>>().store(src.get<Ty>(), MemOrder);
             }
 
             std::unique_ptr<any_assigner> clone() const override
@@ -240,7 +240,7 @@ namespace yato
             if (std::type_index(attr.type()) != std::type_index(typeid(std::atomic<AttrType>))) {
                 throw yato::bad_attribute();
             }
-            return attr.get_as<std::atomic<AttrType>>().load(mem_order);
+            return attr.get<std::atomic<AttrType>>().load(mem_order);
         }
 
         /**
@@ -258,7 +258,7 @@ namespace yato
             if (std::type_index(attr.type()) != std::type_index(typeid(std::atomic<AttrType>))) {
                 return default_value;
             }
-            return attr.get_as<std::atomic<AttrType>>().load(mem_order);
+            return attr.get<std::atomic<AttrType>>().load(mem_order);
         }
 
         /**
@@ -276,7 +276,7 @@ namespace yato
             if (std::type_index(attr.type()) != std::type_index(typeid(std::atomic<AttrType>))) {
                 return yato::nullopt_t{};
             }
-            return yato::make_optional<AttrType>(attr.get_as<std::atomic<AttrType>>().load(mem_order));
+            return yato::make_optional<AttrType>(attr.get<std::atomic<AttrType>>().load(mem_order));
         }
 
     };

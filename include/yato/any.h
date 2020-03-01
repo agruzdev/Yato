@@ -285,7 +285,7 @@ namespace yato
         }
 
         template <typename Ty>
-        Ty & get_as()
+        Ty & get()
         {
             if (std::type_index(typeid(Ty)) == std::type_index(type())) {
                 if (m_content != nullptr) {
@@ -296,7 +296,7 @@ namespace yato
         }
 
         template <typename Ty>
-        const Ty & get_as() const
+        const Ty & get() const
         {
             if (std::type_index(typeid(Ty)) == std::type_index(type())) {
                 if (m_content != nullptr) {
@@ -307,7 +307,7 @@ namespace yato
         }
 
         template <typename Ty>
-        Ty & get_as(Ty & default_value) YATO_NOEXCEPT_KEYWORD
+        Ty & get_or(Ty & default_value) YATO_NOEXCEPT_KEYWORD
         {
             if (std::type_index(typeid(Ty)) == std::type_index(type())) {
                 if (m_content != nullptr) {
@@ -318,7 +318,7 @@ namespace yato
         }
 
         template <typename Ty>
-        const Ty & get_as(const Ty & default_value) const YATO_NOEXCEPT_KEYWORD
+        const Ty & get_or(const Ty & default_value) const YATO_NOEXCEPT_KEYWORD
         {
             if (std::type_index(typeid(Ty)) == std::type_index(type())) {
                 if (m_content != nullptr) {
@@ -333,7 +333,7 @@ namespace yato
          * Use only if you are sure what is stored type
          */
         template <typename Ty>
-        Ty & get_as_unsafe()
+        Ty & get_unsafe() &
         {
             assert(m_content != nullptr);
             return static_cast<details::any_holder<Ty>*>(m_content.get())->m_payload;
@@ -344,17 +344,40 @@ namespace yato
          * Use only if you are sure what is stored type
          */
         template <typename Ty>
-        const Ty & get_as_unsafe() const
+        const Ty & get_unsafe() const &
         {
             assert(m_content != nullptr);
             return static_cast<details::any_holder<Ty>*>(m_content.get())->m_payload;
         }
+
+        /**
+         * Get value without check
+         * Use only if you are sure what is stored type
+         */
+        template <typename Ty>
+        Ty && get_unsafe() &&
+        {
+            assert(m_content != nullptr);
+            return std::move(static_cast<details::any_holder<Ty>*>(m_content.get())->m_payload);
+        }
+
+        /**
+         * Get value without check
+         * Use only if you are sure what is stored type
+         */
+        template <typename Ty>
+        const Ty && get_unsafe() const &&
+        {
+            assert(m_content != nullptr);
+            return std::move(static_cast<details::any_holder<Ty>*>(m_content.get())->m_payload);
+        }
+
 
         template <typename Ty_>
         yato::optional<Ty_> get_opt()
         {
             return is_type<Ty_>()
-                ? yato::make_optional(get_as_unsafe<Ty_>())
+                ? yato::make_optional(get_unsafe<Ty_>())
                 : yato::nullopt_t{};
         }
 
@@ -362,7 +385,7 @@ namespace yato
         yato::optional<Ty_> get_opt() const
         {
             return is_type<Ty_>()
-                ? yato::make_optional(get_as_unsafe<Ty_>())
+                ? yato::make_optional(get_unsafe<Ty_>())
                 : yato::nullopt_t{};
         }
     };
@@ -375,13 +398,13 @@ namespace yato
     template <typename ValueType>
     ValueType any_cast(any && operand)
     {
-        return operand.get_as<ValueType>();
+        return operand.get<ValueType>();
     }
 
     template <typename ValueType>
     ValueType any_cast(const any & operand)
     {
-        return operand.get_as<ValueType>();
+        return operand.get<ValueType>();
     }
 
     template <class Ty_, class... Args_>
