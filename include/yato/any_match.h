@@ -17,7 +17,6 @@ namespace yato
 
     template <typename CasesTuple_>
     class any_matcher final
-        : public details::match_dispatcher<yato::any, CasesTuple_>
     {
     private:
         using dispatcher = details::match_dispatcher<yato::any, CasesTuple_>;
@@ -40,17 +39,22 @@ namespace yato
         any_matcher& operator=(any_matcher&&) = default;
 
 
-        result_type operator()(const yato::any & anyval) const
+        result_type operator()(const yato::any& anyval) const
         {
             return dispatcher::match(m_cases, anyval);
         }
 
-        result_type operator()(yato::any & anyval) const
+        result_type operator()(yato::any& anyval) const
+        {
+            return dispatcher::match(m_cases, anyval);
+        }
+
+        result_type operator()(const yato::any&& anyval) const
         {
             return dispatcher::match(m_cases, std::move(anyval));
         }
 
-        result_type operator()(yato::any && anyval) const
+        result_type operator()(yato::any&& anyval) const
         {
             return dispatcher::match(m_cases, std::move(anyval));
         }

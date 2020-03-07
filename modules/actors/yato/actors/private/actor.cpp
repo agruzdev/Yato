@@ -240,7 +240,7 @@ namespace actors
                 }
                 return process_result::keep_running;
             },
-            [this](system_message::selection & select) {
+            [this](system_message::selection select) {
                 auto & path = select.path;
                 if(path.empty()) {
                     // Reached the path's end

@@ -57,7 +57,7 @@ TEST(Yato_AnyMatch, common)
     EXPECT_NO_THROW(r = matcher(xp));
     EXPECT_EQ(3, r);
     EXPECT_NO_THROW(r = matcher(xs));
-    EXPECT_EQ(4, r);
+    EXPECT_EQ(-1, r);
     EXPECT_NO_THROW(r = matcher(std::move(xs)));
     EXPECT_EQ(4, r);
     EXPECT_NO_THROW(r = matcher(cs));
@@ -160,6 +160,9 @@ TEST(Yato_VariantMatch, common)
         [](std::string &&) {
             return 4;
         },
+        [](std::string &) {
+            return 5;
+        },
         [](yato::match_empty_t) {
             return 0;
         },
@@ -174,7 +177,7 @@ TEST(Yato_VariantMatch, common)
     EXPECT_NO_THROW(r = matcher(vf));
     EXPECT_EQ(2, r);
     EXPECT_NO_THROW(r = matcher(vs));
-    EXPECT_EQ(4, r);
+    EXPECT_EQ(5, r);
     EXPECT_NO_THROW(r = matcher(ve));
     EXPECT_EQ(0, r);
     EXPECT_NO_THROW(r = matcher(vc));

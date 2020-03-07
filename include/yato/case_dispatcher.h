@@ -75,83 +75,57 @@ namespace yato
         using match_result_type = decltype(match_result_type_impl(std::declval<CasesTuple_>()));
 
 
-        template <typename AnyTy_, typename CasesTuple_, typename OnDefault_, size_t Len_ = std::tuple_size<CasesTuple_>::value>
+        template <typename Fy_, typename Arg_, typename Val_, typename = void>
+        struct case_is_callable
+            : yato::boolean_constant<yato::is_invocable<Fy_, Val_>::value>
+        { };
+
+        template <typename Fy_, typename Arg_, typename Val_>
+        struct case_is_callable<Fy_, Arg_, Val_, 
+            std::enable_if_t<std::is_reference<Arg_>::value>
+        >
+            : yato::boolean_constant<std::is_convertible<Val_, Arg_>::value>
+        { };
+
+
+        template <typename AnyRef_, typename CasesTuple_, typename OnDefault_, size_t Len_ = std::tuple_size<CasesTuple_>::value>
         struct match_dispatcher_impl
-            : public match_dispatcher_impl<AnyTy_, CasesTuple_, OnDefault_, Len_ - 1>
+            : public match_dispatcher_impl<AnyRef_, CasesTuple_, OnDefault_, Len_ - 1>
         {
-        private:
             static constexpr size_t case_index = std::tuple_size<CasesTuple_>::value - Len_;
 
-            using next_dispatcher = match_dispatcher_impl<AnyTy_, CasesTuple_, OnDefault_, Len_ - 1>;
+            using next_dispatcher = match_dispatcher_impl<AnyRef_, CasesTuple_, OnDefault_, Len_ - 1>;
             using callable_type   = yato::remove_cvref_t<std::tuple_element_t<case_index, CasesTuple_>>;
             using arg_type        = typename yato::callable_trait<callable_type>::template arg<0>::type;
             using arg_decay_type  = yato::remove_cvref_t<arg_type>;
-            //-------------------------------------------------------
+            using get_result_type = decltype(std::declval<AnyRef_>().template get_unsafe<arg_decay_type>());
 
+            template <typename Fy_ = callable_type>
             static
-            decltype(auto) try_next_(const std::type_index & stored_type, const CasesTuple_ & functions, const OnDefault_ & on_default, const AnyTy_ & anyval)
-            {
-                return next_dispatcher::invoke_case(stored_type, functions, on_default, anyval);
-            }
-
-            static
-            decltype(auto) try_next_(const std::type_index & stored_type, const CasesTuple_ & functions, const OnDefault_ & on_default, AnyTy_ && anyval)
-            {
-                return next_dispatcher::invoke_case(stored_type, functions, on_default, std::move(anyval));
-            }
-            //-------------------------------------------------------
-
-            static
-            decltype(auto) invoke_case_impl_(std::true_type /* invocable */, const std::type_index & stored_type, const CasesTuple_ & functions, const OnDefault_ & on_default, const AnyTy_ & anyval)
+            decltype(auto) invoke_case(const std::type_index& stored_type, const CasesTuple_& functions, const OnDefault_& on_default, AnyRef_ anyval,
+                std::enable_if_t<details::case_is_callable<Fy_, arg_type, get_result_type>::value>* = nullptr)
             {
                 return (std::type_index(typeid(arg_decay_type)) == stored_type)
-                    ? std::get<case_index>(functions)(anyval.template get_unsafe<arg_decay_type>())
-                    : try_next_(stored_type, functions, on_default, anyval);
+                    ? std::get<case_index>(functions)(std::forward<AnyRef_>(anyval).template get_unsafe<arg_decay_type>())
+                    : next_dispatcher::invoke_case(stored_type, functions, on_default, std::forward<AnyRef_>(anyval));
             }
 
+            template <typename Fy_ = callable_type>
             static
-            decltype(auto) invoke_case_impl_(std::false_type /* invocable */, const std::type_index & stored_type, const CasesTuple_ & functions, const OnDefault_ & on_default, const AnyTy_ & anyval)
+            decltype(auto) invoke_case(const std::type_index& stored_type, const CasesTuple_& functions, const OnDefault_& on_default, AnyRef_ anyval,
+                std::enable_if_t<!details::case_is_callable<Fy_, arg_type, get_result_type>::value>* = nullptr)
             {
-                return try_next_(stored_type, functions, on_default, std::move(anyval));
+                return next_dispatcher::invoke_case(stored_type, functions, on_default, std::forward<AnyRef_>(anyval));
             }
 
-            static
-            decltype(auto) invoke_case_impl_(std::true_type /* invocable */, const std::type_index & stored_type, const CasesTuple_ & functions, const OnDefault_ & on_default, AnyTy_ && anyval)
-            {
-                return (std::type_index(typeid(arg_decay_type)) == stored_type)
-                    ? std::get<case_index>(functions)(static_cast<arg_type&&>(anyval.template get_unsafe<arg_decay_type>()))
-                    : try_next_(stored_type, functions, on_default, std::move(anyval));
-            }
-
-            static
-            decltype(auto) invoke_case_impl_(std::false_type /* invocable */, const std::type_index & stored_type, const CasesTuple_ & functions, const OnDefault_ & on_default, AnyTy_ && anyval)
-            {
-                return try_next_(stored_type, functions, on_default, std::move(anyval));
-            }
-            //-------------------------------------------------------
-
-        public:
-            static
-            decltype(auto) invoke_case(const std::type_index & stored_type, const CasesTuple_ & functions, const OnDefault_ & on_default, const AnyTy_ & anyval)
-            {
-                using callable_trait = yato::is_invocable<callable_type, decltype(anyval.template get_unsafe<arg_decay_type>())>;
-                return invoke_case_impl_(callable_trait{}, stored_type, functions, on_default, anyval);
-            }
-
-            static
-            decltype(auto) invoke_case(const std::type_index & stored_type, const CasesTuple_ & functions, const OnDefault_ & on_default, AnyTy_ && anyval)
-            {
-                using callable_trait = yato::is_invocable<callable_type, decltype(static_cast<arg_type&&>(anyval.template get_unsafe<arg_decay_type>()))>;
-                return invoke_case_impl_(callable_trait{}, stored_type, functions, on_default, std::move(anyval));
-            }
         };
 
-        template <typename AnyTy_, typename CasesTuple_, typename OnDefault_>
-        struct match_dispatcher_impl<AnyTy_, CasesTuple_, OnDefault_, 0>
+        template <typename AnyRef_, typename CasesTuple_, typename OnDefault_>
+        struct match_dispatcher_impl<AnyRef_, CasesTuple_, OnDefault_, 0>
         {
             template <typename... Args_>
             static
-            decltype(auto) invoke_case(const std::type_index &, const CasesTuple_ & cases, const OnDefault_ & on_default, Args_ && ...)
+            decltype(auto) invoke_case(const std::type_index&, const CasesTuple_& cases, const OnDefault_& on_default, AnyRef_)
             {
                 return on_default(cases);
             }
@@ -170,6 +144,30 @@ namespace yato
 
         public:
             using result_type = match_result_type<CasesTuple_>;
+
+            static
+            result_type match(const CasesTuple_& cases, const AnyTy_& anyval)
+            {
+                return match_impl_<const AnyTy_&>(has_empty_case{}, cases, anyval);
+            }
+
+            static
+            result_type match(const CasesTuple_& cases, AnyTy_& anyval)
+            {
+                return match_impl_<AnyTy_&>(has_empty_case{}, cases, anyval);
+            }
+
+            static
+            result_type match(const CasesTuple_& cases, const AnyTy_&& anyval)
+            {
+                return match_impl_<const AnyTy_&&>(has_empty_case{}, cases, std::move(anyval));
+            }
+
+            static
+            result_type match(const CasesTuple_& cases, AnyTy_&& anyval)
+            {
+                return match_impl_<AnyTy_&&>(has_empty_case{}, cases, std::move(anyval));
+            }
 
         private:
             static
@@ -190,12 +188,12 @@ namespace yato
                 return on_default_impl_(has_default_case{}, cases);
             }
 
-            using dispatcher = match_dispatcher_impl<AnyTy_, CasesTuple_, decltype(&on_default_)>;
 
             template <typename AnyRef_>
             static
-            result_type match_impl_(std::true_type /*has empty case*/, const CasesTuple_ & cases, AnyRef_ && anyval)
+            result_type match_impl_(std::true_type /*has empty case*/, const CasesTuple_& cases, AnyRef_ anyval)
             {
+                using dispatcher = match_dispatcher_impl<AnyRef_, CasesTuple_, decltype(&on_default_)>;
                 return (std::type_index(typeid(void)) == std::type_index(anyval.type()))
                     ? std::get<empty_index>(cases)(match_empty_t{})
                     : dispatcher::invoke_case(std::type_index(anyval.type()), cases, &on_default_, std::forward<AnyRef_>(anyval));
@@ -203,25 +201,15 @@ namespace yato
 
             template <typename AnyRef_>
             static
-            result_type match_impl_(std::false_type /*has empty case*/, const CasesTuple_ & cases, AnyRef_ && anyval)
+            result_type match_impl_(std::false_type /*has empty case*/, const CasesTuple_& cases, AnyRef_ anyval)
             {
+                using dispatcher = match_dispatcher_impl<AnyRef_, CasesTuple_, decltype(&on_default_)>;
                 return (std::type_index(typeid(void)) == std::type_index(anyval.type()))
                     ? on_default_(cases)
                     : dispatcher::invoke_case(std::type_index(anyval.type()), cases, &on_default_, std::forward<AnyRef_>(anyval));
             }
 
-        public:
-            static
-            result_type match(const CasesTuple_ & cases, const AnyTy_ & anyval)
-            {
-                return match_impl_(has_empty_case{}, cases, anyval);
-            }
 
-            static
-            result_type match(const CasesTuple_ & cases, AnyTy_ && anyval)
-            {
-                return match_impl_(has_empty_case{}, cases, std::move(anyval));
-            }
         };
 
 

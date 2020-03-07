@@ -47,6 +47,13 @@ namespace yato
         decltype(auto) operator()(yato::variant<Alternatives_...> & anyval) const
         {
             using dispatcher = details::match_dispatcher<yato::variant<Alternatives_...>, CasesTuple_>;
+            return dispatcher::match(m_cases, anyval);
+        }
+
+        template <typename... Alternatives_>
+        decltype(auto) operator()(const yato::variant<Alternatives_...> && anyval) const
+        {
+            using dispatcher = details::match_dispatcher<yato::variant<Alternatives_...>, CasesTuple_>;
             return dispatcher::match(m_cases, std::move(anyval));
         }
 
