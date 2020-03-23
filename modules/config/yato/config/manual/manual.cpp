@@ -127,7 +127,7 @@ namespace conf {
 
     manual_builder & manual_builder::put(const std::string & name, config val)
     {
-        checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::config>>(val.get_backend()));
+        checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::config>>(val.backend_handle_()));
         return *this;
     }
 
@@ -217,7 +217,7 @@ namespace conf {
 
     manual_builder & manual_builder::add(config val)
     {
-        checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::config>>(val.get_backend()));
+        checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::config>>(val.backend_handle_()));
         return *this;
     }
 

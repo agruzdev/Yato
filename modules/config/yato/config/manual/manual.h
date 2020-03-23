@@ -23,14 +23,6 @@ namespace conf {
     class manual_builder
     {
     public:
-        ~manual_builder();
-
-        manual_builder(const manual_builder&) = delete;
-        manual_builder(manual_builder &&) noexcept;
-
-        manual_builder& operator=(const manual_builder&) = delete;
-        manual_builder& operator=(manual_builder&&) noexcept;
-
         /**
          * Make root object
          */
@@ -46,6 +38,38 @@ namespace conf {
         manual_builder array() {
             return manual_builder(details::array_tag_t{});
         }
+
+
+        /**
+         * Deep copy another config as init state
+         */
+        static
+        manual_builder clone(const yato::config& conf);
+
+
+        /**
+         * Deep copy builder state
+         */
+        manual_builder(const manual_builder& other);
+
+        /**
+         * Move builder state
+         */
+        manual_builder(manual_builder&& other) noexcept;
+
+
+        ~manual_builder();
+
+        /**
+         * Deep copy builder state
+         */
+        manual_builder& operator=(const manual_builder& other);
+
+        /**
+         * Move builder state
+         */
+        manual_builder& operator=(manual_builder&& other) noexcept;
+
 
         /**
          * Add named value.

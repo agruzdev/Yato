@@ -60,15 +60,19 @@ namespace conf {
         //--------------------------------------------------------------
 
     public:
-        basic_path(string_type path, char_type separator = conf::path_separator<char_type>())
+        basic_path(string_type path, char_type separator = conf::path_separator<char_type>())  // NOLINT
             : m_path(std::move(path)), m_separator(separator)
         { }
 
+        basic_path(const char_type* path, char_type separator = conf::path_separator<char_type>())  // NOLINT
+                : m_path(path), m_separator(separator)
+        { }
+
         basic_path(const basic_path&) = default;
-        basic_path(basic_path&&) = default;
+        basic_path(basic_path&&) noexcept = default;
 
         basic_path& operator=(const basic_path&) = default;
-        basic_path& operator=(basic_path&&) = default;
+        basic_path& operator=(basic_path&&) noexcept = default;
 
         ~basic_path() = default;
 
@@ -77,6 +81,7 @@ namespace conf {
             return yato::tokenize_if(m_path.cbegin(), m_path.cend(), yato::equal_to_value<CharTy_>{ m_separator }, skips_empty_names);
         }
 
+        YATO_ATTR_NODISCARD
         const std::string & str() const
         {
             return m_path;

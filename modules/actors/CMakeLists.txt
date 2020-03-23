@@ -15,9 +15,6 @@ include(${TARGET_CONFIG_LISTS})
 if(NOT YATO_BUILD_CONFIG)
     message(FATAL_ERROR "YatoConf is required! Please enable YATO_BUILD_CONFIG")
 endif()
-if(YATO_BUILD_TESTS AND NOT YATO_CONFIG_MANUAL)
-    message(FATAL_ERROR "Manual config backend is required for testing! Please enable YATO_CONFIG_MANUAL")
-endif()
 include_directories(${YATO_SOURCE_DIR}/modules/config)
 
 #==========================================

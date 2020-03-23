@@ -250,17 +250,9 @@ namespace conf {
         virtual stored_type type() const noexcept = 0;
 
         /**
-         * Get value with possible convertion.
+         * Get value with possible conversion.
          */
         virtual stored_variant get() const noexcept = 0;
-
-        /**
-         * Goes to a next value and returns true, otherwise returns false.
-         */
-        virtual bool next() noexcept
-        {
-            return false;
-        }
 
         /**
          * Converts stored value to desired type if possible.

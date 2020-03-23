@@ -18,18 +18,15 @@ file(GLOB config_sources
 list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests")
 
 # Manual
-option(YATO_CONFIG_MANUAL "Enable manual config" ON)
-if(YATO_CONFIG_MANUAL)
-    file(GLOB manual_sources
-        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/manual/*.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/manual/*.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/manual/private/*.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/manual/private/*.cpp"
-    )
-    list(APPEND config_sources ${manual_sources})
-    list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/manual")
-    set(CONFIG_NON_EMPTY_TEST ON)
-endif()
+file(GLOB manual_sources
+    "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/manual/*.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/manual/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/manual/private/*.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/yato/config/manual/private/*.cpp"
+)
+list(APPEND config_sources ${manual_sources})
+list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/manual")
+set(CONFIG_NON_EMPTY_TEST ON)
 
 # Json
 option(YATO_CONFIG_JSON "Enable json config backend" OFF)
@@ -117,7 +114,7 @@ if(YATO_CONFIG_YAML)
 endif()
 
 include_directories(${YATO_INCLUDE_DIRS})
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${config_sources})
 

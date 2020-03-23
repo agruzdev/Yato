@@ -222,7 +222,6 @@ foreach(CURRENT_TARGET ${all_build_targers})
         
         if(_CONFIG)
             list(APPEND configure_flags -DYATO_BUILD_CONFIG=ON)
-            list(APPEND configure_flags -DYATO_CONFIG_MANUAL=ON)
             list(APPEND configure_flags -DYATO_CONFIG_JSON=ON)
             list(APPEND configure_flags -DYATO_CONFIG_CMD=ON)
             list(APPEND configure_flags -DYATO_CONFIG_XML=ON)

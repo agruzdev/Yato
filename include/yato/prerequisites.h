@@ -97,10 +97,12 @@
 
 #if (defined(__cplusplus) && (__cplusplus >= 201700L))
 # define YATO_INLINE_VARIABLE inline
-# define YATO_ATTR_FALLTHROUGH fallthrough
+# define YATO_ATTR_FALLTHROUGH [[fallthrough]]
+# define YATO_ATTR_NODISCARD [[nodiscard]]
 #else
 # define YATO_INLINE_VARIABLE
 # define YATO_ATTR_FALLTHROUGH
+# define YATO_ATTR_NODISCARD
 #endif
 
 // ToDo (a.gruzdev): Need to check condition more carefully

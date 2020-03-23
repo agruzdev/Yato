@@ -43,13 +43,15 @@ TEST(Yato_ConfigOps, manual_config_ops_join2)
     const auto conf1 = yato::conf::manual_builder::object()
         .put("int", 42)
         .put("nested", yato::conf::manual_builder::object()
+            .put("value1", 80)
+            .put("value3", 30)
             .create())
         .create();
 
     const auto conf2 = yato::conf::manual_builder::object()
         .put("flag", true)
         .put("nested", yato::conf::manual_builder::object()
-            .put("value", 101)
+            .put("value2", 101)
             .create())
         .create();
 
