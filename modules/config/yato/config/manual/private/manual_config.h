@@ -330,11 +330,11 @@ namespace conf {
                         if (entry.key() == name) {
                             if (path_tokenizer.has_next()) {
                                 config_copy->put(name, wrap_config_(copy_with_path_impl_(entry.object(), path_tokenizer, std::move(value))));
-                                key_replaced = true;
                             }
                             else {
                                 config_copy->put(name, std::move(value));
                             }
+                            key_replaced = true;
                         } else {
                             auto value_copy = copy_value_(entry.value_handle_()->get());
                             if (value_copy) {

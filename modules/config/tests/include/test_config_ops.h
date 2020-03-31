@@ -201,6 +201,10 @@ void TestConfig_ObjJoin2(const yato::conf::config & conf1, const yato::conf::con
     EXPECT_EQ(80, c8.value<int>("nested.value1").get_or(-1));
     EXPECT_EQ(101, c8.value<int>("nested.value2").get_or(-1));
     EXPECT_EQ(30, c8.value<int>("nested.value3").get_or(-1));
+
+    const auto c9 = conf1.with_value("int", 10);
+    EXPECT_EQ(10, c9.value<int>("int").get_or(-1));
+    EXPECT_EQ(80, c9.value<int>("nested.value1").get_or(-1));
 }
 
 
