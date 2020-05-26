@@ -863,7 +863,7 @@ namespace conf {
         YATO_ATTR_NODISCARD
         config with_value(const conf::path& path, bool value) const
         {
-            return with_value_(path, stored_variant(yato::in_place_type_t<typename stored_type_trait<stored_type::real>::return_type>{}, value));
+            return with_value_(path, stored_variant(yato::in_place_type_t<typename stored_type_trait<stored_type::boolean>::return_type>{}, value));
         }
 
         /**
