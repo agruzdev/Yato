@@ -580,6 +580,10 @@ namespace yato
 
             static YATO_CONSTEXPR_VAR size_t dimensions_number = _DimensionsNum;
             static_assert(dimensions_number > 1, "Implementation for dimensions number larger than 1");
+
+            using basic_container = const_container_nd<value_type, _DimensionsNum, vector_nd_impl<_DataType, _DimensionsNum, _Allocator, CapacityPolicy_>>;
+            YATO_IMPORT_CONTAINER_ND_INTERFACE(basic_container)
+
             //-------------------------------------------------------
 
         private:
@@ -771,6 +775,18 @@ namespace yato
             {
                 return const_sub_proxy(plain_position, &m_descriptors[1]);
             }
+
+
+            sub_proxy subscript_(std::ptrdiff_t offset) YATO_NOEXCEPT_KEYWORD
+            {
+                return sub_proxy(m_raw_vector.ptr() + offset * std::get<dim_descriptor::idx_total>(m_descriptors[1]), &m_descriptors[1]);
+            }
+
+            const_sub_proxy csubscript_(std::ptrdiff_t offset) const YATO_NOEXCEPT_KEYWORD
+            {
+                return const_sub_proxy(m_raw_vector.ptr() + offset * std::get<dim_descriptor::idx_total>(m_descriptors[1]), &m_descriptors[1]);
+            }
+
 
             void init_subsizes_() YATO_NOEXCEPT_KEYWORD
             {
@@ -1225,31 +1241,32 @@ namespace yato
                 YATO_REQUIRES(idx < size(0));
                 return create_proxy_(idx);
             }
-            /**
-             *  Element access with bounds check
-             */
-            template<typename... _Tail>
-            auto at(size_t idx, _Tail &&... tail) const
-                -> typename std::enable_if<(yato::args_length<_Tail...>::value == dimensions_number - 1), const_reference>::type
-            {
-                if (idx >= size(0)) {
-                    throw yato::out_of_range_error("yato::vector_nd: out of range!");
-                }
-                return (*this)[idx].at(std::forward<_Tail>(tail)...);
-            }
 
-            /**
-             *  Element access with bounds check
-             */
-            template<typename... _Tail>
-            auto at(size_t idx, _Tail &&... tail)
-                -> typename std::enable_if<(yato::args_length<_Tail...>::value == dimensions_number - 1), reference>::type
-            {
-                if (idx >= size(0)) {
-                    throw yato::out_of_range_error("yato::vector_nd: out of range!");
-                }
-                return (*this)[idx].at(std::forward<_Tail>(tail)...);
-            }
+            ///**
+            // *  Element access with bounds check
+            // */
+            //template<typename... _Tail>
+            //auto at(size_t idx, _Tail &&... tail) const
+            //    -> typename std::enable_if<(yato::args_length<_Tail...>::value == dimensions_number - 1), const_reference>::type
+            //{
+            //    if (idx >= size(0)) {
+            //        throw yato::out_of_range_error("yato::vector_nd: out of range!");
+            //    }
+            //    return (*this)[idx].at(std::forward<_Tail>(tail)...);
+            //}
+            //
+            ///**
+            // *  Element access with bounds check
+            // */
+            //template<typename... _Tail>
+            //auto at(size_t idx, _Tail &&... tail)
+            //    -> typename std::enable_if<(yato::args_length<_Tail...>::value == dimensions_number - 1), reference>::type
+            //{
+            //    if (idx >= size(0)) {
+            //        throw yato::out_of_range_error("yato::vector_nd: out of range!");
+            //    }
+            //    return (*this)[idx].at(std::forward<_Tail>(tail)...);
+            //}
 
             /**
              *  Iterator for accessing sub-array elements along the top dimension
@@ -1974,6 +1991,9 @@ namespace yato
 
             using iterator = data_iterator;
             using const_iterator = const_data_iterator;
+
+            using basic_container = const_container_nd<_DataType, 1, vector_nd_impl<_DataType, 1, _Allocator, CapacityPolicy_>>;
+            YATO_IMPORT_CONTAINER_ND_INTERFACE(basic_container)
             //-------------------------------------------------------
 
         private:
@@ -2039,6 +2059,16 @@ namespace yato
             void tidy_()
             {
                 m_size = 0;
+            }
+
+            reference subscript_(std::ptrdiff_t offset) YATO_NOEXCEPT_KEYWORD
+            {
+                return *(m_raw_vector.ptr() + offset);
+            }
+
+            const_reference csubscript_(std::ptrdiff_t offset) const YATO_NOEXCEPT_KEYWORD
+            {
+                return *(m_raw_vector.ptr() + offset);
             }
             //-------------------------------------------------------
 
@@ -2447,27 +2477,27 @@ namespace yato
                 return *(m_raw_vector.ptr() + idx);
             }
 
-            /**
-             *  Element access with bounds check
-             */
-            const_reference at(size_t idx) const
-            {
-                if(idx >= m_size) {
-                    throw yato::out_of_range_error("yato::vector_1d: Index " + yato::stl::to_string(idx) + " is out of range!");
-                }
-                return operator[](idx);
-            }
-
-            /**
-             *  Element access with bounds check
-             */
-            reference at(size_t idx)
-            {
-                if(idx >= m_size) {
-                    throw yato::out_of_range_error("yato::vector_1d: Index " + yato::stl::to_string(idx) + " is out of range!");
-                }
-                return operator[](idx);
-            }
+            ///**
+            // *  Element access with bounds check
+            // */
+            //const_reference at(size_t idx) const
+            //{
+            //    if(idx >= m_size) {
+            //        throw yato::out_of_range_error("yato::vector_1d: Index " + yato::stl::to_string(idx) + " is out of range!");
+            //    }
+            //    return operator[](idx);
+            //}
+            //
+            ///**
+            // *  Element access with bounds check
+            // */
+            //reference at(size_t idx)
+            //{
+            //    if(idx >= m_size) {
+            //        throw yato::out_of_range_error("yato::vector_1d: Index " + yato::stl::to_string(idx) + " is out of range!");
+            //    }
+            //    return operator[](idx);
+            //}
 
             /**
              *  Iterator for accessing sub-array elements along the top dimension

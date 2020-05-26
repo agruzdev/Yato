@@ -180,21 +180,21 @@ namespace yato
                 });
             }
 
-            sub_view get_sub_view_(size_t idx) const
+            sub_view get_sub_view_(std::ptrdiff_t offset) const
             {
                 value_iterator sub_view_ptr{ m_base_ptr };
-                details::advance_bytes(sub_view_ptr, idx * dim_descriptor::offset_to_bytes<value_type>(std::get<dim_descriptor::idx_offset>(m_descriptors[1])));
+                details::advance_bytes(sub_view_ptr, offset * dim_descriptor::offset_to_bytes<value_type>(std::get<dim_descriptor::idx_offset>(m_descriptors[1])));
                 return sub_view(sub_view_ptr, &(m_descriptors[1]));
             }
 
-            iterator get_iterator_(size_t idx) const
+            iterator get_iterator_(std::ptrdiff_t offset) const
             {
-                return static_cast<iterator>(get_sub_view_(idx));
+                return static_cast<iterator>(get_sub_view_(offset));
             }
 
-            const_iterator get_const_iterator_(size_t idx) const
+            const_iterator get_const_iterator_(std::ptrdiff_t offset) const
             {
-                return static_cast<const_iterator>(get_sub_view_(idx));
+                return static_cast<const_iterator>(get_sub_view_(offset));
             }
 
             template<typename... IdxTail>
@@ -204,7 +204,7 @@ namespace yato
                 if (idx >= get_size_(0)) {
                     throw yato::out_of_range_error("yato::array_view_nd[at]: out of range!");
                 }
-                return get_sub_view_(idx).at(std::forward<IdxTail>(tail)...);
+                return get_sub_view_(yato::narrow_cast<std::ptrdiff_t>(idx)).at(std::forward<IdxTail>(tail)...);
             }
 
             bool is_continuous_() const
@@ -338,19 +338,19 @@ namespace yato
                 return yato::range<const size_type*>(nullptr, nullptr);
             }
 
-            value_reference get_sub_view_(size_t idx) const
+            value_reference get_sub_view_(std::ptrdiff_t offset) const
             {
-                return *std::next(m_base_ptr, idx);
+                return *std::next(m_base_ptr, offset);
             }
 
-            iterator get_iterator_(size_t idx) const
+            iterator get_iterator_(std::ptrdiff_t offset) const
             {
-                return std::next(m_base_ptr, idx);
+                return std::next(m_base_ptr, offset);
             }
 
-            const_iterator get_const_iterator_(size_t idx) const
+            const_iterator get_const_iterator_(std::ptrdiff_t offset) const
             {
-                return std::next(m_base_ptr, idx);
+                return std::next(m_base_ptr, offset);
             }
 
             value_reference at_impl_(size_t idx) const
@@ -358,7 +358,7 @@ namespace yato
                 if (idx >= m_size[0]) {
                     throw yato::out_of_range_error("yato::array_view_nd[at]: out of range!");
                 }
-                return get_sub_view_(idx);
+                return get_sub_view_(yato::narrow_cast<std::ptrdiff_t>(idx));
             }
 
             bool is_continuous_() const
@@ -403,8 +403,23 @@ namespace yato
         using typename base_type::const_iterator;
         using typename base_type::plain_iterator;
         using typename base_type::const_plain_iterator;
+
+        using basic_container = details::choose_container_interface_t<ValueType_, DimsNum, array_view_nd<ValueType_, DimsNum>>;
+        YATO_IMPORT_CONTAINER_ND_INTERFACE(basic_container)
         //-------------------------------------------------------
 
+    private:
+        reference subscript_(std::ptrdiff_t offset) const YATO_NOEXCEPT_KEYWORD
+        {
+            return base_type::get_sub_view_(offset);
+        }
+
+        const_reference csubscript_(std::ptrdiff_t offset) const YATO_NOEXCEPT_KEYWORD
+        {
+            return base_type::get_sub_view_(offset);
+        }
+
+    public:
         array_view_nd()
             : base_type(nullptr, dimensions_type{}, element_strides_type{})
         { }
@@ -494,15 +509,15 @@ namespace yato
         reference operator[](size_t idx) const
         {
             YATO_REQUIRES(idx < base_type::get_size_(0));
-            return base_type::get_sub_view_(idx);
+            return base_type::get_sub_view_(yato::narrow_cast<std::ptrdiff_t>(idx));
         }
 
-        template <typename... Indexes>
-        auto at(Indexes &&... indexes) const
-            -> typename std::enable_if<(sizeof...(Indexes) == dimensions_number), value_reference>::type
-        {
-            return base_type::at_impl_(std::forward<Indexes>(indexes)...);
-        }
+        //template <typename... Indexes>
+        //auto at(Indexes &&... indexes) const
+        //    -> typename std::enable_if<(sizeof...(Indexes) == dimensions_number), value_reference>::type
+        //{
+        //    return base_type::at_impl_(std::forward<Indexes>(indexes)...);
+        //}
 
         size_type total_size() const
         {

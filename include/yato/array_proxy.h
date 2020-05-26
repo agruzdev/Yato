@@ -71,6 +71,9 @@ namespace yato
         using const_plain_iterator = typename proxy_access_traits<value_type, access_policy>::const_plain_iterator;
 
         using dimensions_type = dimensionality<dimensions_number, size_type>;
+
+        using basic_container = details::choose_container_interface_t<ValueType_, DimsNum_, proxy_nd<ValueType_, DimensionDescriptor_, DimsNum_, AccessPolicy_>>;
+        YATO_IMPORT_CONTAINER_ND_INTERFACE(basic_container)
         //-------------------------------------------------------
 
         template <proxy_access_policy Py_>
@@ -108,6 +111,23 @@ namespace yato
             details::advance_bytes(sub_proxy_iter, offset * dim_descriptor::template offset_to_bytes<value_type>(std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter))));
             return const_sub_view(sub_proxy_iter, std::next(m_desc_iter));
         }
+
+        YATO_CONSTEXPR_FUNC_CXX14
+        sub_view subscript_(std::ptrdiff_t offset) const YATO_NOEXCEPT_KEYWORD
+        {
+            data_iterator sub_proxy_iter{ m_data_iter };
+            details::advance_bytes(sub_proxy_iter, offset * dim_descriptor::template offset_to_bytes<value_type>(std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter))));
+            return sub_view(sub_proxy_iter, std::next(m_desc_iter));
+        }
+
+        YATO_CONSTEXPR_FUNC_CXX14
+        const_sub_view csubscript_(std::ptrdiff_t offset) const YATO_NOEXCEPT_KEYWORD
+        {
+            data_iterator sub_proxy_iter{ m_data_iter };
+            details::advance_bytes(sub_proxy_iter, offset * dim_descriptor::template offset_to_bytes<value_type>(std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter))));
+            return const_sub_view(sub_proxy_iter, std::next(m_desc_iter));
+        }
+
         //-------------------------------------------------------
 
     public:
@@ -158,14 +178,14 @@ namespace yato
             return create_sub_view_(idx);
         }
 
-        template<typename... IdxTail_>
-        reference_type at(size_t idx, IdxTail_... tail) const
-        {
-            if (idx >= size(0)) {
-                throw yato::out_of_range_error("yato::array_sub_view_nd: out of range!");
-            }
-            return (*this)[idx].at(tail...);
-        }
+        //template<typename... IdxTail_>
+        //reference_type at(size_t idx, IdxTail_... tail) const
+        //{
+        //    if (idx >= size(0)) {
+        //        throw yato::out_of_range_error("yato::array_sub_view_nd: out of range!");
+        //    }
+        //    return (*this)[idx].at(tail...);
+        //}
 
 
         /**
@@ -426,6 +446,9 @@ namespace yato
         using const_iterator = const_plain_iterator;
 
         using dimensions_type = dimensionality<dimensions_number, size_type>;
+
+        using basic_container = details::choose_container_interface_t<ValueType_, 1, proxy_nd<ValueType_, DimensionDescriptor_, 1, AccessPolicy_>>;
+        YATO_IMPORT_CONTAINER_ND_INTERFACE(basic_container)
         //-------------------------------------------------------
 
         template <proxy_access_policy Py_>
@@ -447,6 +470,18 @@ namespace yato
         std::add_const_t<std::add_pointer_t<ValueType_>> & raw_ptr_() const
         {
             return m_data_iter;
+        }
+
+        YATO_CONSTEXPR_FUNC_CXX14
+        reference_type subscript_(std::ptrdiff_t offset) const YATO_NOEXCEPT_KEYWORD
+        {
+            return *std::next(m_data_iter, offset);
+        }
+
+        YATO_CONSTEXPR_FUNC_CXX14
+        reference_type csubscript_(std::ptrdiff_t offset) const YATO_NOEXCEPT_KEYWORD
+        {
+            return *std::next(m_data_iter, offset);
         }
         //-------------------------------------------------------
 
@@ -508,13 +543,13 @@ namespace yato
             return *std::next(m_data_iter, idx);
         }
 
-        reference_type at(size_t idx) const
-        {
-            if (idx >= size(0)) {
-                throw yato::out_of_range_error("yato::array_sub_view_nd: out of range!");
-            }
-            return (*this)[idx];
-        }
+        //reference_type at(size_t idx) const
+        //{
+        //    if (idx >= size(0)) {
+        //        throw yato::out_of_range_error("yato::array_sub_view_nd: out of range!");
+        //    }
+        //    return (*this)[idx];
+        //}
 
         /**
          *  Get number of dimensions

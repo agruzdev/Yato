@@ -66,6 +66,111 @@ namespace yato
         }
     };
 
+
+    /**
+     * Sampling traits
+     * Default sampler behaves similar to standard at() throwing out_of_bounds exception for invalid indexes
+     * Each sampler must provide:
+     *   index_type - type used as argument
+     *   return_type<> - type returned by sampler access
+     *   is_valid_index() - static function checking if index is within valid bounds. If true, then wrap_index() is called to get element offset, else boundary_value() is returned.
+     *   wrap_index() - static function transforming provided index to element offset.
+     *   boundary_value() - static function providing read-only value returned for invalid indexes.
+     */
+    struct sampler_default
+    {
+        using index_type = std::size_t;
+
+        template <typename ValueType_>
+        using return_type = std::add_lvalue_reference_t<std::add_const_t<ValueType_>>;
+
+
+        static YATO_CONSTEXPR_FUNC
+        bool is_valid_index(index_type i, std::size_t size)
+        {
+            return i < size;
+        }
+
+        static YATO_CONSTEXPR_FUNC
+        std::ptrdiff_t wrap_index(index_type i, std::size_t /*size*/)
+        {
+            return i;
+        }
+
+        template <typename ValueType_>
+        YATO_NORETURN static
+        return_type<ValueType_> boundary_value()
+        {
+            throw yato::out_of_range_error("index is out of bounds");
+        }
+    };
+
+    /**
+     * Returns zero for out of bounds access
+     */
+    struct sampler_zero
+    {
+        using index_type = yato::int32_t;
+
+        template <typename ValueType_>
+        using return_type = ValueType_;
+
+
+        static YATO_CONSTEXPR_FUNC
+        bool is_valid_index(index_type i, std::size_t size)
+        {
+            return i >= 0 && static_cast<std::size_t>(i) < size;
+        }
+
+        static YATO_CONSTEXPR_FUNC
+        std::ptrdiff_t wrap_index(index_type i, std::size_t /*size*/)
+        {
+            return i;
+        }
+
+        template <typename ValueType_>
+        static
+        return_type<ValueType_> boundary_value()
+        {
+            return static_cast<ValueType_>(0);
+        }
+    };
+
+
+    /**
+     * Clamps access index to [0, size) for the each dimension
+     */
+    struct sampler_clamp
+    {
+        using index_type = yato::int32_t;
+
+        template <typename ValueType_>
+        using return_type = std::add_lvalue_reference_t<std::add_const_t<ValueType_>>;
+
+
+        static YATO_CONSTEXPR_FUNC
+        bool is_valid_index(index_type /*i*/, std::size_t size)
+        {
+            return size != 0;
+        }
+
+        static YATO_CONSTEXPR_FUNC
+        std::ptrdiff_t wrap_index(index_type i, std::size_t size)
+        {
+            return std::min(static_cast<std::size_t>(std::max(static_cast<index_type>(0), i)), size - 1);
+        }
+
+        template <typename ValueType_>
+        YATO_NORETURN static
+        return_type<ValueType_> boundary_value()
+        {
+            throw yato::out_of_range_error("index is out of bounds");
+        }
+    };
+
+
+
+
     namespace details
     {
         // Interpret as byte offset
@@ -149,6 +254,7 @@ YATO_PRAGMA_WARNING_POP
             return m_extents[idx];
         }
 
+        YATO_CONSTEXPR_FUNC
         size_type & operator[](size_t idx)
         {
             return m_extents[idx];
@@ -171,9 +277,39 @@ YATO_PRAGMA_WARNING_POP
         }
 
         YATO_CONSTEXPR_FUNC
-        SizeType total_size() const
+        size_t size() const
+        {
+            return dimensions_number;
+        }
+
+        YATO_CONSTEXPR_FUNC
+        size_type total_size() const
         {
             return total_size_impl_(0);
+        }
+
+        YATO_CONSTEXPR_FUNC
+        size_type front() const
+        {
+            return m_extents.front();
+        }
+
+        YATO_CONSTEXPR_FUNC
+        size_type front()
+        {
+            return m_extents.front();
+        }
+
+        YATO_CONSTEXPR_FUNC
+        size_type back() const
+        {
+            return m_extents.back();
+        }
+
+        YATO_CONSTEXPR_FUNC
+        size_type back()
+        {
+            return m_extents.back();
         }
 
         iterator begin()
@@ -521,7 +657,7 @@ YATO_PRAGMA_WARNING_POP
 
 
     //-----------------------------------------------------------------------------
-    // access policy
+    // Access policy
 
     enum class proxy_access_policy
     {

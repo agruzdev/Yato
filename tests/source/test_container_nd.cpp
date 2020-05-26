@@ -152,3 +152,77 @@ TEST(Yato_ContainerND, access_1)
     EXPECT_EQ(10, v1[6]);
     EXPECT_EQ(10, v1[7]);
 }
+
+
+TEST(Yato_ContainerND, sampler_default)
+{
+    yato::vector_nd<int, 2> v1 = {
+        { 1, 2 },
+        { 3, 4 }
+    };
+
+    EXPECT_EQ(1, v1.at<yato::sampler_default>(0, 0));
+    EXPECT_EQ(2, v1.at<yato::sampler_default>(0, 1));
+    EXPECT_EQ(3, v1.at<yato::sampler_default>(1, 0));
+    EXPECT_EQ(4, v1.at<yato::sampler_default>(1, 1));
+
+    EXPECT_THROW(v1.at<yato::sampler_default>(1, 2), yato::out_of_range_error);
+    EXPECT_THROW(v1.at<yato::sampler_default>(2, 1), yato::out_of_range_error);
+    EXPECT_THROW(v1.at<yato::sampler_default>(10, 1), yato::out_of_range_error);
+    EXPECT_THROW(v1.at<yato::sampler_default>(10, 11), yato::out_of_range_error);
+}
+
+TEST(Yato_ContainerND, sampler_zero)
+{
+    yato::vector_nd<int, 2> v1 = {
+        { 1, 2 },
+        { 3, 4 }
+    };
+
+    EXPECT_EQ(1, v1.at<yato::sampler_zero>(0, 0));
+    EXPECT_EQ(2, v1.at<yato::sampler_zero>(0, 1));
+    EXPECT_EQ(3, v1.at<yato::sampler_zero>(1, 0));
+    EXPECT_EQ(4, v1.at<yato::sampler_zero>(1, 1));
+
+    EXPECT_EQ(0, v1.at<yato::sampler_zero>(-1, 0));
+    EXPECT_EQ(0, v1.at<yato::sampler_zero>(0, -1));
+    EXPECT_EQ(0, v1.at<yato::sampler_zero>(1, 2));
+    EXPECT_EQ(0, v1.at<yato::sampler_zero>(2, 1));
+}
+
+TEST(Yato_ContainerND, sampler_clamp)
+{
+    yato::vector_nd<int, 2> v1 = {
+        { 1, 2 },
+        { 3, 4 }
+    };
+
+    EXPECT_EQ(1, v1.at<yato::sampler_clamp>(0, 0));
+    EXPECT_EQ(2, v1.at<yato::sampler_clamp>(0, 1));
+    EXPECT_EQ(3, v1.at<yato::sampler_clamp>(1, 0));
+    EXPECT_EQ(4, v1.at<yato::sampler_clamp>(1, 1));
+
+    EXPECT_EQ(1, v1.at<yato::sampler_clamp>(-1, 0));
+    EXPECT_EQ(1, v1.at<yato::sampler_clamp>(0, -1));
+    EXPECT_EQ(4, v1.at<yato::sampler_clamp>(1, 2));
+    EXPECT_EQ(4, v1.at<yato::sampler_clamp>(2, 1));
+
+
+    yato::vector_nd<int, 1> v2 = {
+        { 1, 2, 3 }
+    };
+
+    auto view2 = yato::cview(v2).reshape(yato::dims(1, 1, 3));
+
+    EXPECT_EQ(1, view2.at<yato::sampler_clamp>(0, 0, 0));
+    EXPECT_EQ(2, view2.at<yato::sampler_clamp>(0, 0, 1));
+    EXPECT_EQ(3, view2.at<yato::sampler_clamp>(0, 0, 2));
+    EXPECT_EQ(1, view2.at<yato::sampler_clamp>(1, 0, 0));
+    EXPECT_EQ(2, view2.at<yato::sampler_clamp>(0, 2, 1));
+    EXPECT_EQ(3, view2.at<yato::sampler_clamp>(3, 0, 2));
+    EXPECT_EQ(1, view2.at<yato::sampler_clamp>(3, 2, 0));
+    EXPECT_EQ(2, view2.at<yato::sampler_clamp>(1, 1, 1));
+    EXPECT_EQ(3, view2.at<yato::sampler_clamp>(4, 4, 2));
+}
+
+
