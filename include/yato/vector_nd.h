@@ -776,6 +776,11 @@ namespace yato
                 return const_sub_proxy(plain_position, &m_descriptors[1]);
             }
 
+            YATO_CONSTEXPR_FUNC_CXX14
+            size_type size_(size_t idx) const YATO_NOEXCEPT_KEYWORD
+            {
+                return std::get<dim_descriptor::idx_size>(m_descriptors[idx]);
+            }
 
             sub_proxy subscript_(std::ptrdiff_t offset) YATO_NOEXCEPT_KEYWORD
             {
@@ -1223,6 +1228,7 @@ namespace yato
                 swap(m_descriptors, other.m_descriptors);
                 m_raw_vector.swap(other.m_raw_vector);
             }
+#if 0
             /**
              *  Element access without bounds check in release
              */
@@ -1232,14 +1238,16 @@ namespace yato
                 YATO_REQUIRES(idx < size(0));
                 return create_const_proxy_(idx);
             }
+#endif
+
             /**
              *  Element access without bounds check in release
              */
             YATO_CONSTEXPR_FUNC_CXX14
             sub_proxy operator[](size_t idx) YATO_NOEXCEPT_KEYWORD
             {
-                YATO_REQUIRES(idx < size(0));
-                return create_proxy_(idx);
+                YATO_REQUIRES(idx < size_(0));
+                return subscript_(yato::narrow_cast<std::ptrdiff_t>(idx));
             }
 
             ///**
@@ -1500,7 +1508,7 @@ namespace yato
             {
                 return dimensions_range().tail().map([](size_type s){ return s * sizeof(value_type); });
             }
-
+#if 0
             /**
              *  Get size of specified dimension
              *  If the vector is empty ( empty() returns true ) then calling for size(idx) returns 0 for idx = 0; Return value for any idx > 0 is undefined
@@ -1511,6 +1519,7 @@ namespace yato
                 YATO_REQUIRES(idx < dimensions_number);
                 return std::get<dim_descriptor::idx_size>(m_descriptors[idx]);
             }
+#endif
             /**
              * Return stride in bytes
              */
@@ -2061,15 +2070,25 @@ namespace yato
                 m_size = 0;
             }
 
+            YATO_CONSTEXPR_FUNC_CXX14
             reference subscript_(std::ptrdiff_t offset) YATO_NOEXCEPT_KEYWORD
             {
                 return *(m_raw_vector.ptr() + offset);
             }
 
+            YATO_CONSTEXPR_FUNC_CXX14
             const_reference csubscript_(std::ptrdiff_t offset) const YATO_NOEXCEPT_KEYWORD
             {
                 return *(m_raw_vector.ptr() + offset);
             }
+
+            YATO_CONSTEXPR_FUNC_CXX14
+            size_t size_(size_t idx) const
+            {
+                YATO_MAYBE_UNUSED(idx);
+                return m_size;
+            }
+
             //-------------------------------------------------------
 
         public:
@@ -2456,7 +2475,7 @@ namespace yato
                 m_raw_vector.swap(other.m_raw_vector);
                 std::swap(m_size, other.m_size);
             }
-
+#if 0
             /**
              *  Element access without bounds check in release
              */
@@ -2466,15 +2485,15 @@ namespace yato
                 YATO_REQUIRES(idx < m_size);
                 return *(m_raw_vector.ptr() + idx);
             }
-
+#endif
             /**
              *  Element access without bounds check in release
              */
             YATO_CONSTEXPR_FUNC_CXX14
             reference operator[](size_t idx) YATO_NOEXCEPT_KEYWORD
             {
-                YATO_REQUIRES(idx < m_size);
-                return *(m_raw_vector.ptr() + idx);
+                YATO_REQUIRES(idx < size_(0));
+                return subscript_(yato::narrow_cast<std::ptrdiff_t>(idx));
             }
 
             ///**
@@ -2731,7 +2750,7 @@ namespace yato
             {
                 return yato::range<const size_type*>(nullptr, nullptr);
             }
-
+#if 0
             /**
              *  Get size of specified dimension
              */
@@ -2749,7 +2768,7 @@ namespace yato
             {
                 return m_size;
             }
-
+#endif
             /**
              *  1D vector has no stride
              */

@@ -121,11 +121,17 @@ namespace yato
         }
 
         YATO_CONSTEXPR_FUNC_CXX14
-        const_sub_view csubscript_(std::ptrdiff_t offset) const YATO_NOEXCEPT_KEYWORD
+        sub_view csubscript_(std::ptrdiff_t offset) const YATO_NOEXCEPT_KEYWORD
         {
             data_iterator sub_proxy_iter{ m_data_iter };
             details::advance_bytes(sub_proxy_iter, offset * dim_descriptor::template offset_to_bytes<value_type>(std::get<dim_descriptor::idx_offset>(*std::next(m_desc_iter))));
-            return const_sub_view(sub_proxy_iter, std::next(m_desc_iter));
+            return sub_view(sub_proxy_iter, std::next(m_desc_iter));
+        }
+
+        YATO_CONSTEXPR_FUNC_CXX14
+        size_type size_(size_t idx) const YATO_NOEXCEPT_KEYWORD
+        {
+            return std::get<dim_descriptor::idx_size>(*std::next(m_desc_iter, idx));
         }
 
         //-------------------------------------------------------
@@ -170,14 +176,14 @@ namespace yato
         }
 
         ~proxy_nd() = default;
-
+#if 0
         YATO_CONSTEXPR_FUNC_CXX14
         sub_view operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
         {
             YATO_REQUIRES(idx < size(0));
             return create_sub_view_(idx);
         }
-
+#endif
         //template<typename... IdxTail_>
         //reference_type at(size_t idx, IdxTail_... tail) const
         //{
@@ -242,7 +248,7 @@ namespace yato
                 return dim_descriptor::template offset_to_bytes<value_type>(std::get<dim_descriptor::idx_offset>(d));
             });
         }
-
+#if 0
         /**
          *  Get size along one dimension
          */
@@ -252,7 +258,7 @@ namespace yato
             YATO_REQUIRES(idx < dimensions_number);
             return std::get<dim_descriptor::idx_size>(*std::next(m_desc_iter, idx));
         }
-
+#endif
         /**
          *  Get byte offset till next sub-proxy
          *  Returns size in bytes for 1D proxy
@@ -483,6 +489,14 @@ namespace yato
         {
             return *std::next(m_data_iter, offset);
         }
+
+        YATO_CONSTEXPR_FUNC_CXX14
+        size_type size_(size_t idx) const YATO_NOEXCEPT_KEYWORD
+        {
+            YATO_MAYBE_UNUSED(idx);
+            YATO_REQUIRES(idx < dimensions_number);
+            return *m_size_ptr;
+        }
         //-------------------------------------------------------
 
     public:
@@ -536,13 +550,14 @@ namespace yato
 
         ~proxy_nd() = default;
 
+#if 0
         YATO_CONSTEXPR_FUNC_CXX14
         reference_type operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
         {
             YATO_REQUIRES(idx < size(0));
             return *std::next(m_data_iter, idx);
         }
-
+#endif
         //reference_type at(size_t idx) const
         //{
         //    if (idx >= size(0)) {
@@ -595,7 +610,7 @@ namespace yato
         {
             return yato::range<const size_type*>(nullptr, nullptr);
         }
-
+#if 0
         /**
          *  Get size along one dimension
          */
@@ -606,7 +621,7 @@ namespace yato
             YATO_REQUIRES(idx < dimensions_number);
             return *m_size_ptr;
         }
-
+#endif
         /**
          *  Get byte offset till next sub-proxy
          */

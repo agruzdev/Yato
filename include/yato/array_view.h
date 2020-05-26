@@ -414,9 +414,14 @@ namespace yato
             return base_type::get_sub_view_(offset);
         }
 
-        const_reference csubscript_(std::ptrdiff_t offset) const YATO_NOEXCEPT_KEYWORD
+        reference csubscript_(std::ptrdiff_t offset) const YATO_NOEXCEPT_KEYWORD
         {
             return base_type::get_sub_view_(offset);
+        }
+
+        size_type size_(size_t idx) const
+        {
+            return base_type::get_size_(idx);
         }
 
     public:
@@ -505,13 +510,13 @@ namespace yato
         {
             return base_type::to_view_();
         }
-
+#if 0
         reference operator[](size_t idx) const
         {
             YATO_REQUIRES(idx < base_type::get_size_(0));
             return base_type::get_sub_view_(yato::narrow_cast<std::ptrdiff_t>(idx));
         }
-
+#endif
         //template <typename... Indexes>
         //auto at(Indexes &&... indexes) const
         //    -> typename std::enable_if<(sizeof...(Indexes) == dimensions_number), value_reference>::type
@@ -523,7 +528,7 @@ namespace yato
         {
             return base_type::get_total_size_();
         }
-
+#if 0
         /** 
          * returns size along specified dimension
          */
@@ -539,7 +544,7 @@ namespace yato
         {
             return base_type::get_size_(0);
         }
-
+#endif
         /**
          * Returns total view memory range including strides
          */

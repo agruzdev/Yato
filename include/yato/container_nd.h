@@ -29,19 +29,20 @@ namespace yato
     public:
         /**
          * Returns size of specified dimension
+         * If the container is empty ( empty() returns true ) then calling for size(idx) returns 0 for idx = 0; Return value for any idx > 0 is undefined
          */
         template <typename Container_>
-        static
+        static YATO_CONSTEXPR_FUNC_CXX14
         size_t size(const Container_* c, size_t idx)
         {
-            return static_cast<const Implementation_*>(c)->size(idx);
+            return static_cast<const Implementation_*>(c)->size_(idx);
         }
 
         /**
          * Result of access by index on the top dimension. Implements operator[]
          */
         template <typename Container_>
-        static
+        static YATO_CONSTEXPR_FUNC_CXX14
         decltype(auto) subscript(Container_* c, std::ptrdiff_t offset) YATO_NOEXCEPT_KEYWORD
         {
             return static_cast<Implementation_*>(c)->subscript_(offset);
@@ -51,7 +52,7 @@ namespace yato
          * Result of const access by index on the top dimension. Implements operator[] const
          */
         template <typename Container_>
-        static
+        static YATO_CONSTEXPR_FUNC_CXX14
         decltype(auto) csubscript(const Container_* c, std::ptrdiff_t offset) YATO_NOEXCEPT_KEYWORD
         {
             return static_cast<const Implementation_*>(c)->csubscript_(offset);
@@ -86,7 +87,8 @@ namespace yato
          */
         decltype(auto) operator[](size_t idx) const
         {
-            return static_cast<const Implementation_*>(this)->operator[](idx);
+            YATO_REQUIRES(idx < implementation_access::size(this, 0));
+            return implementation_access::csubscript(this, yato::narrow_cast<std::ptrdiff_t>(idx));
         }
 
         /**
@@ -112,8 +114,8 @@ namespace yato
          */
         size_t size(size_t idx) const
         {
-            //return static_cast<const Implementation_*>(this)->size(idx);
-            return implementation_access::size(this, 0);
+            YATO_REQUIRES(idx < dimensions_number);
+            return implementation_access::size(this, idx);
         }
 
         /**
@@ -224,7 +226,6 @@ namespace yato
         {
             const auto size_0 = implementation_access::size(this, 0);
             if (Sampler_::is_valid_index(idx, size_0)) {
-                //return static_cast<const Implementation_*>(this)->operator[](Sampler_::wrap_index(idx, size_0)).at<Sampler_>(tail...);
                 return implementation_access::csubscript(this, Sampler_::wrap_index(idx, size_0)).template at<Sampler_>(tail...);
             }
             else {
@@ -268,7 +269,8 @@ namespace yato
          */
         decltype(auto) operator[](size_t idx) const
         {
-            return static_cast<const Implementation_*>(this)->operator[](idx);
+            YATO_REQUIRES(idx < implementation_access::size(this, 0));
+            return implementation_access::csubscript(this, yato::narrow_cast<std::ptrdiff_t>(idx));
         }
 
         /**
@@ -293,6 +295,15 @@ namespace yato
          *  Get size of specified dimension
          */
         size_t size(size_t idx) const
+        {
+            YATO_REQUIRES(idx < dimensions_number);
+            return implementation_access::size(this, idx);
+        }
+
+        /**
+         *  Get size of the 1d container
+         */
+        size_t size() const
         {
             //return static_cast<const Implementation_*>(this)->size(idx);
             return implementation_access::size(this, 0);
@@ -405,7 +416,6 @@ namespace yato
         {
             const auto size_0 = implementation_access::size(this, 0);
             if (Sampler_::is_valid_index(idx, size_0)) {
-                //return static_cast<const Implementation_*>(this)->operator[](Sampler_::wrap_index(idx, size_0));
                 return implementation_access::csubscript(this, Sampler_::wrap_index(idx, size_0));
             }
             else {
@@ -448,13 +458,13 @@ namespace yato
             return *this;
         }
 
-        /**
-         * Access sub-element
-         */
-        decltype(auto) operator[](size_t idx) const
-        {
-            return static_cast<Implementation_*>(const_cast<this_type*>(this))->operator[](idx);
-        }
+        ///**
+        // * Access sub-element
+        // */
+        //decltype(auto) operator[](size_t idx)
+        //{
+        //    return implementation_access::subscript(this, yato::narrow_cast<std::ptrdiff_t>(idx));
+        //}
 
         ///**
         // *  Element access with bounds check
@@ -515,7 +525,6 @@ namespace yato
             if (idx >= implementation_access::size(this, 0)) {
                 throw yato::out_of_range_error("container_nd::at() index is out of bounds.");
             }
-            //return static_cast<Implementation_*>(this)->operator[](idx).at(tail...);
             return implementation_access::subscript(this, idx).at(tail...);
         }
 
@@ -544,13 +553,13 @@ namespace yato
             return *this;
         }
 
-        /**
-         * Access sub-element
-         */
-        decltype(auto) operator[](size_t idx) const
-        {
-            return static_cast<Implementation_*>(const_cast<this_type*>(this))->operator[](idx);
-        }
+        ///**
+        // * Access sub-element
+        // */
+        //decltype(auto) operator[](size_t idx)
+        //{
+        //    return implementation_access::subscript(this, yato::narrow_cast<std::ptrdiff_t>(idx));
+        //}
 
         ///**
         // *  Element access with bounds check
@@ -648,7 +657,9 @@ namespace yato
 
 #define YATO_IMPORT_CONTAINER_ND_INTERFACE(BaseType_) \
     friend class container_implementation_access<typename BaseType_::value_type, BaseType_::dimensions_number, typename BaseType_::implementation_type>; \
-    using BaseType_::at;
+    using BaseType_::at; \
+    using BaseType_::size; \
+    using BaseType_::operator[];
 
 
 }
