@@ -7,6 +7,7 @@
 
 #include "yato/config/manual/manual.h"
 #include "yato/config/manual/private/manual_config.h"
+#include "yato/assertion.h"
 
 namespace yato {
 
@@ -14,23 +15,56 @@ namespace conf {
 
     struct manual_builder_state
     {
-        std::shared_ptr<manual_config> conf;
+        std::unique_ptr<manual_config> conf;
     };
 
     manual_builder::manual_builder(details::object_tag_t t)
+        : m_impl(std::make_unique<manual_builder_state>())
     {
-        m_impl = std::make_unique<manual_builder_state>();
-        m_impl->conf = std::make_shared<manual_config>(t);
+        m_impl->conf = std::make_unique<manual_config>(t);
     }
 
     manual_builder::manual_builder(details::array_tag_t t)
+        : m_impl(std::make_unique<manual_builder_state>())
     {
-        m_impl = std::make_unique<manual_builder_state>();
-        m_impl->conf = std::make_shared<manual_config>(t);
+        m_impl->conf = std::make_unique<manual_config>(t);
     }
 
-    manual_builder::~manual_builder()
-    { }
+    manual_builder::manual_builder(const manual_builder& other)
+        : m_impl(std::make_unique<manual_builder_state>())
+    {
+        if (other.m_impl->conf) {
+            m_impl->conf = other.m_impl->conf->shallow_copy();
+        }
+    }
+
+    manual_builder::manual_builder(manual_builder&& other) noexcept
+        : m_impl(std::move(other.m_impl))
+    {
+        other.m_impl = nullptr;
+    }
+
+    manual_builder::~manual_builder() = default;
+
+
+    manual_builder& manual_builder::operator=(const manual_builder& other)
+    {
+        YATO_REQUIRES(&other != this);
+        m_impl->conf.reset();
+        if (other.m_impl->conf) {
+            m_impl->conf = other.m_impl->conf->shallow_copy();
+        }
+        return *this;
+    }
+
+
+    manual_builder& manual_builder::operator=(manual_builder&& other) noexcept
+    {
+        YATO_REQUIRES(&other != this);
+        m_impl = std::move(other.m_impl);
+        other.m_impl = nullptr;
+        return *this;
+    }
 
 
     manual_builder_state* manual_builder::checked_handle_() const
@@ -223,9 +257,8 @@ namespace conf {
 
     config manual_builder::create()
     {
-        const auto impl = checked_handle_();
-        config res = config(impl->conf);
-        impl->conf = nullptr;
+        config res = config(static_cast<std::shared_ptr<manual_config>>(std::move(checked_handle_()->conf)));
+        m_impl.reset();
         return res;
     }
 

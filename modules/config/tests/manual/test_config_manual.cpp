@@ -83,3 +83,25 @@ TEST(Yato_Config, manual_conversion)
     TestConfig_Conversion(conf);
 }
 
+TEST(Yato_Config, manual_copy)
+{
+    auto builder1 = yato::conf::manual_builder::object()
+        .put("int", 42)
+        .put("message", "somestr")
+        .put("flt", 7.0f)
+        .put("flag1", false)
+        .put("flag2", true);
+
+    auto builder2 = builder1;
+
+    auto builder3 = builder1;
+
+    TestConfig_PlainObject(builder2.create());
+
+    builder3.put("int", -42);
+    builder3.put("int2", 12);
+
+    TestConfig_PlainObject(builder1.create());
+}
+
+

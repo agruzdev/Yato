@@ -41,13 +41,6 @@ namespace conf {
 
 
         /**
-         * Deep copy another config as init state
-         */
-        static
-        manual_builder clone(const yato::config& conf);
-
-
-        /**
          * Deep copy builder state
          */
         manual_builder(const manual_builder& other);

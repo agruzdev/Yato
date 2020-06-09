@@ -137,6 +137,45 @@ namespace conf {
              )(m_data);
         }
 
+        std::unique_ptr<manual_config> shallow_copy() const
+        {
+            if (m_data.is_type<manual_object_t>()) {
+                auto config_copy = std::make_unique<manual_config>(details::object_tag_t{});
+                for (const auto& entry : m_data.get_unsafe<manual_object_t>()) {
+                    if (entry.second) {
+                        auto value_copy = copy_value_(entry.second.get()->get());
+                        if (value_copy) {
+                            config_copy->put(entry.first, std::move(value_copy));
+                        } else {
+                            throw yato::config_error("shallow_copy: Failed to copy a value at key: " + entry.first);
+                        }
+                    }
+                    else {
+                        throw yato::config_error("shallow_copy: value is corrupted at key: " + entry.first);
+                    }
+                }
+                return config_copy;
+            }
+            else { // array
+                auto config_copy = std::make_unique<manual_config>(details::array_tag_t{});
+                const auto& manual_array =  m_data.get_unsafe<manual_array_t>();
+                for (size_t i = 0; i < manual_array.size(); ++i) {
+                    if (manual_array[i].get()) {
+                        auto value_copy = copy_value_(manual_array[i].get()->get());
+                        if (value_copy) {
+                            config_copy->add(std::move(value_copy));
+                        } else {
+                            throw yato::config_error("shallow_copy: Failed to copy a value at key: " + std::to_string(i));
+                        }
+                    }
+                    else {
+                        throw yato::config_error("shallow_copy: value is corrupted at index: " + std::to_string(i));
+                    }
+                }
+                return config_copy;
+            }
+        }
+
     private:
         size_t do_size() const noexcept override
         {
@@ -201,24 +240,24 @@ namespace conf {
         std::unique_ptr<config_value> copy_value_(stored_variant val)
         {
             return yato::variant_match(
-                    [](typename stored_type_trait<stored_type::boolean>::return_type&& v) {
-                        return static_cast<std::unique_ptr<config_value>>(std::make_unique<manual_value<stored_type::boolean>>(v));
-                    },
-                    [](typename stored_type_trait<stored_type::integer>::return_type&& v) {
-                        return static_cast<std::unique_ptr<config_value>>(std::make_unique<manual_value<stored_type::integer>>(v));
-                    },
-                    [](typename stored_type_trait<stored_type::real>::return_type&& v) {
-                        return static_cast<std::unique_ptr<config_value>>(std::make_unique<manual_value<stored_type::real>>(v));
-                    },
-                    [](typename stored_type_trait<stored_type::string>::return_type&& v) {
-                        return static_cast<std::unique_ptr<config_value>>(std::make_unique<manual_value<stored_type::string>>(std::move(v)));
-                    },
-                    [](typename stored_type_trait<stored_type::config>::return_type&& v) {
-                        return static_cast<std::unique_ptr<config_value>>(std::make_unique<manual_value<stored_type::config>>(std::move(v)));
-                    },
-                    [](match_default_t) {
-                        return nullptr;
-                    }
+                [](typename stored_type_trait<stored_type::boolean>::return_type&& v) {
+                    return static_cast<std::unique_ptr<config_value>>(std::make_unique<manual_value<stored_type::boolean>>(v));
+                },
+                [](typename stored_type_trait<stored_type::integer>::return_type&& v) {
+                    return static_cast<std::unique_ptr<config_value>>(std::make_unique<manual_value<stored_type::integer>>(v));
+                },
+                [](typename stored_type_trait<stored_type::real>::return_type&& v) {
+                    return static_cast<std::unique_ptr<config_value>>(std::make_unique<manual_value<stored_type::real>>(v));
+                },
+                [](typename stored_type_trait<stored_type::string>::return_type&& v) {
+                    return static_cast<std::unique_ptr<config_value>>(std::make_unique<manual_value<stored_type::string>>(std::move(v)));
+                },
+                [](typename stored_type_trait<stored_type::config>::return_type&& v) {
+                    return static_cast<std::unique_ptr<config_value>>(std::make_unique<manual_value<stored_type::config>>(std::move(v)));
+                },
+                [](match_default_t) {
+                    return nullptr;
+                }
             )(std::move(val));
         }
 
