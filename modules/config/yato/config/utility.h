@@ -218,7 +218,7 @@ namespace conf {
         static
         std::string to_string(value_type val)
         {
-            return val ? "true" : "false";
+            return val ? "1" : "0";
         }
 
         static

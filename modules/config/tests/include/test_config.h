@@ -13,6 +13,7 @@
 #include <cstdint>
 
 #include <yato/config/config.h>
+#include <yato/config/utility.h>
 
 /**
  *  JSON 
@@ -85,6 +86,21 @@ void TestConfig_PlainObject(const yato::conf::config & conf)
             }
         }
     );
+
+
+    const auto v1 = conf.to_vector<std::string>();
+    ASSERT_EQ(5u, v1.size());
+
+    const auto m1 = conf.to_map<std::string>();
+    ASSERT_EQ(5u, m1.size());
+    EXPECT_EQ(42, std::stoi(m1.at("int")));
+    EXPECT_EQ("somestr", m1.at("message"));
+    EXPECT_EQ(7.0, std::stod(m1.at("flt")));
+    bool tmp_bool = false;
+    ASSERT_TRUE(yato::conf::serializer<yato::conf::stored_type::boolean>::cvt_from(m1.at("flag1"), &tmp_bool));
+    EXPECT_EQ(false, tmp_bool);
+    ASSERT_TRUE(yato::conf::serializer<yato::conf::stored_type::boolean>::cvt_from(m1.at("flag2"), &tmp_bool));
+    EXPECT_EQ(true, tmp_bool);
 }
 
 /**

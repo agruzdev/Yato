@@ -9,10 +9,11 @@
 #define _YATO_CONFIG_H_
 
 #include <iterator>
+#include <map>
 #include <memory>
+#include <vector>
 
 #include "yato/range.h"
-
 #include "config_backend.h"
 #include "path.h"
 
@@ -924,6 +925,41 @@ namespace conf {
          */
         YATO_ATTR_NODISCARD
         config with_blacklist(std::vector<std::string> names) const;
+
+        /**
+         * Converts a plain config to a vector of stored values casted to Ty_
+         */
+        template <typename Ty_, typename Alloc_ = std::allocator<Ty_>>
+        YATO_ATTR_NODISCARD
+        std::vector<Ty_, Alloc_> to_vector() const
+        {
+            std::vector<Ty_, Alloc_> result;
+            const size_t s = size();
+            result.reserve(s);
+            for (size_t i = 0; i < s; ++i) {
+                result.emplace_back(find(i).value<Ty_>().get());
+            }
+            return result;
+        }
+
+        /**
+         * Converts a plain config to a map of stored values casted to Ty_
+         */
+        template <typename Ty_, typename Pr_ = std::less<Ty_>, typename Alloc_ = std::allocator<std::pair<const std::string, Ty_>>>
+        YATO_ATTR_NODISCARD
+        std::map<std::string, Ty_, Pr_, Alloc_> to_map() const
+        {
+            if (!is_object()) {
+                throw yato::config_error("config[to_map]: Config must be an object");
+            }
+            std::map<std::string, Ty_, Pr_, Alloc_> result;
+            const size_t s = size();
+            for (size_t i = 0; i < s; ++i) {
+                auto entry = find(i);
+                result.emplace(entry.key(), entry.value<Ty_>().get());
+            }
+            return result;
+        }
 
         /**
          * For internal usage.
