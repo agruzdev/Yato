@@ -12,6 +12,11 @@ namespace yato {
 
 namespace conf {
 
+    config config::clone() const
+    {
+        return config(manual_config::deep_copy(*this));
+    }
+
     config config::with_value_(const yato::conf::path &path, yato::conf::stored_variant value) const
     {
         return config(manual_config::copy_with_path(*this, path, std::move(value)));

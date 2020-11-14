@@ -737,6 +737,12 @@ namespace conf {
             return yato::make_range(begin(), end());
         }
 
+        /**
+         * Creates a deep copy of a config, copyng each value from a native backend to the manual backend.
+         * Can be used in order to release backend resources attached to the config.
+         */
+        YATO_ATTR_NODISCARD
+        config clone() const;
 
         /**
          * Creates a copy of config based on this one but with the given path set to the given value.
