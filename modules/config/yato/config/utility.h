@@ -27,7 +27,7 @@ namespace conf {
     namespace details
     {
         inline
-        char* skip_spaces(char* str)
+        const char* skip_spaces(const char* str)
         {
             while(std::isspace(*str)) {
                 ++str;
@@ -36,9 +36,9 @@ namespace conf {
         }
 
         inline
-        const char* skip_spaces(const char* str)
+        char* skip_spaces(char* str)
         {
-            return skip_spaces(const_cast<char*>(str));
+            return const_cast<char*>(skip_spaces(static_cast<const char*>(str)));
         }
 
         template <typename Ty_, typename Decoder_>
@@ -366,7 +366,7 @@ namespace conf {
     }
 
 
-    stored_type get_type(const stored_variant & var);
+    stored_type get_type(const stored_variant& var);
 
 
     class value_converter
@@ -377,11 +377,19 @@ namespace conf {
         static
         value_converter & instance();
 
+        value_converter(const value_converter&) = delete;
+
+        value_converter(value_converter&&) = delete;
+
         ~value_converter() = default;
+
+        value_converter& operator=(const value_converter&) = delete;
+
+        value_converter& operator=(value_converter&&) = delete;
 
         const cvt_funtion_t* dispatch(stored_type dst_type, stored_type src_type) const;
 
-        stored_variant apply(stored_type dst_type, const stored_variant & src) const;
+        stored_variant apply(stored_type dst_type, const stored_variant& src) const;
 
     private:
         value_converter();

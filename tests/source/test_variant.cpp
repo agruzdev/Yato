@@ -48,8 +48,18 @@ TEST(Yato_Variant, common)
     EXPECT_EQ(typeid(int),   v3.type());
     EXPECT_EQ(typeid(float), v4.type());
 
+    EXPECT_TRUE(v1.empty());
+    EXPECT_FALSE(v3.empty());
+    EXPECT_FALSE(v4.empty());
+
+    EXPECT_FALSE(static_cast<bool>(v1));
+    EXPECT_TRUE(static_cast<bool>(v3));
+    EXPECT_TRUE(static_cast<bool>(v4));
+
     v1.emplace<int>(10);
     EXPECT_EQ(typeid(int), v1.type());
+    EXPECT_FALSE(v1.empty());
+    EXPECT_TRUE(static_cast<bool>(v1));
 }
 
 TEST(Yato_Variant, copy)

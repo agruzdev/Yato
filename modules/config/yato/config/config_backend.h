@@ -261,7 +261,7 @@ namespace conf {
         yato::optional<Ty_> get(stored_type dst_type) const
         {
             auto val = get();
-            if (!val.is_type<void>()) {
+            if (!val.empty()) {
                 val = convert_(dst_type, val);
             }
             return val.get_opt<Ty_>();

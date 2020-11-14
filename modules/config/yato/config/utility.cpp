@@ -17,37 +17,34 @@ namespace yato {
 
 namespace conf {
 
-    stored_type get_type(const stored_variant & var)
+    stored_type get_type(const stored_variant& var)
     {
-        YATO_REQUIRES(!var.is_type<void>());
-        return yato::variant_match(
-            [](stored_type_trait<stored_type::integer>::return_type) {
-                return stored_type::integer;
-            },
-            [](stored_type_trait<stored_type::real>::return_type) {
-                return stored_type::real;
-            },
-            [](stored_type_trait<stored_type::string>::return_type) {
-                return stored_type::string;
-            },
-            [](stored_type_trait<stored_type::boolean>::return_type) {
-                return stored_type::boolean;
-            },
-            [](stored_type_trait<stored_type::config>::return_type) {
-                return stored_type::config;
-            }
-        )(var);
+        switch (var.type_index()) {
+        case yato::meta::list_find<stored_variant::alternativies_list, stored_type_trait<stored_type::integer>::return_type>::value:
+            return stored_type::integer;
+        case yato::meta::list_find<stored_variant::alternativies_list, stored_type_trait<stored_type::real>::return_type>::value:
+            return stored_type::real;
+        case yato::meta::list_find<stored_variant::alternativies_list, stored_type_trait<stored_type::boolean>::return_type>::value:
+            return stored_type::boolean;
+        case yato::meta::list_find<stored_variant::alternativies_list, stored_type_trait<stored_type::string>::return_type>::value:
+            return stored_type::string;
+        case yato::meta::list_find<stored_variant::alternativies_list, stored_type_trait<stored_type::config>::return_type>::value:
+            return stored_type::config;
+        default:
+            YATO_ASSERT(false, "conf::get_type: Unexpected variant type");
+            return stored_type::config;
+        }
     }
 
 
-    value_converter & value_converter::instance()
+    value_converter& value_converter::instance()
     {
         static value_converter ins;
         return ins;
     }
 
     template <stored_type DstType_>
-    stored_variant cvt_from_string_(const stored_variant & src)
+    stored_variant cvt_from_string_(const stored_variant& src)
     {
         using string_t = typename stored_type_trait<stored_type::string>::return_type;
         YATO_REQUIRES(src.is_type<string_t>());
@@ -59,7 +56,7 @@ namespace conf {
     }
 
     template <stored_type DstType_>
-    stored_variant cvt_to_string_(const stored_variant & src)
+    stored_variant cvt_to_string_(const stored_variant& src)
     {
         using dst_t    = typename stored_type_trait<DstType_>::return_type;
         using string_t = typename stored_type_trait<stored_type::string>::return_type;
@@ -68,7 +65,7 @@ namespace conf {
     }
 
     template <stored_type DstType_>
-    stored_variant cvt_identity_(const stored_variant & src)
+    stored_variant cvt_identity_(const stored_variant& src)
     {
         return src;
     }
@@ -126,10 +123,10 @@ namespace conf {
         return (it != m_cvt_functions.cend()) ? &(*it).second : nullptr;
     }
 
-    stored_variant value_converter::apply(stored_type dst_type, const stored_variant & src) const
+    stored_variant value_converter::apply(stored_type dst_type, const stored_variant& src) const
     {
         stored_variant dst;
-        if (!src.is_type<void>()) {
+        if (!src.empty()) {
             const auto cvt_function = dispatch(dst_type, get_type(src));
             if (cvt_function) {
                 dst = (*cvt_function)(src);

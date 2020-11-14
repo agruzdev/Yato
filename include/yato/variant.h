@@ -491,6 +491,24 @@ namespace yato
                 YATO_ASSERT(false, "Disabled method should not be invoked.");
             }
 
+            YATO_CONSTEXPR_FUNC
+            bool is_empty_(yato::boolean_constant<true> /*is_nullable*/) const
+            {
+                return m_type_idx == meta::list_find<alternativies_list, void>::value;
+            }
+
+            YATO_CONSTEXPR_FUNC
+            bool is_empty_(yato::boolean_constant<false> /*is_nullable*/) const
+            {
+                return false;
+            }
+
+            YATO_CONSTEXPR_FUNC
+            bool is_empty_() const
+            {
+                return is_empty_(yato::boolean_constant<is_nullable>{});
+            }
+
             //--------------------------------------------------------------------
 
         public:
@@ -580,10 +598,19 @@ namespace yato
              *  If the types are different or copy assignment is not available, then destroys current instance and creates moved copy
              */
             YATO_CONSTEXPR_FUNC_CXX14
-            this_type& operator = (yato::disable_if_not_t<this_type::is_move_assignable_v, this_type>&& other) YATO_NOEXCEPT_OPERATOR(is_nothrow_move_assignable_v)
+            this_type& operator=(yato::disable_if_not_t<this_type::is_move_assignable_v, this_type>&& other) YATO_NOEXCEPT_OPERATOR(is_nothrow_move_assignable_v)
             {
                 move_assign_(std::move(other));
                 return *this;
+            }
+
+            /**
+             * Returns true if stored type is not 'void'
+             */
+            YATO_CONSTEXPR_FUNC
+            operator bool() const
+            {
+                return !is_empty_();
             }
 
             /**
@@ -628,6 +655,15 @@ namespace yato
             bool is_type() const YATO_NOEXCEPT_KEYWORD
             {
                 return (meta::list_find<alternativies_list, Ty_>::value == m_type_idx);
+            }
+
+            /**
+             * Returns true if stored type is 'void'
+             */
+            YATO_CONSTEXPR_FUNC
+            bool empty() const
+            {
+                return is_empty_();
             }
 
             /**
