@@ -126,7 +126,7 @@ namespace conf {
     stored_variant value_converter::apply(stored_type dst_type, const stored_variant& src) const
     {
         stored_variant dst;
-        if (!src.empty()) {
+        if (src) {
             const auto cvt_function = dispatch(dst_type, get_type(src));
             if (cvt_function) {
                 dst = (*cvt_function)(src);
