@@ -20,10 +20,6 @@ namespace yato {
 
 namespace conf {
 
-    YATO_INLINE_VARIABLE
-    constexpr const size_t nolength = std::numeric_limits<size_t>::max();
-
-
     namespace details
     {
         inline
@@ -46,7 +42,7 @@ namespace conf {
         {
              if (str && len > 0) {
                 const char* const beg = skip_spaces(str);
-                if (len == conf::nolength) {
+                if (len == yato::nolength) {
                     len = std::strlen(beg);
                 }
                 else {
@@ -293,7 +289,7 @@ namespace conf {
             if (len == 0) { 
                 *dst = std::string{};
             }
-            else if (len != conf::nolength) {
+            else if (len != yato::nolength) {
                 *dst = std::string(str, len);
             }
             else {
@@ -396,6 +392,12 @@ namespace conf {
 
         std::map<std::pair<stored_type, stored_type>, cvt_funtion_t> m_cvt_functions;
     };
+
+
+    /**
+     * Reads entire stream into a string
+     */
+    std::string get_text_stream_content(std::istream& is);
 
 
 } // namespace conf

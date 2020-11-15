@@ -12,32 +12,92 @@ namespace yato {
 
 namespace conf {
 
-    json_builder::json_builder() = default;
-    json_builder::~json_builder() = default;
+namespace json {
 
-    json_builder::json_builder(json_builder&&) noexcept = default;
-    json_builder& json_builder::operator=(json_builder&&) noexcept = default;
-
-    inline
-    config parse_impl_(const nlohmann::detail::input_adapter & input)
+    template <typename... Args_>
+    config read_impl_(Args_&&... args)
     {
         backend_ptr backend = nullptr;
-        auto json = std::make_shared<nlohmann::json>(nlohmann::json::parse(input, nullptr, false));
-        if(!json->is_discarded()) {
+        auto json = std::make_shared<nlohmann::json>(nlohmann::json::parse({ std::forward<Args_>(args)... }, nullptr, false));
+        if (!json->is_discarded()) {
             backend = std::make_shared<json_config>(std::move(json));
         }
         return config(backend);
     }
 
-    config json_builder::parse(const char* json) const
+    config json::read(const char* str, size_t len)
     {
-        return parse_impl_({ json });
+        return (len != yato::nolength) ? read_impl_(str, len) : read_impl_(str);
     }
 
-    config json_builder::parse(const std::string & json) const
+    config json::read(const std::string& str)
     {
-        return parse_impl_({ json });
+        return read_impl_(str);
     }
+
+    config json::read(std::istream& is)
+    {
+        return read_impl_(is);
+    }
+
+    template <typename Ty_>
+    void put(nlohmann::json& js, const std::string& key, Ty_&& val) {
+        if (js.is_object()) {
+            js.emplace(std::make_pair(key, std::forward<Ty_>(val)));
+        }
+        else {
+            js.emplace_back(std::forward<Ty_>(val));
+        }
+    }
+
+    static
+        nlohmann::json to_json_(const yato::config& c)
+    {
+        if (c.is_null()) {
+            return nlohmann::json(nullptr);
+        }
+        nlohmann::json js = c.is_object() ? nlohmann::json::object() : nlohmann::json::array();
+        for (auto entry : c) {
+            if (entry) {
+                switch (entry.type()) {
+                case stored_type::integer:
+                    put(js, entry.key(), entry.value<nlohmann::json::number_integer_t>().get());
+                    break;
+                case stored_type::real:
+                    put(js, entry.key(), entry.value<nlohmann::json::number_float_t>().get());
+                    break;
+                case stored_type::boolean:
+                    put(js, entry.key(), entry.value<nlohmann::json::boolean_t>().get());
+                    break;
+                case stored_type::string:
+                    put(js, entry.key(), entry.value<nlohmann::json::string_t>().get());
+                    break;
+                case stored_type::config:
+                    put(js, entry.key(), to_json_(entry.object()));
+                    break;
+                }
+            }
+            else {
+                put(js, entry.key(), nullptr);
+            }
+        }
+        return js;
+    }
+
+    std::string json::write(const yato::config& c, uint32_t indent)
+    {
+        return to_json_(c).dump(indent);
+    }
+
+    void json::write(const yato::config& c, std::ostream& os, uint32_t indent)
+    {
+        const auto backup_width = os.width();
+        os.width(indent);
+        os << to_json_(c);
+        os.width(backup_width);
+    }
+
+} //namespace json
 
 } //namespace conf
 

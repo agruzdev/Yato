@@ -13,6 +13,8 @@ namespace yato {
 
 namespace conf {
 
+namespace json {
+
     json_value::json_value(std::shared_ptr<nlohmann::json> root, nlohmann::json::const_iterator iter)
         : m_root(std::move(root)), m_iter(std::move(iter))
     { }
@@ -70,6 +72,8 @@ namespace conf {
         }
         return res;
     }
+
+} //namespace json
 
 } //namespace conf
 

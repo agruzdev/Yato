@@ -13,6 +13,7 @@
 #include <cstdint>
 
 #include <yato/config/config.h>
+#include <yato/config/manual/manual.h>
 #include <yato/config/utility.h>
 
 /**
@@ -269,7 +270,27 @@ void TestConfig_Array(const yato::conf::config & conf)
  * }
  */
 inline
-void TestConfig_Example(const yato::conf::config & conf)
+yato::config GetExampleConfig()
+{
+    return yato::conf::manual_builder::object()
+        .put("answer", 42)
+        .put("comment", "everything")
+        .put("precision", 0.01f)
+        .put("manual_mode", true)
+        .put("fruits", yato::conf::manual_builder::array()
+            .add("apple")
+            .add("banana")
+            .add("kiwi")
+            .create())
+        .put("location", yato::conf::manual_builder::object()
+            .put("x", 174)
+            .put("y", 34)
+            .create())
+        .create();
+}
+
+inline
+void TestConfig_Example(const yato::conf::config & conf, bool check_nested_object = true, bool check_nested_array = true)
 {
     EXPECT_FALSE(conf.is_null());
 
@@ -294,8 +315,10 @@ void TestConfig_Example(const yato::conf::config & conf)
     size_t conf_size = 4;
 
     const yato::conf::config arr = conf.array("fruits");
-    if(arr) {
-        EXPECT_EQ(3U, arr.size());
+    if (check_nested_array) {
+        ASSERT_FALSE(arr.is_null());
+        //ASSERT_FALSE(arr.is_object());
+        ASSERT_EQ(3U, arr.size());
         EXPECT_NO_THROW(
             EXPECT_EQ(std::string("apple"),  arr.value<std::string>(0).get());
             EXPECT_EQ(std::string("banana"), arr.value<std::string>(1).get());
@@ -305,9 +328,10 @@ void TestConfig_Example(const yato::conf::config & conf)
     }
 
     const yato::conf::config point = conf.object("location");
-    if(point) {
+    if (check_nested_object) {
+        ASSERT_FALSE(point.is_null());
         ASSERT_TRUE(point.is_object());
-        EXPECT_EQ(2u, point.size());
+        ASSERT_EQ(2u, point.size());
         const int x = point.value<int>("x").get_or(-1);
         const int y = point.value<int>("y").get_or(-1);
         EXPECT_EQ(174, x);
@@ -320,7 +344,7 @@ void TestConfig_Example(const yato::conf::config & conf)
 
         EXPECT_EQ(-1,  conf.value<int>(yato::conf::path("location.z.x", ':')).get_or(-1));
         EXPECT_EQ(-1,  conf.value<int>(yato::conf::path("location.x.z", ':')).get_or(-1));
-        
+
         ++conf_size;
     }
 

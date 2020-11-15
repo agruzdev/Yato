@@ -40,7 +40,7 @@ namespace conf {
         static
         std::unique_ptr<manual_config> deep_copy(const yato::config& c)
         {
-            return deep_copy_impl_(c.backend_handle_());
+            return deep_copy_impl_(c);
         }
 
         static
@@ -273,36 +273,32 @@ namespace conf {
         }
 
         static
-        std::unique_ptr<manual_config> deep_copy_impl_(const backend_ptr& c)
+        std::unique_ptr<manual_config> deep_copy_impl_(const yato::config& c)
         {
             if (!c) {
                 return std::make_unique<manual_config>(details::object_tag_t{});
             }
 
-            std::unique_ptr<manual_config> config_copy = c->is_object()
+            std::unique_ptr<manual_config> config_copy = c.is_object()
                 ? std::make_unique<manual_config>(details::object_tag_t{})
                 : std::make_unique<manual_config>(details::array_tag_t{});
 
-            for (size_t i = 0; i < c->size(); ++i) {
-
-                auto kv_entry = c->find(i);
-                if (!kv_entry.second) {
-                    throw yato::config_error("deep_copy_impl_: Failed to fetch a value by index: " + std::to_string(i));
-                }
-
+            for (auto entry : c) {
                 std::unique_ptr<config_value> value_copy;
-                if (kv_entry.second->type() == stored_type::config) {
-                    value_copy = wrap_config_(deep_copy_impl_(kv_entry.second->get().get_or<backend_ptr>(nullptr)));
+                if (entry) {
+                    if (entry.type() == stored_type::config) {
+                        value_copy = wrap_config_(deep_copy_impl_(entry.object()));
+                    }
+                    else {
+                        value_copy = copy_value_(entry.value_handle_()->get());
+                    }
+                    if (!value_copy) {
+                        throw yato::config_error("deep_copy_impl_: Failed to copy a value");
+                    }
                 }
-                else {
-                    value_copy = copy_value_(kv_entry.second->get());
-                }
-                if (!value_copy) {
-                    throw yato::config_error("deep_copy_impl_: Failed to copy a value by index: " + std::to_string(i));
-                }
-                  
-                if (c->is_object()) {
-                    config_copy->put(std::move(kv_entry.first), std::move(value_copy));
+
+                if (c.is_object()) {
+                    config_copy->put(std::move(entry.key()), std::move(value_copy));
                 }
                 else {
                     config_copy->add(std::move(value_copy));

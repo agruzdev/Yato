@@ -8,37 +8,44 @@
 #ifndef _YATO_CONFIG_JSON_JSON_H_
 #define _YATO_CONFIG_JSON_JSON_H_
 
+#include <istream>
 #include "../config.h"
 
 namespace yato {
 
 namespace conf {
 
-    /**
-     * Builder for Json config
-     */
-    class json_builder
+
+    namespace json
     {
-    public:
-        json_builder();
-        ~json_builder();
-
-        json_builder(const json_builder&) = delete;
-        json_builder(json_builder&&) noexcept;
-
-        json_builder& operator = (const json_builder&) = delete;
-        json_builder& operator = (json_builder&&) noexcept;
+        /**
+         * Parse Json from string
+         */
+        config read(const char* str, size_t len = yato::nolength);
 
         /**
          * Parse Json from string
          */
-        config parse(const char* json) const;
+        config read(const std::string& str);
 
         /**
-         * Parse Json from string
+         * Parse Json from stream
          */
-        config parse(const std::string & json) const;
-    };
+        config read(std::istream& is);
+
+        /**
+         * Writes config as Json to a string
+         */
+        std::string write(const yato::config& c, uint32_t indent = 0);
+
+        /**
+         * Writes config as Json to a stream
+         */
+        void write(const yato::config& c, std::ostream& os, uint32_t indent = 0);
+
+    } // namespace json
+
+
 
 } //namespace conf
 

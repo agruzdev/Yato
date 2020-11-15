@@ -17,6 +17,8 @@ namespace yato {
 
 namespace conf {
 
+namespace json {
+
     class json_converter;
 
     class json_value final
@@ -41,6 +43,8 @@ namespace conf {
         std::shared_ptr<nlohmann::json> m_root;
         nlohmann::json::const_iterator m_iter;
     };
+
+} //namespace json
 
 } //namespace conf
 

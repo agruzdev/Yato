@@ -17,6 +17,7 @@ namespace yato {
 
 namespace conf {
 
+namespace json {
 
     class json_config final
         : public config_backend
@@ -50,6 +51,8 @@ namespace conf {
         yato::optional<nlohmann::json::const_iterator> m_iter;
     };
 
+
+} //namespace json
 
 } //namespace conf
 

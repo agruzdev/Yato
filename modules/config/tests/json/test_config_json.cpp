@@ -5,12 +5,13 @@
  * Copyright (c) 2016-2020 Alexey Gruzdev
  */
 
+#include <sstream>
 #include "../include/test_config.h"
 #include <yato/config/json/json.h>
 
 TEST(Yato_Config, json_object)
 {
-    const auto conf = yato::conf::json_builder().parse(R"JSON(
+    const auto conf = yato::conf::json::read(R"JSON(
         {
             "int": 42,
             "message": "somestr",
@@ -24,7 +25,7 @@ TEST(Yato_Config, json_object)
 
 TEST(Yato_Config, json_object2)
 {
-    const auto conf = yato::conf::json_builder().parse(R"JSON(
+    const auto conf = yato::conf::json::read(R"JSON(
         {
             "int": 42,
             "str": "test",
@@ -38,7 +39,7 @@ TEST(Yato_Config, json_object2)
 
 TEST(Yato_Config, json_array)
 {
-    const auto conf = yato::conf::json_builder().parse(R"JSON(
+    const auto conf = yato::conf::json::read(R"JSON(
         [10, 20, 30, true, 4, {
             "arr": []
         }]
@@ -66,7 +67,7 @@ TEST(Yato_Config, json_example)
             }
         }
     )JSON";
-    const auto conf = yato::conf::json_builder().parse(json);
+    const auto conf = yato::conf::json::read(json);
     TestConfig_Example(conf);
 }
 
@@ -79,7 +80,22 @@ TEST(Yato_Config, json_conversion)
             "vec" : [20, 98, -7]
         }
     )JSON";
-    const auto conf = yato::conf::json_builder().parse(json);
+    const auto conf = yato::conf::json::read(json);
     TestConfig_Conversion(conf);
 }
 
+
+TEST(Yato_Config, json_write)
+{
+    const auto conf = GetExampleConfig();
+    const std::string str = yato::conf::json::write(conf, 2);
+    TestConfig_Example(yato::conf::json::read(str));
+}
+
+TEST(Yato_Config, json_write_stream)
+{
+    const auto conf = GetExampleConfig();
+    std::stringstream ss;
+    yato::conf::json::write(conf, ss);
+    TestConfig_Example(yato::conf::json::read(ss));
+}

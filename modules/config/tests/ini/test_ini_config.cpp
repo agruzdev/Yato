@@ -44,7 +44,7 @@ TEST(Yato_Config, ini_example)
         x = 174
         y = 34
     )INI");
-    TestConfig_Example(conf);
+    TestConfig_Example(conf, true, false);
 }
 
 

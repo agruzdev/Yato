@@ -9,6 +9,7 @@
 #include "utility.h"
 
 #include <cstring>
+#include <istream>
 
 #include "yato/variant_match.h"
 
@@ -134,6 +135,19 @@ namespace conf {
         };
         return dst;
     }
+
+
+    std::string get_text_stream_content(std::istream& is)
+    {
+        const std::streampos start = is.tellg();
+        is.seekg(0, is.end);
+        const size_t len = yato::narrow_cast<size_t>(is.tellg() - start);
+        is.seekg(start);
+        std::string result(len, '\0');
+        is.read(&result[0], len);
+        return result;
+    }
+
 
 } // namespace conf
 

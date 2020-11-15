@@ -12,6 +12,8 @@ namespace yato {
 
 namespace conf {
 
+namespace json {
+
     json_config::json_config(std::shared_ptr<nlohmann::json> json)
         : m_root(std::move(json)), m_iter(yato::nullopt_t{})
     { }
@@ -74,6 +76,8 @@ namespace conf {
         YATO_REQUIRES(dynamic_cast<const json_value*>(val) != nullptr);
         delete val;
     }
+
+} //namespace json
 
 } //namespace conf
 

@@ -653,9 +653,7 @@ namespace conf {
         YATO_ATTR_NODISCARD
         config object(const conf::path& name) const
         {
-            config conf = value<config>(name).get_or(config{});
-            YATO_ENSURES(conf.is_null() || conf.is_object())
-            return conf;
+            return value<config>(name).get_or(config{});
         }
 
         /**
@@ -665,9 +663,7 @@ namespace conf {
         YATO_ATTR_NODISCARD
         config object(size_type idx) const
         {
-            config conf = value<config>(idx).get_or(config{});
-            YATO_ENSURES(conf.is_null() || conf.is_object())
-            return conf;
+            return value<config>(idx).get_or(config{});
         }
 
         /**
@@ -1008,9 +1004,7 @@ namespace conf {
     inline
     config config_entry::object() const
     {
-        config conf = value<config>().get_or(config{});
-        YATO_ENSURES(conf.is_null() || conf.is_object());
-        return conf;
+        return value<config>().get_or(config{});
     }
 
     inline
