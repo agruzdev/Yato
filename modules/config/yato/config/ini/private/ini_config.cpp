@@ -59,13 +59,14 @@ namespace conf {
     config_backend::key_value_t ini_config::do_find(size_t index) const noexcept
     {
         config_backend::key_value_t result = config_backend::novalue;
-        if (index < m_parser->sections.size()) {
+        const size_t sections_count = m_is_global ? m_parser->sections.size() : 0;
+        if (index < sections_count) {
             const auto it = std::next(m_parser->sections.cbegin(), index);
             result.first = (*it).first;
             result.second = new ini_section(std::make_shared<ini_config>(m_parser, &(*it).second));
         }
-        else if (index < m_parser->global_values.size() + m_values->size()) {
-            const auto it = std::next(m_parser->global_values.cbegin(), index - m_parser->sections.size());
+        else if (index < sections_count + m_values->size()) {
+            const auto it = std::next(m_values->cbegin(), index - sections_count);
             result.first = (*it).first;
             result.second = new ini_value((*it).second);
         }
