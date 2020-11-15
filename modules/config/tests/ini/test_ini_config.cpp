@@ -45,6 +45,7 @@ TEST(Yato_Config, ini_example)
         y = 34
     )INI");
     TestConfig_Example(conf, true, false);
+    TestConfig_Example(conf.clone(), true, false);
 }
 
 

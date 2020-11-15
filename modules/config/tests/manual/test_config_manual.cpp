@@ -6,11 +6,11 @@
  */
 
 #include "../include/test_config.h"
-#include <yato/config/manual/manual.h>
+#include "yato/config/config_builder.h"
 
 TEST(Yato_Config, manual_object)
 {
-    const auto conf = yato::conf::manual_builder::object()
+    const auto conf = yato::config_builder::object()
         .put("int", 42)
         .put("message", "somestr")
         .put("flt", 7.0f)
@@ -22,10 +22,10 @@ TEST(Yato_Config, manual_object)
 
 TEST(Yato_Config, manual_object2)
 {
-    const auto conf = yato::conf::manual_builder::object()
+    const auto conf = yato::config_builder::object()
         .put("int", 42)
         .put("str", "test")
-        .put("subobj", yato::conf::manual_builder::object()
+        .put("subobj", yato::config_builder::object()
             .put("val", 7.0f)
             .create())
         .create();
@@ -34,14 +34,14 @@ TEST(Yato_Config, manual_object2)
 
 TEST(Yato_Config, manual_array)
 {
-    const auto conf = yato::conf::manual_builder::array()
+    const auto conf = yato::config_builder::array()
         .add(10)
         .add(20)
         .add(30)
         .add(true)
         .add(4)
-        .add(yato::conf::manual_builder::object()
-            .put("arr", yato::conf::manual_builder::array()
+        .add(yato::config_builder::object()
+            .put("arr", yato::config_builder::array()
                 .create())
             .create())
         .create();
@@ -50,17 +50,17 @@ TEST(Yato_Config, manual_array)
 
 TEST(Yato_Config, manual_example)
 {
-    const auto conf = yato::conf::manual_builder::object()
+    const auto conf = yato::config_builder::object()
         .put("answer", 42)
         .put("comment", "everything")
         .put("precision", 0.01f)
         .put("manual_mode", true)
-        .put("fruits", yato::conf::manual_builder::array()
+        .put("fruits", yato::config_builder::array()
             .add("apple")
             .add("banana")
             .add("kiwi")
             .create())
-        .put("location", yato::conf::manual_builder::object()
+        .put("location", yato::config_builder::object()
             .put("x", 174)
             .put("y", 34)
             .create())
@@ -70,10 +70,10 @@ TEST(Yato_Config, manual_example)
 
 TEST(Yato_Config, manual_conversion)
 {
-    const auto conf = yato::conf::manual_builder::object()
+    const auto conf = yato::config_builder::object()
         .put("enum1", static_cast<int32_t>(TestEnum::eVal1))
         .put("enum2", static_cast<int32_t>(TestEnum::eVal2))
-        .put("vec", yato::conf::manual_builder::array()
+        .put("vec", yato::config_builder::array()
             .add(20)
             .add(98)
             .add(-7)
@@ -85,7 +85,7 @@ TEST(Yato_Config, manual_conversion)
 
 TEST(Yato_Config, manual_copy)
 {
-    auto builder1 = yato::conf::manual_builder::object()
+    auto builder1 = yato::config_builder::object()
         .put("int", 42)
         .put("message", "somestr")
         .put("flt", 7.0f)

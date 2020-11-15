@@ -78,6 +78,7 @@ TEST(Yato_Config, xml_example)
     )XML";
     const auto conf = yato::conf::xml_builder().parse(xml);
     TestConfig_Example(conf);
+    //TestConfig_Example(conf.clone());
 }
 
 TEST(Yato_Config, xml_conversion)

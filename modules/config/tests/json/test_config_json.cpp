@@ -68,6 +68,7 @@ TEST(Yato_Config, json_example)
         }
     )JSON";
     const auto conf = yato::conf::json::read(json);
+    TestConfig_Example(conf.clone());
     TestConfig_Example(conf);
 }
 

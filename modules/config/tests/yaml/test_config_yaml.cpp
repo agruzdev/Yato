@@ -68,6 +68,7 @@ TEST(Yato_Config, yaml_example)
     )YAML";
     const auto conf = yato::conf::yaml_builder().parse(yaml);
     TestConfig_Example(conf);
+    TestConfig_Example(conf.clone());
 }
 
 TEST(Yato_Config, yaml_conversion)

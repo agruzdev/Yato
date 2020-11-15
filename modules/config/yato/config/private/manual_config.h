@@ -25,6 +25,7 @@ namespace conf {
     /**
      * Implements object
      */
+    //using manual_object_t = std::multimap<std::string, std::unique_ptr<config_value>>;
     using manual_object_t = std::map<std::string, std::unique_ptr<config_value>>;
     
     /**
@@ -38,9 +39,21 @@ namespace conf {
     {
     public:
         static
+        std::unique_ptr<manual_config> copy(const yato::config& c, bool deep_copy)
+        {
+            return copy_impl_(c, deep_copy);
+        }
+
+        static
         std::unique_ptr<manual_config> deep_copy(const yato::config& c)
         {
-            return deep_copy_impl_(c);
+            return copy_impl_(c, true);
+        }
+
+        static
+        std::unique_ptr<manual_config> shallow_copy(const yato::config& c)
+        {
+            return copy_impl_(c, false);
         }
 
         static
@@ -107,12 +120,11 @@ namespace conf {
             : m_data(std::move(arr))
         { }
 
-        ~manual_config() override = default;
-
-
         manual_config(const manual_config&) = delete;
 
         manual_config(manual_config&& other) noexcept = default;
+
+        ~manual_config() override = default;
 
         manual_config& operator=(const manual_config&) = delete;
 
@@ -122,6 +134,7 @@ namespace conf {
         {
             yato::variant_match(
                 [&](manual_object_t & obj) {
+                    //obj.emplace(std::move(name), std::move(value));
                     obj.insert_or_assign(std::move(name), std::move(value));
                 },
                 [&](match_default_t) {
@@ -142,43 +155,16 @@ namespace conf {
              )(m_data);
         }
 
-        std::unique_ptr<manual_config> shallow_copy() const
+        void pop()
         {
-            if (m_data.is_type<manual_object_t>()) {
-                auto config_copy = std::make_unique<manual_config>(details::object_tag_t{});
-                for (const auto& entry : m_data.get_unsafe<manual_object_t>()) {
-                    if (entry.second) {
-                        auto value_copy = copy_value_(entry.second.get()->get());
-                        if (value_copy) {
-                            config_copy->put(entry.first, std::move(value_copy));
-                        } else {
-                            throw yato::config_error("shallow_copy: Failed to copy a value at key: " + entry.first);
-                        }
-                    }
-                    else {
-                        throw yato::config_error("shallow_copy: value is corrupted at key: " + entry.first);
-                    }
+            yato::variant_match(
+                [&](manual_array_t& arr) {
+                    arr.pop_back();
+                },
+                [&](match_default_t) {
+                    throw config_error("manual_config[pop]: Config must be an array.");
                 }
-                return config_copy;
-            }
-            else { // array
-                auto config_copy = std::make_unique<manual_config>(details::array_tag_t{});
-                const auto& manual_array =  m_data.get_unsafe<manual_array_t>();
-                for (size_t i = 0; i < manual_array.size(); ++i) {
-                    if (manual_array[i].get()) {
-                        auto value_copy = copy_value_(manual_array[i].get()->get());
-                        if (value_copy) {
-                            config_copy->add(std::move(value_copy));
-                        } else {
-                            throw yato::config_error("shallow_copy: Failed to copy a value at key: " + std::to_string(i));
-                        }
-                    }
-                    else {
-                        throw yato::config_error("shallow_copy: value is corrupted at index: " + std::to_string(i));
-                    }
-                }
-                return config_copy;
-            }
+            )(m_data);
         }
 
     private:
@@ -273,10 +259,10 @@ namespace conf {
         }
 
         static
-        std::unique_ptr<manual_config> deep_copy_impl_(const yato::config& c)
+        std::unique_ptr<manual_config> copy_impl_(const yato::config& c, bool deep_copy)
         {
             if (!c) {
-                return std::make_unique<manual_config>(details::object_tag_t{});
+                return nullptr;
             }
 
             std::unique_ptr<manual_config> config_copy = c.is_object()
@@ -286,8 +272,8 @@ namespace conf {
             for (auto entry : c) {
                 std::unique_ptr<config_value> value_copy;
                 if (entry) {
-                    if (entry.type() == stored_type::config) {
-                        value_copy = wrap_config_(deep_copy_impl_(entry.object()));
+                    if (deep_copy && entry.type() == stored_type::config) {
+                        value_copy = wrap_config_(copy_impl_(entry.object(), true));
                     }
                     else {
                         value_copy = copy_value_(entry.value_handle_()->get());
@@ -298,7 +284,7 @@ namespace conf {
                 }
 
                 if (c.is_object()) {
-                    config_copy->put(std::move(entry.key()), std::move(value_copy));
+                    config_copy->put(entry.key(), std::move(value_copy));
                 }
                 else {
                     config_copy->add(std::move(value_copy));

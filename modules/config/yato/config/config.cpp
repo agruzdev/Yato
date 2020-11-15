@@ -6,7 +6,7 @@
  */
 
 #include "config.h"
-#include "yato/config/manual/private/manual_config.h"
+#include "yato/config/private/manual_config.h"
 
 namespace yato {
 

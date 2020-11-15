@@ -13,7 +13,7 @@
 #include <cstdint>
 
 #include <yato/config/config.h>
-#include <yato/config/manual/manual.h>
+#include <yato/config/config_builder.h>
 #include <yato/config/utility.h>
 
 /**
@@ -145,9 +145,7 @@ void TestConfig_Object(const yato::conf::config & conf)
 
 /**
  * JSON
- *     [10, 20, 30, true, 4, {
- *         "arr": []
- *     }]
+ *     [10, 20, 30, true, 4, { "arr": [] }]
  */
 inline
 void TestConfig_Array(const yato::conf::config & conf)
@@ -246,6 +244,17 @@ void TestConfig_Array(const yato::conf::config & conf)
 
         ASSERT_FALSE(it == eit);
     );
+
+    // Temporal workaround for fully associative configs like XML
+    if (!conf.is_object()) {
+        auto new_array = yato::config_builder(conf).pop().pop().pop().add(40).create();
+        ASSERT_TRUE(static_cast<bool>(new_array));
+        ASSERT_EQ(4u, new_array.size());
+        ASSERT_EQ(10, new_array.value<int32_t>(0).get());
+        ASSERT_EQ(20, new_array.value<int32_t>(1).get());
+        ASSERT_EQ(30, new_array.value<int32_t>(2).get());
+        ASSERT_EQ(40, new_array.value<int32_t>(3).get());
+    }
 }
 
 /**
@@ -272,17 +281,17 @@ void TestConfig_Array(const yato::conf::config & conf)
 inline
 yato::config GetExampleConfig()
 {
-    return yato::conf::manual_builder::object()
+    return yato::config_builder::object()
         .put("answer", 42)
         .put("comment", "everything")
         .put("precision", 0.01f)
         .put("manual_mode", true)
-        .put("fruits", yato::conf::manual_builder::array()
+        .put("fruits", yato::config_builder::array()
             .add("apple")
             .add("banana")
             .add("kiwi")
             .create())
-        .put("location", yato::conf::manual_builder::object()
+        .put("location", yato::config_builder::object()
             .put("x", 174)
             .put("y", 34)
             .create())
