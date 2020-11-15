@@ -55,7 +55,7 @@ TEST(Yato_Actors, io_udp_server)
 {
     using namespace yato::actors;
 
-    auto conf_builder = yato::conf::manual_builder::object();
+    auto conf_builder = yato::config_builder::object();
     conf_builder.put("log_level", "verbose");
     conf_builder.put("enable_io", true);
 
