@@ -946,7 +946,7 @@ namespace conf {
         std::map<std::string, Ty_, Pr_, Alloc_> to_map() const
         {
             if (!is_object()) {
-                throw yato::config_error("config[to_map]: Config must be an object");
+                throw yato::conf::config_error("config[to_map]: Config must be an object");
             }
             std::map<std::string, Ty_, Pr_, Alloc_> result;
             const size_t s = size();

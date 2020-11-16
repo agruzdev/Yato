@@ -25,17 +25,17 @@ namespace json {
         return config(backend);
     }
 
-    config json::read(const char* str, size_t len)
+    config read(const char* str, size_t len)
     {
         return (len != yato::nolength) ? read_impl_(str, len) : read_impl_(str);
     }
 
-    config json::read(const std::string& str)
+    config read(const std::string& str)
     {
         return read_impl_(str);
     }
 
-    config json::read(std::istream& is)
+    config read(std::istream& is)
     {
         return read_impl_(is);
     }
@@ -51,7 +51,7 @@ namespace json {
     }
 
     static
-        nlohmann::json to_json_(const yato::config& c)
+    nlohmann::json to_json_(const yato::config& c)
     {
         if (c.is_null()) {
             return nlohmann::json(nullptr);
@@ -84,12 +84,12 @@ namespace json {
         return js;
     }
 
-    std::string json::write(const yato::config& c, uint32_t indent)
+    std::string write(const yato::config& c, uint32_t indent)
     {
         return to_json_(c).dump(indent);
     }
 
-    void json::write(const yato::config& c, std::ostream& os, uint32_t indent)
+    void write(const yato::config& c, std::ostream& os, uint32_t indent)
     {
         const auto backup_width = os.width();
         os.width(indent);
