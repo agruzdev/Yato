@@ -56,7 +56,7 @@ namespace json {
         if (c.is_null()) {
             return nlohmann::json(nullptr);
         }
-        nlohmann::json js = c.is_object() ? nlohmann::json::object() : nlohmann::json::array();
+        nlohmann::json js = c.is_associative() ? nlohmann::json::object() : nlohmann::json::array();
         for (auto entry : c) {
             if (entry) {
                 switch (entry.type()) {

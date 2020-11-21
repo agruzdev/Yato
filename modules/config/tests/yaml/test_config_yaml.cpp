@@ -85,3 +85,18 @@ TEST(Yato_Config, yaml_conversion)
 }
 
 
+TEST(Yato_Config, yaml_write)
+{
+    const auto conf = GetExampleConfig();
+    const std::string str = yato::conf::yaml::write(conf, 3);
+    TestConfig_Example(yato::conf::yaml::read(str));
+}
+
+TEST(Yato_Config, yaml_write_stream)
+{
+    const auto conf = GetExampleConfig();
+    std::stringstream ss;
+    yato::conf::yaml::write(conf, ss);
+    TestConfig_Example(yato::conf::yaml::read(ss));
+}
+

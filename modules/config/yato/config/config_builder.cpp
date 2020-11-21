@@ -20,13 +20,15 @@ namespace conf {
         std::shared_ptr<manual_config_base> conf;
     };
 
-    config_builder::config_builder(details::object_tag_t t)
+    config_builder::config_builder(details::object_tag_t, bool multi_associative)
         : m_impl(std::make_unique<builder_state>())
     {
-        m_impl->conf = std::make_shared<manual_map>();
+        m_impl->conf = multi_associative
+            ? static_cast<std::shared_ptr<manual_config_base>>(std::make_unique<manual_multimap>())
+            : static_cast<std::shared_ptr<manual_config_base>>(std::make_unique<manual_map>());
     }
 
-    config_builder::config_builder(details::array_tag_t t)
+    config_builder::config_builder(details::array_tag_t)
         : m_impl(std::make_unique<builder_state>())
     {
         m_impl->conf = std::make_shared<manual_array>();
@@ -161,6 +163,12 @@ namespace conf {
     config_builder& config_builder::put(const std::string& name, config val)
     {
         checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::config>>(val.backend_handle_()));
+        return *this;
+    }
+
+    config_builder& config_builder::remove(const std::string& name)
+    {
+        checked_handle_()->conf->remove(name);
         return *this;
     }
 

@@ -10,7 +10,7 @@
 
 TEST(Yato_Config, ini_object)
 {
-    const auto conf = yato::conf::ini_builder().parse(R"INI(
+    const auto conf = yato::conf::ini::read(R"INI(
         int=42
         message=somestr
         flt = 7.0
@@ -22,7 +22,7 @@ TEST(Yato_Config, ini_object)
 
 TEST(Yato_Config, ini_object2)
 {
-    const auto conf = yato::conf::ini_builder().parse(R"INI(
+    const auto conf = yato::conf::ini::read(R"INI(
         int= 42
         str=test
 
@@ -34,7 +34,7 @@ TEST(Yato_Config, ini_object2)
 
 TEST(Yato_Config, ini_example)
 {
-    const auto conf = yato::conf::ini_builder().parse(R"INI(
+    const auto conf = yato::conf::ini::read(R"INI(
         answer=42
         comment=everything
         precision=0.01

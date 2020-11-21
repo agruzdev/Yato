@@ -8,56 +8,33 @@
 #ifndef _YATO_CONFIG_INI_INI_H_
 #define _YATO_CONFIG_INI_INI_H_
 
-#include <memory>
+#include <istream>
 #include <string>
-
 #include "yato/config/config.h"
 
 namespace yato {
 
 namespace conf {
 
-    struct ini_builder_state;
-
-    class ini_builder
-    {
-    public:
-        ini_builder();
-
-        ~ini_builder();
-
-        ini_builder(const ini_builder &) = delete;
-        ini_builder(ini_builder&&) noexcept = default;
-
-        ini_builder& operator=(const ini_builder&) = delete;
-        ini_builder& operator=(ini_builder&&) noexcept = default;
-
+    namespace ini {
 
         /**
-         * Parse ini file
+         * Parse Ini from string
          */
-        config parse_file(const char* filename);
+        config read(const char* str, size_t len = yato::nolength);
 
         /**
-         * Parse ini file 
+         * Parse Ini from string
          */
-        config parse_file(const std::string & filename);
+        config read(const std::string& str);
 
         /**
-         * Parse from string
+         * Parse Ini from stream
          */
-        config parse(const char* ini);
+        config read(std::istream& is);
 
-        /**
-         * Parse from string
-         */
-        config parse(const std::string & ini);
+    } // namespace ini
 
-    private:
-        config finalize_();
-
-        std::unique_ptr<ini_builder_state> m_impl;
-    };
 
 } // namespace conf
 

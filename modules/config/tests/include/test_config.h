@@ -141,6 +141,11 @@ void TestConfig_Object(const yato::conf::config & conf)
 
     const auto v3 = conf.value<float>(yato::conf::path("/subobj/val", '/')).get_or(-1.0f);
     EXPECT_FLOAT_EQ(7.0f, v3);
+
+    auto c3 = yato::config_builder(conf).remove("subobj").create();
+    EXPECT_EQ(2u, c3.size());
+    EXPECT_EQ(42, c3.value<short>("int").get_or(0));
+    EXPECT_EQ("test", c3.value<std::string>("str").get_or(""));
 }
 
 /**

@@ -36,12 +36,12 @@ namespace conf {
         manual_array& operator=(manual_array&& other) noexcept = default;
 
     private:
-        void put(std::string name, std::unique_ptr<config_value>&& value)
+        void put(std::string /*name*/, std::unique_ptr<config_value>&& /*value*/)
         {
             throw config_error("manual_array[put]: Config must be associative.");
         }
 
-        void remove(const std::string& name) override
+        void remove(const std::string& /*name*/) override
         {
             throw config_error("manual_array[remove]: Config must be associative.");
         }

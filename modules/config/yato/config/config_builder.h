@@ -29,9 +29,9 @@ namespace conf {
          * Make root object
          */
         static
-        config_builder object()
+        config_builder object(bool multi_associative = false)
         {
-            return config_builder(details::object_tag_t{});
+            return config_builder(details::object_tag_t{}, multi_associative);
         }
 
         /**
@@ -77,87 +77,93 @@ namespace conf {
 
         /**
          * Add named value.
-         * Is valid only for object.
+         * Is valid only for associative configs.
          */
         config_builder& put(const std::string& name, int8_t val);
 
         /**
          * Add named value.
-         * Is valid only for object.
+         * Is valid only for associative configs.
          */
         config_builder& put(const std::string& name, int16_t val);
 
         /**
          * Add named value.
-         * Is valid only for object.
+         * Is valid only for associative configs.
          */
         config_builder& put(const std::string& name, int32_t val);
 
         /**
          * Add named value.
-         * Is valid only for object.
+         * Is valid only for associative configs.
          */
         config_builder& put(const std::string& name, int64_t val);
 
         /**
          * Add named value.
-         * Is valid only for object.
+         * Is valid only for associative configs.
          */
         config_builder& put(const std::string& name, uint8_t val);
 
         /**
          * Add named value.
-         * Is valid only for object.
+         * Is valid only for associative configs.
          */
         config_builder& put(const std::string& name, uint16_t val);
 
         /**
          * Add named value.
-         * Is valid only for object.
+         * Is valid only for associative configs.
          */
         config_builder& put(const std::string& name, uint32_t val);
 
         /**
          * Add named value.
-         * Is valid only for object.
+         * Is valid only for associative configs.
          */
         config_builder& put(const std::string& name, uint64_t val);
 
         /**
          * Add named value.
-         * Is valid only for object.
+         * Is valid only for associative configs.
          */
         config_builder& put(const std::string& name, float val);
 
         /**
          * Add named value.
-         * Is valid only for object.
+         * Is valid only for associative configs.
          */
         config_builder& put(const std::string& name, double val);
 
         /**
          * Add named value.
-         * Is valid only for object.
+         * Is valid only for associative configs.
          */
         config_builder& put(const std::string& name, bool val);
 
         /**
          * Add named value.
-         * Is valid only for object.
+         * Is valid only for associative configs.
          */
         config_builder& put(const std::string& name, const char* val);
 
         /**
          * Add named value.
-         * Is valid only for object.
+         * Is valid only for associative configs.
          */
         config_builder& put(const std::string& name, std::string val);
 
         /**
          * Add named value.
-         * Is valid only for object.
+         * Is valid only for associative configs.
          */
         config_builder& put(const std::string& name, config val);
+
+        /**
+         * Removes values by name.
+         * Is valid only for associative configs.
+         */
+        config_builder& remove(const std::string& name);
 
         /**
          * Append value to array.
@@ -257,7 +263,7 @@ namespace conf {
     private:
         struct builder_state;
 
-        config_builder(details::object_tag_t);
+        config_builder(details::object_tag_t, bool multi_associative);
         config_builder(details::array_tag_t);
 
         builder_state* checked_handle_() const;
