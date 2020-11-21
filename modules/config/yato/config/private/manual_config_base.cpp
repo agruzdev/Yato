@@ -48,6 +48,9 @@ namespace conf {
 
         std::unique_ptr<manual_config_base> create_empty_copy_(const yato::config& c)
         {
+            if (c.is_null()) {
+                return std::make_unique<manual_map>();
+            }
             if (c.is_multi_associative()) {
                 return std::make_unique<manual_multimap>();
             }
@@ -189,10 +192,7 @@ namespace conf {
         {
             const auto t = path_tokenizer.next();
             const std::string name{ t.begin(), t.end() };
-            if (other.is_null()) {
-                return nullptr;
-            }
-            if (other.is_associative()) {
+            if (other.is_null() || other.is_associative()) {
                 auto config_copy = create_empty_copy_(other);
                 bool key_replaced = false;
                 for (const auto& entry : other) {
