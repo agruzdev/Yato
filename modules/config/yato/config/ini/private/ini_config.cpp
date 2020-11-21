@@ -40,7 +40,7 @@ namespace conf {
         }
     }
 
-    std::vector<std::string> ini_config::do_keys() const noexcept
+    std::vector<std::string> ini_config::do_enumerate_keys() const noexcept
     {
         std::vector<std::string> keys;
         if (m_is_global) {
@@ -99,9 +99,15 @@ namespace conf {
         delete val;
     }
 
-    bool ini_config::do_is_object() const noexcept
+    bool ini_config::do_has_property(config_property p) const noexcept
     {
-        return true;
+        switch (p) {
+        case config_property::associative:
+        case config_property::multi_associative:
+            return true;
+        default:
+            return false;
+        }
     }
 
 } // namespace conf

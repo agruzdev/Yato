@@ -37,7 +37,7 @@ namespace conf {
 
         size_t do_size() const noexcept override;
 
-        std::vector<std::string> do_keys() const noexcept override;
+        std::vector<std::string> do_enumerate_keys() const noexcept override;
 
         key_value_t do_find(size_t index) const noexcept override;
 
@@ -45,7 +45,7 @@ namespace conf {
 
         void do_release(const config_value* val) const noexcept override;
 
-        bool do_is_object() const noexcept override;
+        bool do_has_property(config_property p) const noexcept override;
 
 
         ini_config(const ini_config&) = delete;

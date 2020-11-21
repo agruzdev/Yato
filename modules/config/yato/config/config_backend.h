@@ -235,6 +235,28 @@ namespace conf {
     >;
 
 
+
+    enum class config_property
+        : uint32_t
+    {
+        associative = 0x1,
+        multi_associative = 0x2 | associative,
+        ordered = 0x4
+    };
+
+    constexpr
+    config_property operator|(const config_property& lhs, const config_property& rhs)
+    {
+        return static_cast<config_property>(static_cast<std::underlying_type_t<config_property>>(lhs) | static_cast<std::underlying_type_t<config_property>>(rhs));
+    }
+
+    constexpr
+    config_property operator&(const config_property& lhs, const config_property& rhs)
+    {
+        return static_cast<config_property>(static_cast<std::underlying_type_t<config_property>>(lhs) & static_cast<std::underlying_type_t<config_property>>(rhs));
+    }
+
+
     /**
      * Config element handle and optionally iterator for multivalue
      */
@@ -296,11 +318,11 @@ namespace conf {
         }
 
         /**
-         * Returns true if config stores key-value pairs, otherwise only indexed access is supported.
+         * Checks config property
          */
-        bool is_object() const
+        bool has_property(config_property p) const
         {
-            return do_is_object();
+            return do_has_property(p);
         }
 
         /**
@@ -330,9 +352,9 @@ namespace conf {
         /**
          * Enumerate object's keys
          */
-        std::vector<std::string> keys() const
+        std::vector<std::string> enumerate_keys() const
         {
-            return do_keys();
+            return do_enumerate_keys();
         }
 
         /**
@@ -383,7 +405,7 @@ namespace conf {
         /**
          * Returns false by default
          */
-        virtual bool do_is_object() const noexcept;
+        virtual bool do_has_property(config_property p) const noexcept;
 
         /**
          * Find value by name.
@@ -394,7 +416,7 @@ namespace conf {
         /**
          * Default implementation calls find() for all valid indexes.
          */
-        virtual std::vector<std::string> do_keys() const noexcept;
+        virtual std::vector<std::string> do_enumerate_keys() const noexcept;
     };
 
 } // namespace conf

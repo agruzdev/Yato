@@ -25,18 +25,20 @@ namespace conf
     {
     public:
         static YATO_CONSTEXPR_VAR stored_type config_type = StoredType_;
-        using value_type  = typename stored_type_trait<StoredType_>::return_type;
+        using value_type = typename stored_type_trait<StoredType_>::return_type;
 
         manual_value(value_type val)
             : m_value(std::move(val))
         { }
 
-        ~manual_value() = default;
-
         manual_value(const manual_value&) = delete;
+
         manual_value(manual_value&&) = default;
 
+        ~manual_value() = default;
+
         manual_value& operator=(const manual_value&) = delete;
+
         manual_value& operator=(manual_value&&) = default;
 
         stored_type type() const noexcept override

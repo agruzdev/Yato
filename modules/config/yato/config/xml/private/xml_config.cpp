@@ -22,9 +22,12 @@ namespace conf {
                 auto first       = elem->FirstChildElement();
                 const auto last  = elem->LastChildElement();
                 if(first != nullptr && last != nullptr) {
-                    while(first != last) {
+                    while (first != last) {
                         visitor(first);
                         first = first->NextSiblingElement();
+                        if (!first) {
+                            break;
+                        }
                     }
                     visitor(last);
                 }
@@ -52,9 +55,16 @@ namespace conf {
         return m_children.size();
     }
 
-    bool xml_config::do_is_object() const noexcept
+    bool xml_config::do_has_property(config_property p) const noexcept
     {
-        return true;
+        switch (p) {
+        case config_property::associative:
+        case config_property::multi_associative:
+        case config_property::ordered:
+            return true;
+        default:
+            return false;
+        }
     }
 
     config_backend::key_value_t xml_config::do_find(size_t index) const noexcept

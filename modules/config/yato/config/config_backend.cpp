@@ -20,7 +20,7 @@ namespace conf {
 
     const config_backend::key_value_t config_backend::novalue = std::make_pair(std::string{}, nullptr);
 
-    bool config_backend::do_is_object() const noexcept
+    bool config_backend::do_has_property(config_property /*p*/) const noexcept
     {
         return false;
     }
@@ -30,10 +30,10 @@ namespace conf {
         return config_backend::novalue;
     }
 
-    std::vector<std::string> config_backend::do_keys() const noexcept
+    std::vector<std::string> config_backend::do_enumerate_keys() const noexcept
     {
         std::vector<std::string> res;
-        if (is_object()) {
+        if (do_has_property(config_property::associative)) {
             try {
                 const size_t count = size();
                 std::vector<std::string> tmp;

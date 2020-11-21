@@ -5,229 +5,18 @@
  * Copyright (c) 2016-2020 Alexey Gruzdev
  */
 
-#ifndef _YATO_CONFIG_MANUAL_PRIVATE_MANUAL_CONFIG_H_
-#define _YATO_CONFIG_MANUAL_PRIVATE_MANUAL_CONFIG_H_
-
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "yato/config/config.h"
-#include "yato/variant_match.h"
-#include "manual_value.h"
+#include "manual_config_base.h"
+#include "manual_map.h"
+#include "manual_multimap.h"
+#include "manual_array.h"
 
 namespace yato {
 
 namespace conf {
 
-
-    /**
-     * Implements object
-     */
-    //using manual_object_t = std::multimap<std::string, std::unique_ptr<config_value>>;
-    using manual_object_t = std::map<std::string, std::unique_ptr<config_value>>;
-    
-    /**
-     * Implements array
-     */
-    using manual_array_t  = std::vector<std::unique_ptr<config_value>>;
-
-
-    class manual_config final
-        : public config_backend
+    namespace
     {
-    public:
-        static
-        std::unique_ptr<manual_config> copy(const yato::config& c, bool deep_copy)
-        {
-            return copy_impl_(c, deep_copy);
-        }
 
-        static
-        std::unique_ptr<manual_config> deep_copy(const yato::config& c)
-        {
-            return copy_impl_(c, true);
-        }
-
-        static
-        std::unique_ptr<manual_config> shallow_copy(const yato::config& c)
-        {
-            return copy_impl_(c, false);
-        }
-
-        static
-        std::unique_ptr<manual_config> copy_with_path(const yato::config& other, const conf::path& path, stored_variant value)
-        {
-            return copy_with_path_impl_(other, path.tokenize(), copy_value_(std::move(value)));
-        }
-
-        static
-        std::unique_ptr<manual_config> copy_without_path(const yato::config& other, const conf::path& path)
-        {
-            return copy_without_path_impl_(other, path.tokenize());
-        }
-
-        static
-        std::unique_ptr<manual_config> copy_only_path(const yato::config& other, const conf::path& path)
-        {
-            return copy_only_path_impl_(other, path.tokenize());
-        }
-
-        static
-        std::unique_ptr<manual_config> copy_with_whitelist(const yato::config& other, std::vector<std::string> names)
-        {
-            return copy_with_filter_(other, std::move(names), true);
-        }
-
-        static
-        std::unique_ptr<manual_config> copy_with_blacklist(const yato::config& other, std::vector<std::string> names)
-        {
-            return copy_with_filter_(other, std::move(names), false);
-        }
-
-        static
-        std::unique_ptr<manual_config> merge(const config& lhs, const config& rhs, conf::priority p = conf::priority::left)
-        {
-            switch (p) {
-                default:
-                    YATO_ASSERT(false,  "Invalid priority value");
-                    YATO_ATTR_FALLTHROUGH;
-                case conf::priority::left:
-                    return merge_impl_(lhs, rhs);
-                case conf::priority::right:
-                    return merge_impl_(rhs, lhs);
-            }
-        }
-
-        explicit
-        manual_config(details::object_tag_t)
-            : m_data(in_place_type_t<manual_object_t>{})
-        { }
-
-        explicit
-        manual_config(details::array_tag_t)
-            : m_data(in_place_type_t<manual_array_t>{})
-        { }
-
-        explicit
-        manual_config(manual_object_t&& obj) noexcept
-            : m_data(std::move(obj))
-        { }
-
-        explicit
-        manual_config(manual_array_t&& arr) noexcept
-            : m_data(std::move(arr))
-        { }
-
-        manual_config(const manual_config&) = delete;
-
-        manual_config(manual_config&& other) noexcept = default;
-
-        ~manual_config() override = default;
-
-        manual_config& operator=(const manual_config&) = delete;
-
-        manual_config& operator=(manual_config&& other) noexcept = default;
-
-        void put(std::string name, std::unique_ptr<config_value>&& value)
-        {
-            yato::variant_match(
-                [&](manual_object_t & obj) {
-                    //obj.emplace(std::move(name), std::move(value));
-                    obj.insert_or_assign(std::move(name), std::move(value));
-                },
-                [&](match_default_t) {
-                    throw config_error("manual_config[put]: Config must be an object.");
-                }
-            )(m_data);
-        }
-
-        void add(std::unique_ptr<config_value>&& value)
-        {
-            yato::variant_match(
-                [&](manual_array_t & arr) {
-                    arr.push_back(std::move(value));
-                },
-                [&](match_default_t) {
-                    throw config_error("manual_config[add]: Config must be an array.");
-                }
-             )(m_data);
-        }
-
-        void pop()
-        {
-            yato::variant_match(
-                [&](manual_array_t& arr) {
-                    arr.pop_back();
-                },
-                [&](match_default_t) {
-                    throw config_error("manual_config[pop]: Config must be an array.");
-                }
-            )(m_data);
-        }
-
-    private:
-        size_t do_size() const noexcept override
-        {
-            return yato::variant_match(
-                [](const manual_object_t & obj) {
-                    return obj.size();
-                },
-                [](const manual_array_t & arr) {
-                    return arr.size();
-                }
-            )(m_data);
-        }
-
-        bool do_is_object() const noexcept override
-        {
-            return m_data.is_type<manual_object_t>();
-        }
-
-        key_value_t do_find(size_t index) const noexcept override
-        {
-            key_value_t kv{};
-            yato::variant_match(
-                [&](const manual_object_t & obj) {
-                    if(index < obj.size()) {
-                        const auto it = std::next(obj.cbegin(), index);
-                        kv.first  = (*it).first;
-                        kv.second = (*it).second.get();
-                    }
-                },
-                [&](const manual_array_t & arr) {
-                    if(index < arr.size()) {
-                        kv.second = arr[index].get();
-                    }
-                }
-            )(m_data);
-            return kv;
-        }
-
-        key_value_t do_find(const std::string & name) const noexcept override
-        {
-            key_value_t kv{};
-            yato::variant_match(
-                [&](const manual_object_t & obj) {
-                    const auto it = obj.find(name);
-                    if(it != obj.cend()) {
-                        kv.first  = (*it).first;
-                        kv.second = (*it).second.get();
-                    }
-                },
-                [&](match_default_t) {
-                }
-            )(m_data);
-            return kv;
-        }
-
-        void do_release(const config_value* /*val*/) const noexcept override
-        {
-            return;
-        }
-
-        static
         std::unique_ptr<config_value> copy_value_(stored_variant val)
         {
             return yato::variant_match(
@@ -252,22 +41,29 @@ namespace conf {
             )(std::move(val));
         }
 
-        static
-        std::unique_ptr<config_value> wrap_config_(std::unique_ptr<manual_config>&& conf)
+        std::unique_ptr<config_value> wrap_config_(std::unique_ptr<manual_config_base>&& conf)
         {
             return std::make_unique<manual_value<stored_type::config>>(std::shared_ptr<config_backend>(std::move(conf)));
         }
 
-        static
-        std::unique_ptr<manual_config> copy_impl_(const yato::config& c, bool deep_copy)
+        std::unique_ptr<manual_config_base> create_empty_copy_(const yato::config& c)
+        {
+            if (c.is_multi_associative()) {
+                return std::make_unique<manual_multimap>();
+            }
+            if (c.is_associative()) {
+                return std::make_unique<manual_map>();
+            }
+            return std::make_unique<manual_array>();
+        }
+
+        std::unique_ptr<manual_config_base> copy_impl_(const yato::config& c, bool deep_copy)
         {
             if (!c) {
                 return nullptr;
             }
 
-            std::unique_ptr<manual_config> config_copy = c.is_object()
-                ? std::make_unique<manual_config>(details::object_tag_t{})
-                : std::make_unique<manual_config>(details::array_tag_t{});
+            std::unique_ptr<manual_config_base> config_copy = create_empty_copy_(c);
 
             for (auto entry : c) {
                 std::unique_ptr<config_value> value_copy;
@@ -283,7 +79,7 @@ namespace conf {
                     }
                 }
 
-                if (c.is_object()) {
+                if (c.is_associative()) {
                     config_copy->put(entry.key(), std::move(value_copy));
                 }
                 else {
@@ -294,11 +90,14 @@ namespace conf {
             return config_copy;
         }
 
-        static
-        std::unique_ptr<manual_config> merge_impl_(const yato::config& lhs_conf, const yato::config& rhs_conf)
+        std::unique_ptr<manual_config_base> merge_impl_(const yato::config& lhs_conf, const yato::config& rhs_conf)
         {
-            if ((lhs_conf.is_null() || lhs_conf.is_object()) && (rhs_conf.is_null() || rhs_conf.is_object())) {
-                auto joint_config = std::make_unique<manual_config>(details::object_tag_t{});
+            if ((lhs_conf.is_null() || lhs_conf.is_associative()) && (rhs_conf.is_null() || rhs_conf.is_associative())) {
+
+                auto joint_config = (lhs_conf.is_multi_associative() || rhs_conf.is_multi_associative())
+                    ? static_cast<std::unique_ptr<manual_config_base>>(std::make_unique<manual_multimap>())
+                    : static_cast<std::unique_ptr<manual_config_base>>(std::make_unique<manual_map>());
+
                 std::vector<std::string> lhs_keys = lhs_conf.keys();
                 std::vector<std::string> rhs_keys = rhs_conf.keys();
                 std::sort(lhs_keys.begin(), lhs_keys.end());
@@ -335,7 +134,8 @@ namespace conf {
                         auto value_copy = copy_value_(lhs_entry.value_handle_()->get());
                         if (value_copy) {
                             joint_config->put(key, std::move(value_copy));
-                        } else {
+                        }
+                        else {
                             throw yato::config_error("merge: Failed to copy a common value: " + key);
                         }
                     }
@@ -348,7 +148,8 @@ namespace conf {
                             auto value_copy = copy_value_(entry.value_handle_()->get());
                             if (value_copy) {
                                 joint_config->put(name, std::move(value_copy));
-                            } else {
+                            }
+                            else {
                                 throw yato::config_error("merge: Failed to copy a lhs value: " + entry.key());
                             }
                         }
@@ -365,7 +166,8 @@ namespace conf {
                             auto value_copy = copy_value_(entry.value_handle_()->get());
                             if (value_copy) {
                                 joint_config->put(name, std::move(value_copy));
-                            } else {
+                            }
+                            else {
                                 throw yato::config_error("merge: Failed to copy a rhs value: " + entry.key());
                             }
                         }
@@ -378,18 +180,20 @@ namespace conf {
                 return joint_config;
             }
             else {
-                throw yato::config_error("merge: Only objects can be merged.");
+                throw yato::config_error("merge: Only associative objects can be merged.");
             }
         }
 
         template <typename Tokenizer_>
-        static
-        std::unique_ptr<manual_config> copy_with_path_impl_(const yato::config& other, Tokenizer_ path_tokenizer, std::unique_ptr<config_value>&& value)
+        std::unique_ptr<manual_config_base> copy_with_path_impl_(const yato::config& other, Tokenizer_ path_tokenizer, std::unique_ptr<config_value>&& value)
         {
             const auto t = path_tokenizer.next();
             const std::string name{ t.begin(), t.end() };
-            if (other.is_null() || other.is_object()) {
-                auto config_copy = std::make_unique<manual_config>(details::object_tag_t{});
+            if (other.is_null()) {
+                return nullptr;
+            }
+            if (other.is_associative()) {
+                auto config_copy = create_empty_copy_(other);
                 bool key_replaced = false;
                 for (const auto& entry : other) {
                     if (entry) {
@@ -401,11 +205,13 @@ namespace conf {
                                 config_copy->put(name, std::move(value));
                             }
                             key_replaced = true;
-                        } else {
+                        }
+                        else {
                             auto value_copy = copy_value_(entry.value_handle_()->get());
                             if (value_copy) {
                                 config_copy->put(entry.key(), std::move(value_copy));
-                            } else {
+                            }
+                            else {
                                 throw yato::config_error("copy_with_path: Failed to copy a value: " + entry.key());
                             }
                         }
@@ -421,35 +227,36 @@ namespace conf {
                 }
                 return config_copy;
             }
-            else {
-                throw yato::config_error("copy_with_path: Path can't be added to array.");
-            }
+            throw yato::config_error("copy_with_path: Path can't be added to array.");
         }
 
         template <typename Tokenizer_>
-        static
-        std::unique_ptr<manual_config> copy_only_path_impl_(const yato::config& other, Tokenizer_ path_tokenizer)
+        std::unique_ptr<manual_config_base> copy_only_path_impl_(const yato::config& other, Tokenizer_ path_tokenizer)
         {
             const auto t = path_tokenizer.next();
             const std::string name{ t.begin(), t.end() };
-            if (other.is_null() || other.is_object()) {
-                std::unique_ptr<manual_config> config_copy = nullptr;
+            if (other.is_null()) {
+                return nullptr;
+            }
+            if (other.is_associative()) {
+                std::unique_ptr<manual_config_base> config_copy = nullptr;
                 for (const auto& entry : other) {
                     if (entry) {
                         if (entry.key() == name) {
                             if (path_tokenizer.has_next()) {
                                 auto child_config = copy_only_path_impl_(entry.object(), path_tokenizer);
                                 if (child_config != nullptr) {
-                                    config_copy = std::make_unique<manual_config>(details::object_tag_t{});
+                                    config_copy = create_empty_copy_(other);
                                     config_copy->put(name, wrap_config_(std::move(child_config)));
                                 }
                             }
                             else {
                                 auto value_copy = copy_value_(entry.value_handle_()->get());
                                 if (value_copy) {
-                                    config_copy = std::make_unique<manual_config>(details::object_tag_t{});
+                                    config_copy = create_empty_copy_(other);
                                     config_copy->put(entry.key(), std::move(value_copy));
-                                } else {
+                                }
+                                else {
                                     throw yato::config_error("copy_only_path: Failed to copy a value: " + entry.key());
                                 }
                             }
@@ -459,33 +266,32 @@ namespace conf {
                 }
                 return config_copy;
             }
-            else {
-                throw yato::config_error("copy_only_path: Path can't be copied from array.");
-            }
+            throw yato::config_error("copy_only_path: Path can't be copied from array.");
         }
 
         template <typename Tokenizer_>
-        static
-        std::unique_ptr<manual_config> copy_without_path_impl_(const yato::config& other, Tokenizer_ path_tokenizer)
+        std::unique_ptr<manual_config_base> copy_without_path_impl_(const yato::config& other, Tokenizer_ path_tokenizer)
         {
             const auto t = path_tokenizer.next();
             const std::string name{ t.begin(), t.end() };
             if (other.is_null()) {
                 return nullptr;
             }
-            if (other.is_object()) {
-                auto config_copy = std::make_unique<manual_config>(details::object_tag_t{});
+            if (other.is_associative()) {
+                auto config_copy = create_empty_copy_(other);
                 for (const auto& entry : other) {
                     if (entry) {
                         if (entry.key() == name) {
                             if (path_tokenizer.has_next()) {
                                 config_copy->put(name, wrap_config_(copy_without_path_impl_(entry.object(), path_tokenizer)));
                             }
-                        } else {
+                        }
+                        else {
                             auto value_copy = copy_value_(entry.value_handle_()->get());
                             if (value_copy) {
                                 config_copy->put(entry.key(), std::move(value_copy));
-                            } else {
+                            }
+                            else {
                                 throw yato::config_error("copy_without_path: Failed to copy a value: " + entry.key());
                             }
                         }
@@ -493,20 +299,17 @@ namespace conf {
                 }
                 return config_copy;
             }
-            else {
-                throw yato::config_error("copy_without_path: Path can't be removed from array.");
-            }
+            throw yato::config_error("copy_without_path: Path can't be removed from array.");
         }
 
-        static
-        std::unique_ptr<manual_config> copy_with_filter_(const yato::config& conf, std::vector<std::string> names, bool is_whitelist)
+        std::unique_ptr<manual_config_base> copy_with_filter_(const yato::config& conf, std::vector<std::string> names, bool is_whitelist)
         {
             if (conf.is_null()) {
                 return nullptr;
             }
-            else if (conf.is_object()) {
+            if (conf.is_associative()) {
                 std::set<std::string> names_set(std::make_move_iterator(names.begin()), std::make_move_iterator(names.end()));
-                auto config_copy = std::make_unique<manual_config>(details::object_tag_t{});
+                auto config_copy = create_empty_copy_(conf);
                 for (const auto& entry : conf) {
                     if (entry) {
                         const bool name_matched = (names_set.find(entry.key()) != names_set.cend());
@@ -514,7 +317,8 @@ namespace conf {
                             auto value_copy = copy_value_(entry.value_handle_()->get());
                             if (value_copy) {
                                 config_copy->put(entry.key(), std::move(value_copy));
-                            } else {
+                            }
+                            else {
                                 throw yato::config_error("copy_with_filter: Failed to copy a value: " + entry.key());
                             }
                         }
@@ -522,19 +326,66 @@ namespace conf {
                 }
                 return config_copy;
             }
-            else {
-                throw yato::config_error("copy_with_filter: Only object-like config is supported.");
-            }
+            throw yato::config_error("copy_with_filter: Only object-like config is supported.");
         }
 
-    private:
-        yato::variant<manual_object_t, manual_array_t> m_data;
-    };
+    } // namespace
 
 
+    std::unique_ptr<manual_config_base> manual_config_base::copy(const yato::config& c, bool deep_copy)
+    {
+        return copy_impl_(c, deep_copy);
+    }
+
+    std::unique_ptr<manual_config_base> manual_config_base::deep_copy(const yato::config& c)
+    {
+        return copy_impl_(c, true);
+    }
+
+    std::unique_ptr<manual_config_base> manual_config_base::shallow_copy(const yato::config& c)
+    {
+        return copy_impl_(c, false);
+    }
+
+    std::unique_ptr<manual_config_base> manual_config_base::copy_with_path(const yato::config& other, const conf::path& path, stored_variant value)
+    {
+        return copy_with_path_impl_(other, path.tokenize(), copy_value_(std::move(value)));
+    }
+
+    std::unique_ptr<manual_config_base> manual_config_base::copy_without_path(const yato::config& other, const conf::path& path)
+    {
+        return copy_without_path_impl_(other, path.tokenize());
+    }
+
+    std::unique_ptr<manual_config_base> manual_config_base::copy_only_path(const yato::config& other, const conf::path& path)
+    {
+        return copy_only_path_impl_(other, path.tokenize());
+    }
+
+    std::unique_ptr<manual_config_base> manual_config_base::copy_with_whitelist(const yato::config& other, std::vector<std::string> names)
+    {
+        return copy_with_filter_(other, std::move(names), true);
+    }
+
+    std::unique_ptr<manual_config_base> manual_config_base::copy_with_blacklist(const yato::config& other, std::vector<std::string> names)
+    {
+        return copy_with_filter_(other, std::move(names), false);
+    }
+
+    std::unique_ptr<manual_config_base> manual_config_base::merge(const config& lhs, const config& rhs, conf::priority p)
+    {
+        switch (p) {
+        default:
+            YATO_ASSERT(false, "Invalid priority value");
+            YATO_ATTR_FALLTHROUGH;
+        case conf::priority::left:
+            return merge_impl_(lhs, rhs);
+        case conf::priority::right:
+            return merge_impl_(rhs, lhs);
+        }
+    }
 
 } // namespace yato
 
 } // namespace conf
 
-#endif // _YATO_CONFIG_MANUAL_PRIVATE_MANUAL_CONFIG_H_

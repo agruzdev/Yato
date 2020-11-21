@@ -38,9 +38,16 @@ namespace json {
         return get_().size();
     }
 
-    bool json_config::do_is_object() const noexcept
+    bool json_config::do_has_property(config_property p) const noexcept
     {
-        return get_().is_object();
+        switch (p) {
+        case config_property::associative:
+            return get_().is_object();
+        case config_property::ordered:
+            return get_().is_array();
+        default:
+            return false;
+        }
     }
 
     config_backend::key_value_t json_config::do_find(const std::string & name) const noexcept

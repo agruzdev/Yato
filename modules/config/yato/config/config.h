@@ -20,7 +20,7 @@
 namespace yato {
 
 namespace conf {
-    
+
     class config;
 
     /**
@@ -518,12 +518,39 @@ namespace conf {
         }
 
         /**
-         * Return true if config is an object, i.e. contains named values.
+         * Checks a config property
+         */
+        YATO_ATTR_NODISCARD
+        bool has_property(config_property p) const
+        {
+            return m_backend ? m_backend->has_property(p) : false;
+        }
+
+        /**
+         * Return true if config supports associative access by name
          */
         YATO_ATTR_NODISCARD
         bool is_object() const
         {
-            return m_backend ? m_backend->is_object() : false;
+            return has_property(config_property::associative);
+        }
+
+        /**
+         * Return true if config supports associative access by name
+         */
+        YATO_ATTR_NODISCARD
+        bool is_associative() const
+        {
+            return has_property(config_property::associative);
+        }
+
+        /**
+         * Return true if config supports associative access by name and allows multiple values for one key
+         */
+        YATO_ATTR_NODISCARD
+        bool is_multi_associative() const
+        {
+            return has_property(config_property::multi_associative);
         }
 
         /**
@@ -551,7 +578,7 @@ namespace conf {
         YATO_ATTR_NODISCARD
         std::vector<std::string> keys() const
         {
-            return m_backend ? m_backend->keys() : std::vector<std::string>{};
+            return m_backend ? m_backend->enumerate_keys() : std::vector<std::string>{};
         }
 
         /**
@@ -1020,6 +1047,7 @@ namespace conf {
     using conf::config;
     using conf::config_entry;
     using conf::config_iterator;
+    using conf::config_property;
     using conf::stored_type;
     using conf::config_error;
 

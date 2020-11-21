@@ -6,7 +6,9 @@
  */
 
 #include "yato/config/config_builder.h"
-#include "yato/config/private/manual_config.h"
+#include "yato/config/private/manual_array.h"
+#include "yato/config/private/manual_map.h"
+#include "yato/config/private/manual_multimap.h"
 #include "yato/assertion.h"
 
 namespace yato {
@@ -15,32 +17,32 @@ namespace conf {
 
     struct config_builder::builder_state
     {
-        std::shared_ptr<manual_config> conf;
+        std::shared_ptr<manual_config_base> conf;
     };
 
     config_builder::config_builder(details::object_tag_t t)
         : m_impl(std::make_unique<builder_state>())
     {
-        m_impl->conf = std::make_shared<manual_config>(t);
+        m_impl->conf = std::make_shared<manual_map>();
     }
 
     config_builder::config_builder(details::array_tag_t t)
         : m_impl(std::make_unique<builder_state>())
     {
-        m_impl->conf = std::make_shared<manual_config>(t);
+        m_impl->conf = std::make_shared<manual_array>();
     }
 
     config_builder::config_builder(const config& c, bool deep_copy)
         : m_impl(std::make_unique<builder_state>())
     {
-        m_impl->conf = manual_config::copy(c, deep_copy);
+        m_impl->conf = manual_config_base::copy(c, deep_copy);
     }
 
     config_builder::config_builder(const config_builder& other)
         : m_impl(std::make_unique<builder_state>())
     {
         if (other.m_impl->conf) {
-            m_impl->conf = manual_config::shallow_copy(config(other.checked_handle_()->conf));
+            m_impl->conf = manual_config_base::shallow_copy(config(other.checked_handle_()->conf));
         }
     }
 
@@ -57,7 +59,7 @@ namespace conf {
         YATO_REQUIRES(&other != this);
         m_impl->conf.reset();
         if (other.m_impl->conf) {
-            m_impl->conf = manual_config::shallow_copy(config(other.checked_handle_()->conf));
+            m_impl->conf = manual_config_base::shallow_copy(config(other.checked_handle_()->conf));
         }
         return *this;
     }

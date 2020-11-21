@@ -15,7 +15,7 @@ namespace conf {
     yaml_config::yaml_config(YAML::Node node)
         : m_node(std::move(node))
     {
-        if (m_node.Type() != YAML::NodeType::Map && m_node.Type() != YAML::NodeType::Sequence) {
+        if (!m_node.IsDefined() || (m_node.Type() != YAML::NodeType::Map && m_node.Type() != YAML::NodeType::Sequence)) {
             throw yato::conf::config_error("yaml_config[ctor]: Invalid node type.");
         }
     }
@@ -33,9 +33,16 @@ namespace conf {
         return 0;
     }
 
-    bool yaml_config::do_is_object() const noexcept
+    bool yaml_config::do_has_property(config_property p) const noexcept
     {
-        return (m_node.Type() == YAML::NodeType::Map);
+        switch (p) {
+        case config_property::associative:
+            return (m_node.Type() == YAML::NodeType::Map);
+        case config_property::ordered:
+            return (m_node.Type() == YAML::NodeType::Sequence);
+        default:
+            return false;
+        }
     }
 
     config_backend::key_value_t yaml_config::do_find(size_t index) const noexcept
@@ -87,7 +94,7 @@ namespace conf {
         delete val;
     }
 
-    std::vector<std::string> yaml_config::do_keys() const noexcept
+    std::vector<std::string> yaml_config::do_enumerate_keys() const noexcept
     {
         std::vector<std::string> keys;
         if (m_node.Type() == YAML::NodeType::Map) {
