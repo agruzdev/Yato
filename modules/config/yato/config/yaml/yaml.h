@@ -44,36 +44,6 @@ namespace conf {
 
     } // namespace yaml
 
-    /**
-     * Builder for YAML config
-     */
-    class yaml_builder
-    {
-    public:
-        yaml_builder();
-        ~yaml_builder();
-
-        yaml_builder(const yaml_builder&) = delete;
-        yaml_builder(yaml_builder&&) noexcept;
-
-        yaml_builder& operator = (const yaml_builder&) = delete;
-        yaml_builder& operator = (yaml_builder&&) noexcept;
-
-        /**
-         * Parse YAML from string
-         */
-        config parse(const char* input) const;
-
-        /**
-         * Parse YAML from string
-         */
-        config parse(const std::string & input) const;
-
-        /**
-         * Parse YAML from stream
-         */
-        config parse(std::istream & input) const;
-    };
 
 } // namespace conf
 
