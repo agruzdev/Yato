@@ -46,12 +46,15 @@ void TestConfig_PlainObject(const yato::conf::config & conf)
     EXPECT_EQ(42, i.get_or(0));
 
     const auto ie = conf.find("int");
-    EXPECT_FALSE(ie.is_null());
-    //EXPECT_EQ(yato::conf::stored_type::integer, ie.type());
-    EXPECT_EQ(42, ie.value<int32_t>().get_or(0));
+    EXPECT_TRUE(ie != conf.cend());
+    EXPECT_FALSE(ie->is_null());
+    EXPECT_EQ(42, ie->value<int32_t>().get_or(0));
 
     const auto str = conf.value<std::string>("message");
     EXPECT_EQ("somestr", str.get_or(""));
+
+    const auto str_entry = conf.at("message");
+    EXPECT_EQ("somestr", str_entry.value<std::string>().get_or(""));
 
     const auto f1 = conf.value<bool>("flag1");
     EXPECT_EQ(false, f1.get_or(true));
@@ -92,16 +95,41 @@ void TestConfig_PlainObject(const yato::conf::config & conf)
     const auto v1 = conf.to_vector<std::string>();
     ASSERT_EQ(5u, v1.size());
 
-    const auto m1 = conf.to_map<std::string>();
-    ASSERT_EQ(5u, m1.size());
-    EXPECT_EQ(42, std::stoi(m1.at("int")));
-    EXPECT_EQ("somestr", m1.at("message"));
-    EXPECT_EQ(7.0, std::stod(m1.at("flt")));
-    bool tmp_bool = false;
-    ASSERT_TRUE(yato::conf::serializer<yato::conf::stored_type::boolean>::cvt_from(m1.at("flag1"), &tmp_bool));
-    EXPECT_EQ(false, tmp_bool);
-    ASSERT_TRUE(yato::conf::serializer<yato::conf::stored_type::boolean>::cvt_from(m1.at("flag2"), &tmp_bool));
-    EXPECT_EQ(true, tmp_bool);
+    EXPECT_NO_THROW(
+        const auto m1 = conf.to_map<std::string>();
+        ASSERT_EQ(5u, m1.size());
+        EXPECT_EQ(42, std::stoi(m1.at("int")));
+        EXPECT_EQ("somestr", m1.at("message"));
+        EXPECT_EQ(7.0, std::stod(m1.at("flt")));
+        bool tmp_bool = false;
+        ASSERT_TRUE(yato::conf::serializer<yato::conf::stored_type::boolean>::cvt_from(m1.at("flag1"), &tmp_bool));
+        EXPECT_EQ(false, tmp_bool);
+        ASSERT_TRUE(yato::conf::serializer<yato::conf::stored_type::boolean>::cvt_from(m1.at("flag2"), &tmp_bool));
+        EXPECT_EQ(true, tmp_bool);
+    );
+
+    EXPECT_NO_THROW(
+        const auto m1 = conf.to_multimap<std::string>();
+        ASSERT_EQ(5u, m1.size());
+        auto it = m1.find("int");
+        ASSERT_TRUE(it != m1.cend());
+        EXPECT_EQ(42, std::stoi((*it).second));
+        it = m1.find("message");
+        ASSERT_TRUE(it != m1.cend());
+        EXPECT_EQ("somestr", (*it).second);
+        it = m1.find("flt");
+        ASSERT_TRUE(it != m1.cend());
+        EXPECT_EQ(7.0, std::stod((*it).second));
+        bool tmp_bool = false;
+        it = m1.find("flag1");
+        ASSERT_TRUE(it != m1.cend());
+        ASSERT_TRUE(yato::conf::serializer<yato::conf::stored_type::boolean>::cvt_from((*it).second, &tmp_bool));
+        EXPECT_EQ(false, tmp_bool);
+        it = m1.find("flag2");
+        ASSERT_TRUE(it != m1.cend());
+        ASSERT_TRUE(yato::conf::serializer<yato::conf::stored_type::boolean>::cvt_from((*it).second, &tmp_bool));
+        EXPECT_EQ(true, tmp_bool);
+    );
 }
 
 /**

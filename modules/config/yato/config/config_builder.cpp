@@ -24,8 +24,8 @@ namespace conf {
         : m_impl(std::make_unique<builder_state>())
     {
         m_impl->conf = multi_associative
-            ? static_cast<std::shared_ptr<manual_config_base>>(std::make_unique<manual_multimap>())
-            : static_cast<std::shared_ptr<manual_config_base>>(std::make_unique<manual_map>());
+            ? std::static_pointer_cast<manual_config_base>(std::make_shared<manual_multimap>())
+            : std::static_pointer_cast<manual_config_base>(std::make_shared<manual_map>());
     }
 
     config_builder::config_builder(details::array_tag_t)

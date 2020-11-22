@@ -64,30 +64,30 @@ namespace conf {
         bool do_has_property(config_property p) const noexcept override
         {
             switch (p) {
-            case config_property::ordered: 
+            case config_property::keeps_order:
                 return true;
             default:
                 return false;
             }
         }
 
-        key_value_t do_find(size_t index) const noexcept override
+        find_index_result_t do_find(size_t index) const override
         {
-            key_value_t kv{};
+            find_index_result_t result = config_backend::no_index_result;
             if (index < m_data.size()) {
-                kv.second = m_data[index].get();
+                std::get<1>(result) = m_data[index].get();
             }
-            return kv;
+            return result;
         }
 
-        key_value_t do_find(const std::string & /*name*/) const noexcept override
+        find_key_result_t do_find(const std::string & /*name*/) const override
         {
-            return config_backend::novalue;
+            return config_backend::no_key_result;
         }
 
         void do_release(const config_value* /*val*/) const noexcept override
         {
-            return;
+            // do nothing
         }
 
 

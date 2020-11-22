@@ -43,37 +43,36 @@ namespace json {
         switch (p) {
         case config_property::associative:
             return get_().is_object();
-        case config_property::ordered:
+        case config_property::keeps_order:
             return get_().is_array();
         default:
             return false;
         }
     }
 
-    config_backend::key_value_t json_config::do_find(const std::string & name) const noexcept
+    config_backend::find_key_result_t json_config::do_find(const std::string & name) const
     {
-        key_value_t res = config_backend::novalue;
+        find_key_result_t res = config_backend::no_key_result;
         const auto & json = get_();
         if (json.is_object()) {
             const nlohmann::json::const_iterator it = json.find(name);
             if (it != json.cend()) {
-                res.first  = name;
-                res.second = new json_value(m_root, it);
+                res = std::make_tuple(yato::narrow_cast<size_t>(std::distance(json.cbegin(), it)), new json_value(m_root, it));
             }
         }
         return res;
     }
 
-    config_backend::key_value_t json_config::do_find(size_t index) const noexcept
+    config_backend::find_index_result_t json_config::do_find(size_t index) const
     {
-        key_value_t res = config_backend::novalue;
+        find_index_result_t res = config_backend::no_index_result;
         const auto & json = get_();
         if (index < json.size()) {
             const nlohmann::json::const_iterator it = std::next(json.cbegin(), index);
             if (json.is_object()) {
-                res.first  = it.key();
+                std::get<0>(res) = it.key();
             }
-            res.second = new json_value(m_root, it);
+            std::get<1>(res) = new json_value(m_root, it);
         }
         return res;
     }

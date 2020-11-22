@@ -27,7 +27,7 @@ namespace conf {
         : public yato::runtime_error
     {
     public:
-        config_error(const std::string & err)
+        config_error(const std::string& err)
             : yato::runtime_error(err)
         { }
     
@@ -47,7 +47,7 @@ namespace conf {
     };
 
     class config_backend;
-    using backend_ptr = std::shared_ptr<config_backend>;
+    using backend_ptr_t = std::shared_ptr<const config_backend>;
 
 
 
@@ -82,7 +82,7 @@ namespace conf {
     template <>
     struct stored_type_trait<stored_type::config>
     {
-        using return_type = backend_ptr;
+        using return_type = backend_ptr_t;
     };
 
 
@@ -239,9 +239,9 @@ namespace conf {
     enum class config_property
         : uint32_t
     {
-        associative = 0x1,
-        multi_associative = 0x2 | associative,
-        ordered = 0x4
+        associative = 0x1,                          ///< Supports find by key
+        multi_associative = 0x2 | associative,      ///< Allows multiple values for one key
+        keeps_order = 0x4                           ///< Order of keys is preserved on read/write
     };
 
     constexpr
@@ -258,7 +258,7 @@ namespace conf {
 
 
     /**
-     * Config element handle and optionally iterator for multivalue
+     * Config element handle
      */
     class config_value
     {
@@ -293,18 +293,145 @@ namespace conf {
         stored_variant convert_(stored_type dst_type, const stored_variant & src) const;
     };
 
+
     /**
-     * Facade class providing a non-virtual interface for config implementations 
+     * Facade class providing non-virtual interface for a config implementation
      */
-    class config_backend  // NOLINT
+    class config_backend
+        : public std::enable_shared_from_this<config_backend>
     {
     public:
-        using key_value_t = std::pair<std::string, config_value*>;
+        using find_index_result_t = std::tuple<std::string, config_value*>;
+        using find_key_result_t   = std::tuple<size_t, config_value*>;
 
         /**
-         * Constant representing null key value pair
+         * RAII wrapper for find result
          */
-        const static key_value_t novalue;
+        class find_result
+        {
+        public:
+            YATO_CONSTEXPR_FUNC
+            find_result() = default;
+
+            find_result(backend_ptr_t parent, size_t index)
+                : m_parent(std::move(parent))
+                , m_index(index)
+            {
+                if (m_parent) {
+                    try {
+                        std::tie(m_key, m_value) = m_parent->do_find(m_index);
+                    }
+                    catch (...) {
+                        // ToDo (a.gruzdev): Report error
+                        m_value = nullptr;
+                    }
+                }
+            }
+
+            find_result(backend_ptr_t parent, std::string key)
+                : m_parent(std::move(parent))
+                , m_key(std::move(key))
+            {
+                if (m_parent) {
+                    try {
+                        std::tie(m_index, m_value) = m_parent->do_find(m_key);
+                    }
+                    catch (...) {
+                        // ToDo (a.gruzdev): Report error
+                        m_value = nullptr;
+                    }
+                }
+            }
+
+            find_result(const find_result& other) = delete;
+
+            find_result(find_result&& other) noexcept
+                : m_parent(std::move(other.m_parent))
+                , m_index(other.m_index)
+                , m_key(std::move(other.m_key))
+                , m_value(other.m_value)
+            {
+                other.m_value = nullptr;
+            }
+
+            ~find_result()
+            {
+                if (m_value) {
+                    m_parent->do_release(m_value);
+                }
+            }
+
+            find_result& operator=(const find_result& other) = delete;
+
+            find_result& operator=(find_result&& other) noexcept
+            {
+                YATO_REQUIRES(this != &other);
+                if (m_value) {
+                    m_parent->do_release(m_value);
+                }
+                m_parent = std::move(other.m_parent);
+                m_index = other.m_index;
+                m_key = std::move(other.m_key);
+                m_value = other.m_value;
+                other.m_value = nullptr;
+                return *this;
+            }
+
+            YATO_CONSTEXPR_FUNC
+            operator bool() const
+            {
+                return m_value != nullptr;
+            }
+
+            YATO_CONSTEXPR_FUNC
+            const config_value* operator->() const
+            {
+                YATO_REQUIRES(m_value != nullptr);
+                return m_value;
+            }
+
+            YATO_CONSTEXPR_FUNC
+            config_value* operator->()
+            {
+                YATO_REQUIRES(m_value != nullptr);
+                return m_value;
+            }
+
+            YATO_CONSTEXPR_FUNC
+            size_t get_index() const
+            {
+                return m_index;
+            }
+
+            YATO_CONSTEXPR_FUNC
+            const std::string& get_key() const
+            {
+                return m_key;
+            }
+
+            YATO_CONSTEXPR_FUNC
+            config_value* get_value() const
+            {
+                return m_value;
+            }
+
+        private:
+            backend_ptr_t m_parent{ nullptr };
+            size_t m_index{ };
+            std::string m_key{ };
+            config_value* m_value{ nullptr };
+        };
+
+
+        /**
+         * Constant representing an empty find result
+         */
+        static const find_index_result_t no_index_result;
+
+        /**
+         * Constant representing an empty find result
+         */
+        static const find_key_result_t no_key_result;
 
 
         virtual ~config_backend() = default;
@@ -314,6 +441,7 @@ namespace conf {
          */
         size_t size() const
         {
+            assert_valid_();
             return do_size();
         }
 
@@ -322,31 +450,26 @@ namespace conf {
          */
         bool has_property(config_property p) const
         {
+            assert_valid_();
             return do_has_property(p);
         }
 
         /**
          * Find value by index.
          */
-        key_value_t find(size_t index) const
+        find_result find(size_t index) const
         {
-            return do_find(index);
+            assert_valid_();
+            return find_result(shared_from_this(), index);
         }
 
         /**
          * Find value by name.
          */
-        key_value_t find(const std::string & name) const
+        find_result find(std::string key) const
         {
-            return do_find(name);
-        }
-
-        /**
-         * Release value handle obtained from find().
-         */
-        void release(const config_value* val) const
-        {
-            do_release(val);
+            assert_valid_();
+            return find_result(shared_from_this(), std::move(key));
         }
 
         /**
@@ -354,18 +477,24 @@ namespace conf {
          */
         std::vector<std::string> enumerate_keys() const
         {
-            return do_enumerate_keys();
+            assert_valid_();
+            try {
+                return do_enumerate_keys();
+            }
+            catch (...) {
+                // ToDo (a.gruzdev): Report error
+            }
+            return {};
         }
 
         /**
          * Helper method wrapping returned type into optional
          */
         template <typename Ty_>
-        yato::optional<Ty_> get(size_t index, stored_type dst_type) const 
+        yato::optional<Ty_> value_as(size_t index, stored_type dst_type) const
         {
-            const config_value* value = find(index).second;
+            const find_result value = find(index);
             if (value) {
-                yato_finally(([this, value]{ release(value); }));
                 return value->get<Ty_>(dst_type);
             }
             return yato::nullopt_t{};
@@ -375,11 +504,10 @@ namespace conf {
          * Helper method wrapping returned type into optional
          */
         template <typename Ty_>
-        yato::optional<Ty_> get(const std::string & name, stored_type dst_type) const 
+        yato::optional<Ty_> value_as(const std::string& name, stored_type dst_type) const
         {
-            const config_value* value = find(name).second;
+            const find_result value = find(name);
             if (value) {
-                yato_finally(([this, value]{ release(value); }));
                 return value->get<Ty_>(dst_type);
             }
             return yato::nullopt_t{};
@@ -394,8 +522,9 @@ namespace conf {
 
         /**
          * Find value by index.
+         * If not null value is returned, then the returned key must be valid.
          */
-        virtual key_value_t do_find(size_t index) const noexcept = 0;
+        virtual find_index_result_t do_find(size_t index) const = 0;
         
         /**
          * Release value handle obtained from do_find().
@@ -410,17 +539,24 @@ namespace conf {
         /**
          * Find value by name.
          * Returns config_backend::novalue by default;
+         * If not null value is returned, then the returned index must be valid.
          */
-        virtual key_value_t do_find(const std::string & name) const noexcept;
+        virtual find_key_result_t do_find(const std::string& key) const;
 
         /**
          * Default implementation calls find() for all valid indexes.
          */
-        virtual std::vector<std::string> do_enumerate_keys() const noexcept;
+        virtual std::vector<std::string> do_enumerate_keys() const;
+
+    private:
+        void assert_valid_() const
+        {
+            YATO_ASSERT(shared_from_this() != nullptr, "config_backend must be managed by std::shared_ptr.");
+        }
     };
 
 } // namespace conf
 
 } // namespace yato
 
-#endif // _YATO_CONFIG_H_
+#endif // _YATO_CONFIG_BACKEND_H_

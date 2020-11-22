@@ -57,7 +57,7 @@ namespace conf {
             }
         }
         else if(m_element) {
-            res.emplace<backend_ptr>(std::make_shared<xml_config>(m_document, m_element));
+            res.emplace<backend_ptr_t>(std::make_shared<xml_config>(m_document, m_element));
         }
         return res;
     }

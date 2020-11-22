@@ -26,12 +26,12 @@ namespace conf {
 
     cmd_builder::cmd_builder(const std::string & description)
     {
-        m_conf = std::make_unique<cmd_config>(description, "");
+        m_conf = std::make_shared<cmd_config>(description, "");
     }
 
     cmd_builder::cmd_builder(const std::string & description, const std::string & version)
     {
-        m_conf = std::make_unique<cmd_config>(description, version);
+        m_conf = std::make_shared<cmd_config>(description, version);
     }
 
     cmd_builder::cmd_builder(cmd_builder&&) noexcept = default;

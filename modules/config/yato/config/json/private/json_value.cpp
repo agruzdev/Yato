@@ -64,7 +64,7 @@ namespace json {
                 break;
             case nlohmann::json::value_t::array:
             case nlohmann::json::value_t::object:
-                res.emplace<backend_ptr>(std::make_shared<json_config>(m_root, m_iter));
+                res.emplace<backend_ptr_t>(std::make_shared<json_config>(m_root, m_iter));
                 break;
             default:
                 // ToDo (a.gruzdev): Report warning

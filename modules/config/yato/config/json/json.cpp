@@ -17,7 +17,7 @@ namespace json {
     template <typename... Args_>
     config read_impl_(Args_&&... args)
     {
-        backend_ptr backend = nullptr;
+        backend_ptr_t backend = nullptr;
         auto json = std::make_shared<nlohmann::json>(nlohmann::json::parse({ std::forward<Args_>(args)... }, nullptr, false));
         if (!json->is_discarded()) {
             backend = std::make_shared<json_config>(std::move(json));

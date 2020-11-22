@@ -70,31 +70,29 @@ namespace conf {
             }
         }
 
-        key_value_t do_find(size_t index) const noexcept override
+        find_index_result_t do_find(size_t index) const override
         {
-            key_value_t kv{};
+            find_index_result_t result = config_backend::no_index_result;
             if (index < m_data.size()) {
                 const auto it = std::next(m_data.cbegin(), index);
-                kv.first  = (*it).first;
-                kv.second = (*it).second.get();
+                result = std::make_tuple((*it).first, (*it).second.get());
             }
-            return kv;
+            return result;
         }
 
-        key_value_t do_find(const std::string& name) const noexcept override
+        find_key_result_t do_find(const std::string& name) const override
         {
-            key_value_t kv{};
+            find_key_result_t result = config_backend::no_key_result;
             const auto it = m_data.find(name);
             if (it != m_data.cend()) {
-                kv.first  = (*it).first;
-                kv.second = (*it).second.get();
+                result = std::make_tuple(yato::narrow_cast<size_t>(std::distance(m_data.cbegin(), it)), (*it).second.get());
             }
-            return kv;
+            return result;
         }
 
         void do_release(const config_value* /*val*/) const noexcept override
         {
-            return;
+            // do nothing
         }
 
 

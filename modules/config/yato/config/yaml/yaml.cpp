@@ -18,7 +18,7 @@ namespace conf {
         template <typename InputTy_>
         config read_yaml_(InputTy_&& input)
         {
-            backend_ptr backend = nullptr;
+            backend_ptr_t backend = nullptr;
             auto root = YAML::Load(std::forward<InputTy_>(input));
             if (root.IsDefined() && (root.Type() == YAML::NodeType::Map || root.Type() == YAML::NodeType::Sequence)) {
                 backend = std::make_shared<yaml_config>(std::move(root));
