@@ -45,12 +45,12 @@ namespace conf {
             m_data.erase(name);
         }
 
-        void add(std::unique_ptr<config_value>&& /*value*/)
+        void add(std::unique_ptr<config_value>&& /*value*/) override
         {
             throw config_error("manual_map[add]: Config must be not associative.");
         }
 
-        void pop()
+        void pop() override
         {
             throw config_error("manual_map[pop]: Config must be not associative.");
         }
