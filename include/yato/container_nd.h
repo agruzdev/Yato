@@ -92,13 +92,40 @@ namespace yato
         }
 
         /**
+         *  Element access with a sampler
+         */
+        template <typename Sampler_, typename... Tail_>
+        auto fetch(Sampler_&& sampler, const typename yato::remove_cvref_t<Sampler_>::index_type& idx, Tail_&&... tail) const
+            -> std::enable_if_t<(sizeof...(Tail_) + 1 == dimensions_number), typename yato::remove_cvref_t<Sampler_>::template return_type<value_type>>
+        {
+            const auto size_0 = implementation_access::size(this, 0);
+            if (sampler.is_valid_index(idx, size_0)) {
+                return implementation_access::csubscript(this, sampler.wrap_index(idx, size_0)).fetch(std::forward<Sampler_>(sampler), std::forward<Tail_>(tail)...);
+            }
+            else {
+                return sampler.template boundary_value<value_type>();
+            }
+        }
+
+        /**
+         *  Element access with a sampler
+         */
+        template <typename Sampler_, typename... Tail_>
+        auto at(const typename Sampler_::index_type& idx, Tail_&&... tail) const
+            -> std::enable_if_t<(sizeof...(Tail_) + 1 == dimensions_number), typename Sampler_::template return_type<value_type>>
+        {
+            return this_type::fetch(Sampler_{}, idx, std::forward<Tail_>(tail)...);
+        }
+
+        /**
          *  Element access with bounds check
          */
-        //template <typename... Tail_>
-        //decltype(auto) at(size_t idx, Tail_... tail) const
-        //{
-        //    return static_cast<const Implementation_*>(this)->at(idx, tail...);
-        //}
+        template <typename... Idxs_>
+        auto at(Idxs_&&... indexes) const
+            -> std::enable_if_t<(sizeof...(Idxs_) == dimensions_number), const_reference>
+        {
+            return this_type::fetch(yato::sampler_default{}, std::forward<Idxs_>(indexes)...);
+        }
 
         /**
          * Chech is view data has no gaps, i.e. strides are equal to sizes
@@ -215,32 +242,6 @@ namespace yato
             return static_cast<const Implementation_*>(this)->cdata();
         }
 
-
-
-        /**
-         *  Element access with a sampler
-         */
-        template <typename Sampler_, typename... Tail_>
-        auto at(const typename Sampler_::index_type& idx, Tail_... tail) const
-            -> typename Sampler_::template return_type<value_type>
-        {
-            const auto size_0 = implementation_access::size(this, 0);
-            if (Sampler_::is_valid_index(idx, size_0)) {
-                return implementation_access::csubscript(this, Sampler_::wrap_index(idx, size_0)).template at<Sampler_>(tail...);
-            }
-            else {
-                return Sampler_::template boundary_value<value_type>();
-            }
-        }
-
-        /**
-         *  Element access with bounds check
-         */
-        template <typename... Idxs_>
-        const_reference at(Idxs_&&... indexes) const
-        {
-            return this->at<yato::sampler_default>(std::forward<Idxs_>(indexes)...);
-        }
     };
 
 
@@ -274,13 +275,39 @@ namespace yato
         }
 
         /**
+         *  Element access with a sampler
+         */
+        template <typename Sampler_>
+        auto fetch(Sampler_&& sampler, const typename yato::remove_cvref_t<Sampler_>::index_type& idx) const
+            -> typename yato::remove_cvref_t<Sampler_>::template return_type<value_type>
+        {
+            const auto size_0 = implementation_access::size(this, 0);
+            if (sampler.is_valid_index(idx, size_0)) {
+                return implementation_access::csubscript(this, sampler.wrap_index(idx, size_0));
+            }
+            else {
+                return sampler.template boundary_value<value_type>();
+            }
+        }
+
+        /**
+         *  Element access with a sampler
+         */
+        template <typename Sampler_>
+        auto at(const typename Sampler_::index_type& idx) const
+            -> typename Sampler_::template return_type<value_type>
+        {
+            return this_type::fetch(Sampler_{}, idx);
+        }
+
+        /**
          *  Element access with bounds check
          */
-        //template <typename... Tail_>
-        //decltype(auto) at(size_t idx, Tail_... tail) const
-        //{
-        //    return static_cast<const Implementation_*>(this)->at(idx, tail...);
-        //}
+        template <typename Idx_>
+        const_reference at(Idx_&& indexes) const
+        {
+            return this_type::fetch(yato::sampler_default{}, std::forward<Idx_>(indexes));
+        }
 
         /**
          * Chech is view data has no gaps, i.e. strides are equal to sizes
@@ -305,7 +332,6 @@ namespace yato
          */
         size_t size() const
         {
-            //return static_cast<const Implementation_*>(this)->size(idx);
             return implementation_access::size(this, 0);
         }
 
@@ -406,31 +432,6 @@ namespace yato
             return static_cast<const Implementation_*>(this)->cdata();
         }
 
-
-        /**
-         *  Element access with a sampler
-         */
-        template <typename Sampler_>
-        auto at(const typename Sampler_::index_type& idx) const
-            -> typename Sampler_::template return_type<value_type>
-        {
-            const auto size_0 = implementation_access::size(this, 0);
-            if (Sampler_::is_valid_index(idx, size_0)) {
-                return implementation_access::csubscript(this, Sampler_::wrap_index(idx, size_0));
-            }
-            else {
-                return Sampler_::template boundary_value<value_type>();
-            }
-        }
-
-        /**
-         *  Element access with bounds check
-         */
-        template <typename Idx_>
-        const_reference at(Idx_&& indexes) const
-        {
-            return this->at<yato::sampler_default>(std::forward<Idx_>(indexes));
-        }
     };
 
 
@@ -458,22 +459,18 @@ namespace yato
             return *this;
         }
 
-        ///**
-        // * Access sub-element
-        // */
-        //decltype(auto) operator[](size_t idx)
-        //{
-        //    return implementation_access::subscript(this, yato::narrow_cast<std::ptrdiff_t>(idx));
-        //}
-
-        ///**
-        // *  Element access with bounds check
-        // */
-        //template<typename... Tail_>
-        //decltype(auto) at(size_t idx, Tail_... tail) const
-        //{
-        //    return static_cast<Implementation_*>(const_cast<this_type*>(this))->at(idx, tail...);
-        //}
+        /**
+         *  Element access with a sampler
+         */
+        template <typename... Tail_>
+        auto at(size_t idx, Tail_... tail)
+            -> std::enable_if_t<(sizeof...(Tail_) + 1 == dimensions_number), reference>
+        {
+            if (idx >= implementation_access::size(this, 0)) {
+                throw yato::out_of_range_error("container_nd::at() index is out of bounds.");
+            }
+            return implementation_access::subscript(this, idx).at(tail...);
+        }
 
         /**
          * Iterator along the top dimension
@@ -513,19 +510,6 @@ namespace yato
         decltype(auto) data() const
         {
             return static_cast<Implementation_*>(const_cast<this_type*>(this))->data();
-        }
-
-
-        /**
-         *  Element access with a sampler
-         */
-        template <typename... Tail_>
-        reference at(size_t idx, Tail_... tail)
-        {
-            if (idx >= implementation_access::size(this, 0)) {
-                throw yato::out_of_range_error("container_nd::at() index is out of bounds.");
-            }
-            return implementation_access::subscript(this, idx).at(tail...);
         }
 
     };
@@ -553,22 +537,16 @@ namespace yato
             return *this;
         }
 
-        ///**
-        // * Access sub-element
-        // */
-        //decltype(auto) operator[](size_t idx)
-        //{
-        //    return implementation_access::subscript(this, yato::narrow_cast<std::ptrdiff_t>(idx));
-        //}
-
-        ///**
-        // *  Element access with bounds check
-        // */
-        //template<typename... Tail_>
-        //decltype(auto) at(size_t idx, Tail_... tail) const
-        //{
-        //    return static_cast<Implementation_*>(const_cast<this_type*>(this))->at(idx, tail...);
-        //}
+        /**
+         *  Element access with a sampler
+         */
+        reference at(size_t idx)
+        {
+            if (idx >= implementation_access::size(this, 0)) {
+                throw yato::out_of_range_error("container_nd::at() index is out of bounds.");
+            }
+            return implementation_access::subscript(this, idx);
+        }
 
         /**
          * Iterator along the top dimension
@@ -608,18 +586,6 @@ namespace yato
         decltype(auto) data() const
         {
             return static_cast<Implementation_*>(const_cast<this_type*>(this))->data();
-        }
-
-
-        /**
-         *  Element access with a sampler
-         */
-        reference at(size_t idx)
-        {
-            if (idx >= implementation_access::size(this, 0)) {
-                throw yato::out_of_range_error("container_nd::at() index is out of bounds.");
-            }
-            return implementation_access::subscript(this, idx);
         }
 
     };

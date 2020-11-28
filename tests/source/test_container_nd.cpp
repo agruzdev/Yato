@@ -225,4 +225,42 @@ TEST(Yato_ContainerND, sampler_clamp)
     EXPECT_EQ(3, view2.at<yato::sampler_clamp>(4, 4, 2));
 }
 
+namespace
+{
 
+    struct sampler_oob_counter
+        : public yato::sampler_zero
+    {
+        template <typename ValueType_>
+        return_type<ValueType_> boundary_value()
+        {
+            ++count;
+            return yato::sampler_zero::boundary_value<ValueType_>();
+        }
+
+        size_t count = 0;
+    };
+
+}
+
+TEST(Yato_ContainerND, custom_sampler)
+{
+    yato::vector_nd<int, 2> v1 = {
+        { 1, 2 },
+        { 3, 4 }
+    };
+
+    sampler_oob_counter sampler{};
+
+    EXPECT_EQ(1, v1.fetch(sampler, 0, 0));
+    EXPECT_EQ(2, v1.fetch(sampler, 0, 1));
+    EXPECT_EQ(3, v1.fetch(sampler, 1, 0));
+    EXPECT_EQ(4, v1.fetch(sampler, 1, 1));
+
+    EXPECT_EQ(0, v1.fetch(sampler, -1, 0));
+    EXPECT_EQ(0, v1.fetch(sampler, 0, -1));
+    EXPECT_EQ(0, v1.fetch(sampler, 1, 2));
+    EXPECT_EQ(0, v1.fetch(sampler, 2, 1));
+
+    EXPECT_EQ(4, sampler.count);
+}

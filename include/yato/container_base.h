@@ -72,10 +72,10 @@ namespace yato
      * Default sampler behaves similar to standard at() throwing out_of_bounds exception for invalid indexes
      * Each sampler must provide:
      *   index_type - type used as argument
-     *   return_type<> - type returned by sampler access
-     *   is_valid_index() - static function checking if index is within valid bounds. If true, then wrap_index() is called to get element offset, else boundary_value() is returned.
-     *   wrap_index() - static function transforming provided index to element offset.
-     *   boundary_value() - static function providing read-only value returned for invalid indexes.
+     *   return_type<> - alias template remapping value_type to the type returned by sampler access
+     *   is_valid_index() - function checking if index is within valid bounds. If true, then wrap_index() is called to get element offset, else boundary_value() is returned.
+     *   wrap_index() - function transforming provided input index to effective index.
+     *   boundary_value() - function providing read-only value returned for invalid indexes.
      */
     struct sampler_default
     {
@@ -85,21 +85,21 @@ namespace yato
         using return_type = std::add_lvalue_reference_t<std::add_const_t<ValueType_>>;
 
 
-        static YATO_CONSTEXPR_FUNC
-        bool is_valid_index(index_type i, std::size_t size)
+        YATO_CONSTEXPR_FUNC
+        bool is_valid_index(index_type i, std::size_t size) const
         {
             return i < size;
         }
 
-        static YATO_CONSTEXPR_FUNC
-        std::ptrdiff_t wrap_index(index_type i, std::size_t /*size*/)
+        YATO_CONSTEXPR_FUNC
+        std::ptrdiff_t wrap_index(index_type i, std::size_t /*size*/) const
         {
             return i;
         }
 
         template <typename ValueType_>
-        YATO_NORETURN static
-        return_type<ValueType_> boundary_value()
+        YATO_NORETURN
+        return_type<ValueType_> boundary_value() const
         {
             throw yato::out_of_range_error("index is out of bounds");
         }
@@ -116,21 +116,20 @@ namespace yato
         using return_type = ValueType_;
 
 
-        static YATO_CONSTEXPR_FUNC
-        bool is_valid_index(index_type i, std::size_t size)
+        YATO_CONSTEXPR_FUNC
+        bool is_valid_index(index_type i, std::size_t size) const
         {
             return i >= 0 && static_cast<std::size_t>(i) < size;
         }
 
-        static YATO_CONSTEXPR_FUNC
-        std::ptrdiff_t wrap_index(index_type i, std::size_t /*size*/)
+        YATO_CONSTEXPR_FUNC
+        std::ptrdiff_t wrap_index(index_type i, std::size_t /*size*/) const
         {
             return i;
         }
 
         template <typename ValueType_>
-        static
-        return_type<ValueType_> boundary_value()
+        return_type<ValueType_> boundary_value() const
         {
             return static_cast<ValueType_>(0);
         }
@@ -148,14 +147,14 @@ namespace yato
         using return_type = std::add_lvalue_reference_t<std::add_const_t<ValueType_>>;
 
 
-        static YATO_CONSTEXPR_FUNC
-        bool is_valid_index(index_type /*i*/, std::size_t size)
+        YATO_CONSTEXPR_FUNC
+        bool is_valid_index(index_type /*i*/, std::size_t size) const
         {
             return size != 0;
         }
 
-        static YATO_CONSTEXPR_FUNC
-        std::ptrdiff_t wrap_index(index_type i, std::size_t size)
+        YATO_CONSTEXPR_FUNC
+        std::ptrdiff_t wrap_index(index_type i, std::size_t size) const
         {
             return std::min(static_cast<std::size_t>(std::max(static_cast<index_type>(0), i)), size - 1);
         }
