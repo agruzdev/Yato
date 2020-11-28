@@ -105,6 +105,39 @@ namespace yato
         }
     };
 
+
+    /**
+     * Performs no boundary check allowing any access
+     */
+    struct sampler_no_check
+    {
+        using index_type = std::ptrdiff_t;
+
+        template <typename ValueType_>
+        using return_type = ValueType_;
+
+
+        YATO_CONSTEXPR_FUNC
+        bool is_valid_index(index_type /*i*/, std::size_t /*size*/) const
+        {
+            return true;
+        }
+
+        YATO_CONSTEXPR_FUNC
+        std::ptrdiff_t wrap_index(index_type i, std::size_t /*size*/) const
+        {
+            return i;
+        }
+
+        template <typename ValueType_>
+        return_type<ValueType_> boundary_value() const
+        {
+            YATO_ASSERT(false, "boundary_value() should not be called.");
+            return static_cast<return_type<ValueType_>>(0);
+        }
+    };
+
+
     /**
      * Returns zero for out of bounds access
      */
@@ -131,7 +164,7 @@ namespace yato
         template <typename ValueType_>
         return_type<ValueType_> boundary_value() const
         {
-            return static_cast<ValueType_>(0);
+            return static_cast<return_type<ValueType_>>(0);
         }
     };
 
@@ -163,7 +196,8 @@ namespace yato
         YATO_NORETURN static
         return_type<ValueType_> boundary_value()
         {
-            throw yato::out_of_range_error("index is out of bounds");
+            YATO_ASSERT(false, "boundary_value() should not be called.");
+            return static_cast<return_type<ValueType_>>(0);
         }
     };
 

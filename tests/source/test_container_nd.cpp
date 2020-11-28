@@ -172,6 +172,19 @@ TEST(Yato_ContainerND, sampler_default)
     EXPECT_THROW(v1.at<yato::sampler_default>(10, 11), yato::out_of_range_error);
 }
 
+TEST(Yato_ContainerND, sampler_no_check)
+{
+    yato::vector_nd<int, 2> v1 = {
+        { 1, 2 },
+        { 3, 4 }
+    };
+
+    EXPECT_EQ(1, v1.at<yato::sampler_no_check>(0, 0));
+    EXPECT_EQ(2, v1.at<yato::sampler_no_check>(0, 1));
+    EXPECT_EQ(3, v1.at<yato::sampler_no_check>(1, 0));
+    EXPECT_EQ(4, v1.at<yato::sampler_no_check>(1, 1));
+}
+
 TEST(Yato_ContainerND, sampler_zero)
 {
     yato::vector_nd<int, 2> v1 = {
