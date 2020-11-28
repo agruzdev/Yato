@@ -146,9 +146,9 @@ void Fetch3D_STL_At(benchmark::State& state)
 
     const int32_t N = yato::narrow_cast<int32_t>(state.range(0));
 
-    const int32_t S0 = 10 + rand() % 2;
-    const int32_t S1 = 10 + rand() % 2;
-    const int32_t S2 = 10 + rand() % 2;
+    const size_t S0 = yato::narrow_cast<size_t>(10 + rand() % 2);
+    const size_t S1 = yato::narrow_cast<size_t>(10 + rand() % 2);
+    const size_t S2 = yato::narrow_cast<size_t>(10 + rand() % 2);
     std::vector<int32_t> vec(S0 * S1 * S2);
     std::generate(vec.begin(), vec.end(), std::rand);
 
