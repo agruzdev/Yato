@@ -73,8 +73,7 @@ namespace yato
      * Each sampler must provide:
      *   index_type - type used as argument
      *   return_type<> - alias template remapping value_type to the type returned by sampler access
-     *   is_valid_index() - function checking if index is within valid bounds. If true, then wrap_index() is called to get element offset, else boundary_value() is returned.
-     *   wrap_index() - function transforming provided input index to effective index.
+     *   transform_index() - function transforming provided input index to effective index. If returns true, then out_idx will be used for element access, else boundary_value() will be returned.
      *   boundary_value() - function providing read-only value returned for invalid indexes.
      */
     struct sampler_default
@@ -84,17 +83,14 @@ namespace yato
         template <typename ValueType_>
         using return_type = std::add_lvalue_reference_t<std::add_const_t<ValueType_>>;
 
-
         YATO_CONSTEXPR_FUNC
-        bool is_valid_index(index_type i, std::size_t size) const
+        bool transform_index(index_type in_idx, std::size_t size, std::ptrdiff_t& out_idx) const
         {
-            return i < size;
-        }
-
-        YATO_CONSTEXPR_FUNC
-        std::ptrdiff_t wrap_index(index_type i, std::size_t /*size*/) const
-        {
-            return i;
+            if (in_idx < size) {
+                out_idx = yato::narrow_cast<std::ptrdiff_t>(in_idx);
+                return true;
+            }
+            return false;
         }
 
         template <typename ValueType_>
@@ -116,24 +112,18 @@ namespace yato
         template <typename ValueType_>
         using return_type = ValueType_;
 
-
         YATO_CONSTEXPR_FUNC
-        bool is_valid_index(index_type /*i*/, std::size_t /*size*/) const
+        bool transform_index(index_type in_idx, std::size_t /*size*/, std::ptrdiff_t& out_idx) const
         {
+            out_idx = yato::narrow_cast<std::ptrdiff_t>(in_idx);
             return true;
-        }
-
-        YATO_CONSTEXPR_FUNC
-        std::ptrdiff_t wrap_index(index_type i, std::size_t /*size*/) const
-        {
-            return i;
         }
 
         template <typename ValueType_>
         return_type<ValueType_> boundary_value() const
         {
             YATO_ASSERT(false, "boundary_value() should not be called.");
-            return static_cast<return_type<ValueType_>>(0);
+            return static_cast<ValueType_>(0);
         }
     };
 
@@ -148,23 +138,20 @@ namespace yato
         template <typename ValueType_>
         using return_type = ValueType_;
 
-
         YATO_CONSTEXPR_FUNC
-        bool is_valid_index(index_type i, std::size_t size) const
+        bool transform_index(index_type in_idx, std::size_t size, std::ptrdiff_t& out_idx) const
         {
-            return i >= 0 && static_cast<std::size_t>(i) < size;
-        }
-
-        YATO_CONSTEXPR_FUNC
-        std::ptrdiff_t wrap_index(index_type i, std::size_t /*size*/) const
-        {
-            return i;
+            if (in_idx >= 0 && static_cast<std::size_t>(in_idx) < size) {
+                out_idx = yato::narrow_cast<std::ptrdiff_t>(in_idx);
+                return true;
+            }
+            return false;
         }
 
         template <typename ValueType_>
         return_type<ValueType_> boundary_value() const
         {
-            return static_cast<return_type<ValueType_>>(0);
+            return static_cast<ValueType_>(0);
         }
     };
 
@@ -179,25 +166,19 @@ namespace yato
         template <typename ValueType_>
         using return_type = std::add_lvalue_reference_t<std::add_const_t<ValueType_>>;
 
-
         YATO_CONSTEXPR_FUNC
-        bool is_valid_index(index_type /*i*/, std::size_t size) const
+        bool transform_index(index_type in_idx, std::size_t size, std::ptrdiff_t& out_idx) const
         {
-            return size != 0;
-        }
-
-        YATO_CONSTEXPR_FUNC
-        std::ptrdiff_t wrap_index(index_type i, std::size_t size) const
-        {
-            return std::min(static_cast<std::size_t>(std::max(static_cast<index_type>(0), i)), size - 1);
+            YATO_REQUIRES(size != 0);
+            out_idx = std::min<std::ptrdiff_t>(std::max<std::ptrdiff_t>(0, yato::narrow_cast<std::ptrdiff_t>(in_idx)), size - 1);
+            return true;
         }
 
         template <typename ValueType_>
-        YATO_NORETURN static
-        return_type<ValueType_> boundary_value()
+        return_type<ValueType_> boundary_value() const
         {
             YATO_ASSERT(false, "boundary_value() should not be called.");
-            return static_cast<return_type<ValueType_>>(0);
+            throw std::logic_error("Should not be called");
         }
     };
 

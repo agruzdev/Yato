@@ -98,9 +98,9 @@ namespace yato
         auto fetch(Sampler_&& sampler, const typename yato::remove_cvref_t<Sampler_>::index_type& idx, Tail_&&... tail) const
             -> std::enable_if_t<(sizeof...(Tail_) + 1 == dimensions_number), typename yato::remove_cvref_t<Sampler_>::template return_type<value_type>>
         {
-            const auto size_0 = implementation_access::size(this, 0);
-            if (sampler.is_valid_index(idx, size_0)) {
-                return implementation_access::csubscript(this, sampler.wrap_index(idx, size_0)).fetch(std::forward<Sampler_>(sampler), std::forward<Tail_>(tail)...);
+            std::ptrdiff_t effective_idx;
+            if (sampler.transform_index(idx, implementation_access::size(this, 0), effective_idx)) {
+                return implementation_access::csubscript(this, effective_idx).fetch(std::forward<Sampler_>(sampler), std::forward<Tail_>(tail)...);
             }
             else {
                 return sampler.template boundary_value<value_type>();
@@ -281,9 +281,9 @@ namespace yato
         auto fetch(Sampler_&& sampler, const typename yato::remove_cvref_t<Sampler_>::index_type& idx) const
             -> typename yato::remove_cvref_t<Sampler_>::template return_type<value_type>
         {
-            const auto size_0 = implementation_access::size(this, 0);
-            if (sampler.is_valid_index(idx, size_0)) {
-                return implementation_access::csubscript(this, sampler.wrap_index(idx, size_0));
+            std::ptrdiff_t effective_idx;
+            if (sampler.transform_index(idx, implementation_access::size(this, 0), effective_idx)) {
+                return implementation_access::csubscript(this, effective_idx);
             }
             else {
                 return sampler.template boundary_value<value_type>();
