@@ -67,134 +67,27 @@ namespace yato
     };
 
 
-    /**
-     * Sampling traits
-     * Default sampler behaves similar to standard at() throwing out_of_bounds exception for invalid indexes
-     * Each sampler must provide:
-     *   index_type - type used as argument
-     *   return_type<> - alias template remapping value_type to the type returned by sampler access
-     *   transform_index() - function transforming provided input index to effective index. If returns true, then out_idx will be used for element access, else boundary_value() will be returned.
-     *   boundary_value() - function providing read-only value returned for invalid indexes.
-     */
-    struct sampler_default
-    {
-        using index_type = std::size_t;
-
-        template <typename ValueType_>
-        using return_type = std::add_lvalue_reference_t<std::add_const_t<ValueType_>>;
-
-        YATO_CONSTEXPR_FUNC
-        bool transform_index(index_type in_idx, std::size_t size, std::ptrdiff_t& out_idx) const
-        {
-            if (in_idx < size) {
-                out_idx = yato::narrow_cast<std::ptrdiff_t>(in_idx);
-                return true;
-            }
-            return false;
-        }
-
-        template <typename ValueType_>
-        YATO_NORETURN
-        return_type<ValueType_> boundary_value() const
-        {
-            throw yato::out_of_range_error("index is out of bounds");
-        }
-    };
-
-
-    /**
-     * Performs no boundary check allowing any access
-     */
-    struct sampler_no_check
-    {
-        using index_type = std::ptrdiff_t;
-
-        template <typename ValueType_>
-        using return_type = ValueType_;
-
-        YATO_CONSTEXPR_FUNC
-        bool transform_index(index_type in_idx, std::size_t /*size*/, std::ptrdiff_t& out_idx) const
-        {
-            out_idx = yato::narrow_cast<std::ptrdiff_t>(in_idx);
-            return true;
-        }
-
-        template <typename ValueType_>
-        return_type<ValueType_> boundary_value() const
-        {
-            YATO_ASSERT(false, "boundary_value() should not be called.");
-            return static_cast<ValueType_>(0);
-        }
-    };
-
-
-    /**
-     * Returns zero for out of bounds access
-     */
-    struct sampler_zero
-    {
-        using index_type = yato::int32_t;
-
-        template <typename ValueType_>
-        using return_type = ValueType_;
-
-        YATO_CONSTEXPR_FUNC
-        bool transform_index(index_type in_idx, std::size_t size, std::ptrdiff_t& out_idx) const
-        {
-            if (in_idx >= 0 && static_cast<std::size_t>(in_idx) < size) {
-                out_idx = yato::narrow_cast<std::ptrdiff_t>(in_idx);
-                return true;
-            }
-            return false;
-        }
-
-        template <typename ValueType_>
-        return_type<ValueType_> boundary_value() const
-        {
-            return static_cast<ValueType_>(0);
-        }
-    };
-
-
-    /**
-     * Clamps access index to [0, size) for the each dimension
-     */
-    struct sampler_clamp
-    {
-        using index_type = yato::int32_t;
-
-        template <typename ValueType_>
-        using return_type = std::add_lvalue_reference_t<std::add_const_t<ValueType_>>;
-
-        YATO_CONSTEXPR_FUNC
-        bool transform_index(index_type in_idx, std::size_t size, std::ptrdiff_t& out_idx) const
-        {
-            YATO_REQUIRES(size != 0);
-            out_idx = std::min<std::ptrdiff_t>(std::max<std::ptrdiff_t>(0, yato::narrow_cast<std::ptrdiff_t>(in_idx)), size - 1);
-            return true;
-        }
-
-        template <typename ValueType_>
-        return_type<ValueType_> boundary_value() const
-        {
-            YATO_ASSERT(false, "boundary_value() should not be called.");
-            throw std::logic_error("Should not be called");
-        }
-    };
-
-
-
-
     namespace details
     {
         // Interpret as byte offset
-        template <typename Ty_>
-        static
-        void advance_bytes(Ty_* & ptr, std::ptrdiff_t diff)
+        template <typename Ty_, typename DiffTy_>
+        YATO_FORCED_INLINE
+        void advance_bytes(Ty_* & ptr, DiffTy_ diff)
         {
             ptr = yato::pointer_cast<Ty_*>(yato::pointer_cast<typename yato::take_cv_from<Ty_, uint8_t>::type*>(ptr) + diff);
         }
+
+    } // namesace details
+
+
+    template <typename InputIt_, typename DiffTy_ = typename std::iterator_traits<InputIt_>::difference_type>
+    YATO_CONSTEXPR_FUNC_CXX14 YATO_FORCED_INLINE
+    InputIt_ next(InputIt_ it, DiffTy_ n = static_cast<DiffTy_>(1))
+    {
+        std::advance(it, n);
+        return it;
     }
+
 
     /**
      * Storage for containers extents

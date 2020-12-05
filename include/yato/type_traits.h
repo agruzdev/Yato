@@ -75,6 +75,26 @@ namespace yato
     template <typename Ty_>
     using get_type_t = typename get_type<Ty_>::type;
 
+
+    class disabled_t
+    {
+    public:
+        disabled_t() = delete;
+        disabled_t(const disabled_t&) = default;
+    };
+
+    template <bool Cond_, typename Ty_>
+    struct disable_if_not
+    {
+        using type = std::conditional_t<Cond_, Ty_, yato::disabled_t>;
+    };
+
+    template <bool Cond_, typename Ty_>
+    using disable_if_not_t = typename disable_if_not<Cond_, Ty_>::type;
+
+    template <bool Cond_, typename Ty_>
+    using disable_if_t = typename disable_if_not<!Cond_, Ty_>::type;
+
     //----------------------------------------------------------
     // General
     //

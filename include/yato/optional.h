@@ -30,27 +30,7 @@ namespace yato
         { }
     };
 
-
-
-    class disabled_t
-    {
-    public:
-        disabled_t() = delete;
-        disabled_t(const disabled_t&) = default;
-    };
-
-    template <bool Cond_, typename Ty_>
-    struct disable_if_not
-    {
-        using type = std::conditional_t<Cond_, Ty_, yato::disabled_t>;
-    };
-
-    template <bool Cond_, typename Ty_>
-    using disable_if_not_t = typename disable_if_not<Cond_, Ty_>::type;
-
-
-
-    namespace details 
+    namespace details
     {
         template <typename DstTy_, typename SrcTy_, typename = void>
         struct opt_assign_op_

@@ -12,6 +12,7 @@
 #include <benchmark/benchmark.h>
 
 #include <yato/vector_nd.h>
+#include <yato/sampler.h>
 
 
 void Fetch1D_STL_At(benchmark::State & state)
@@ -58,7 +59,7 @@ void Fetch1D_Yato(benchmark::State& state)
     int32_t sum = rand();
     for (auto _ : state) {
         for (int32_t n = 0; n < N; ++n) {
-            sum &= vec.at<Sampler_>(i + (n & 0x3));
+            sum &= yato::load<Sampler_>(vec, i + (n & 0x3));
         }
         benchmark::DoNotOptimize(sum);
     }
@@ -126,7 +127,7 @@ void Fetch2D_Yato(benchmark::State& state)
     int32_t sum = rand();
     for (auto _ : state) {
         for (int32_t n = 0; n < N; ++n) {
-            sum &= vec.at<Sampler_>(i0 + (n & 0x1), i1 + (n & 0x3));
+            sum &= yato::load<Sampler_>(vec, i0 + (n & 0x1), i1 + (n & 0x3));
         }
         benchmark::DoNotOptimize(sum);
     }
@@ -160,10 +161,25 @@ void Fetch3D_STL_At(benchmark::State& state)
     benchmark::DoNotOptimize(i2);
 
     auto at3 = [S0, S1, S2](const std::vector<int32_t>& v, int32_t i0, int32_t i1, int32_t i2) -> const int32_t& {
+#if 0
         if (i0 >= S0 || i1 >= S1 || i2 >= S2) {
             throw std::out_of_range("at() out_of_range");
         }
         return v[(i0 * S1 + i1) * S2 + i2];
+#else
+        if (i0 >= S0) {
+            throw std::out_of_range("at() out_of_range");
+        }
+        int32_t idx = i0 * S1;
+        if (i1 >= S1) {
+            throw std::out_of_range("at() out_of_range");
+        }
+        idx = (idx + i1) * S2;
+        if (i2 >= S2) {
+            throw std::out_of_range("at() out_of_range");
+        }
+        return v[idx + i2];
+#endif
     };
 
     int32_t sum = rand();
@@ -201,7 +217,7 @@ void Fetch3D_Yato(benchmark::State& state)
     int32_t sum = rand();
     for (auto _ : state) {
         for (int32_t n = 0; n < N; ++n) {
-            sum &= vec.at<Sampler_>(i0 + (n & 0x1), i1 + (n & 0x1), i2 + (n & 0x3));
+            sum &= yato::load<Sampler_>(vec, i0 + (n & 0x1), i1 + (n & 0x1), i2 + (n & 0x3));
         }
         benchmark::DoNotOptimize(sum);
     }
@@ -211,3 +227,4 @@ BENCHMARK_TEMPLATE(Fetch3D_Yato, yato::sampler_default)->Arg(1)->Arg(1000)->Arg(
 BENCHMARK_TEMPLATE(Fetch3D_Yato, yato::sampler_no_check)->Arg(1)->Arg(1000)->Arg(10000)->Arg(100000)->Arg(1000000);
 BENCHMARK_TEMPLATE(Fetch3D_Yato, yato::sampler_clamp)->Arg(1)->Arg(1000)->Arg(10000)->Arg(100000)->Arg(1000000);
 BENCHMARK_TEMPLATE(Fetch3D_Yato, yato::sampler_zero)->Arg(1)->Arg(1000)->Arg(10000)->Arg(100000)->Arg(1000000);
+

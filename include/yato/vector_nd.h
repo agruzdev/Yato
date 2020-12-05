@@ -59,11 +59,11 @@ namespace yato
             size_t increase(size_t old_size, size_t new_size)
             {
                 YATO_REQUIRES(new_size > old_size);
-                if(old_size < std::numeric_limits<size_t>::max() / 2) {
+                if (old_size < std::numeric_limits<size_t>::max() / 2) {
                     return std::max(new_size, 2 * old_size);
                 }
                 else {
-                    return std::numeric_limits<size_t>::max();
+                    return new_size;
                 }
             }
         };
@@ -361,7 +361,7 @@ namespace yato
                     ptr() = new_data;
                     m_allocated_size = new_capacity;
                 }
-                return yato::make_range(std::next(ptr(), old_size), std::next(ptr(), new_size));
+                return yato::make_range(yato::next(ptr(), old_size), yato::next(ptr(), new_size));
             }
 
             /**
@@ -457,7 +457,7 @@ namespace yato
                         memory::destroy(alloc, old_data + insert_offset, old_data + insert_offset + insert_size);
                     }
                 }
-                return yato::make_range(std::next(ptr(), insert_offset), std::next(ptr(), insert_offset + insert_size));
+                return yato::make_range(yato::next(ptr(), insert_offset), yato::next(ptr(), insert_offset + insert_size));
             }
 
             /**
@@ -580,10 +580,6 @@ namespace yato
 
             static YATO_CONSTEXPR_VAR size_t dimensions_number = _DimensionsNum;
             static_assert(dimensions_number > 1, "Implementation for dimensions number larger than 1");
-
-            using basic_container = const_container_nd<value_type, _DimensionsNum, vector_nd_impl<_DataType, _DimensionsNum, _Allocator, CapacityPolicy_>>;
-            YATO_IMPORT_CONTAINER_ND_INTERFACE(basic_container)
-
             //-------------------------------------------------------
 
         private:
@@ -747,7 +743,7 @@ namespace yato
                     if(0 == init_list.size()) {
                         throw yato::argument_error("yato::vector_nd[ctor]: Can't be constructed from empty initialaser sub-list.");
                     }
-                    const value_type & init_val = *(std::next(init_list.begin(), init_list.size() - 1));
+                    const value_type & init_val = *(yato::next(init_list.begin(), init_list.size() - 1));
                     while(tail) {
                         alloc_traits::construct(alloc, dst, init_val); // copy the last one
                         ++dst; // increment after successful copy
@@ -775,23 +771,6 @@ namespace yato
             {
                 return const_sub_proxy(plain_position, &m_descriptors[1]);
             }
-
-            YATO_CONSTEXPR_FUNC_CXX14
-            size_type size_(size_t idx) const YATO_NOEXCEPT_KEYWORD
-            {
-                return std::get<dim_descriptor::idx_size>(m_descriptors[idx]);
-            }
-
-            sub_proxy subscript_(std::ptrdiff_t offset) YATO_NOEXCEPT_KEYWORD
-            {
-                return sub_proxy(m_raw_vector.ptr() + offset * std::get<dim_descriptor::idx_total>(m_descriptors[1]), &m_descriptors[1]);
-            }
-
-            const_sub_proxy csubscript_(std::ptrdiff_t offset) const YATO_NOEXCEPT_KEYWORD
-            {
-                return const_sub_proxy(m_raw_vector.ptr() + offset * std::get<dim_descriptor::idx_total>(m_descriptors[1]), &m_descriptors[1]);
-            }
-
 
             void init_subsizes_() YATO_NOEXCEPT_KEYWORD
             {
@@ -1228,7 +1207,6 @@ namespace yato
                 swap(m_descriptors, other.m_descriptors);
                 m_raw_vector.swap(other.m_raw_vector);
             }
-#if 0
             /**
              *  Element access without bounds check in release
              */
@@ -1238,43 +1216,40 @@ namespace yato
                 YATO_REQUIRES(idx < size(0));
                 return create_const_proxy_(idx);
             }
-#endif
-
             /**
              *  Element access without bounds check in release
              */
             YATO_CONSTEXPR_FUNC_CXX14
             sub_proxy operator[](size_t idx) YATO_NOEXCEPT_KEYWORD
             {
-                YATO_REQUIRES(idx < size_(0));
-                return subscript_(yato::narrow_cast<std::ptrdiff_t>(idx));
+                YATO_REQUIRES(idx < size(0));
+                return create_proxy_(idx);
+            }
+            /**
+             *  Element access with bounds check
+             */
+            template<typename... _Tail>
+            auto at(size_t idx, _Tail &&... tail) const
+                -> typename std::enable_if<(yato::args_length<_Tail...>::value == dimensions_number - 1), const_reference>::type
+            {
+                if (idx >= size(0)) {
+                    throw yato::out_of_range_error("yato::vector_nd: out of range!");
+                }
+                return create_const_proxy_(idx)[idx].at(std::forward<_Tail>(tail)...);
             }
 
-            ///**
-            // *  Element access with bounds check
-            // */
-            //template<typename... _Tail>
-            //auto at(size_t idx, _Tail &&... tail) const
-            //    -> typename std::enable_if<(yato::args_length<_Tail...>::value == dimensions_number - 1), const_reference>::type
-            //{
-            //    if (idx >= size(0)) {
-            //        throw yato::out_of_range_error("yato::vector_nd: out of range!");
-            //    }
-            //    return (*this)[idx].at(std::forward<_Tail>(tail)...);
-            //}
-            //
-            ///**
-            // *  Element access with bounds check
-            // */
-            //template<typename... _Tail>
-            //auto at(size_t idx, _Tail &&... tail)
-            //    -> typename std::enable_if<(yato::args_length<_Tail...>::value == dimensions_number - 1), reference>::type
-            //{
-            //    if (idx >= size(0)) {
-            //        throw yato::out_of_range_error("yato::vector_nd: out of range!");
-            //    }
-            //    return (*this)[idx].at(std::forward<_Tail>(tail)...);
-            //}
+            /**
+             *  Element access with bounds check
+             */
+            template<typename... _Tail>
+            auto at(size_t idx, _Tail &&... tail)
+                -> typename std::enable_if<(yato::args_length<_Tail...>::value == dimensions_number - 1), reference>::type
+            {
+                if (idx >= size(0)) {
+                    throw yato::out_of_range_error("yato::vector_nd: out of range!");
+                }
+                return create_proxy_(idx).at(std::forward<_Tail>(tail)...);
+            }
 
             /**
              *  Iterator for accessing sub-array elements along the top dimension
@@ -1508,7 +1483,7 @@ namespace yato
             {
                 return dimensions_range().tail().map([](size_type s){ return s * sizeof(value_type); });
             }
-#if 0
+
             /**
              *  Get size of specified dimension
              *  If the vector is empty ( empty() returns true ) then calling for size(idx) returns 0 for idx = 0; Return value for any idx > 0 is undefined
@@ -1519,7 +1494,6 @@ namespace yato
                 YATO_REQUIRES(idx < dimensions_number);
                 return std::get<dim_descriptor::idx_size>(m_descriptors[idx]);
             }
-#endif
             /**
              * Return stride in bytes
              */
@@ -2000,9 +1974,6 @@ namespace yato
 
             using iterator = data_iterator;
             using const_iterator = const_data_iterator;
-
-            using basic_container = const_container_nd<_DataType, 1, vector_nd_impl<_DataType, 1, _Allocator, CapacityPolicy_>>;
-            YATO_IMPORT_CONTAINER_ND_INTERFACE(basic_container)
             //-------------------------------------------------------
 
         private:
@@ -2069,26 +2040,6 @@ namespace yato
             {
                 m_size = 0;
             }
-
-            YATO_CONSTEXPR_FUNC_CXX14
-            reference subscript_(std::ptrdiff_t offset) YATO_NOEXCEPT_KEYWORD
-            {
-                return *(m_raw_vector.ptr() + offset);
-            }
-
-            YATO_CONSTEXPR_FUNC_CXX14
-            const_reference csubscript_(std::ptrdiff_t offset) const YATO_NOEXCEPT_KEYWORD
-            {
-                return *(m_raw_vector.ptr() + offset);
-            }
-
-            YATO_CONSTEXPR_FUNC_CXX14
-            size_t size_(size_t idx) const
-            {
-                YATO_MAYBE_UNUSED(idx);
-                return m_size;
-            }
-
             //-------------------------------------------------------
 
         public:
@@ -2475,7 +2426,7 @@ namespace yato
                 m_raw_vector.swap(other.m_raw_vector);
                 std::swap(m_size, other.m_size);
             }
-#if 0
+
             /**
              *  Element access without bounds check in release
              */
@@ -2485,38 +2436,38 @@ namespace yato
                 YATO_REQUIRES(idx < m_size);
                 return *(m_raw_vector.ptr() + idx);
             }
-#endif
+
             /**
              *  Element access without bounds check in release
              */
             YATO_CONSTEXPR_FUNC_CXX14
             reference operator[](size_t idx) YATO_NOEXCEPT_KEYWORD
             {
-                YATO_REQUIRES(idx < size_(0));
-                return subscript_(yato::narrow_cast<std::ptrdiff_t>(idx));
+                YATO_REQUIRES(idx < m_size);
+                return *(m_raw_vector.ptr() + idx);
             }
 
-            ///**
-            // *  Element access with bounds check
-            // */
-            //const_reference at(size_t idx) const
-            //{
-            //    if(idx >= m_size) {
-            //        throw yato::out_of_range_error("yato::vector_1d: Index " + yato::stl::to_string(idx) + " is out of range!");
-            //    }
-            //    return operator[](idx);
-            //}
-            //
-            ///**
-            // *  Element access with bounds check
-            // */
-            //reference at(size_t idx)
-            //{
-            //    if(idx >= m_size) {
-            //        throw yato::out_of_range_error("yato::vector_1d: Index " + yato::stl::to_string(idx) + " is out of range!");
-            //    }
-            //    return operator[](idx);
-            //}
+            /**
+             *  Element access with bounds check
+             */
+            const_reference at(size_t idx) const
+            {
+                if(idx >= m_size) {
+                    throw yato::out_of_range_error("yato::vector_1d: Index " + yato::stl::to_string(idx) + " is out of range!");
+                }
+                return *(m_raw_vector.ptr() + idx);
+            }
+
+            /**
+             *  Element access with bounds check
+             */
+            reference at(size_t idx)
+            {
+                if(idx >= m_size) {
+                    throw yato::out_of_range_error("yato::vector_1d: Index " + yato::stl::to_string(idx) + " is out of range!");
+                }
+                return *(m_raw_vector.ptr() + idx);
+            }
 
             /**
              *  Iterator for accessing sub-array elements along the top dimension
@@ -2750,7 +2701,7 @@ namespace yato
             {
                 return yato::range<const size_type*>(nullptr, nullptr);
             }
-#if 0
+
             /**
              *  Get size of specified dimension
              */
@@ -2768,7 +2719,7 @@ namespace yato
             {
                 return m_size;
             }
-#endif
+
             /**
              *  1D vector has no stride
              */
