@@ -22,24 +22,26 @@ namespace conf {
         yaml_config(YAML::Node node);
 
         yaml_config(const yaml_config&)= delete;
-        yaml_config(yaml_config&&) = delete;
 
-        yaml_config& operator=(const yaml_config&)= delete;
-        yaml_config& operator=(yaml_config&&) = delete;
+        yaml_config(yaml_config&&) = delete;
 
         ~yaml_config();
 
+        yaml_config& operator=(const yaml_config&)= delete;
+
+        yaml_config& operator=(yaml_config&&) = delete;
+
         size_t do_size() const noexcept override;
 
-        bool do_is_object() const noexcept override;
+        bool do_has_property(config_property p) const noexcept override;
 
-        key_value_t do_find(size_t index) const noexcept override;
+        find_index_result_t do_find(size_t index) const override;
 
-        key_value_t do_find(const std::string & name) const noexcept override;
+        find_key_result_t do_find(const std::string& name) const override;
 
         void do_release(const config_value* val) const noexcept override;
 
-        std::vector<std::string> do_keys() const noexcept override;
+        std::vector<std::string> do_enumerate_keys() const override;
 
     private:
         YAML::Node m_node;

@@ -18,36 +18,31 @@ namespace conf {
     }
 
 
-    const config_backend::key_value_t config_backend::novalue = std::make_pair(std::string{}, nullptr);
+    const config_backend::find_index_result_t config_backend::no_index_result = std::make_tuple(std::string{}, nullptr);
 
-    bool config_backend::do_is_object() const noexcept
+    const config_backend::find_key_result_t config_backend::no_key_result = std::make_tuple(0, nullptr);
+
+    bool config_backend::do_has_property(config_property /*p*/) const noexcept
     {
         return false;
     }
 
-    config_backend::key_value_t config_backend::do_find(const std::string & /*name*/) const noexcept
+    config_backend::find_key_result_t config_backend::do_find(const std::string & /*name*/) const
     {
-        return config_backend::novalue;
+        return config_backend::no_key_result;
     }
 
-    std::vector<std::string> config_backend::do_keys() const noexcept
+    std::vector<std::string> config_backend::do_enumerate_keys() const
     {
         std::vector<std::string> res;
-        if (is_object()) {
-            try {
-                const size_t count = size();
-                std::vector<std::string> tmp;
-                tmp.reserve(count);
-                for (size_t i = 0; i < count; ++i) {
-                    auto kv = find(i);
-                    tmp.push_back(kv.first);
-                    release(kv.second);
-                }
-                res.swap(tmp);
+        if (do_has_property(config_property::associative)) {
+            const size_t count = size();
+            std::vector<std::string> tmp;
+            tmp.reserve(count);
+            for (size_t i = 0; i < count; ++i) {
+                tmp.emplace_back(find(i).get_key());
             }
-            catch(...) {
-                //ToDo (a.gruzdev): Add error callbacks
-            }
+            res.swap(tmp);
         }
         return res;
     }

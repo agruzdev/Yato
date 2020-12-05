@@ -10,7 +10,7 @@
 
 TEST(Yato_Config, yaml_object)
 {
-    const auto conf = yato::conf::yaml_builder().parse(R"YAML(
+    const auto conf = yato::conf::yaml::read(R"YAML(
     {
         int: 42, # comments
         message: "somestr",
@@ -24,7 +24,7 @@ TEST(Yato_Config, yaml_object)
 
 TEST(Yato_Config, yaml_object2)
 {
-    const auto conf = yato::conf::yaml_builder().parse(R"YAML(
+    const auto conf = yato::conf::yaml::read(R"YAML(
         {
             "int": 42,
             "str": "test",
@@ -38,7 +38,7 @@ TEST(Yato_Config, yaml_object2)
 
 TEST(Yato_Config, yaml_array)
 {
-    const auto conf = yato::conf::yaml_builder().parse(R"YAML(
+    const auto conf = yato::conf::yaml::read(R"YAML(
         - 10
         - 20
         - 30
@@ -66,21 +66,37 @@ TEST(Yato_Config, yaml_example)
             "y" : 34,
         }
     )YAML";
-    const auto conf = yato::conf::yaml_builder().parse(yaml);
+    const auto conf = yato::conf::yaml::read(yaml);
     TestConfig_Example(conf);
+    TestConfig_Example(conf.clone());
 }
 
 TEST(Yato_Config, yaml_conversion)
 {
-    const char* yaml = R"YAML(
+    const std::string yaml = R"YAML(
         {
             "enum1" : 7,
             "enum2" : 14,
             "vec" : [20, 98, -7]
         }
     )YAML";
-    const auto conf = yato::conf::yaml_builder().parse(yaml);
+    const auto conf = yato::conf::yaml::read(yaml);
     TestConfig_Conversion(conf);
 }
 
+
+TEST(Yato_Config, yaml_write)
+{
+    const auto conf = GetExampleConfig();
+    const std::string str = yato::conf::yaml::write(conf, 3);
+    TestConfig_Example(yato::conf::yaml::read(str));
+}
+
+TEST(Yato_Config, yaml_write_stream)
+{
+    const auto conf = GetExampleConfig();
+    std::stringstream ss;
+    yato::conf::yaml::write(conf, ss);
+    TestConfig_Example(yato::conf::yaml::read(ss));
+}
 

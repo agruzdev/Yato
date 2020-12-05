@@ -87,7 +87,7 @@ namespace conf {
                         break;
                 }
             }
-            else if(!m_default.is_type<void>()) {
+            else if(m_default) {
                 res = m_default;
             }
             return res;
@@ -98,7 +98,7 @@ namespace conf {
          */
         bool valid() const
         {
-            return (m_arg && m_arg->isSet()) || !m_default.is_type<void>();
+            return (m_arg && m_arg->isSet()) || m_default;
         }
 
         TCLAP::Arg* arg_handle()

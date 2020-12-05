@@ -74,7 +74,8 @@ TEST(Yato_Config, cmd_example)
         .boolean("", "manual_mode", "boolean flag")
         .parse(yato::make_view(args.data(), args.size()));
 
-    TestConfig_Example(conf);
+    TestConfig_Example(conf.clone(), false, false);
+    TestConfig_Example(conf, false, false);
 }
 
 TEST(Yato_Config, cmd_conversion)

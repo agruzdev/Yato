@@ -118,7 +118,7 @@ namespace conf {
         config parse(const std::vector<std::string> & args);
 
     private:
-        std::unique_ptr<cmd_config> m_conf;
+        std::shared_ptr<cmd_config> m_conf;
     };
 
 

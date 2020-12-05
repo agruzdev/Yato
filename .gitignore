@@ -1,5 +1,8 @@
-/build/*
-/cmake_workspace/*
-/dependencies/*
+/build
+/cmake_workspace
+/dependencies
 cmake-*
 .idea/
+.vs
+/out
+/CMakeSettings.json

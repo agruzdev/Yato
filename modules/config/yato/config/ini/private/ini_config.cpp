@@ -40,7 +40,7 @@ namespace conf {
         }
     }
 
-    std::vector<std::string> ini_config::do_keys() const noexcept
+    std::vector<std::string> ini_config::do_enumerate_keys() const
     {
         std::vector<std::string> keys;
         if (m_is_global) {
@@ -56,38 +56,44 @@ namespace conf {
         return keys;
     }
 
-    config_backend::key_value_t ini_config::do_find(size_t index) const noexcept
+    config_backend::find_index_result_t ini_config::do_find(size_t index) const
     {
-        config_backend::key_value_t result = config_backend::novalue;
-        if (index < m_parser->sections.size()) {
+        config_backend::find_index_result_t result = config_backend::no_index_result;
+        const size_t sections_count = m_is_global ? m_parser->sections.size() : 0;
+        if (index < sections_count) {
             const auto it = std::next(m_parser->sections.cbegin(), index);
-            result.first = (*it).first;
-            result.second = new ini_section(std::make_shared<ini_config>(m_parser, &(*it).second));
+            result = std::make_tuple(
+                (*it).first,
+                new ini_section(std::make_shared<ini_config>(m_parser, &(*it).second)));
         }
-        else if (index < m_parser->global_values.size() + m_values->size()) {
-            const auto it = std::next(m_parser->global_values.cbegin(), index - m_parser->sections.size());
-            result.first = (*it).first;
-            result.second = new ini_value((*it).second);
+        else if (index < sections_count + m_values->size()) {
+            const auto it = std::next(m_values->cbegin(), index - sections_count);
+            result = std::make_tuple(
+                (*it).first,
+                new ini_value((*it).second));
         }
         return result;
     }
 
-    config_backend::key_value_t ini_config::do_find(const std::string& name) const noexcept
+    config_backend::find_key_result_t ini_config::do_find(const std::string& name) const
     {
-        config_backend::key_value_t result = config_backend::novalue;
+        config_backend::find_key_result_t result = config_backend::no_key_result;
         if (m_is_global) {
             const auto sit = m_parser->sections.find(name);
             if (sit != m_parser->sections.cend()) {
-                result.first = name;
-                result.second = new ini_section(std::make_shared<ini_config>(m_parser, &(*sit).second));
-                return result;
+                return std::make_tuple(
+                    yato::narrow_cast<size_t>(std::distance(m_parser->sections.begin(), sit)),
+                    new ini_section(std::make_shared<ini_config>(m_parser, &(*sit).second)));
             }
         }
         if (m_values) {
             const auto vit = m_values->find(name);
             if (vit != m_values->cend()) {
-                result.first = name;
-                result.second = new ini_value((*vit).second);
+                const size_t sections_count = m_is_global ? m_parser->sections.size() : 0;
+                result = std::make_tuple(
+                    sections_count + yato::narrow_cast<size_t>(std::distance(m_values->begin(), vit)),
+                    new ini_value((*vit).second)
+                );
             }
         }
         return result;
@@ -98,9 +104,15 @@ namespace conf {
         delete val;
     }
 
-    bool ini_config::do_is_object() const noexcept
+    bool ini_config::do_has_property(config_property p) const noexcept
     {
-        return true;
+        switch (p) {
+        case config_property::associative:
+        case config_property::multi_associative:
+            return true;
+        default:
+            return false;
+        }
     }
 
 } // namespace conf

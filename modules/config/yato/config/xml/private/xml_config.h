@@ -26,21 +26,23 @@ namespace conf {
         xml_config(std::shared_ptr<tinyxml2::XMLDocument> document, const tinyxml2::XMLElement* element = nullptr);
 
         xml_config(const xml_config&) = delete;
+
         xml_config(xml_config&&) = delete;
 
-        xml_config& operator=(const xml_config&) = delete;
-        xml_config& operator=(xml_config&&) = delete;
-
         ~xml_config();
+
+        xml_config& operator=(const xml_config&) = delete;
+
+        xml_config& operator=(xml_config&&) = delete;
 
     private:
         size_t do_size() const noexcept override;
 
-        bool do_is_object() const noexcept override;
+        bool do_has_property(config_property p) const noexcept override;
 
-        key_value_t do_find(size_t index) const noexcept override;
+        find_index_result_t do_find(size_t index) const override;
 
-        key_value_t do_find(const std::string & name) const noexcept override;
+        find_key_result_t do_find(const std::string& name) const override;
 
         void do_release(const config_value* /*val*/) const noexcept override;
 

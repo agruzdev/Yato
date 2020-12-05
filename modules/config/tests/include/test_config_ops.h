@@ -31,7 +31,7 @@
  *  }
  */
 inline
-void TestConfig_ObjJoin(const yato::conf::config & conf1, const yato::conf::config & conf2)
+void TestConfig_ObjJoin_Impl(const yato::conf::config & conf1, const yato::conf::config & conf2)
 {
     ASSERT_TRUE(conf1.is_object());
     ASSERT_TRUE(conf2.is_object());
@@ -81,6 +81,15 @@ void TestConfig_ObjJoin(const yato::conf::config & conf1, const yato::conf::conf
     EXPECT_TRUE(std::find(keys3.cbegin(), keys3.cend(), "flag") != keys3.cend());
 }
 
+inline
+void TestConfig_ObjJoin(const yato::conf::config& conf1, const yato::conf::config& conf2)
+{
+    TestConfig_ObjJoin_Impl(conf1, conf2);
+    TestConfig_ObjJoin_Impl(conf1.clone(), conf2);
+    TestConfig_ObjJoin_Impl(conf1, conf2.clone());
+    TestConfig_ObjJoin_Impl(conf1.clone(), conf2.clone());
+}
+
 /**
  *  JSON 1
  *  {
@@ -90,7 +99,7 @@ void TestConfig_ObjJoin(const yato::conf::config & conf1, const yato::conf::conf
  *  }
  */
 inline
-void TestConfig_ObjFilter(const yato::conf::config & conf)
+void TestConfig_ObjFilter_Impl(const yato::conf::config & conf)
 {
     ASSERT_TRUE(conf.is_object());
     ASSERT_TRUE(conf.is_object());
@@ -134,6 +143,13 @@ void TestConfig_ObjFilter(const yato::conf::config & conf)
     EXPECT_FLOAT_EQ(7.0f, filt4.value<float>("float").get());
 }
 
+inline
+void TestConfig_ObjFilter(const yato::conf::config& conf)
+{
+    TestConfig_ObjFilter_Impl(conf);
+    TestConfig_ObjFilter_Impl(conf.clone());
+}
+
 
 
 /**
@@ -155,7 +171,7 @@ void TestConfig_ObjFilter(const yato::conf::config & conf)
  *  }
  */
 inline
-void TestConfig_ObjJoin2(const yato::conf::config & conf1, const yato::conf::config & conf2)
+void TestConfig_ObjJoin2_Impl(const yato::conf::config & conf1, const yato::conf::config & conf2)
 {
     ASSERT_TRUE(conf1.is_object());
     ASSERT_TRUE(conf2.is_object());
@@ -207,7 +223,14 @@ void TestConfig_ObjJoin2(const yato::conf::config & conf1, const yato::conf::con
     EXPECT_EQ(80, c9.value<int>("nested.value1").get_or(-1));
 }
 
-
+inline
+void TestConfig_ObjJoin2(const yato::conf::config& conf1, const yato::conf::config& conf2)
+{
+    TestConfig_ObjJoin2_Impl(conf1, conf2);
+    TestConfig_ObjJoin2_Impl(conf1.clone(), conf2);
+    TestConfig_ObjJoin2_Impl(conf1, conf2.clone());
+    TestConfig_ObjJoin2_Impl(conf1.clone(), conf2.clone());
+}
 
 
 #endif // _YATO_CONFIG_TEST_CONFIG_OPS_COMMON_H_

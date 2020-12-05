@@ -13,6 +13,8 @@
 #include <cstdint>
 
 #include <yato/config/config.h>
+#include <yato/config/config_builder.h>
+#include <yato/config/utility.h>
 
 /**
  *  JSON 
@@ -44,12 +46,15 @@ void TestConfig_PlainObject(const yato::conf::config & conf)
     EXPECT_EQ(42, i.get_or(0));
 
     const auto ie = conf.find("int");
-    EXPECT_FALSE(ie.is_null());
-    //EXPECT_EQ(yato::conf::stored_type::integer, ie.type());
-    EXPECT_EQ(42, ie.value<int32_t>().get_or(0));
+    EXPECT_TRUE(ie != conf.cend());
+    EXPECT_FALSE(ie->is_null());
+    EXPECT_EQ(42, ie->value<int32_t>().get_or(0));
 
     const auto str = conf.value<std::string>("message");
     EXPECT_EQ("somestr", str.get_or(""));
+
+    const auto str_entry = conf.at("message");
+    EXPECT_EQ("somestr", str_entry.value<std::string>().get_or(""));
 
     const auto f1 = conf.value<bool>("flag1");
     EXPECT_EQ(false, f1.get_or(true));
@@ -84,6 +89,46 @@ void TestConfig_PlainObject(const yato::conf::config & conf)
                 GTEST_FAIL() << "Invalid entry key.";
             }
         }
+    );
+
+
+    const auto v1 = conf.to_vector<std::string>();
+    ASSERT_EQ(5u, v1.size());
+
+    EXPECT_NO_THROW(
+        const auto m1 = conf.to_map<std::string>();
+        ASSERT_EQ(5u, m1.size());
+        EXPECT_EQ(42, std::stoi(m1.at("int")));
+        EXPECT_EQ("somestr", m1.at("message"));
+        EXPECT_EQ(7.0, std::stod(m1.at("flt")));
+        bool tmp_bool = false;
+        ASSERT_TRUE(yato::conf::serializer<yato::conf::stored_type::boolean>::cvt_from(m1.at("flag1"), &tmp_bool));
+        EXPECT_EQ(false, tmp_bool);
+        ASSERT_TRUE(yato::conf::serializer<yato::conf::stored_type::boolean>::cvt_from(m1.at("flag2"), &tmp_bool));
+        EXPECT_EQ(true, tmp_bool);
+    );
+
+    EXPECT_NO_THROW(
+        const auto m1 = conf.to_multimap<std::string>();
+        ASSERT_EQ(5u, m1.size());
+        auto it = m1.find("int");
+        ASSERT_TRUE(it != m1.cend());
+        EXPECT_EQ(42, std::stoi((*it).second));
+        it = m1.find("message");
+        ASSERT_TRUE(it != m1.cend());
+        EXPECT_EQ("somestr", (*it).second);
+        it = m1.find("flt");
+        ASSERT_TRUE(it != m1.cend());
+        EXPECT_EQ(7.0, std::stod((*it).second));
+        bool tmp_bool = false;
+        it = m1.find("flag1");
+        ASSERT_TRUE(it != m1.cend());
+        ASSERT_TRUE(yato::conf::serializer<yato::conf::stored_type::boolean>::cvt_from((*it).second, &tmp_bool));
+        EXPECT_EQ(false, tmp_bool);
+        it = m1.find("flag2");
+        ASSERT_TRUE(it != m1.cend());
+        ASSERT_TRUE(yato::conf::serializer<yato::conf::stored_type::boolean>::cvt_from((*it).second, &tmp_bool));
+        EXPECT_EQ(true, tmp_bool);
     );
 }
 
@@ -124,13 +169,16 @@ void TestConfig_Object(const yato::conf::config & conf)
 
     const auto v3 = conf.value<float>(yato::conf::path("/subobj/val", '/')).get_or(-1.0f);
     EXPECT_FLOAT_EQ(7.0f, v3);
+
+    auto c3 = yato::config_builder(conf).remove("subobj").create();
+    EXPECT_EQ(2u, c3.size());
+    EXPECT_EQ(42, c3.value<short>("int").get_or(0));
+    EXPECT_EQ("test", c3.value<std::string>("str").get_or(""));
 }
 
 /**
  * JSON
- *     [10, 20, 30, true, 4, {
- *         "arr": []
- *     }]
+ *     [10, 20, 30, true, 4, { "arr": [] }]
  */
 inline
 void TestConfig_Array(const yato::conf::config & conf)
@@ -229,6 +277,17 @@ void TestConfig_Array(const yato::conf::config & conf)
 
         ASSERT_FALSE(it == eit);
     );
+
+    // Temporal workaround for fully associative configs like XML
+    if (!conf.is_object()) {
+        auto new_array = yato::config_builder(conf).pop().pop().pop().add(40).create();
+        ASSERT_TRUE(static_cast<bool>(new_array));
+        ASSERT_EQ(4u, new_array.size());
+        ASSERT_EQ(10, new_array.value<int32_t>(0).get());
+        ASSERT_EQ(20, new_array.value<int32_t>(1).get());
+        ASSERT_EQ(30, new_array.value<int32_t>(2).get());
+        ASSERT_EQ(40, new_array.value<int32_t>(3).get());
+    }
 }
 
 /**
@@ -253,7 +312,27 @@ void TestConfig_Array(const yato::conf::config & conf)
  * }
  */
 inline
-void TestConfig_Example(const yato::conf::config & conf)
+yato::config GetExampleConfig()
+{
+    return yato::config_builder::object()
+        .put("answer", 42)
+        .put("comment", "everything")
+        .put("precision", 0.01f)
+        .put("manual_mode", true)
+        .put("fruits", yato::config_builder::array()
+            .add("apple")
+            .add("banana")
+            .add("kiwi")
+            .create())
+        .put("location", yato::config_builder::object()
+            .put("x", 174)
+            .put("y", 34)
+            .create())
+        .create();
+}
+
+inline
+void TestConfig_Example(const yato::conf::config & conf, bool check_nested_object = true, bool check_nested_array = true)
 {
     EXPECT_FALSE(conf.is_null());
 
@@ -278,8 +357,10 @@ void TestConfig_Example(const yato::conf::config & conf)
     size_t conf_size = 4;
 
     const yato::conf::config arr = conf.array("fruits");
-    if(arr) {
-        EXPECT_EQ(3U, arr.size());
+    if (check_nested_array) {
+        ASSERT_FALSE(arr.is_null());
+        //ASSERT_FALSE(arr.is_object());
+        ASSERT_EQ(3U, arr.size());
         EXPECT_NO_THROW(
             EXPECT_EQ(std::string("apple"),  arr.value<std::string>(0).get());
             EXPECT_EQ(std::string("banana"), arr.value<std::string>(1).get());
@@ -289,9 +370,10 @@ void TestConfig_Example(const yato::conf::config & conf)
     }
 
     const yato::conf::config point = conf.object("location");
-    if(point) {
+    if (check_nested_object) {
+        ASSERT_FALSE(point.is_null());
         ASSERT_TRUE(point.is_object());
-        EXPECT_EQ(2u, point.size());
+        ASSERT_EQ(2u, point.size());
         const int x = point.value<int>("x").get_or(-1);
         const int y = point.value<int>("y").get_or(-1);
         EXPECT_EQ(174, x);
@@ -304,7 +386,7 @@ void TestConfig_Example(const yato::conf::config & conf)
 
         EXPECT_EQ(-1,  conf.value<int>(yato::conf::path("location.z.x", ':')).get_or(-1));
         EXPECT_EQ(-1,  conf.value<int>(yato::conf::path("location.x.z", ':')).get_or(-1));
-        
+
         ++conf_size;
     }
 

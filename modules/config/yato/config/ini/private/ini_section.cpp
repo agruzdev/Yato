@@ -25,7 +25,7 @@ namespace conf {
 
     stored_variant ini_section::get() const noexcept
     {
-        return stored_variant(yato::in_place_type_t<backend_ptr>{}, m_subsection);
+        return stored_variant(yato::in_place_type_t<backend_ptr_t>{}, m_subsection);
     }
 
 } // namespace conf

@@ -11,52 +11,38 @@
 
 #include "private/ini_parser.h"
 #include "private/ini_config.h"
+#include "yato/config/utility.h"
 
 namespace yato {
 
 namespace conf {
 
-    struct ini_builder_state
-    {
-        std::shared_ptr<ini_parser> parser = nullptr;
-    };
+    namespace ini {
 
-    ini_builder::ini_builder()
-    {
-        m_impl = std::make_unique<ini_builder_state>();
-    }
+        config read(const char* str, size_t len)
+        {
+            std::shared_ptr<ini_parser> parser;
+            if (len != yato::nolength) {
+                std::string str_copy(str, len);
+                parser = ini_parser::parse_c_string(str_copy.c_str());
+            }
+            else {
+                parser = ini_parser::parse_c_string(str);
+            }
+            return config(std::make_shared<ini_config>(std::move(parser)));
+        }
 
-    ini_builder::~ini_builder() = default;
+        config read(const std::string& str)
+        {
+            return read(str.c_str(), yato::nolength);
+        }
 
+        config read(std::istream& is)
+        {
+            return read(get_text_stream_content(is));
+        }
 
-    config ini_builder::parse(const char* ini)
-    {
-        m_impl->parser = ini_parser::parse_c_string(ini);
-        return finalize_();
-    }
-
-    config ini_builder::parse(const std::string& ini)
-    {
-        m_impl->parser = ini_parser::parse_c_string(ini.c_str());
-        return finalize_();
-    }
-
-    config ini_builder::parse_file(const char* filename)
-    {
-        m_impl->parser = ini_parser::parse_file(filename);
-        return finalize_();
-    }
-
-    config ini_builder::parse_file(const std::string& filename)
-    {
-        m_impl->parser = ini_parser::parse_file(filename.c_str());
-        return finalize_();
-    }
-
-    config ini_builder::finalize_()
-    {
-        return config(std::make_shared<ini_config>(m_impl->parser));
-    }
+    } // namespace ini
 
 } // namespace conf
 

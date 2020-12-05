@@ -9,17 +9,18 @@
 #define _YATO_CONFIG_H_
 
 #include <iterator>
+#include <map>
 #include <memory>
+#include <vector>
 
 #include "yato/range.h"
-
 #include "config_backend.h"
 #include "path.h"
 
 namespace yato {
 
 namespace conf {
-    
+
     class config;
 
     /**
@@ -104,89 +105,72 @@ namespace conf {
             }
 
             static
-            config wrap_result_(const backend_ptr & val);
+            config wrap_result_(const backend_ptr_t& val);
 
             static
-            config wrap_result_(backend_ptr && val);
+            config wrap_result_(backend_ptr_t&& val);
         };
     }
 
     /**
      * Config entry descriptor.
-     * in the case of array-like configs key is always empty.
+     * In the case of array-like configs key is always empty.
      */
     class config_entry
     {
     public:
-        config_entry(std::shared_ptr<config_backend> backend, size_t index)
-             : m_backend(std::move(backend))
-        {
-            if (m_backend) {
-                std::tie(m_key, m_value) = m_backend->find(index);
-            }
-        }
+        config_entry(backend_ptr_t backend, size_t index)
+            : m_find_result(std::move(backend), index)
+        { }
 
-        config_entry(std::shared_ptr<config_backend> backend, const conf::path& path)
-            : m_backend(std::move(backend))
+        config_entry(backend_ptr_t backend, const conf::path& path)
         {
-            if (m_backend) {
-                resolve_path_(path.tokenize());
+            if (backend) {
+                resolve_path_(std::move(backend), path.tokenize());
             }
         }
 
         config_entry(const config_entry&) = delete;
+
+        config_entry(config_entry&& other) noexcept = default;
+
+        ~config_entry() = default;
+
         config_entry& operator=(const config_entry&) = delete;
 
-        config_entry(config_entry&& other) noexcept
-            : m_backend(std::move(other.m_backend)), m_value(other.m_value)
-        {
-            other.m_value = nullptr;
-        }
+        config_entry& operator=(config_entry&& other) noexcept = default;
 
-        config_entry& operator=(config_entry&& other) noexcept
+        YATO_ATTR_NODISCARD
+        size_t index() const
         {
-            YATO_REQUIRES(this != &other);
-            if (m_backend && m_value) {
-                m_backend->release(m_value);
-            }
-            m_backend = std::move(other.m_backend);
-            m_value   = other.m_value;
-            other.m_value = nullptr;
-            return *this;
-        }
-
-        ~config_entry()
-        {
-            if (m_backend && m_value) {
-                m_backend->release(m_value);
-            }
+            return m_find_result.get_index();
         }
 
         YATO_ATTR_NODISCARD
-        const std::string & key() const
+        const std::string& key() const
         {
-            return m_key;
+            return m_find_result.get_key();
         }
 
         YATO_ATTR_NODISCARD
         stored_type type() const
         {
-            if (!m_value) {
+            if (!m_find_result) {
                 throw yato::conf::config_error("config_entry[type]: entry is empty.");
             }
-            return m_value->type();
+            return m_find_result->type();
         }
 
         YATO_ATTR_NODISCARD
         bool is_null() const
         {
-            return m_value == nullptr;
+            return !static_cast<bool>(m_find_result);
         }
 
         YATO_ATTR_NODISCARD explicit
         operator bool() const
         {
-            return m_value != nullptr;
+            return static_cast<bool>(m_find_result);
         }
 
         template <typename Ty_>
@@ -212,11 +196,11 @@ namespace conf {
         auto value(Converter_ && converter) const
             -> yato::optional<details::value_conversions::converted_stored_type<FetchType_, Converter_>>
         {
-            if (!m_value) {
+            if (!m_find_result) {
                 return yato::nullopt_t{};
             }
             using return_type = typename stored_type_trait<FetchType_>::return_type;
-            return details::value_conversions::map<return_type>(m_value->get<return_type>(FetchType_), std::forward<Converter_>(converter));
+            return details::value_conversions::map<return_type>(m_find_result->get<return_type>(FetchType_), std::forward<Converter_>(converter));
         }
 
         /**
@@ -246,34 +230,31 @@ namespace conf {
         YATO_ATTR_NODISCARD
         const config_value* value_handle_() const
         {
-            return m_value;
+            return m_find_result.get_value();
         }
 
     private:
-
         template <typename Tokenizer_>
-        void resolve_path_(Tokenizer_ path_iter)
+        void resolve_path_(backend_ptr_t backend, Tokenizer_ path_iter)
         {
             if (!path_iter.empty()) {
-                while (m_backend) {
+                while (backend) {
                     const auto t = path_iter.next();
                     const std::string name{ t.begin(), t.end() };
                     if (path_iter.has_next()) {
                         // We need to go deeper
-                        m_backend = m_backend->get<backend_ptr>(name, stored_type::config).get_or(nullptr);
+                        backend = backend->value_as<backend_ptr_t>(name, stored_type::config).get_or(nullptr);
                     }
                     else {
                         // Fetch a value
-                        std::tie(m_key, m_value) = m_backend->find(name);
+                        m_find_result = backend->find(name);
                         break;
                     }
                 }
             }
         }
 
-        std::shared_ptr<config_backend> m_backend;
-        std::string m_key;
-        const config_value* m_value = nullptr;
+        config_backend::find_result m_find_result{ };
     };
 
     /**
@@ -292,12 +273,14 @@ namespace conf {
         using index_type = std::ptrdiff_t; // In order to support position before begin
 
         config_iterator(const config_iterator&) = default;
+
         config_iterator(config_iterator&&) = default;
 
-        config_iterator& operator=(const config_iterator&) = default;
-        config_iterator& operator=(config_iterator&&) = default;
-
         ~config_iterator() = default;
+
+        config_iterator& operator=(const config_iterator&) = default;
+
+        config_iterator& operator=(config_iterator&&) = default;
 
         YATO_ATTR_NODISCARD
         reference operator*() const
@@ -311,18 +294,6 @@ namespace conf {
         {
             YATO_ASSERT(is_dereferencable_(), "Invalid iterator state.");
             return std::make_unique<config_entry>(m_backend, m_idx);
-        }
-
-        YATO_ATTR_NODISCARD
-        bool has_next() const
-        {
-            return m_idx < m_size;
-        }
-
-        config_entry next()
-        {
-            YATO_REQUIRES(has_next());
-            return config_entry(m_backend, m_idx++);
         }
 
         config_iterator & operator++()
@@ -450,10 +421,28 @@ namespace conf {
             return lhs.m_idx >= rhs.m_idx;
         }
 
+        YATO_ATTR_NODISCARD
+        bool has_next() const
+        {
+            return m_idx < m_size;
+        }
+
+        config_entry next()
+        {
+            YATO_REQUIRES(has_next());
+            return config_entry(m_backend, m_idx++);
+        }
+
     private:
-        config_iterator(backend_ptr backend, size_t pos, size_t size)
+        config_iterator(backend_ptr_t backend, size_t pos, size_t size)
             : m_backend(std::move(backend))
             , m_idx(yato::narrow_cast<index_type>(pos))
+            , m_size(yato::narrow_cast<index_type>(size))
+        { }
+
+        config_iterator(backend_ptr_t backend, const conf::path& p, size_t size)
+            : m_backend(std::move(backend))
+            , m_idx(yato::narrow_cast<index_type>(config_entry(m_backend, p).index()))
             , m_size(yato::narrow_cast<index_type>(size))
         { }
 
@@ -463,7 +452,7 @@ namespace conf {
             return m_backend && (m_idx >= 0) && (m_idx < m_size);
         }
 
-        backend_ptr m_backend;
+        backend_ptr_t m_backend;
         index_type m_idx;
         index_type m_size;
 
@@ -485,17 +474,19 @@ namespace conf {
         config() = default;
 
         explicit
-        config(backend_ptr backend) 
+        config(backend_ptr_t backend) 
             : m_backend(std::move(backend))
         { }
 
-        ~config() = default;
-
         config(const config&) = default;
+
         config(config&&) noexcept = default;
 
-        config& operator = (const config&) = default;
-        config& operator = (config&&) noexcept = default;
+        ~config() = default;
+
+        config& operator=(const config&) = default;
+
+        config& operator=(config&&) noexcept = default;
 
         /**
          * True if config doesn't exist, i.e. a query hasn't found a nested object.
@@ -517,12 +508,39 @@ namespace conf {
         }
 
         /**
-         * Return true if config is an object, i.e. contains named values.
+         * Checks a config property
+         */
+        YATO_ATTR_NODISCARD
+        bool has_property(config_property p) const
+        {
+            return m_backend ? m_backend->has_property(p) : false;
+        }
+
+        /**
+         * Return true if config supports associative access by name
          */
         YATO_ATTR_NODISCARD
         bool is_object() const
         {
-            return m_backend ? m_backend->is_object() : false;
+            return has_property(config_property::associative);
+        }
+
+        /**
+         * Return true if config supports associative access by name
+         */
+        YATO_ATTR_NODISCARD
+        bool is_associative() const
+        {
+            return has_property(config_property::associative);
+        }
+
+        /**
+         * Return true if config supports associative access by name and allows multiple values for one key
+         */
+        YATO_ATTR_NODISCARD
+        bool is_multi_associative() const
+        {
+            return has_property(config_property::multi_associative);
         }
 
         /**
@@ -550,7 +568,7 @@ namespace conf {
         YATO_ATTR_NODISCARD
         std::vector<std::string> keys() const
         {
-            return m_backend ? m_backend->keys() : std::vector<std::string>{};
+            return m_backend ? m_backend->enumerate_keys() : std::vector<std::string>{};
         }
 
         /**
@@ -631,7 +649,7 @@ namespace conf {
          * Get an entry handle for a key.
          */
         YATO_ATTR_NODISCARD
-        config_entry find(const conf::path& name) const
+        config_entry at(const conf::path& name) const
         {
             return config_entry(m_backend, name);
         }
@@ -640,9 +658,27 @@ namespace conf {
          * Get an entry handle for a key.
          */
         YATO_ATTR_NODISCARD
-        config_entry find(size_type idx) const
+        config_entry at(size_type idx) const
         {
             return config_entry(m_backend, idx);
+        }
+
+        /**
+         * Get an entry handle for a key.
+         */
+        YATO_ATTR_NODISCARD
+        config_iterator find(const conf::path& name) const
+        {
+            return config_iterator(m_backend, name, size());
+        }
+
+        /**
+         * Get an entry handle for a key.
+         */
+        YATO_ATTR_NODISCARD
+        config_iterator find(size_type idx) const
+        {
+            return config_iterator(m_backend, idx, size());
         }
 
         /**
@@ -652,9 +688,7 @@ namespace conf {
         YATO_ATTR_NODISCARD
         config object(const conf::path& name) const
         {
-            config conf = value<config>(name).get_or(config{});
-            YATO_ENSURES(conf.is_null() || conf.is_object())
-            return conf;
+            return value<config>(name).get_or(config{});
         }
 
         /**
@@ -664,9 +698,7 @@ namespace conf {
         YATO_ATTR_NODISCARD
         config object(size_type idx) const
         {
-            config conf = value<config>(idx).get_or(config{});
-            YATO_ENSURES(conf.is_null() || conf.is_object())
-            return conf;
+            return value<config>(idx).get_or(config{});
         }
 
         /**
@@ -713,9 +745,28 @@ namespace conf {
          * Values range start.
          */
         YATO_ATTR_NODISCARD
-        iterator begin() const
+        const_iterator cbegin() const
         {
             return config_iterator(m_backend, 0, size());
+        }
+
+        /**
+         * Values range start.
+         */
+        YATO_ATTR_NODISCARD
+        iterator begin() const
+        {
+            return cbegin();
+        }
+
+        /**
+         * Values range end.
+         */
+        YATO_ATTR_NODISCARD
+        const_iterator cend() const
+        {
+            const auto s = size();
+            return config_iterator(m_backend, s, s);
         }
 
         /**
@@ -724,8 +775,16 @@ namespace conf {
         YATO_ATTR_NODISCARD
         iterator end() const
         {
-            const auto s = size();
-            return config_iterator(m_backend, s, s);
+            return cend();
+        }
+
+        /**
+         * Values range
+         */
+        YATO_ATTR_NODISCARD
+        yato::range<const_iterator> crange() const
+        {
+            return yato::make_range(cbegin(), cend());
         }
 
         /**
@@ -737,6 +796,12 @@ namespace conf {
             return yato::make_range(begin(), end());
         }
 
+        /**
+         * Creates a deep copy of a config, copyng each value from a native backend to the manual backend.
+         * Can be used in order to release backend resources attached to the config.
+         */
+        YATO_ATTR_NODISCARD
+        config clone() const;
 
         /**
          * Creates a copy of config based on this one but with the given path set to the given value.
@@ -863,7 +928,7 @@ namespace conf {
         YATO_ATTR_NODISCARD
         config with_value(const conf::path& path, bool value) const
         {
-            return with_value_(path, stored_variant(yato::in_place_type_t<typename stored_type_trait<stored_type::real>::return_type>{}, value));
+            return with_value_(path, stored_variant(yato::in_place_type_t<typename stored_type_trait<stored_type::boolean>::return_type>{}, value));
         }
 
         /**
@@ -920,11 +985,48 @@ namespace conf {
         config with_blacklist(std::vector<std::string> names) const;
 
         /**
+         * Converts a plain config to a vector of stored values casted to Ty_
+         */
+        template <typename Ty_, typename Alloc_ = std::allocator<Ty_>>
+        YATO_ATTR_NODISCARD
+        std::vector<Ty_, Alloc_> to_vector() const
+        {
+            std::vector<Ty_, Alloc_> result;
+            const size_t s = size();
+            result.reserve(s);
+            for (size_t i = 0; i < s; ++i) {
+                result.emplace_back(at(i).value<Ty_>().get());
+            }
+            return result;
+        }
+
+        /**
+         * Converts a plain config to a map of stored values casted to Ty_
+         */
+        template <typename Ty_, typename Pr_ = std::less<Ty_>, typename Alloc_ = std::allocator<std::pair<const std::string, Ty_>>>
+        YATO_ATTR_NODISCARD
+        std::map<std::string, Ty_, Pr_, Alloc_> to_map() const
+        {
+            return to_map_impl_<Ty_, std::map<std::string, Ty_, Pr_, Alloc_>>();
+        }
+
+        /**
+         * Converts a plain config to a map of stored values casted to Ty_
+         */
+        template <typename Ty_, typename Pr_ = std::less<Ty_>, typename Alloc_ = std::allocator<std::pair<const std::string, Ty_>>>
+        YATO_ATTR_NODISCARD
+        std::multimap<std::string, Ty_, Pr_, Alloc_> to_multimap() const
+        {
+            return to_map_impl_<Ty_, std::multimap<std::string, Ty_, Pr_, Alloc_>>();
+        }
+
+        /**
          * For internal usage.
          * Use it only if you are sure what you are doing.
          */
         YATO_ATTR_NODISCARD
-        const backend_ptr& backend_handle_() const {
+        const backend_ptr_t& backend_handle_() const
+        {
             return m_backend;
         }
 
@@ -933,7 +1035,8 @@ namespace conf {
          * Use it only if you are sure what you are doing.
          */
         YATO_ATTR_NODISCARD
-        backend_ptr& backend_handle_() {
+        backend_ptr_t& backend_handle_()
+        {
             return m_backend;
         }
 
@@ -941,8 +1044,26 @@ namespace conf {
         YATO_ATTR_NODISCARD
         config with_value_(const conf::path& path, stored_variant value) const;
 
+        /**
+         * Converts a plain config to a map of stored values casted to Ty_
+         */
+        template <typename Ty_, typename MapType_>
+        MapType_ to_map_impl_() const
+        {
+            if (!is_associative()) {
+                throw yato::conf::config_error("config[to_map_impl_]: Config must be associative");
+            }
+            MapType_ result;
+            const size_t s = size();
+            for (size_t i = 0; i < s; ++i) {
+                auto entry = at(i);
+                result.emplace(entry.key(), entry.value<Ty_>().get());
+            }
+            return result;
+        }
+
         //---------------------------------------------------------------------
-        backend_ptr m_backend{ nullptr };
+        backend_ptr_t m_backend{ nullptr };
     };
 
 
@@ -954,21 +1075,19 @@ namespace conf {
     };
 
     inline
-    config details::value_conversions::wrap_result_(const backend_ptr & val) {
+    config details::value_conversions::wrap_result_(const backend_ptr_t& val) {
         return config(val);
     }
 
     inline
-    config details::value_conversions::wrap_result_(backend_ptr && val) {
+    config details::value_conversions::wrap_result_(backend_ptr_t&& val) {
         return config(std::move(val));
     }
 
     inline
     config config_entry::object() const
     {
-        config conf = value<config>().get_or(config{});
-        YATO_ENSURES(conf.is_null() || conf.is_object());
-        return conf;
+        return value<config>().get_or(config{});
     }
 
     inline
@@ -984,6 +1103,7 @@ namespace conf {
     using conf::config;
     using conf::config_entry;
     using conf::config_iterator;
+    using conf::config_property;
     using conf::stored_type;
     using conf::config_error;
 

@@ -20,14 +20,10 @@ namespace yato {
 
 namespace conf {
 
-    YATO_INLINE_VARIABLE
-    constexpr const size_t nolength = std::numeric_limits<size_t>::max();
-
-
     namespace details
     {
         inline
-        char* skip_spaces(char* str)
+        const char* skip_spaces(const char* str)
         {
             while(std::isspace(*str)) {
                 ++str;
@@ -36,9 +32,9 @@ namespace conf {
         }
 
         inline
-        const char* skip_spaces(const char* str)
+        char* skip_spaces(char* str)
         {
-            return skip_spaces(const_cast<char*>(str));
+            return const_cast<char*>(skip_spaces(static_cast<const char*>(str)));
         }
 
         template <typename Ty_, typename Decoder_>
@@ -46,7 +42,7 @@ namespace conf {
         {
              if (str && len > 0) {
                 const char* const beg = skip_spaces(str);
-                if (len == conf::nolength) {
+                if (len == yato::nolength) {
                     len = std::strlen(beg);
                 }
                 else {
@@ -218,7 +214,7 @@ namespace conf {
         static
         std::string to_string(value_type val)
         {
-            return val ? "true" : "false";
+            return val ? "1" : "0";
         }
 
         static
@@ -293,7 +289,7 @@ namespace conf {
             if (len == 0) { 
                 *dst = std::string{};
             }
-            else if (len != conf::nolength) {
+            else if (len != yato::nolength) {
                 *dst = std::string(str, len);
             }
             else {
@@ -366,7 +362,7 @@ namespace conf {
     }
 
 
-    stored_type get_type(const stored_variant & var);
+    stored_type get_type(const stored_variant& var);
 
 
     class value_converter
@@ -377,17 +373,31 @@ namespace conf {
         static
         value_converter & instance();
 
+        value_converter(const value_converter&) = delete;
+
+        value_converter(value_converter&&) = delete;
+
         ~value_converter() = default;
+
+        value_converter& operator=(const value_converter&) = delete;
+
+        value_converter& operator=(value_converter&&) = delete;
 
         const cvt_funtion_t* dispatch(stored_type dst_type, stored_type src_type) const;
 
-        stored_variant apply(stored_type dst_type, const stored_variant & src) const;
+        stored_variant apply(stored_type dst_type, const stored_variant& src) const;
 
     private:
         value_converter();
 
         std::map<std::pair<stored_type, stored_type>, cvt_funtion_t> m_cvt_functions;
     };
+
+
+    /**
+     * Reads entire stream into a string
+     */
+    std::string get_text_stream_content(std::istream& is);
 
 
 } // namespace conf

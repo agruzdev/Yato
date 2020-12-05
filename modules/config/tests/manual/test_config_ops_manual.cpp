@@ -6,18 +6,18 @@
  */
 
 #include "../include/test_config_ops.h"
-#include <yato/config/manual/manual.h>
+#include "yato/config/config_builder.h"
 
 
 TEST(Yato_ConfigOps, manual_config_ops_join)
 {
-    const auto conf1 = yato::conf::manual_builder::object()
+    const auto conf1 = yato::config_builder::object()
         .put("int", 42)
         .put("float", 7.0f)
         .put("flag", false)
         .create();
 
-    const auto conf2 = yato::conf::manual_builder::object()
+    const auto conf2 = yato::config_builder::object()
         .put("int", 43)
         .put("flag", true)
         .put("string", "text")
@@ -29,7 +29,7 @@ TEST(Yato_ConfigOps, manual_config_ops_join)
 
 TEST(Yato_ConfigOps, manual_config_ops_filter)
 {
-    const auto conf1 = yato::conf::manual_builder::object()
+    const auto conf1 = yato::config_builder::object()
         .put("int", 42)
         .put("float", 7.0f)
         .put("flag", false)
@@ -40,17 +40,17 @@ TEST(Yato_ConfigOps, manual_config_ops_filter)
 
 TEST(Yato_ConfigOps, manual_config_ops_join2)
 {
-    const auto conf1 = yato::conf::manual_builder::object()
+    const auto conf1 = yato::config_builder::object()
         .put("int", 42)
-        .put("nested", yato::conf::manual_builder::object()
+        .put("nested", yato::config_builder::object()
             .put("value1", 80)
             .put("value3", 30)
             .create())
         .create();
 
-    const auto conf2 = yato::conf::manual_builder::object()
+    const auto conf2 = yato::config_builder::object()
         .put("flag", true)
-        .put("nested", yato::conf::manual_builder::object()
+        .put("nested", yato::config_builder::object()
             .put("value2", 101)
             .create())
         .create();

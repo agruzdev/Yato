@@ -22,9 +22,12 @@ namespace conf {
                 auto first       = elem->FirstChildElement();
                 const auto last  = elem->LastChildElement();
                 if(first != nullptr && last != nullptr) {
-                    while(first != last) {
+                    while (first != last) {
                         visitor(first);
                         first = first->NextSiblingElement();
+                        if (!first) {
+                            break;
+                        }
                     }
                     visitor(last);
                 }
@@ -52,31 +55,38 @@ namespace conf {
         return m_children.size();
     }
 
-    bool xml_config::do_is_object() const noexcept
+    bool xml_config::do_has_property(config_property p) const noexcept
     {
-        return true;
+        switch (p) {
+        case config_property::associative:
+        case config_property::multi_associative:
+        case config_property::keeps_order:
+            return true;
+        default:
+            return false;
+        }
     }
 
-    config_backend::key_value_t xml_config::do_find(size_t index) const noexcept
+    config_backend::find_index_result_t xml_config::do_find(size_t index) const
     {
-        key_value_t res = config_backend::novalue;
+        find_index_result_t res = config_backend::no_index_result;
         if (index < m_children.size()) {
             const auto it = std::next(m_children.cbegin(), index);
-            res.first  = (*it)->Name();
-            res.second = new xml_value(m_document, *it);
+            res = std::make_tuple((*it)->Name(), new xml_value(m_document, *it));
         }
         return res;
     }
 
-    config_backend::key_value_t xml_config::do_find(const std::string & name) const noexcept
+    config_backend::find_key_result_t xml_config::do_find(const std::string& name) const
     {
-        key_value_t res = config_backend::novalue;
-        const auto child = m_element->FirstChildElement(name.c_str());
-        if (child) {
-            res.first  = name;
-            res.second = new xml_value(m_document, child);
+        size_t index = 0;
+        for (auto child = m_element->FirstChildElement(); child; child = child->NextSiblingElement()) {
+            if (child->Name() == name) {
+                return std::make_tuple(index, new xml_value(m_document, child));
+            }
+            ++index;
         }
-        return res;
+        return config_backend::no_key_result;
     }
 
     void xml_config::do_release(const config_value* val) const noexcept

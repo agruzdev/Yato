@@ -176,6 +176,14 @@ namespace yato
 
     //--------------------------------------------------------------------
 
+
+    /**
+     * Helper value indicating unknown length
+     */
+    YATO_INLINE_VARIABLE
+    constexpr const size_t nolength = std::numeric_limits<size_t>::max();
+
+
     /**
      *  Helper type to indicate in place constructors
      */

@@ -28,12 +28,14 @@ namespace conf {
             : m_cmd(description, ' ', version)
         { }
 
-        ~cmd_config() = default;
-
         cmd_config(const cmd_config&) = delete;
+
         cmd_config(cmd_config&&) = delete;
 
+        ~cmd_config() = default;
+
         cmd_config& operator=(const cmd_config&) = delete;
+
         cmd_config& operator=(cmd_config&&) = delete;
 
         void add(const std::string & name, std::unique_ptr<cmd_value> && arg)
@@ -61,21 +63,24 @@ namespace conf {
             return m_args.size();
         }
 
-        key_value_t do_find(size_t index) const noexcept override
+        find_index_result_t do_find(size_t index) const override
         {
-            if (index >= m_args.size()) {
-                return config_backend::novalue;
+            find_index_result_t result = config_backend::no_index_result;
+            if (index < m_args.size()) {
+                const auto it = std::next(m_args.cbegin(), index);
+                result = std::make_tuple((*it).first, (*it).second.get());
             }
-            const auto it = std::next(m_args.cbegin(), index);
-            return std::make_pair((*it).first, (*it).second.get());
+            return result;
         }
 
-        key_value_t do_find(const std::string & name) const noexcept override
+        find_key_result_t do_find(const std::string& name) const override
         {
+            find_key_result_t result = config_backend::no_key_result;
             const auto it = m_args.find(name);
-            return it != m_args.cend() 
-                ? std::make_pair(name, (*it).second.get())
-                : config_backend::novalue;
+            if (it != m_args.cend()) {
+                result = std::make_tuple(yato::narrow_cast<size_t>(std::distance(m_args.cbegin(), it)), (*it).second.get());
+            }
+            return result;
         }
 
         void do_release(const config_value* /*val*/) const noexcept override
@@ -83,9 +88,14 @@ namespace conf {
             // do nothig
         }
 
-        bool do_is_object() const noexcept override
+        bool do_has_property(config_property p) const noexcept override
         {
-            return true;
+            switch (p) {
+            case config_property::associative:
+                return true;
+            default:
+                return false;
+            }
         }
 
         void prune_()

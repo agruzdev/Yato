@@ -8,47 +8,44 @@
 #ifndef _YATO_CONFIG_XML_XML_H_
 #define _YATO_CONFIG_XML_XML_H_
 
+#include <istream>
+#include <ostream>
+#include <string>
 #include "../config.h"
 
 namespace yato {
 
 namespace conf {
 
-    /**
-     * Builder for XML config
-     */
-    class xml_builder
-    {
-    public:
-        xml_builder();
-        ~xml_builder();
-
-        xml_builder(const xml_builder&) = delete;
-        xml_builder(xml_builder&&) noexcept;
-
-        xml_builder& operator=(const xml_builder&) = delete;
-        xml_builder& operator=(xml_builder&&) noexcept;
+    namespace xml {
 
         /**
-         * Parse XML from string
+         * Parse Xml from string
          */
-        config parse(const char* xml) const;
+        config read(const char* str, size_t len = yato::nolength);
 
         /**
-         * Parse XML from string
+         * Parse Xml from string
          */
-        config parse(const std::string & xml) const;
+        config read(const std::string& str);
 
         /**
-         * Load an XML file
+         * Parse Xml from stream
          */
-        config load(const char* filename) const;
+        config read(std::istream& is);
 
         /**
-         * Load an XML file
+         * Writes config as Xml to a string
          */
-        config load(const std::string & filename) const;
-    };
+        std::string write(const yato::config& c, bool text_value = true, const std::string& root_name = "root", bool indent = true);
+
+        /**
+         * Writes config as Xml to a stream
+         */
+        void write(const yato::config& c, std::ostream& os, bool text_value = true, const std::string& root_name = "root", bool indent = true);
+
+    } // namespace xml
+
 
 } // namespace conf
 

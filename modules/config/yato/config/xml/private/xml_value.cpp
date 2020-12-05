@@ -49,7 +49,7 @@ namespace conf {
                     res.emplace<std::string>(attr_text);
                 }
             }
-            if (res.is_type<void>()) {
+            if (res.empty()) {
                 const auto text = m_element->GetText();
                 if (text) {
                     res.emplace<std::string>(text);
@@ -57,7 +57,7 @@ namespace conf {
             }
         }
         else if(m_element) {
-            res.emplace<backend_ptr>(std::make_shared<xml_config>(m_document, m_element));
+            res.emplace<backend_ptr_t>(std::make_shared<xml_config>(m_document, m_element));
         }
         return res;
     }
