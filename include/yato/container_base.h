@@ -66,16 +66,28 @@ namespace yato
         }
     };
 
+
     namespace details
     {
         // Interpret as byte offset
-        template <typename Ty_>
-        static
-        void advance_bytes(Ty_* & ptr, std::ptrdiff_t diff)
+        template <typename Ty_, typename DiffTy_>
+        YATO_FORCED_INLINE
+        void advance_bytes(Ty_* & ptr, DiffTy_ diff)
         {
             ptr = yato::pointer_cast<Ty_*>(yato::pointer_cast<typename yato::take_cv_from<Ty_, uint8_t>::type*>(ptr) + diff);
         }
+
+    } // namesace details
+
+
+    template <typename InputIt_, typename DiffTy_ = typename std::iterator_traits<InputIt_>::difference_type>
+    YATO_CONSTEXPR_FUNC_CXX14 YATO_FORCED_INLINE
+    InputIt_ next(InputIt_ it, DiffTy_ n = static_cast<DiffTy_>(1))
+    {
+        std::advance(it, n);
+        return it;
     }
+
 
     /**
      * Storage for containers extents
@@ -149,6 +161,7 @@ YATO_PRAGMA_WARNING_POP
             return m_extents[idx];
         }
 
+        YATO_CONSTEXPR_FUNC
         size_type & operator[](size_t idx)
         {
             return m_extents[idx];
@@ -171,9 +184,39 @@ YATO_PRAGMA_WARNING_POP
         }
 
         YATO_CONSTEXPR_FUNC
-        SizeType total_size() const
+        size_t size() const
+        {
+            return dimensions_number;
+        }
+
+        YATO_CONSTEXPR_FUNC
+        size_type total_size() const
         {
             return total_size_impl_(0);
+        }
+
+        YATO_CONSTEXPR_FUNC
+        size_type front() const
+        {
+            return m_extents.front();
+        }
+
+        YATO_CONSTEXPR_FUNC
+        size_type front()
+        {
+            return m_extents.front();
+        }
+
+        YATO_CONSTEXPR_FUNC
+        size_type back() const
+        {
+            return m_extents.back();
+        }
+
+        YATO_CONSTEXPR_FUNC
+        size_type back()
+        {
+            return m_extents.back();
         }
 
         iterator begin()
@@ -521,7 +564,7 @@ YATO_PRAGMA_WARNING_POP
 
 
     //-----------------------------------------------------------------------------
-    // access policy
+    // Access policy
 
     enum class proxy_access_policy
     {

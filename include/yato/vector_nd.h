@@ -59,11 +59,11 @@ namespace yato
             size_t increase(size_t old_size, size_t new_size)
             {
                 YATO_REQUIRES(new_size > old_size);
-                if(old_size < std::numeric_limits<size_t>::max() / 2) {
+                if (old_size < std::numeric_limits<size_t>::max() / 2) {
                     return std::max(new_size, 2 * old_size);
                 }
                 else {
-                    return std::numeric_limits<size_t>::max();
+                    return new_size;
                 }
             }
         };
@@ -361,7 +361,7 @@ namespace yato
                     ptr() = new_data;
                     m_allocated_size = new_capacity;
                 }
-                return yato::make_range(std::next(ptr(), old_size), std::next(ptr(), new_size));
+                return yato::make_range(yato::next(ptr(), old_size), yato::next(ptr(), new_size));
             }
 
             /**
@@ -457,7 +457,7 @@ namespace yato
                         memory::destroy(alloc, old_data + insert_offset, old_data + insert_offset + insert_size);
                     }
                 }
-                return yato::make_range(std::next(ptr(), insert_offset), std::next(ptr(), insert_offset + insert_size));
+                return yato::make_range(yato::next(ptr(), insert_offset), yato::next(ptr(), insert_offset + insert_size));
             }
 
             /**
@@ -743,7 +743,7 @@ namespace yato
                     if(0 == init_list.size()) {
                         throw yato::argument_error("yato::vector_nd[ctor]: Can't be constructed from empty initialaser sub-list.");
                     }
-                    const value_type & init_val = *(std::next(init_list.begin(), init_list.size() - 1));
+                    const value_type & init_val = *(yato::next(init_list.begin(), init_list.size() - 1));
                     while(tail) {
                         alloc_traits::construct(alloc, dst, init_val); // copy the last one
                         ++dst; // increment after successful copy
@@ -1235,7 +1235,7 @@ namespace yato
                 if (idx >= size(0)) {
                     throw yato::out_of_range_error("yato::vector_nd: out of range!");
                 }
-                return (*this)[idx].at(std::forward<_Tail>(tail)...);
+                return create_const_proxy_(idx)[idx].at(std::forward<_Tail>(tail)...);
             }
 
             /**
@@ -1248,7 +1248,7 @@ namespace yato
                 if (idx >= size(0)) {
                     throw yato::out_of_range_error("yato::vector_nd: out of range!");
                 }
-                return (*this)[idx].at(std::forward<_Tail>(tail)...);
+                return create_proxy_(idx).at(std::forward<_Tail>(tail)...);
             }
 
             /**
@@ -2455,7 +2455,7 @@ namespace yato
                 if(idx >= m_size) {
                     throw yato::out_of_range_error("yato::vector_1d: Index " + yato::stl::to_string(idx) + " is out of range!");
                 }
-                return operator[](idx);
+                return *(m_raw_vector.ptr() + idx);
             }
 
             /**
@@ -2466,7 +2466,7 @@ namespace yato
                 if(idx >= m_size) {
                     throw yato::out_of_range_error("yato::vector_1d: Index " + yato::stl::to_string(idx) + " is out of range!");
                 }
-                return operator[](idx);
+                return *(m_raw_vector.ptr() + idx);
             }
 
             /**

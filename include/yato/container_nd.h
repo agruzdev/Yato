@@ -26,8 +26,11 @@ namespace yato
         static_assert(Dimensions_ > 0, "Invalid dimensions");
 
         using this_type = const_container_nd<ValueType_, Dimensions_, Implementation_>;
+
     public:
         using value_type = ValueType_;
+        using implementation_type = Implementation_;
+        using const_reference = std::add_lvalue_reference_t<std::add_const_t<value_type>>;
         static YATO_CONSTEXPR_VAR size_t dimensions_number = Dimensions_;
 
         explicit
@@ -47,10 +50,10 @@ namespace yato
         /**
          *  Element access with bounds check
          */
-        template<typename... Tail_>
-        decltype(auto) at(size_t idx, Tail_... tail) const
+        template<typename... Indexes_>
+        decltype(auto) at(Indexes_&&... indexes) const
         {
-            return static_cast<const Implementation_*>(this)->at(idx, tail...);
+            return static_cast<const Implementation_*>(this)->at(std::forward<Indexes_>(indexes)...);
         }
 
         /**
@@ -166,6 +169,7 @@ namespace yato
         {
             return static_cast<const Implementation_*>(this)->cdata();
         }
+
     };
 
 
@@ -177,8 +181,11 @@ namespace yato
         static_assert(Dimensions_ > 0, "Invalid dimensions");
 
         using this_type = container_nd<ValueType_, Dimensions_, Implementation_>;
+
     public:
         using value_type = ValueType_;
+        using implementation_type = Implementation_;
+        using reference = std::add_lvalue_reference_t<value_type>;
         static YATO_CONSTEXPR_VAR size_t dimensions_number = Dimensions_;
 
         explicit
@@ -198,10 +205,10 @@ namespace yato
         /**
          *  Element access with bounds check
          */
-        template<typename... Tail_>
-        decltype(auto) at(size_t idx, Tail_... tail) const
+        template<typename... Indexes_>
+        decltype(auto) at(Indexes_&&... indexes) const
         {
-            return static_cast<Implementation_*>(const_cast<this_type*>(this))->at(idx, tail...);
+            return static_cast<Implementation_*>(const_cast<this_type*>(this))->at(std::forward<Indexes_>(indexes)...);
         }
 
         /**
@@ -275,6 +282,7 @@ namespace yato
 
     template <typename ValueType_, typename Implementation_>
     using container_3d = container_nd<ValueType_, 3, Implementation_>;
+
 }
 
 #endif //_YATO_CONTAINER_ND_H_

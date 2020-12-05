@@ -340,17 +340,17 @@ namespace yato
 
             value_reference get_sub_view_(size_t idx) const
             {
-                return *std::next(m_base_ptr, idx);
+                return *yato::next(m_base_ptr, idx);
             }
 
             iterator get_iterator_(size_t idx) const
             {
-                return std::next(m_base_ptr, idx);
+                return yato::next(m_base_ptr, idx);
             }
 
             const_iterator get_const_iterator_(size_t idx) const
             {
-                return std::next(m_base_ptr, idx);
+                return yato::next(m_base_ptr, idx);
             }
 
             value_reference at_impl_(size_t idx) const
