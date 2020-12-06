@@ -86,6 +86,14 @@
 #define YATO_CONSTEXPR_FUNC_CXX14 inline
 #endif
 
+// Conditional explicit
+#if (defined(YATO_MSVC) && (_MSC_VER >= 2000)) || (defined(__cplusplus) && (__cplusplus >= 202000L))
+#define YATO_HAS_CONDITIONAL_EXPLICIT
+#define YATO_CONDITIONAL_EXPLICIT(Condition_) explicit(Condition_)
+#else
+#define YATO_CONDITIONAL_EXPLICIT(Condition_)
+#endif
+
 #if (defined(YATO_MSVC) && (YATO_MSVC >= 14)) || (defined(__cplusplus) && (__cplusplus >= 201400L))
 # define YATO_HAS_LITERALS
 #endif

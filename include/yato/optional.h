@@ -32,52 +32,6 @@ namespace yato
 
     namespace details
     {
-        template <typename DstTy_, typename SrcTy_, typename = void>
-        struct opt_assign_op_
-        {
-            static
-            void apply(DstTy_* dst, const SrcTy_ * src) {
-                dst->~DstTy_();
-                new (static_cast<void*>(dst)) DstTy_(*src);
-            }
-        };
-
-        template <typename DstTy_, typename SrcTy_>
-        struct opt_assign_op_ <
-                DstTy_,
-                SrcTy_,
-                std::enable_if_t<std::is_assignable<DstTy_, SrcTy_>::value>
-            >
-        {
-            static
-            void apply(DstTy_* dst, const SrcTy_ * src) {
-                *dst = *src;
-            }
-        };
-
-
-        template <typename DstTy_, typename SrcTy_, typename = void>
-        struct opt_move_op_ 
-        {
-            static
-            void apply(DstTy_* dst, SrcTy_ * src) {
-                dst->~DstTy_();
-                new (static_cast<void*>(dst)) DstTy_(std::move(*src));
-            }
-        };
-
-        template <typename DstTy_, typename SrcTy_>
-        struct opt_move_op_ <
-                DstTy_,
-                SrcTy_,
-                yato::void_t<decltype(std::declval<DstTy_>() = std::move(std::declval<SrcTy_>()))>
-            >
-        {
-            static
-            void apply(DstTy_* dst, SrcTy_ * src) {
-                *dst = std::move(*src);
-            }
-        };
 
 
         template <typename ValTy_, typename = void>
@@ -305,7 +259,7 @@ namespace yato
         template <typename Uy_, typename = 
             std::enable_if_t<this_type::is_constructible<yato::add_lvalue_reference_to_const_t<Uy_>>::value>
         >
-        YATO_CONSTEXPR_FUNC_CXX14 explicit
+        YATO_CONSTEXPR_FUNC_CXX14 YATO_CONDITIONAL_EXPLICIT(!(std::is_convertible<Uy_&&, value_type>::value))
         basic_optional(const Uy_ & val)
         {
             construct_(val);
@@ -317,7 +271,7 @@ namespace yato
         template <typename Uy_, typename = 
             std::enable_if_t<this_type::is_constructible<Uy_>::value>
         >
-        YATO_CONSTEXPR_FUNC_CXX14 explicit
+        YATO_CONSTEXPR_FUNC_CXX14 YATO_CONDITIONAL_EXPLICIT(!(std::is_convertible<Uy_&&, value_type>::value))
         basic_optional(Uy_ && val) noexcept(this_type::is_nothrow_constructible<Uy_>::value)
         {
             construct_(std::forward<Uy_>(val));

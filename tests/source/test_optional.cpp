@@ -37,6 +37,11 @@ TEST(Yato_Optional, common_2)
     yato::optional<int> opt1(42);
     EXPECT_EQ(42, opt1.get_or(0));
 
+    opt1 = 10;
+    auto foo = [](yato::optional<int> x) { EXPECT_TRUE(x.get() > 0); };
+    foo(10);
+    //foo(1.0f);
+
     yato::optional<int> opt2(41);
     opt1 = opt2;
     EXPECT_EQ(41, opt1.get_or(0));
