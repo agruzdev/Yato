@@ -16,21 +16,6 @@ namespace yato
 {
     namespace details
     {
-
-        template <typename Ty_, typename = void>
-        struct get_index_type
-        {
-            using type = std::size_t;
-        };
-
-        template <typename Ty_>
-        struct get_index_type<Ty_,
-            yato::void_t<typename Ty_::index_type>
-        >
-        {
-            using type = typename Ty_::index_type;
-        };
-
         template <typename Ty_, typename Vy_, typename = void>
         struct get_return_type_with_arg
         {
@@ -99,7 +84,7 @@ namespace yato
     class sampler_traits
     {
     public:
-        using index_type = typename details::get_index_type<Sampler_>::type;
+        using index_type = typename details::get_index_type<Sampler_, std::size_t>::type;
 
         template <typename ValueType_>
         using return_type = typename details::get_return_type_with_arg<Sampler_, ValueType_>::type;

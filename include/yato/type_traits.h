@@ -637,6 +637,34 @@ namespace yato
 
     template <typename Ty_>
     using add_lvalue_reference_to_const_t = typename add_lvalue_reference_to_const<Ty_>::type;
-}
+
+
+    /**
+     * Common inplemetation of type getter
+     */
+#define YATO_DEFINE_TYPE_GETTER(TraitName_, TargetMember_) \
+    template <typename Ty_, typename Default_, typename = void> struct TraitName_ { using type = Default_; }; \
+    template <typename Ty_, typename Default_> struct TraitName_<Ty_, Default_, yato::void_t<typename Ty_::TargetMember_>> { using type = typename Ty_::TargetMember_; };
+
+#define YATO_DEFINE_VALUE_GETTER(TraitName_, TargetMember_, ValueType_) \
+    template <typename Ty_, ValueType_ Default_, typename = void> struct TraitName_ { static YATO_CONSTEXPR_VAR ValueType_ value = Default_; }; \
+    template <typename Ty_, ValueType_ Default_> struct TraitName_<Ty_, Default_, yato::void_t<decltype(Ty_::TargetMember_)>> { static YATO_CONSTEXPR_VAR ValueType_ value = Ty_::TargetMember_; };
+
+
+#define YATO_DEFINE_METHOD_CHECK_0AGR(TraitName_, MethodName_) \
+    template <typename Ty_, typename = void> struct TraitName_ : std::false_type { }; \
+    template <typename Ty_> struct TraitName_<Ty_, yato::void_t<decltype(std::declval<Ty_>(). MethodName_ ())>>: std::true_type { };
+
+#define YATO_DEFINE_METHOD_CHECK_1AGR(TraitName_, MethodName_) \
+    template <typename Ty_, typename ArgType0_, typename = void> struct TraitName_ : std::false_type { }; \
+    template <typename Ty_, typename ArgType0_> struct TraitName_<Ty_, ArgType0_, yato::void_t<decltype(std::declval<Ty_>(). MethodName_ (std::declval<ArgType0_>()))>>: std::true_type { };
+
+    namespace details
+    {
+        // Often used triats
+        YATO_DEFINE_TYPE_GETTER(get_index_type, index_type);
+    }
+
+} // namespace yato
 
 #endif

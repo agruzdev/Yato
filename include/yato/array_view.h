@@ -38,23 +38,24 @@ namespace yato
             static YATO_CONSTEXPR_VAR size_t dimensions_number = DimsNum;
             static_assert(dimensions_number > 1, "Dimensions number should be greater than 1");
 
-            using value_iterator  = std::add_pointer_t<value_type>;
-            using value_reference = std::add_lvalue_reference_t<value_type>;
-
             using dim_descriptor = dimension_descriptor_strided<size_type>; // size, stride, offset
 
             using sub_view       = proxy_nd<value_type, dim_descriptor, dimensions_number - 1>;
 
-            using reference       = sub_view;
-            using const_reference = sub_view;
-            using iterator        = iterator_nd<sub_view>;
-            using const_iterator  = iterator_nd<sub_view>;
-
+            using iterator              = iterator_nd<sub_view>;
+            using const_iterator        = iterator_nd<sub_view>;
             using plain_iterator        = std::add_pointer_t<value_type>;
             using const_plain_iterator  = std::add_pointer_t<std::add_const_t<value_type>>;
+
+            using reference             = sub_view;
+            using const_reference       = sub_view;
+            using value_reference       = std::add_lvalue_reference_t<value_type>;
+            using const_value_reference = std::add_lvalue_reference_t<std::add_const_t<value_type>>;
+
+            static YATO_CONSTEXPR_VAR container_tag container_category = container_tag::general;
             //--------------------------------------------------------------------
 
-            value_iterator m_base_ptr;
+            plain_iterator m_base_ptr;
             std::array<dim_descriptor::type, dimensions_number> m_descriptors;
             //--------------------------------------------------------------------
 
@@ -182,7 +183,7 @@ namespace yato
 
             sub_view get_sub_view_(size_t idx) const
             {
-                value_iterator sub_view_ptr{ m_base_ptr };
+                plain_iterator sub_view_ptr{ m_base_ptr };
                 details::advance_bytes(sub_view_ptr, idx * dim_descriptor::offset_to_bytes<value_type>(std::get<dim_descriptor::idx_offset>(m_descriptors[1])));
                 return sub_view(sub_view_ptr, &(m_descriptors[1]));
             }
@@ -231,19 +232,21 @@ namespace yato
 
             using dim_descriptor = dimension_descriptor_strided<size_type>; // size, stride, offset
 
-            using value_iterator  = std::add_pointer_t<value_type>;
-            using value_reference = std::add_lvalue_reference_t<value_type>;
-
-            using iterator        = std::add_pointer_t<value_type>;
-            using const_iterator  = std::add_pointer_t<std::add_const_t<value_type>>;
-            using reference       = std::add_lvalue_reference_t<value_type>;
-            using const_reference = std::add_lvalue_reference_t<std::add_const_t<value_type>>;
-
+            using iterator              = std::add_pointer_t<value_type>;
+            using const_iterator        = std::add_pointer_t<std::add_const_t<value_type>>;
             using plain_iterator        = std::add_pointer_t<value_type>;
             using const_plain_iterator  = std::add_pointer_t<std::add_const_t<value_type>>;
+
+            using reference             = std::add_lvalue_reference_t<value_type>;
+            using const_reference       = std::add_lvalue_reference_t<std::add_const_t<value_type>>;
+
+            using value_reference       = reference;
+            using const_value_reference = const_reference;
+
+            static YATO_CONSTEXPR_VAR container_tag container_category = container_tag::continuous;
             //--------------------------------------------------------------------
 
-            value_iterator  m_base_ptr;
+            plain_iterator  m_base_ptr;
             dimensions_type m_size;
             //--------------------------------------------------------------------
 
@@ -338,7 +341,7 @@ namespace yato
                 return yato::range<const size_type*>(nullptr, nullptr);
             }
 
-            value_reference get_sub_view_(size_t idx) const
+            reference get_sub_view_(size_t idx) const
             {
                 return *yato::next(m_base_ptr, idx);
             }
@@ -390,19 +393,21 @@ namespace yato
         using const_pointer_type = std::add_pointer_t<std::add_const_t<ValueType_>>;
         static YATO_CONSTEXPR_VAR size_t dimensions_number = DimsNum;
 
+        using base_type::container_category;
         using typename base_type::dimensions_type;
         using typename base_type::dim_descriptor;
         using typename base_type::element_strides_type;
         using typename base_type::byte_strides_type;
         using typename base_type::size_type;
-        using typename base_type::value_iterator;
-        using typename base_type::value_reference;
-        using typename base_type::reference;
-        using typename base_type::const_reference;
         using typename base_type::iterator;
         using typename base_type::const_iterator;
         using typename base_type::plain_iterator;
         using typename base_type::const_plain_iterator;
+        using typename base_type::reference;
+        using typename base_type::const_reference;
+        using typename base_type::value_reference;
+        using typename base_type::const_value_reference;
+        using strides_type = typename base_type::byte_strides_type;
         //-------------------------------------------------------
 
         array_view_nd()
@@ -601,7 +606,12 @@ namespace yato
             return base_type::get_const_iterator_(0);
         }
 
-        iterator begin() const
+        const_iterator begin() const
+        {
+            return base_type::get_const_iterator_(0);
+        }
+
+        iterator begin()
         {
             return base_type::get_iterator_(0);
         }
@@ -611,7 +621,12 @@ namespace yato
             return base_type::get_const_iterator_(size(0));
         }
 
-        iterator end() const
+        const_iterator end() const
+        {
+            return base_type::get_const_iterator_(size(0));
+        }
+
+        iterator end()
         {
             return base_type::get_iterator_(size(0));
         }

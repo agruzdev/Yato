@@ -102,7 +102,8 @@ YATO_PRAGMA_WARNING_POP
             static YATO_CONSTEXPR_VAR size_t dimensions_number = Shape_::dimensions_number;
             static YATO_CONSTEXPR_VAR proxy_access_policy access_policy = AccessPolicy_;
 
-            using reference  = typename proxy_access_traits<value_type, access_policy>::reference;
+            using value_reference       = typename proxy_access_traits<value_type, access_policy>::reference;
+            using const_value_reference = typename proxy_access_traits<value_type, access_policy>::const_reference;
 
             using sub_proxy       = sub_array<value_type, typename shape::sub_shape, access_policy>;
             using const_sub_proxy = sub_array<typename proxy_access_traits<value_type, access_policy>::const_value_type, typename shape::sub_shape, access_policy>;
@@ -110,8 +111,13 @@ YATO_PRAGMA_WARNING_POP
             using iterator       = iterator_nd<sub_proxy>;
             using const_iterator = iterator_nd<const_sub_proxy>;
 
+            using reference       = sub_proxy;
+            using const_reference = const_sub_proxy;
+
             using plain_iterator       = typename proxy_access_traits<value_type, access_policy>::plain_iterator;
             using const_plain_iterator = typename proxy_access_traits<value_type, access_policy>::const_plain_iterator;
+
+            static YATO_CONSTEXPR_VAR container_tag container_category = container_tag::continuous;
 
         private:
             value_type* m_iter;
@@ -142,19 +148,38 @@ YATO_PRAGMA_WARNING_POP
             ~sub_array() = default;
 
             YATO_CONSTEXPR_FUNC_CXX14
-            sub_proxy operator[](size_t idx) const
+            reference operator[](size_t idx) const
             {
                 YATO_REQUIRES(idx < shape::top_dimension);
                 return create_proxy_(idx);
             }
 
             template <typename... Tail_>
-            reference at(size_t firstIdx, Tail_ &&... indexes)
+            value_reference at(size_t firstIdx, Tail_ &&... indexes)
             {
                 if (firstIdx >= shape::top_dimension) {
                     throw yato::out_of_range_error("yato::array_nd[at]: index is out of range!");
                 }
                 return (*this)[firstIdx].at(std::forward<Tail_>(indexes)...);
+            }
+
+            /**
+             * Get size along one dimension
+             */
+            YATO_CONSTEXPR_FUNC_CXX14
+            size_t size(size_t idx) const YATO_NOEXCEPT_KEYWORD
+            {
+                YATO_REQUIRES(idx < shape::dimensions_number);
+                return shape::extents[idx];
+            }
+
+            /**
+             * Get size along 0 dimension
+             */
+            YATO_CONSTEXPR_FUNC
+            size_t size() const YATO_NOEXCEPT_KEYWORD
+            {
+                return shape::top_dimension;
             }
 
             YATO_CONSTEXPR_FUNC
@@ -176,17 +201,31 @@ YATO_PRAGMA_WARNING_POP
             }
 
             YATO_CONSTEXPR_FUNC
+            const_iterator begin() const
+            {
+                return static_cast<const_iterator>(create_cproxy_(0));
+            }
+
+            YATO_CONSTEXPR_FUNC
             const_iterator cend() const
             {
                 return static_cast<const_iterator>(create_cproxy_(shape::top_dimension));
             }
 
-            iterator begin() const
+            YATO_CONSTEXPR_FUNC
+            const_iterator end() const
+            {
+                return static_cast<const_iterator>(create_cproxy_(shape::top_dimension));
+            }
+
+            YATO_CONSTEXPR_FUNC
+            iterator begin()
             {
                 return static_cast<iterator>(create_proxy_(0));
             }
 
-            iterator end() const
+            YATO_CONSTEXPR_FUNC
+            iterator end()
             {
                 return static_cast<iterator>(create_proxy_(shape::top_dimension));
             }
@@ -280,13 +319,19 @@ YATO_PRAGMA_WARNING_POP
             static YATO_CONSTEXPR_VAR size_t dimensions_number = shape::dimensions_number;
             static YATO_CONSTEXPR_VAR proxy_access_policy access_policy = AccessPolicy_;
 
-            using reference  = typename proxy_access_traits<value_type, access_policy>::reference;
+            using value_reference       = typename proxy_access_traits<value_type, access_policy>::reference;
+            using const_value_reference = typename proxy_access_traits<value_type, access_policy>::const_reference;
 
             using plain_iterator       = typename proxy_access_traits<value_type, access_policy>::plain_iterator;
             using const_plain_iterator = typename proxy_access_traits<value_type, access_policy>::const_plain_iterator;
 
-            using iterator             = plain_iterator;
-            using const_iterator       = const_plain_iterator;
+            using reference         = value_reference;
+            using const_reference   = const_value_reference;
+
+            using iterator          = plain_iterator;
+            using const_iterator    = const_plain_iterator;
+
+            static YATO_CONSTEXPR_VAR container_tag container_category = container_tag::continuous;
 
         private:
             value_type* m_iter;
@@ -313,12 +358,31 @@ YATO_PRAGMA_WARNING_POP
                 return *std::next(m_iter, idx);
             }
 
-            reference at(size_t idx) const
+            value_reference at(size_t idx) const
             {
                 if (idx >= shape::top_dimension) {
                     throw yato::out_of_range_error("yato::array_nd[at]: index is out of range!");
                 }
                 return (*this)[idx];
+            }
+
+            /**
+             * Get size along one dimension
+             */
+            YATO_CONSTEXPR_FUNC_CXX14
+            size_t size(size_t idx) const YATO_NOEXCEPT_KEYWORD
+            {
+                YATO_REQUIRES(idx < shape::dimensions_number);
+                return shape::extents[idx];
+            }
+
+            /**
+             * Get size along 0 dimension
+             */
+            YATO_CONSTEXPR_FUNC
+            size_t size() const YATO_NOEXCEPT_KEYWORD
+            {
+                return shape::top_dimension;
             }
 
             /**
@@ -346,21 +410,36 @@ YATO_PRAGMA_WARNING_POP
             }
 
             YATO_CONSTEXPR_FUNC
+            const_iterator begin() const
+            {
+                return plain_cbegin();
+            }
+
+            YATO_CONSTEXPR_FUNC
             const_iterator cend() const
             {
                 return plain_cend();
             }
 
-            iterator begin() const
+            YATO_CONSTEXPR_FUNC
+            const_iterator end() const
+            {
+                return plain_cend();
+            }
+
+            YATO_CONSTEXPR_FUNC
+            iterator begin()
             {
                 return plain_begin();
             }
 
-            iterator end() const
+            YATO_CONSTEXPR_FUNC
+            iterator end()
             {
                 return plain_end();
             }
 
+            YATO_CONSTEXPR_FUNC
             auto range() const
             {
                 return plain_range();
@@ -453,11 +532,14 @@ YATO_PRAGMA_WARNING_POP
 
             static YATO_CONSTEXPR_VAR size_t dimensions_number = shape::dimensions_number;
 
-            using reference       = std::add_lvalue_reference_t<value_type>;
-            using const_reference = std::add_lvalue_reference_t<std::add_const_t<value_type>>;
+            using value_reference       = std::add_lvalue_reference_t<value_type>;
+            using const_value_reference = std::add_lvalue_reference_t<std::add_const_t<value_type>>;
 
             using sub_proxy       = sub_array<value_type, sub_shape>;
             using const_sub_proxy = sub_array<std::add_const_t<value_type>, sub_shape>;
+
+            using reference       = sub_proxy;
+            using const_reference = const_sub_proxy;
 
             using iterator        = iterator_nd<sub_proxy>;
             using const_iterator  = iterator_nd<const_sub_proxy>;
@@ -468,6 +550,7 @@ YATO_PRAGMA_WARNING_POP
             using plain_iterator       = std::add_pointer_t<value_type>;
             using const_plain_iterator = std::add_pointer_t<std::add_const_t<value_type>>;
 
+            static YATO_CONSTEXPR_VAR container_tag container_category = container_tag::continuous;
             //-------------------------------------------------------
 
         private:
@@ -519,6 +602,13 @@ YATO_PRAGMA_WARNING_POP
                 return static_cast<const_iterator>(create_cproxy_(0));
             }
 
+            YATO_CONSTEXPR_FUNC
+            const_iterator begin() const
+            {
+                return static_cast<const_iterator>(create_cproxy_(0));
+            }
+
+            YATO_CONSTEXPR_FUNC
             iterator begin()
             {
                 return static_cast<iterator>(create_proxy_(0));
@@ -530,6 +620,13 @@ YATO_PRAGMA_WARNING_POP
                 return static_cast<const_iterator>(create_cproxy_(shape::top_dimension));
             }
 
+            YATO_CONSTEXPR_FUNC
+            const_iterator end() const
+            {
+                return static_cast<const_iterator>(create_cproxy_(shape::top_dimension));
+            }
+
+            YATO_CONSTEXPR_FUNC
             iterator end()
             {
                 return static_cast<iterator>(create_proxy_(shape::top_dimension));
@@ -604,20 +701,20 @@ YATO_PRAGMA_WARNING_PUSH
 YATO_PRAGMA_WARNING_POP
 
             YATO_CONSTEXPR_FUNC_CXX14
-            const_sub_proxy operator[](size_t idx) const 
+            const_reference operator[](size_t idx) const 
             {
                 YATO_REQUIRES(idx < shape::top_dimension);
                 return create_cproxy_(idx);
             }
 
-            sub_proxy operator[](size_t idx)
+            reference operator[](size_t idx)
             {
                 YATO_REQUIRES(idx < shape::top_dimension);
                 return create_proxy_(idx);
             }
 
             template <typename... Tail_>
-            const_reference at(size_t firstIdx, Tail_ &&... indexes) const
+            const_value_reference at(size_t firstIdx, Tail_ &&... indexes) const
             {
                 if (firstIdx >= shape::top_dimension) {
                     throw yato::out_of_range_error("yato::array_nd[at]: index is out of range!");
@@ -626,7 +723,7 @@ YATO_PRAGMA_WARNING_POP
             }
 
             template <typename... Tail_>
-            reference at(size_t firstIdx, Tail_ &&... indexes)
+            value_reference at(size_t firstIdx, Tail_ &&... indexes)
             {
                 if (firstIdx >= shape::top_dimension) {
                     throw yato::out_of_range_error("yato::array_nd[at]: index is out of range!");
@@ -642,6 +739,15 @@ YATO_PRAGMA_WARNING_POP
             {
                 YATO_REQUIRES(idx < shape::dimensions_number);
                 return shape::extents[idx];
+            }
+
+            /**
+             * Get size along 0 dimension
+             */
+            YATO_CONSTEXPR_FUNC
+            size_t size() const YATO_NOEXCEPT_KEYWORD
+            {
+                return shape::top_dimension;
             }
 
             /**
@@ -758,18 +864,19 @@ YATO_PRAGMA_WARNING_POP
 
             static YATO_CONSTEXPR_VAR size_t dimensions_number = shape::dimensions_number;
 
-            using reference       = std::add_lvalue_reference_t<value_type>;
-            using const_reference = std::add_lvalue_reference_t<std::add_const_t<value_type>>;
+            using value_reference       = std::add_lvalue_reference_t<value_type>;
+            using const_value_reference = std::add_lvalue_reference_t<std::add_const_t<value_type>>;
 
-            /**
-             * Plain Iterator allowing to pass through all elements of the multidimensional array 
-             */
             using plain_iterator       = std::add_pointer_t<value_type>;
             using const_plain_iterator = std::add_pointer_t<std::add_const_t<value_type>>;
 
-            using iterator             = plain_iterator;
-            using const_iterator       = plain_iterator;
+            using reference         = value_reference;
+            using const_reference   = const_value_reference;
 
+            using iterator          = plain_iterator;
+            using const_iterator    = const_plain_iterator;
+
+            static YATO_CONSTEXPR_VAR container_tag container_category = container_tag::continuous;
             //-------------------------------------------------------
 
         private:
@@ -865,6 +972,13 @@ YATO_PRAGMA_WARNING_POP
                 return plain_cbegin();
             }
 
+            YATO_CONSTEXPR_FUNC
+            const_iterator begin() const
+            {
+                return plain_cbegin();
+            }
+
+            YATO_CONSTEXPR_FUNC
             iterator begin()
             {
                 return plain_begin();
@@ -876,6 +990,13 @@ YATO_PRAGMA_WARNING_POP
                 return plain_cend();
             }
 
+            YATO_CONSTEXPR_FUNC
+            const_iterator end() const
+            {
+                return plain_cend();
+            }
+
+            YATO_CONSTEXPR_FUNC
             iterator end()
             {
                 return plain_end();
@@ -912,7 +1033,7 @@ YATO_PRAGMA_WARNING_POP
                 return m_array[idx];
             }
 
-            const_reference at(size_t idx) const
+            const_value_reference at(size_t idx) const
             {
                 if (idx >= shape::top_dimension) {
                     throw yato::out_of_range_error("yato::array_nd[at]: index is out of range!");
@@ -920,7 +1041,7 @@ YATO_PRAGMA_WARNING_POP
                 return m_array[idx];
             }
 
-            reference at(size_t idx)
+            value_reference at(size_t idx)
             {
                 if (idx >= shape::top_dimension) {
                     throw yato::out_of_range_error("yato::array_nd[at]: index is out of range!");
@@ -937,6 +1058,15 @@ YATO_PRAGMA_WARNING_POP
             {
                 YATO_REQUIRES(idx < shape::dimensions_number);
                 return shape::extents[idx];
+            }
+
+            /**
+             * Get size along 0 dimension
+             */
+            YATO_CONSTEXPR_FUNC
+            size_t size() const YATO_NOEXCEPT_KEYWORD
+            {
+                return shape::top_dimension;
             }
 
             /**
