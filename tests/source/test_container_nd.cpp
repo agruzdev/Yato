@@ -200,16 +200,42 @@ TEST(Yato_ContainerTraits, common)
     static_assert(std::is_same<yato::container_traits<std::map<std::string, int>>::plain_iterator, std::map<std::string, int>::iterator>::value, "invalid container_traits::plain_iterator");
     static_assert(std::is_same<yato::container_traits<std::map<std::string, int>>::const_plain_iterator, std::map<std::string, int>::const_iterator>::value, "invalid container_traits::const_plain_iterator");
 
-    static_assert(yato::container_traits<yato::vector_2d<int>>::has_continuous == true, "invalid container_traits::container_category");
-    static_assert(yato::container_traits<yato::array_view_3d<const int>>::has_continuous == true, "invalid container_traits::container_category");
-    static_assert(yato::container_traits<yato::array_view_1d<float>>::has_continuous == true, "invalid container_traits::container_category");
-    static_assert(yato::container_traits<proxy2d_t>::has_continuous == true, "invalid container_traits::container_category");
-    static_assert(yato::container_traits<subarray2d_t>::has_continuous == false, "invalid container_traits::container_category");
-    static_assert(yato::container_traits<yato::array_nd<int, 2, 2, 2, 2>>::has_continuous == false, "invalid container_traits::container_category");
-    static_assert(yato::container_traits<std::vector<double>>::has_continuous == false, "invalid container_traits::container_category");
-    static_assert(yato::container_traits<std::array<int, 4>>::has_continuous == false, "invalid container_traits::container_category");
-    static_assert(yato::container_traits<std::list<short>>::has_continuous == false, "invalid container_traits::container_category");
-    static_assert(yato::container_traits<std::map<std::string, int>>::has_continuous == false, "invalid container_traits::container_category");
+    static_assert(yato::container_traits<yato::vector_2d<int>>::has_method_continuous == true, "invalid container_traits::has_method_continuous");
+    static_assert(yato::container_traits<yato::array_view_3d<const int>>::has_method_continuous == true, "invalid container_traits::has_method_continuous");
+    static_assert(yato::container_traits<yato::array_view_1d<float>>::has_method_continuous == true, "invalid container_traits::has_method_continuous");
+    static_assert(yato::container_traits<proxy2d_t>::has_method_continuous == true, "invalid container_traits::has_method_continuous");
+    static_assert(yato::container_traits<subarray2d_t>::has_method_continuous == false, "invalid container_traits::has_method_continuous");
+    static_assert(yato::container_traits<yato::array_nd<int, 2, 2, 2, 2>>::has_method_continuous == false, "invalid container_traits::has_method_continuous");
+    static_assert(yato::container_traits<std::vector<double>>::has_method_continuous == false, "invalid container_traits::has_method_continuous");
+    static_assert(yato::container_traits<std::array<int, 4>>::has_method_continuous == false, "invalid container_traits::has_method_continuous");
+    static_assert(yato::container_traits<std::list<short>>::has_method_continuous == false, "invalid container_traits::has_method_continuous");
+    static_assert(yato::container_traits<std::map<std::string, int>>::has_method_continuous == false, "invalid container_traits::has_method_continuous");
+
+    static_assert(yato::container_traits<yato::vector_2d<int>>::has_operator_subscript == true, "invalid container_traits::has_operator_subscript");
+    static_assert(yato::container_traits<yato::vector_2d<std::unique_ptr<int>>>::has_operator_subscript == true, "invalid container_traits::has_operator_subscript");
+    static_assert(yato::container_traits<yato::array_view_3d<const int>>::has_operator_subscript == true, "invalid container_traits::has_operator_subscript");
+    static_assert(yato::container_traits<yato::array_view_1d<float>>::has_operator_subscript == true, "invalid container_traits::has_operator_subscript");
+    static_assert(yato::container_traits<yato::array_view_1d<std::unique_ptr<int>>>::has_operator_subscript == true, "invalid container_traits::has_operator_subscript");
+    static_assert(yato::container_traits<proxy2d_t>::has_operator_subscript == true, "invalid container_traits::has_operator_subscript");
+    static_assert(yato::container_traits<subarray2d_t>::has_operator_subscript == true, "invalid container_traits::has_operator_subscript");
+    static_assert(yato::container_traits<yato::array_nd<int, 2, 2, 2, 2>>::has_operator_subscript == true, "invalid container_traits::has_operator_subscript");
+    static_assert(yato::container_traits<std::vector<double>>::has_operator_subscript == true, "invalid container_traits::has_operator_subscript");
+    static_assert(yato::container_traits<std::array<int, 4>>::has_operator_subscript == true, "invalid container_traits::has_operator_subscript");
+    static_assert(yato::container_traits<std::list<short>>::has_operator_subscript == false, "invalid container_traits::has_operator_subscript");
+    static_assert(yato::container_traits<std::map<std::string, int>>::has_operator_subscript == false, "invalid container_traits::has_operator_subscript");
+
+    static_assert(yato::container_traits<yato::vector_2d<int>>::has_method_data == true, "invalid container_traits::has_method_data");
+    static_assert(yato::container_traits<yato::vector_2d<std::unique_ptr<int>>>::has_method_data == true, "invalid container_traits::has_method_data");
+    static_assert(yato::container_traits<yato::array_view_3d<const int>>::has_method_data == true, "invalid container_traits::has_method_data");
+    static_assert(yato::container_traits<yato::array_view_1d<float>>::has_method_data == true, "invalid container_traits::has_method_data");
+    static_assert(yato::container_traits<yato::array_view_1d<std::unique_ptr<int>>>::has_method_data == true, "invalid container_traits::has_method_data");
+    static_assert(yato::container_traits<proxy2d_t>::has_method_data == true, "invalid container_traits::has_method_data");
+    static_assert(yato::container_traits<subarray2d_t>::has_method_data == true, "invalid container_traits::has_method_data");
+    static_assert(yato::container_traits<yato::array_nd<int, 2, 2, 2, 2>>::has_method_data == true, "invalid container_traits::has_method_data");
+    static_assert(yato::container_traits<std::vector<double>>::has_method_data == true, "invalid container_traits::has_method_data");
+    static_assert(yato::container_traits<std::array<int, 4>>::has_method_data == true, "invalid container_traits::has_method_data");
+    static_assert(yato::container_traits<std::list<short>>::has_method_data == false, "invalid container_traits::has_method_data");
+    static_assert(yato::container_traits<std::map<std::string, int>>::has_method_data == false, "invalid container_traits::has_method_data");
 
     static_assert(yato::is_container<yato::vector_2d<int>>::value, "invalid is_container");
     static_assert(yato::is_container<yato::array_view_3d<const int>>::value, "invalid is_container");
@@ -226,13 +252,18 @@ namespace
 {
 
     template <typename Cy_>
-    void test_read_1d(const Cy_& c, bool testing_continous)
+    void test_read_1d(const Cy_& c, bool testing_continuous)
     {
         using ops = yato::container_ops<Cy_>;
 
         EXPECT_EQ(static_cast<size_t>(4), ops::size(c));
         EXPECT_EQ(static_cast<size_t>(4), ops::size(c, 0));
-        EXPECT_EQ(testing_continous, ops::continuous(c));
+        EXPECT_EQ(static_cast<size_t>(4), ops::total_size(c));
+        EXPECT_EQ(testing_continuous, ops::continuous(c));
+
+        const auto dims = ops::dimensions(c);
+        EXPECT_EQ(1, dims.size());
+        EXPECT_EQ(4, dims[0]);
 
         EXPECT_EQ(1, ops::csubscript(c, 0));
         EXPECT_EQ(2, ops::csubscript(c, 1));
@@ -245,6 +276,19 @@ namespace
         EXPECT_EQ(2, tmp1[1]);
         EXPECT_EQ(3, tmp1[2]);
         EXPECT_EQ(4, tmp1[3]);
+    }
+
+    template <typename Cy_>
+    void test_read_1d_memcpy(const Cy_& c)
+    {
+        using ops = yato::container_ops<Cy_>;
+
+        EXPECT_EQ(true, ops::continuous(c));
+
+        using value_type = std::remove_const_t<typename ops::value_type>;
+        std::array<value_type, 4> tmp1 = {};
+        std::memcpy(tmp1.data(), ops::cdata(c), ops::total_size(c) * sizeof(value_type));
+        EXPECT_TRUE(std::equal(std::cbegin(tmp1), std::cend(tmp1), ops::cbegin(c)));
     }
 
 } // namespace
@@ -267,10 +311,19 @@ TEST(Yato_ContainerTraits, read_1d)
     test_read_1d(yatoView, true);
     test_read_1d(yatoCView, true);
 
-    yato::vector_2d<int> yatoVec2d = { {1, 2, 3, 4}, {1, 1, 1, 1} };
-    yato::array_nd<int, 2, 4> yatoArr2d = {{ {1, 2, 3, 4}, {1, 1, 1, 1} }};
+    test_read_1d_memcpy(stdArr);
+    test_read_1d_memcpy(stdVec);
+    test_read_1d_memcpy(yatoVec);
+    test_read_1d_memcpy(yatoArr);
+    test_read_1d_memcpy(yatoView);
+    test_read_1d_memcpy(yatoCView);
+
+    yato::vector_2d<int> yatoVec2d = { {1, 2, 3, 4}, {5, 6, 7, 8} };
+    yato::array_nd<int, 2, 4> yatoArr2d = {{ {1, 2, 3, 4}, {5, 6, 7, 8} }};
     test_read_1d(yatoVec2d[0], true);
     test_read_1d(yatoArr2d[0], true);
+    test_read_1d_memcpy(yatoVec2d[2]);
+    test_read_1d_memcpy(yatoArr2d[2]);
 }
 
 

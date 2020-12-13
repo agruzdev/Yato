@@ -596,10 +596,10 @@ namespace yato
             using iterator       = iterator_nd<sub_proxy>;
             using const_iterator = iterator_nd<const_sub_proxy>;
 
-            using reference = typename std::iterator_traits<iterator>::reference;
-            using const_reference = typename std::iterator_traits<const_iterator>::reference;
+            using reference       = sub_proxy;
+            using const_reference = const_sub_proxy;
 
-            using value_reference = typename std::iterator_traits<plain_iterator>::reference;
+            using value_reference       = typename std::iterator_traits<plain_iterator>::reference;
             using const_value_reference = typename std::iterator_traits<const_plain_iterator>::reference;
 
             //-------------------------------------------------------
@@ -1166,7 +1166,7 @@ namespace yato
             vector_nd_impl<value_type, NewDimsNum_, allocator_type> reshape(const dimensionality<NewDimsNum_, size_t> & extents) const &
             {
                 if(extents.total_size() != total_size()) {
-                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
+                    throw yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
                 }
                 return vector_nd_impl<value_type, NewDimsNum_, allocator_type>(extents, plain_cbegin(), plain_cend());
             }
@@ -1179,7 +1179,7 @@ namespace yato
             vector_nd_impl<value_type, NewDimsNum_, NewAllocatorType_> reshape(const dimensionality<NewDimsNum_, size_t> & extents, const NewAllocatorType_ & alloc) const &
             {
                 if(extents.total_size() != total_size()) {
-                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
+                    throw yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
                 }
                 return vector_nd_impl<value_type, NewDimsNum_, NewAllocatorType_>(extents, plain_cbegin(), plain_cend(), alloc);
             }
@@ -1191,7 +1191,7 @@ namespace yato
             vector_nd_impl<value_type, NewDimsNum_, allocator_type> reshape(const dimensionality<NewDimsNum_, size_t> & extents) &&
             {
                 if(extents.total_size() != total_size()) {
-                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
+                    throw yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
                 }
                 return vector_nd_impl<value_type, NewDimsNum_, allocator_type>(extents, std::move(*this));
             }
@@ -1218,7 +1218,7 @@ namespace yato
              *  Element access without bounds check in release
              */
             YATO_CONSTEXPR_FUNC_CXX14
-            const_sub_proxy operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
+            const_reference operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
             {
                 YATO_REQUIRES(idx < size(0));
                 return create_const_proxy_(idx);
@@ -1227,7 +1227,7 @@ namespace yato
              *  Element access without bounds check in release
              */
             YATO_CONSTEXPR_FUNC_CXX14
-            sub_proxy operator[](size_t idx) YATO_NOEXCEPT_KEYWORD
+            reference operator[](size_t idx) YATO_NOEXCEPT_KEYWORD
             {
                 YATO_REQUIRES(idx < size(0));
                 return create_proxy_(idx);
@@ -2407,7 +2407,7 @@ namespace yato
             vector_nd_impl<value_type, NewDimsNum_, allocator_type> reshape(const dimensionality<NewDimsNum_, size_t> & extents) const &
             {
                 if(extents.total_size() != total_size()) {
-                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
+                    throw yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
                 }
                 return vector_nd_impl<value_type, NewDimsNum_, allocator_type>(extents, plain_cbegin(), plain_cend());
             }
@@ -2420,7 +2420,7 @@ namespace yato
             vector_nd_impl<value_type, NewDimsNum_, NewAllocatorType_> reshape(const dimensionality<NewDimsNum_, size_t> & extents, const NewAllocatorType_ & alloc) const &
             {
                 if(extents.total_size() != total_size()) {
-                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
+                    throw yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
                 }
                 return vector_nd_impl<value_type, NewDimsNum_, NewAllocatorType_>(extents, plain_cbegin(), plain_cend(), alloc);
             }
@@ -2432,7 +2432,7 @@ namespace yato
             vector_nd_impl<value_type, NewDimsNum_, allocator_type> reshape(const dimensionality<NewDimsNum_, size_t> & extents) &&
             {
                 if(extents.total_size() != total_size()) {
-                    yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
+                    throw yato::argument_error("yato::vector_nd[reshape]: Total size mismatch.");
                 }
                 return vector_nd_impl<value_type, NewDimsNum_, allocator_type>(extents, std::move(*this));
             }

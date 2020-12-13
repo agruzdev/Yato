@@ -76,24 +76,36 @@ namespace yato
     using get_type_t = typename get_type<Ty_>::type;
 
 
-    class disabled_t
+    namespace details
     {
-    public:
-        disabled_t() = delete;
-        disabled_t(const disabled_t&) = default;
-    };
+        template <size_t N_>
+        class disabled_t
+        {
+        public:
+            disabled_t() = delete;
+            disabled_t(const disabled_t<N_>&) = default;
+        };
+    }
 
-    template <bool Cond_, typename Ty_>
+    using disabled_t = details::disabled_t<0>;
+
+    template <bool Cond_, typename Ty_, size_t N_ = 0>
     struct disable_if_not
     {
-        using type = std::conditional_t<Cond_, Ty_, yato::disabled_t>;
+        using type = std::conditional_t<Cond_, Ty_, details::disabled_t<N_>>;
     };
 
-    template <bool Cond_, typename Ty_>
-    using disable_if_not_t = typename disable_if_not<Cond_, Ty_>::type;
+    template <bool Cond_, typename Ty_> using disable_if_not_t  = typename disable_if_not<Cond_, Ty_>::type;
+    template <bool Cond_, typename Ty_> using disable1_if_not_t = typename disable_if_not<Cond_, Ty_, 1>::type;
+    template <bool Cond_, typename Ty_> using disable2_if_not_t = typename disable_if_not<Cond_, Ty_, 2>::type;
+    template <bool Cond_, typename Ty_> using disable3_if_not_t = typename disable_if_not<Cond_, Ty_, 3>::type;
+    template <bool Cond_, typename Ty_> using disable4_if_not_t = typename disable_if_not<Cond_, Ty_, 4>::type;
 
-    template <bool Cond_, typename Ty_>
-    using disable_if_t = typename disable_if_not<!Cond_, Ty_>::type;
+    template <bool Cond_, typename Ty_> using disable_if_t  = typename disable_if_not<!Cond_, Ty_>::type;
+    template <bool Cond_, typename Ty_> using disable1_if_t = typename disable_if_not<!Cond_, Ty_, 1>::type;
+    template <bool Cond_, typename Ty_> using disable2_if_t = typename disable_if_not<!Cond_, Ty_, 2>::type;
+    template <bool Cond_, typename Ty_> using disable3_if_t = typename disable_if_not<!Cond_, Ty_, 3>::type;
+    template <bool Cond_, typename Ty_> using disable4_if_t = typename disable_if_not<!Cond_, Ty_, 4>::type;
 
     //----------------------------------------------------------
     // General
@@ -625,7 +637,6 @@ namespace yato
     YATO_INLINE_VARIABLE constexpr bool is_invocable_v = yato::is_invocable<Callable_, Args_...>::value;
 
 
-
     /**
      * Return type 'const T&' for type 'T'
      */
@@ -650,19 +661,18 @@ namespace yato
     template <typename Ty_, ValueType_ Default_, typename = void> struct TraitName_ { static YATO_CONSTEXPR_VAR ValueType_ value = Default_; }; \
     template <typename Ty_, ValueType_ Default_> struct TraitName_<Ty_, Default_, yato::void_t<decltype(Ty_::TargetMember_)>> { static YATO_CONSTEXPR_VAR ValueType_ value = Ty_::TargetMember_; };
 
+#define YATO_DEFINE_METHOD_CHECK_RET_0AGR(TraitName_, MethodName_) \
+    template <typename Ty_, typename RetType_, typename = void> struct TraitName_ : std::false_type { }; \
+    template <typename Ty_, typename RetType_> struct TraitName_<Ty_, RetType_, std::enable_if_t<std::is_convertible<decltype(std::declval<Ty_>(). MethodName_ ()), RetType_>::value>>: std::true_type { };
 
-#define YATO_DEFINE_METHOD_CHECK_0AGR(TraitName_, MethodName_) \
-    template <typename Ty_, typename = void> struct TraitName_ : std::false_type { }; \
-    template <typename Ty_> struct TraitName_<Ty_, yato::void_t<decltype(std::declval<Ty_>(). MethodName_ ())>>: std::true_type { };
-
-#define YATO_DEFINE_METHOD_CHECK_1AGR(TraitName_, MethodName_) \
-    template <typename Ty_, typename ArgType0_, typename = void> struct TraitName_ : std::false_type { }; \
-    template <typename Ty_, typename ArgType0_> struct TraitName_<Ty_, ArgType0_, yato::void_t<decltype(std::declval<Ty_>(). MethodName_ (std::declval<ArgType0_>()))>>: std::true_type { };
+#define YATO_DEFINE_METHOD_CHECK_RET_1AGR(TraitName_, MethodName_) \
+    template <typename Ty_, typename RetType_, typename ArgType0_, typename = void> struct TraitName_ : std::false_type { }; \
+    template <typename Ty_, typename RetType_, typename ArgType0_> struct TraitName_<Ty_, RetType_, ArgType0_, std::enable_if_t<std::is_convertible<decltype(std::declval<Ty_>(). MethodName_ (std::declval<ArgType0_>())), RetType_>::value>>: std::true_type { };
 
     namespace details
     {
         // Often used triats
-        YATO_DEFINE_TYPE_GETTER(get_index_type, index_type);
+        YATO_DEFINE_TYPE_GETTER(get_index_type, index_type)
     }
 
 } // namespace yato

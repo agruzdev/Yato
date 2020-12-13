@@ -32,20 +32,62 @@ namespace yato
 
     namespace details
     {
-        YATO_DEFINE_VALUE_GETTER(get_container_category, container_category, container_tag);
-        YATO_DEFINE_TYPE_GETTER(get_size_type, size_type);
-        YATO_DEFINE_TYPE_GETTER(get_allocator_type, allocator_type);
-        YATO_DEFINE_VALUE_GETTER(get_dimensions_number, dimensions_number, std::size_t);
-        YATO_DEFINE_TYPE_GETTER(get_dimensions_type, dimensions_type);
-        YATO_DEFINE_TYPE_GETTER(get_strides_type, strides_type);
-        YATO_DEFINE_TYPE_GETTER(get_plain_iterator, plain_iterator);
-        YATO_DEFINE_TYPE_GETTER(get_const_plain_iterator, const_plain_iterator);
-        YATO_DEFINE_TYPE_GETTER(get_reference, reference);
-        YATO_DEFINE_TYPE_GETTER(get_const_reference, const_reference);
-        YATO_DEFINE_TYPE_GETTER(get_value_reference, value_reference);
-        YATO_DEFINE_TYPE_GETTER(get_const_value_reference, const_value_reference);
-        YATO_DEFINE_METHOD_CHECK_0AGR(has_continuous, continuous);
-        YATO_DEFINE_METHOD_CHECK_1AGR(has_operator_subscript, operator[]);
+        YATO_DEFINE_VALUE_GETTER(get_container_category, container_category, container_tag)
+        YATO_DEFINE_TYPE_GETTER(get_size_type, size_type)
+        YATO_DEFINE_TYPE_GETTER(get_allocator_type, allocator_type)
+        YATO_DEFINE_VALUE_GETTER(get_dimensions_number, dimensions_number, std::size_t)
+        YATO_DEFINE_TYPE_GETTER(get_dimensions_type, dimensions_type)
+        YATO_DEFINE_TYPE_GETTER(get_strides_type, strides_type)
+        YATO_DEFINE_TYPE_GETTER(get_plain_iterator, plain_iterator)
+        YATO_DEFINE_TYPE_GETTER(get_const_plain_iterator, const_plain_iterator)
+        YATO_DEFINE_TYPE_GETTER(get_reference, reference)
+        YATO_DEFINE_TYPE_GETTER(get_const_reference, const_reference)
+        YATO_DEFINE_TYPE_GETTER(get_value_reference, value_reference)
+        YATO_DEFINE_TYPE_GETTER(get_const_value_reference, const_value_reference)
+        YATO_DEFINE_VALUE_GETTER(get_has_method_size0, has_method_size0, bool)
+        YATO_DEFINE_METHOD_CHECK_RET_0AGR(has_method_size0, size)
+        YATO_DEFINE_VALUE_GETTER(get_has_method_size1, has_method_size1, bool)
+        YATO_DEFINE_METHOD_CHECK_RET_1AGR(has_method_size1, size)
+        YATO_DEFINE_VALUE_GETTER(get_has_method_continuous, has_method_continuous, bool)
+        YATO_DEFINE_METHOD_CHECK_RET_0AGR(has_method_continuous, continuous)
+        YATO_DEFINE_VALUE_GETTER(get_has_operator_subscript, has_operator_subscript, bool)
+        YATO_DEFINE_VALUE_GETTER(get_has_operator_csubscript, has_operator_csubscript, bool)
+        YATO_DEFINE_METHOD_CHECK_RET_1AGR(has_operator_subscript, operator[])
+        YATO_DEFINE_VALUE_GETTER(get_has_method_dimensions, has_method_dimensions, bool)
+        YATO_DEFINE_METHOD_CHECK_RET_0AGR(has_method_dimensions, dimensions)
+        YATO_DEFINE_VALUE_GETTER(get_has_method_total_size, has_method_total_size, bool)
+        YATO_DEFINE_METHOD_CHECK_RET_0AGR(has_method_total_size, total_size)
+        YATO_DEFINE_VALUE_GETTER(get_has_method_data, has_method_data, bool)
+        YATO_DEFINE_METHOD_CHECK_RET_0AGR(has_method_data, data)
+        YATO_DEFINE_VALUE_GETTER(get_has_method_cdata, has_method_cdata, bool)
+        YATO_DEFINE_METHOD_CHECK_RET_0AGR(has_method_cdata, cdata)
+
+        template <typename C_, typename DimsType_, size_t DimsNum_, size_t... Indexes_>
+        struct make_dims_from_size_
+        {
+            static YATO_CONSTEXPR_FUNC
+            DimsType_ apply(const C_& c)
+            {
+                return make_dims_from_size_<C_, DimsType_, DimsNum_ - 1, DimsNum_ - 1, Indexes_...>::apply(c);
+            }
+        };
+
+        template <typename C_, typename DimsType_, size_t... Indexes_>
+        struct make_dims_from_size_<C_, DimsType_, 0, Indexes_...>
+        {
+            static YATO_CONSTEXPR_FUNC
+            DimsType_ apply(yato::disable_if_not_t<sizeof...(Indexes_) != 1, const C_&> c)
+            {
+                return DimsType_(c.size(Indexes_)...);
+            }
+
+            static YATO_CONSTEXPR_FUNC
+            DimsType_ apply(yato::disable_if_not_t<sizeof...(Indexes_) == 1, const C_&> c)
+            {
+                return DimsType_(c.size());
+            }
+        };
+
     } // namespace details;
 
 
@@ -173,14 +215,68 @@ namespace yato
 
 
         /**
-         * Checks if the method Container::continuous() is present.
+         * Checks if the method Container::size() is present.
+         * Alias to Container::has_method_size0 is present, otherwise tries to deduce.
          */
-        static YATO_CONSTEXPR_VAR bool has_continuous = details::has_continuous<Container_>::value;
+        static YATO_CONSTEXPR_VAR bool has_method_size0 = details::get_has_method_size0<Container_,
+                details::has_method_size0<const Container_, size_type>::value>::value;
 
         /**
-         * Checks if the expressin Container[i] is valid
+         * Checks if the method Container::size(dim) is present.
+         * Alias to Container::has_method_size1 is present, otherwise tries to deduce.
          */
-        static YATO_CONSTEXPR_VAR bool has_operator_subscript = details::has_operator_subscript<Container_, yato::add_lvalue_reference_to_const_t<index_type>>::value;
+        static YATO_CONSTEXPR_VAR bool has_method_size1 = details::get_has_method_size1<Container_,
+                details::has_method_size1<const Container_, size_type, std::size_t>::value>::value;
+
+        /**
+         * Checks if the method Container::continuous() is present.
+         * Alias to Container::has_method_continuous is present, otherwise tries to deduce.
+         */
+        static YATO_CONSTEXPR_VAR bool has_method_continuous = details::get_has_method_continuous<Container_,
+                details::has_method_continuous<const Container_, bool>::value>::value;
+
+        /**
+         * Checks if the method Container::operator[i] is present and returned type is consistent with Iterator.
+         * Alias to Container::has_operator_subscript is present, otherwise tries to deduce.
+         */
+        static YATO_CONSTEXPR_VAR bool has_operator_subscript = details::get_has_operator_subscript<Container_,
+                details::has_operator_subscript<Container_, reference, yato::add_lvalue_reference_to_const_t<index_type>>::value>::value;
+
+        /**
+         * Checks if the method Container::operator[i] (const) is present and returned type is consistent with Iterator.
+         * Alias to Container::has_operator_csubscript is present, otherwise tries to deduce.
+         */
+        static YATO_CONSTEXPR_VAR bool has_operator_csubscript = details::get_has_operator_csubscript<Container_,
+                details::has_operator_subscript<const Container_, const_reference, yato::add_lvalue_reference_to_const_t<index_type>>::value>::value;
+
+        /**
+         * Checks if the method Container::dimensions() is present.
+         * Alias to Container::has_method_dimensions is present, otherwise tries to deduce.
+         */
+        static YATO_CONSTEXPR_VAR bool has_method_dimensions = details::get_has_method_dimensions<Container_,
+                details::has_method_dimensions<const Container_, bool>::value>::value;
+
+        /**
+         * Checks if the method Container::total_size() is present.
+         * Alias to Container::has_method_total_size is present, otherwise tries to deduce.
+         */
+        static YATO_CONSTEXPR_VAR bool has_method_total_size = details::get_has_method_total_size<Container_,
+                details::has_method_total_size<const Container_, size_type>::value>::value;
+
+        /**
+         * Checks if the method Container::data() is present.
+         * Alias to Container::has_method_data is present, otherwise tries to deduce.
+         */
+        static YATO_CONSTEXPR_VAR bool has_method_data = details::get_has_method_data<Container_,
+                details::has_method_data<Container_, std::add_pointer_t<value_type>>::value>::value;
+
+        /**
+         * Checks if the method Container::cdata() is present.
+         * Alias to Container::has_operator_csubscript is present, otherwise tries to deduce.
+         */
+        static YATO_CONSTEXPR_VAR bool has_method_cdata = details::get_has_method_cdata<Container_,
+                details::has_method_cdata<const Container_, std::add_pointer_t<std::add_const_t<value_type>>>::value>::value;
+
     };
 
 
@@ -197,7 +293,9 @@ namespace yato
             typename yato::container_traits<Ty_>::const_iterator
         >::type
     >
-        : std::true_type
+        : std::integral_constant<bool,
+            ((yato::container_traits<Ty_>::dimensions_number == 1) && yato::container_traits<Ty_>::has_method_size0) || yato::container_traits<Ty_>::has_method_size1
+        >
     { };
 
 
@@ -208,11 +306,46 @@ namespace yato
     struct container_ops
         : public container_traits<Container_>
     {
+        static_assert(is_container<Container_>::value, "The Container_ type does not satisfy the yato::is_container<T> requirements.");
+
+        using traits_type = container_traits<Container_>;
+        using traits_type::container_category;
+        using traits_type::dimensions_number;
+        using typename traits_type::value_type;
+        using typename traits_type::size_type;
+        using typename traits_type::index_type;
+        using typename traits_type::allocator_type;
+        using typename traits_type::dimensions_type;
+        using typename traits_type::strides_type;
+        using typename traits_type::iterator;
+        using typename traits_type::const_iterator;
+        using typename traits_type::plain_iterator;
+        using typename traits_type::const_plain_iterator;
+        using typename traits_type::reference;
+        using typename traits_type::const_reference;
+        using typename traits_type::value_reference;
+        using typename traits_type::const_value_reference;
+        using traits_type::has_method_size0;
+        using traits_type::has_method_size1;
+        using traits_type::has_method_continuous;
+        using traits_type::has_operator_subscript;
+        using traits_type::has_operator_csubscript;
+        using traits_type::has_method_dimensions;
+        using traits_type::has_method_total_size;
+        using traits_type::has_method_data;
+        using traits_type::has_method_cdata;
+
 
         static YATO_CONSTEXPR_FUNC
-        size_type size(const Container_& c)
+        size_type size(yato::disable_if_not_t<has_method_size0, const Container_&> c)
         {
             return c.size();
+        }
+
+        static YATO_CONSTEXPR_FUNC
+        size_type size(yato::disable_if_t<has_method_size0, const Container_&> c)
+        {
+            return c.size(0);
         }
 
         static YATO_CONSTEXPR_FUNC
@@ -228,37 +361,61 @@ namespace yato
         }
 
         static YATO_CONSTEXPR_FUNC
-        bool continuous(yato::disable_if_not_t<has_continuous, const Container_&> c)
+        dimensions_type dimensions(yato::disable_if_not_t<has_method_dimensions, const Container_&> c)
+        {
+            return c.dimensions();
+        }
+
+        static YATO_CONSTEXPR_FUNC
+        dimensions_type dimensions(yato::disable_if_t<has_method_dimensions, const Container_&> c)
+        {
+            return details::make_dims_from_size_<Container_, dimensions_type, dimensions_number>::apply(c);
+        }
+
+        static YATO_CONSTEXPR_FUNC
+        size_type total_size(yato::disable_if_not_t<has_method_total_size, const Container_&> c)
+        {
+            return c.total_size();
+        }
+
+        static YATO_CONSTEXPR_FUNC
+        size_type total_size(yato::disable_if_t<has_method_total_size, const Container_&> c)
+        {
+            return dimensions(c).total_size();
+        }
+
+        static YATO_CONSTEXPR_FUNC
+        bool continuous(yato::disable_if_not_t<has_method_continuous, const Container_&> c)
         {
             return c.continuous();
         }
 
         static YATO_CONSTEXPR_FUNC
-        bool continuous(yato::disable_if_t<has_continuous, const Container_&> /*c*/)
+        bool continuous(yato::disable_if_t<has_method_continuous, const Container_&> /*c*/)
         {
             return (container_category == container_tag::continuous);
         }
 
         static YATO_CONSTEXPR_FUNC
-        reference subscript(yato::disable_if_not_t<has_operator_subscript, const Container_&> c, const index_type& i)
+        reference subscript(yato::disable_if_not_t<has_operator_subscript, Container_&> c, const index_type& i)
         {
             return c[i];
         }
 
         static YATO_CONSTEXPR_FUNC
-        reference subscript(yato::disable_if_t<has_operator_subscript, const Container_&> c, const index_type& i)
+        reference subscript(yato::disable_if_t<has_operator_subscript, Container_&> c, const index_type& i)
         {
             return *yato::next(std::begin(c), i);
         }
 
         static YATO_CONSTEXPR_FUNC
-        const_reference csubscript(yato::disable_if_not_t<has_operator_subscript, const Container_&> c, const index_type& i)
+        const_reference csubscript(yato::disable_if_not_t<has_operator_csubscript, const Container_&> c, const index_type& i)
         {
             return c[i];
         }
 
         static YATO_CONSTEXPR_FUNC
-        const_reference csubscript(yato::disable_if_t<has_operator_subscript, const Container_&> c, const index_type& i)
+        const_reference csubscript(yato::disable_if_t<has_operator_csubscript, const Container_&> c, const index_type& i)
         {
             return *yato::next(std::cbegin(c), i);
         }
@@ -285,6 +442,24 @@ namespace yato
         const_iterator cend(const Container_& c)
         {
             return std::cend(c);
+        }
+
+        static YATO_CONSTEXPR_FUNC
+        std::add_pointer_t<value_type> data(yato::disable_if_not_t<has_method_data, Container_&> c)
+        {
+            return c.data();
+        }
+
+        static YATO_CONSTEXPR_FUNC
+        std::add_pointer_t<std::add_const_t<value_type>> cdata(yato::disable1_if_not_t<has_method_cdata, const Container_&> c)
+        {
+            return c.cdata();
+        }
+
+        static YATO_CONSTEXPR_FUNC
+        std::add_pointer_t<std::add_const_t<value_type>> cdata(yato::disable2_if_t<has_method_cdata || !has_method_data, const Container_&> c)
+        {
+            return c.data();
         }
     };
 
