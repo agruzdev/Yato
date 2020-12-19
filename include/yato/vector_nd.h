@@ -1504,7 +1504,7 @@ namespace yato
              */
             auto strides_range() const
             {
-                return dimensions_range().tail().map([](size_type s){ return s * sizeof(value_type); });
+                return make_range(m_descriptors).tail().map([](const dim_descriptor::type& d){ return std::get<dim_descriptor::idx_total>(d) * sizeof(value_type); });
             }
 
             /**
@@ -2770,7 +2770,7 @@ namespace yato
             {
                 YATO_REQUIRES(idx < dimensions_number - 1);
                 YATO_MAYBE_UNUSED(idx);
-                return 0;
+                return 1;
             }
 
             /**

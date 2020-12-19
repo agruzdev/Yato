@@ -191,9 +191,9 @@ YATO_PRAGMA_WARNING_POP
         }
 
         YATO_CONSTEXPR_FUNC
-        size_type total_size() const
+        size_type total_size(size_t start_dim = 0) const
         {
-            return total_size_impl_(0);
+            return total_size_impl_(start_dim);
         }
 
         YATO_CONSTEXPR_FUNC
@@ -294,23 +294,23 @@ YATO_PRAGMA_WARNING_POP
         dimensionality& operator=(dimensionality&&) noexcept = default;
 
         YATO_CONSTEXPR_FUNC
-        const size_type& operator[](size_t idx) const
+        const size_type& operator[](size_t /*idx*/) const
         {
             throw std::runtime_error("dimensionality<0> can't be dereferenced.");
         }
 
         YATO_CONSTEXPR_FUNC
-        size_type& operator[](size_t idx)
+        size_type& operator[](size_t /*idx*/)
         {
             throw std::runtime_error("dimensionality<0> can't be dereferenced.");
         }
 
-        const size_type & at(size_t idx) const
+        const size_type & at(size_t /*idx*/) const
         {
             throw std::runtime_error("dimensionality<0> can't be dereferenced.");
         }
 
-        size_type & at(size_t idx)
+        size_type & at(size_t /*idx*/)
         {
             throw std::runtime_error("dimensionality<0> can't be dereferenced.");
         }
@@ -328,7 +328,7 @@ YATO_PRAGMA_WARNING_POP
         }
 
         YATO_CONSTEXPR_FUNC
-        size_type total_size() const
+        size_type total_size(size_t /*start_dim*/ = 0) const
         {
             return 0;
         }

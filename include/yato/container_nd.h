@@ -48,6 +48,8 @@ namespace yato
         YATO_DEFINE_METHOD_CHECK_RET_0AGR(has_method_size0, size)
         YATO_DEFINE_VALUE_GETTER(get_has_method_size1, has_method_size1, bool)
         YATO_DEFINE_METHOD_CHECK_RET_1AGR(has_method_size1, size)
+        YATO_DEFINE_VALUE_GETTER(get_has_method_stride, has_method_stride, bool)
+        YATO_DEFINE_METHOD_CHECK_RET_1AGR(has_method_stride, stride)
         YATO_DEFINE_VALUE_GETTER(get_has_method_continuous, has_method_continuous, bool)
         YATO_DEFINE_METHOD_CHECK_RET_0AGR(has_method_continuous, continuous)
         YATO_DEFINE_VALUE_GETTER(get_has_operator_subscript, has_operator_subscript, bool)
@@ -57,6 +59,8 @@ namespace yato
         YATO_DEFINE_METHOD_CHECK_RET_0AGR(has_method_dimensions, dimensions)
         YATO_DEFINE_VALUE_GETTER(get_has_method_total_size, has_method_total_size, bool)
         YATO_DEFINE_METHOD_CHECK_RET_0AGR(has_method_total_size, total_size)
+        YATO_DEFINE_VALUE_GETTER(get_has_method_strides, has_method_strides, bool)
+        YATO_DEFINE_METHOD_CHECK_RET_0AGR(has_method_strides, strides)
         YATO_DEFINE_VALUE_GETTER(get_has_method_data, has_method_data, bool)
         YATO_DEFINE_METHOD_CHECK_RET_0AGR(has_method_data, data)
         YATO_DEFINE_VALUE_GETTER(get_has_method_cdata, has_method_cdata, bool)
@@ -85,6 +89,26 @@ namespace yato
             DimsType_ apply(yato::disable_if_not_t<sizeof...(Indexes_) == 1, const C_&> c)
             {
                 return DimsType_(c.size());
+            }
+        };
+
+        template <typename C_, typename ReturnType_, size_t DimsNum_, size_t... Indexes_>
+        struct make_array_from_strides_
+        {
+            static YATO_CONSTEXPR_FUNC
+            ReturnType_ apply(const C_& c)
+            {
+                return make_array_from_strides_<C_, ReturnType_, DimsNum_ - 1, DimsNum_ - 1, Indexes_...>::apply(c);
+            }
+        };
+
+        template <typename C_, typename ReturnType_, size_t... Indexes_>
+        struct make_array_from_strides_<C_, ReturnType_, 0, Indexes_...>
+        {
+            static YATO_CONSTEXPR_FUNC
+            ReturnType_ apply(const C_& c)
+            {
+                return ReturnType_(c.stride(Indexes_)...);
             }
         };
 
@@ -121,7 +145,7 @@ namespace yato
     template <typename Container_>
     struct container_traits
     {
-        static_assert(std::is_same<yato::remove_cvref_t<Container_>, Container_>::value, "Container_ must be a type without modifiers");
+        //static_assert(std::is_same<yato::remove_cvref_t<Container_>, Container_>::value, "Container_ must be a type without modifiers");
 
         /**
          * Alias to yato::container_category<Container>
@@ -229,6 +253,13 @@ namespace yato
                 details::has_method_size1<const Container_, size_type, std::size_t>::value>::value;
 
         /**
+         * Checks if the method Container::stride(dim) is present.
+         * Alias to Container::has_method_stride is present, otherwise tries to deduce.
+         */
+        static YATO_CONSTEXPR_VAR bool has_method_stride = details::get_has_method_stride<Container_,
+                details::has_method_stride<const Container_, std::size_t, std::size_t>::value>::value;
+
+        /**
          * Checks if the method Container::continuous() is present.
          * Alias to Container::has_method_continuous is present, otherwise tries to deduce.
          */
@@ -254,7 +285,14 @@ namespace yato
          * Alias to Container::has_method_dimensions is present, otherwise tries to deduce.
          */
         static YATO_CONSTEXPR_VAR bool has_method_dimensions = details::get_has_method_dimensions<Container_,
-                details::has_method_dimensions<const Container_, bool>::value>::value;
+                details::has_method_dimensions<const Container_, dimensions_type>::value>::value;
+
+        /**
+         * Checks if the method Container::strides() is present.
+         * Alias to Container::has_method_strides is present, otherwise tries to deduce.
+         */
+        static YATO_CONSTEXPR_VAR bool has_method_strides = details::get_has_method_strides<Container_,
+                details::has_method_strides<const Container_, strides_type>::value>::value;
 
         /**
          * Checks if the method Container::total_size() is present.
@@ -288,9 +326,9 @@ namespace yato
     template <typename Ty_>
     struct is_container<Ty_,
         typename yato::test_type<
-            typename yato::container_traits<Ty_>::value_type,
-            typename yato::container_traits<Ty_>::iterator,
-            typename yato::container_traits<Ty_>::const_iterator
+            typename Ty_::value_type,
+            typename Ty_::iterator,
+            typename Ty_::const_iterator
         >::type
     >
         : std::integral_constant<bool,
@@ -306,6 +344,7 @@ namespace yato
     struct container_ops
         : public container_traits<Container_>
     {
+        static_assert(std::is_same<yato::remove_cvref_t<Container_>, Container_>::value, "Container_ must be a type without modifiers");
         static_assert(is_container<Container_>::value, "The Container_ type does not satisfy the yato::is_container<T> requirements.");
 
         using traits_type = container_traits<Container_>;
@@ -327,6 +366,7 @@ namespace yato
         using typename traits_type::const_value_reference;
         using traits_type::has_method_size0;
         using traits_type::has_method_size1;
+        using traits_type::has_method_stride;
         using traits_type::has_method_continuous;
         using traits_type::has_operator_subscript;
         using traits_type::has_operator_csubscript;
@@ -334,6 +374,8 @@ namespace yato
         using traits_type::has_method_total_size;
         using traits_type::has_method_data;
         using traits_type::has_method_cdata;
+
+        static YATO_CONSTEXPR_VAR bool has_method_strides = traits_type::has_method_stride || traits_type::has_method_strides;
 
 
         static YATO_CONSTEXPR_FUNC
@@ -349,13 +391,13 @@ namespace yato
         }
 
         static YATO_CONSTEXPR_FUNC
-        size_type size(yato::disable_if_not_t<(dimensions_number > 1), const Container_&> c, size_t dim)
+        size_type size(yato::disable_if_not_t<(dimensions_number > 1), const Container_&> c, std::size_t dim)
         {
             return c.size(dim);
         }
 
         static YATO_CONSTEXPR_FUNC
-        size_type size(yato::disable_if_not_t<(dimensions_number == 1), const Container_&> c, size_t /*dim*/)
+        size_type size(yato::disable_if_not_t<(dimensions_number == 1), const Container_&> c, std::size_t /*dim*/)
         {
             return c.size();
         }
@@ -397,13 +439,25 @@ namespace yato
         }
 
         static YATO_CONSTEXPR_FUNC
-        reference subscript(yato::disable_if_not_t<has_operator_subscript, Container_&> c, const index_type& i)
+        reference subscript(yato::disable1_if_not_t<has_operator_subscript, Container_&> c, const index_type& i)
         {
             return c[i];
         }
 
         static YATO_CONSTEXPR_FUNC
-        reference subscript(yato::disable_if_t<has_operator_subscript, Container_&> c, const index_type& i)
+        reference subscript(yato::disable1_if_t<has_operator_subscript, Container_&> c, const index_type& i)
+        {
+            return *yato::next(std::begin(c), i);
+        }
+
+        static YATO_CONSTEXPR_FUNC
+        decltype(auto) subscript(yato::disable2_if_not_t<has_operator_subscript, const Container_&> c, const index_type& i)
+        {
+            return c[i];
+        }
+
+        static YATO_CONSTEXPR_FUNC
+        decltype(auto) subscript(yato::disable2_if_t<has_operator_subscript, const Container_&> c, const index_type& i)
         {
             return *yato::next(std::begin(c), i);
         }
@@ -427,6 +481,12 @@ namespace yato
         }
 
         static YATO_CONSTEXPR_FUNC
+        decltype(auto) begin(const Container_& c)
+        {
+            return std::begin(c);
+        }
+
+        static YATO_CONSTEXPR_FUNC
         const_iterator cbegin(const Container_& c)
         {
             return std::cbegin(c);
@@ -439,28 +499,80 @@ namespace yato
         }
 
         static YATO_CONSTEXPR_FUNC
+        decltype(auto) end(const Container_& c)
+        {
+            return std::end(c);
+        }
+
+        static YATO_CONSTEXPR_FUNC
         const_iterator cend(const Container_& c)
         {
             return std::cend(c);
         }
 
+        /**
+         * Optional interface
+         */
         static YATO_CONSTEXPR_FUNC
-        std::add_pointer_t<value_type> data(yato::disable_if_not_t<has_method_data, Container_&> c)
+        std::add_pointer_t<value_type> data(yato::disable1_if_not_t<has_method_data, Container_&> c)
         {
             return c.data();
         }
 
+        /**
+         * Optional interface
+         */
+        static YATO_CONSTEXPR_FUNC
+        decltype(auto) data(yato::disable2_if_not_t<has_method_data, const Container_&> c)
+        {
+            return c.data();
+        }
+
+        /**
+         * Optional interface
+         */
         static YATO_CONSTEXPR_FUNC
         std::add_pointer_t<std::add_const_t<value_type>> cdata(yato::disable1_if_not_t<has_method_cdata, const Container_&> c)
         {
             return c.cdata();
         }
 
+        /**
+         * Optional interface
+         */
         static YATO_CONSTEXPR_FUNC
         std::add_pointer_t<std::add_const_t<value_type>> cdata(yato::disable2_if_t<has_method_cdata || !has_method_data, const Container_&> c)
         {
             return c.data();
         }
+
+        /**
+         * Optional interface
+         */
+        static YATO_CONSTEXPR_FUNC
+        std::size_t stride(yato::disable_if_not_t<traits_type::has_method_stride, const Container_&> c, std::size_t dim)
+        {
+            return c.stride(dim);
+        }
+
+        /**
+         * Optional interface
+         */
+        static YATO_CONSTEXPR_FUNC
+        strides_type strides(yato::disable1_if_not_t<traits_type::has_method_strides, const Container_&> c)
+        {
+            return c.strides();
+        }
+
+        /**
+         * Optional interface
+         */
+        static YATO_CONSTEXPR_FUNC
+        strides_type strides(yato::disable2_if_not_t<!traits_type::has_method_strides && traits_type::has_method_stride, const Container_&> c)
+        {
+            return details::make_array_from_strides_<Container_, strides_type, (dimensions_number > 0 ? dimensions_number - 1 : 0)>::apply(c);
+        }
+
     };
 
 

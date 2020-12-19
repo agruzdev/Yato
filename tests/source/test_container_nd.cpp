@@ -17,71 +17,83 @@
 
 namespace
 {
-    template <typename Ty_, typename Impl_>
-    void test_write(const yato::container_nd<Ty_, 2, Impl_> & dst)
+    template <typename Cy_>
+    auto test_write(Cy_&& dst)
+        -> std::enable_if_t<yato::container_traits<yato::remove_cvref_t<Cy_>>::dimensions_number == 2>
     {
-        EXPECT_TRUE(dst.continuous());
-        EXPECT_TRUE(dst.size(0) > 1);
-        EXPECT_TRUE(dst.size(1) > 1);
-        EXPECT_TRUE(dst.stride(0) > 1);
-        dst[0][0] = 42;
-        for(auto it = std::next(dst.begin()); it != dst.end(); ++it) {
+        using ops = yato::container_ops<yato::remove_cvref_t<Cy_>>;
+
+        EXPECT_TRUE(ops::continuous(dst));
+        EXPECT_TRUE(ops::size(dst, 0) > 1);
+        EXPECT_TRUE(ops::size(dst, 1) > 1);
+        EXPECT_TRUE(ops::stride(dst, 0) > 1);
+        yato::view(dst)[0][0] = 42;
+        for(auto it = std::next(ops::begin(dst)); it != ops::end(dst); ++it) {
             (*it)[0] = 10;
         }
-        *(dst.data() + 1) = 20;
+        *(ops::data(dst) + 1) = 20;
 
         auto v = yato::view(dst);
         static_assert(!std::is_const<typename decltype(v)::value_type>::value, "Fail");
-        EXPECT_TRUE(v.size(0)   == dst.size(0));
-        EXPECT_TRUE(v.size(1)   == dst.size(1));
-        EXPECT_TRUE(v.stride(0) == dst.stride(0));
+        EXPECT_TRUE(v.size(0)   == ops::size(dst, 0));
+        EXPECT_TRUE(v.size(1)   == ops::size(dst, 1));
+        EXPECT_TRUE(v.stride(0) == ops::stride(dst, 0));
     }
 
-    template <typename Ty_, typename Impl_>
-    void test_read(const yato::const_container_nd<Ty_, 2, Impl_> & src)
+    template <typename Cy_>
+    auto test_read(const Cy_& src)
+        -> std::enable_if_t<yato::container_traits<yato::remove_cvref_t<Cy_>>::dimensions_number == 2>
     {
-        EXPECT_EQ(42, src[0][0]);
-        for(auto it = std::next(src.cbegin()); it != src.cend(); ++it) {
+        using ops = yato::container_ops<yato::remove_cvref_t<Cy_>>;
+
+        EXPECT_EQ(42, yato::cview(src)[0][0]);
+        for(auto it = std::next(ops::cbegin(src)); it != ops::cend(src); ++it) {
             EXPECT_EQ(10, (*it)[0]);
         }
-        EXPECT_EQ(20, *(src.cdata() + 1));
+        EXPECT_EQ(20, *(ops::cdata(src) + 1));
 
         auto v = yato::cview(src);
         static_assert(std::is_const<typename decltype(v)::value_type>::value, "Fail");
-        EXPECT_TRUE(v.size(0)   == src.size(0));
-        EXPECT_TRUE(v.size(1)   == src.size(1));
-        EXPECT_TRUE(v.stride(0) == src.stride(0));
+        EXPECT_TRUE(v.size(0)   == ops::size(src, 0));
+        EXPECT_TRUE(v.size(1)   == ops::size(src, 1));
+        EXPECT_TRUE(v.stride(0) == ops::stride(src, 0));
     }
 
 
-    template <typename Ty_, typename Impl_>
-    void test_write(const yato::container_nd<Ty_, 1, Impl_> & dst)
+    template <typename Cy_>
+    auto test_write(Cy_&& dst)
+        -> std::enable_if_t<yato::container_traits<yato::remove_cvref_t<Cy_>>::dimensions_number == 1>
     {
-        EXPECT_TRUE(dst.continuous());
-        EXPECT_TRUE(dst.size(0) > 1);
-        dst[0] = 42;
-        for(auto it = std::next(dst.begin(), 2); it != dst.end(); ++it) {
+        using ops = yato::container_ops<yato::remove_cvref_t<Cy_>>;
+
+        EXPECT_TRUE(ops::continuous(dst));
+        EXPECT_TRUE(ops::size(dst, 0) > 1);
+        ops::subscript(dst, 0) = 42;
+        for(auto it = std::next(ops::begin(dst), 2); it != ops::end(dst); ++it) {
             (*it) = 10;
         }
-        *(dst.data() + 1) = 20;
+        *(ops::data(dst) + 1) = 20;
 
         auto v = yato::view(dst);
         static_assert(!std::is_const<typename decltype(v)::value_type>::value, "Fail");
-        EXPECT_TRUE(v.size(0) == dst.size(0));
+        EXPECT_TRUE(v.size(0) == ops::size(dst));
     }
 
-    template <typename Ty_, typename Impl_>
-    void test_read(const yato::const_container_nd<Ty_, 1, Impl_> & src)
+    template <typename Cy_>
+    auto test_read(const Cy_& src)
+        -> std::enable_if_t<yato::container_traits<yato::remove_cvref_t<Cy_>>::dimensions_number == 1>
     {
-        EXPECT_EQ(42, src[0]);
-        for(auto it = std::next(src.cbegin(), 2); it != src.cend(); ++it) {
+        using ops = yato::container_ops<yato::remove_cvref_t<Cy_>>;
+
+        EXPECT_EQ(42, ops::csubscript(src, 0));
+        for(auto it = std::next(ops::cbegin(src), 2); it != ops::cend(src); ++it) {
             EXPECT_EQ(10, (*it));
         }
-        EXPECT_EQ(20, *(src.cdata() + 1));
+        EXPECT_EQ(20, *(ops::cdata(src) + 1));
 
         auto v = yato::cview(src);
         static_assert(std::is_const<typename decltype(v)::value_type>::value, "Fail");
-        EXPECT_TRUE(v.size(0) == src.size(0));
+        EXPECT_TRUE(v.size(0) == ops::size(src));
     }
 }
 
@@ -246,6 +258,7 @@ TEST(Yato_ContainerTraits, common)
     static_assert(yato::is_container<std::array<int, 4>>::value, "invalid is_container");
     static_assert(yato::is_container<std::list<short>>::value, "invalid is_container");
     static_assert(yato::is_container<std::map<std::string, int>>::value, "invalid is_container");
+    static_assert(!yato::is_container<int[10]>::value, "invalid is_container");
 }
 
 namespace
@@ -255,6 +268,8 @@ namespace
     void test_read_1d(const Cy_& c, bool testing_continuous)
     {
         using ops = yato::container_ops<Cy_>;
+
+        ASSERT_EQ(1, ops::dimensions_number);
 
         EXPECT_EQ(static_cast<size_t>(4), ops::size(c));
         EXPECT_EQ(static_cast<size_t>(4), ops::size(c, 0));
@@ -289,6 +304,65 @@ namespace
         std::array<value_type, 4> tmp1 = {};
         std::memcpy(tmp1.data(), ops::cdata(c), ops::total_size(c) * sizeof(value_type));
         EXPECT_TRUE(std::equal(std::cbegin(tmp1), std::cend(tmp1), ops::cbegin(c)));
+    }
+
+    template <typename Cy_>
+    void test_read_3d(const Cy_& c)
+    {
+        using ops = yato::container_ops<Cy_>;
+
+        ASSERT_EQ(3, ops::dimensions_number);
+
+        EXPECT_EQ(static_cast<size_t>(2), ops::size(c, 0));
+        EXPECT_EQ(static_cast<size_t>(3), ops::size(c, 1));
+        EXPECT_EQ(static_cast<size_t>(4), ops::size(c, 2));
+        EXPECT_EQ(static_cast<size_t>(24), ops::total_size(c));
+        EXPECT_EQ(true, ops::continuous(c));
+
+        const auto dims = ops::dimensions(c);
+        EXPECT_EQ(3, dims.size());
+        EXPECT_EQ(2, dims[0]);
+        EXPECT_EQ(3, dims[1]);
+        EXPECT_EQ(4, dims[2]);
+
+        constexpr size_t elem_size = sizeof(typename ops::value_type);
+        EXPECT_EQ(static_cast<size_t>(12 * elem_size), ops::stride(c, 0));
+        EXPECT_EQ(static_cast<size_t>( 4 * elem_size), ops::stride(c, 1));
+
+        const auto strides = ops::strides(c);
+        EXPECT_EQ(static_cast<size_t>(12 * elem_size), strides[0]);
+        EXPECT_EQ(static_cast<size_t>( 4 * elem_size), strides[1]);
+
+        const auto view = yato::cview(c);
+        EXPECT_EQ(1, view[0][0][0]);
+        EXPECT_EQ(2, view[0][0][1]);
+        EXPECT_EQ(3, view[0][0][2]);
+        EXPECT_EQ(4, view[0][0][3]);
+
+        EXPECT_EQ(5, view[0][1][0]);
+        EXPECT_EQ(6, view[0][1][1]);
+        EXPECT_EQ(7, view[0][1][2]);
+        EXPECT_EQ(8, view[0][1][3]);
+
+        EXPECT_EQ(9,  view[0][2][0]);
+        EXPECT_EQ(10, view[0][2][1]);
+        EXPECT_EQ(11, view[0][2][2]);
+        EXPECT_EQ(12, view[0][2][3]);
+
+        EXPECT_EQ(13, view[1][0][0]);
+        EXPECT_EQ(14, view[1][0][1]);
+        EXPECT_EQ(15, view[1][0][2]);
+        EXPECT_EQ(16, view[1][0][3]);
+
+        EXPECT_EQ(17, view[1][1][0]);
+        EXPECT_EQ(18, view[1][1][1]);
+        EXPECT_EQ(19, view[1][1][2]);
+        EXPECT_EQ(20, view[1][1][3]);
+
+        EXPECT_EQ(21, view[1][2][0]);
+        EXPECT_EQ(22, view[1][2][1]);
+        EXPECT_EQ(23, view[1][2][2]);
+        EXPECT_EQ(24, view[1][2][3]);
     }
 
 } // namespace
@@ -326,26 +400,58 @@ TEST(Yato_ContainerTraits, read_1d)
     test_read_1d_memcpy(yatoArr2d[2]);
 }
 
+TEST(Yato_ContainerTraits, read_3d)
+{
+    yato::array_nd<int, 2, 3, 4> yatoArr = {{
+        {{1, 2, 3, 4},
+         {5, 6, 7, 8},
+         {9, 10, 11, 12}},
+
+        {{13, 14, 15, 16},
+         {17, 18, 19, 20},
+         {21, 22, 23, 24}}
+    }};
+
+     yato::vector_3d<int> yatoVec = {
+        {{1, 2, 3, 4},
+         {5, 6, 7, 8},
+         {9, 10, 11, 12}},
+
+        {{13, 14, 15, 16},
+         {17, 18, 19, 20},
+         {21, 22, 23, 24}}
+    };
+
+    yato::array_view_3d<int> yatoView = yato::view(yatoVec);
+    yato::array_view_3d<const int> yatoCView = yato::cview(yatoVec);
+
+    test_read_3d(yatoVec);
+    test_read_3d(yatoArr);
+    test_read_3d(yatoView);
+    test_read_3d(yatoCView);
+}
+
+
 
 TEST(Yato_ContainerND, access)
 {
     yato::vector_nd<int, 2> v2(yato::dims(4, 4), -1);
-    //test_write(v2);  // can't deduce :c
+    test_write(v2);
     test_write(v2.proxy());
     test_write(v2.view());
     //test_write(v2.cview());  // can't compile -> good
-    
+
     const yato::array_view_2d<int> t(v2.view());
     test_write(t);
-    
+
     yato::vector_nd<int, 3> v3(yato::dims(4, 4, 4), -1);
     test_write(v3[1]);
-    
+
     test_read(v2);
     test_read(v2.view());
     test_read(v2.cview());
     test_read(v3[1]);
-    
+
     EXPECT_EQ(42, v2[0][0]);
     EXPECT_EQ(10, v2[1][0]);
     EXPECT_EQ(10, v2[2][0]);
@@ -358,10 +464,10 @@ TEST(Yato_ContainerND, access_array)
     arr2.fill(-1);
 
     auto v = yato::view(arr2);
-    //test_write(arr2);  // to be done
+    test_write(arr2);
     test_write(v);
 
-    //test_read(arr2);  // to be done
+    test_read(arr2);
     test_read(v);
 
     EXPECT_EQ(42, arr2[0][0]);
@@ -373,17 +479,17 @@ TEST(Yato_ContainerND, access_array)
 TEST(Yato_ContainerND, access_1)
 {
     yato::vector_nd<int, 1> v1(yato::dims(8), -1);
-    // test_write(v1);   // can't deduce :c
+    test_write(v1);
     test_write(v1.proxy());
     test_write(v1.view());
     //test_write(v1.cview());  // can't compile -> good
 
     const yato::array_view_1d<int> t(v1.view());
     test_write(t);
-    
+
     yato::vector_nd<int, 2> v2(yato::dims(8, 8), -1);
     test_write(v2[1]);
-    
+
     test_read(v1);
     test_read(v1.view());
     test_read(v1.cview());
