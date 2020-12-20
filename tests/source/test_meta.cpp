@@ -55,6 +55,11 @@ TEST(Yato_Meta, list)
 
     using l8  = yato::meta::list_cat< yato::meta::null_list, yato::meta::null_list >::type;
     static_assert(std::is_same<l8, yato::meta::null_list>::value, "yato::meta::list fail!");
+
+    static_assert(std::is_same<yato::meta::list_dup_t<int, 0>, yato::meta::null_list>::value, "yato::meta::list_dup fail!");
+    static_assert(std::is_same<yato::meta::list_dup_t<int, 1>, yato::meta::list<int>>::value, "yato::meta::list_dup fail!");
+    static_assert(std::is_same<yato::meta::list_dup_t<int, 2>, yato::meta::list<int, int>>::value, "yato::meta::list_dup fail!");
+    static_assert(std::is_same<yato::meta::list_dup_t<int, 3>, yato::meta::list<int, int, int>>::value, "yato::meta::list_dup fail!");
 }
 
 TEST(Yato_Meta, list_find)

@@ -121,6 +121,24 @@ namespace yato
         using make_list_t = typename make_list<Elems_...>::type;
 
         /**
+         * Make list of N copies of type
+         */
+        template <typename Ty_, size_t N_, typename... Elems_>
+        struct list_dup
+        {
+            using type = typename list_dup<Ty_, N_ - 1, Ty_, Elems_...>::type;
+        };
+
+        template <typename Ty_, typename... Elems_>
+        struct list_dup<Ty_, 0, Elems_...>
+        {
+            using type = make_list_t<Elems_...>;
+        };
+
+        template <typename Ty_, size_t N_>
+        using list_dup_t = typename list_dup<Ty_, N_>::type;
+
+        /**
          *  Reverse list
          */
         template<typename List_, typename... Elems_>

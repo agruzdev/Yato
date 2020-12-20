@@ -38,23 +38,22 @@ namespace yato
             static YATO_CONSTEXPR_VAR size_t dimensions_number = DimsNum;
             static_assert(dimensions_number > 1, "Dimensions number should be greater than 1");
 
-            using value_iterator  = std::add_pointer_t<value_type>;
-            using value_reference = std::add_lvalue_reference_t<value_type>;
-
             using dim_descriptor = dimension_descriptor_strided<size_type>; // size, stride, offset
 
             using sub_view       = proxy_nd<value_type, dim_descriptor, dimensions_number - 1>;
 
-            using reference       = sub_view;
-            using const_reference = sub_view;
-            using iterator        = iterator_nd<sub_view>;
-            using const_iterator  = iterator_nd<sub_view>;
-
+            using iterator              = iterator_nd<sub_view>;
+            using const_iterator        = iterator_nd<sub_view>;
             using plain_iterator        = std::add_pointer_t<value_type>;
             using const_plain_iterator  = std::add_pointer_t<std::add_const_t<value_type>>;
+
+            using reference             = sub_view;
+            using const_reference       = sub_view;
+            using value_reference       = std::add_lvalue_reference_t<value_type>;
+            using const_value_reference = std::add_lvalue_reference_t<std::add_const_t<value_type>>;
             //--------------------------------------------------------------------
 
-            value_iterator m_base_ptr;
+            plain_iterator m_base_ptr;
             std::array<dim_descriptor::type, dimensions_number> m_descriptors;
             //--------------------------------------------------------------------
 
@@ -182,7 +181,7 @@ namespace yato
 
             sub_view get_sub_view_(size_t idx) const
             {
-                value_iterator sub_view_ptr{ m_base_ptr };
+                plain_iterator sub_view_ptr{ m_base_ptr };
                 details::advance_bytes(sub_view_ptr, idx * dim_descriptor::offset_to_bytes<value_type>(std::get<dim_descriptor::idx_offset>(m_descriptors[1])));
                 return sub_view(sub_view_ptr, &(m_descriptors[1]));
             }
@@ -231,19 +230,19 @@ namespace yato
 
             using dim_descriptor = dimension_descriptor_strided<size_type>; // size, stride, offset
 
-            using value_iterator  = std::add_pointer_t<value_type>;
-            using value_reference = std::add_lvalue_reference_t<value_type>;
-
-            using iterator        = std::add_pointer_t<value_type>;
-            using const_iterator  = std::add_pointer_t<std::add_const_t<value_type>>;
-            using reference       = std::add_lvalue_reference_t<value_type>;
-            using const_reference = std::add_lvalue_reference_t<std::add_const_t<value_type>>;
-
+            using iterator              = std::add_pointer_t<value_type>;
+            using const_iterator        = std::add_pointer_t<std::add_const_t<value_type>>;
             using plain_iterator        = std::add_pointer_t<value_type>;
             using const_plain_iterator  = std::add_pointer_t<std::add_const_t<value_type>>;
+
+            using reference             = std::add_lvalue_reference_t<value_type>;
+            using const_reference       = std::add_lvalue_reference_t<std::add_const_t<value_type>>;
+
+            using value_reference       = reference;
+            using const_value_reference = const_reference;
             //--------------------------------------------------------------------
 
-            value_iterator  m_base_ptr;
+            plain_iterator  m_base_ptr;
             dimensions_type m_size;
             //--------------------------------------------------------------------
 
@@ -338,7 +337,7 @@ namespace yato
                 return yato::range<const size_type*>(nullptr, nullptr);
             }
 
-            value_reference get_sub_view_(size_t idx) const
+            reference get_sub_view_(size_t idx) const
             {
                 return *yato::next(m_base_ptr, idx);
             }
@@ -378,8 +377,7 @@ namespace yato
      */
     template<typename ValueType_, size_t DimsNum>
     class array_view_nd
-        : public details::choose_container_interface_t<ValueType_, DimsNum, array_view_nd<ValueType_, DimsNum>>
-        , private details::array_view_base<ValueType_, DimsNum>
+        : private details::array_view_base<ValueType_, DimsNum>
     {
     public:
         using this_type = array_view_nd<ValueType_, DimsNum>;
@@ -395,14 +393,15 @@ namespace yato
         using typename base_type::element_strides_type;
         using typename base_type::byte_strides_type;
         using typename base_type::size_type;
-        using typename base_type::value_iterator;
-        using typename base_type::value_reference;
-        using typename base_type::reference;
-        using typename base_type::const_reference;
         using typename base_type::iterator;
         using typename base_type::const_iterator;
         using typename base_type::plain_iterator;
         using typename base_type::const_plain_iterator;
+        using typename base_type::reference;
+        using typename base_type::const_reference;
+        using typename base_type::value_reference;
+        using typename base_type::const_value_reference;
+        using strides_type = typename base_type::byte_strides_type;
         //-------------------------------------------------------
 
         array_view_nd()
@@ -421,10 +420,12 @@ namespace yato
             : base_type(ptr, extents, byte_strides)
         { }
 
-        array_view_nd(const this_type & other) = default;
-        array_view_nd& operator=(const this_type &) = default;
+        array_view_nd(const this_type& other) = default;
+
+        array_view_nd& operator=(const this_type&) = default;
 
         array_view_nd(this_type &&) = default;
+
         array_view_nd& operator=(this_type && other) = default;
 
         ~array_view_nd() = default;
@@ -720,18 +721,21 @@ namespace yato
 
 
     template<typename Ty_, size_t Size_>
+    YATO_CONSTEXPR_FUNC
     auto view(Ty_ (& arr)[Size_])
     {
         return array_view<Ty_>(arr, yato::dims(Size_));
     }
 
     template<typename Ty_, size_t Size_>
+    YATO_CONSTEXPR_FUNC
     auto view(std::array<Ty_, Size_> & arr)
     {
         return array_view<Ty_>(arr.data(), yato::dims(Size_));
     }
 
     template<typename Ty_>
+    YATO_CONSTEXPR_FUNC
     auto view(std::vector<Ty_> & vec) 
         -> std::enable_if_t<!std::is_same<Ty_, bool>::value, array_view<Ty_>>
     {
@@ -739,24 +743,28 @@ namespace yato
     }
 
     template<typename Ty_, size_t Size1_, size_t Size2_>
+    YATO_CONSTEXPR_FUNC
     auto view(Ty_(&arr)[Size1_][Size2_])
     {
         return array_view_nd<Ty_, 2>(&arr[0][0], yato::dims(Size1_, Size2_));
     }
 
     template<typename Ty_, size_t Size1_, size_t Size2_, size_t Size3_>
+    YATO_CONSTEXPR_FUNC
     auto view(Ty_(&arr)[Size1_][Size2_][Size3_])
     {
         return array_view_nd<Ty_, 3>(&arr[0][0][0], yato::dims(Size1_, Size2_, Size3_));
     }
 
-    template<typename Ty_, size_t Dims_ , typename Impl_>
-    auto view(const container_nd<Ty_, Dims_, Impl_> & c)
-    {
-        return array_view_nd<Ty_, Dims_>(c.data(), c.dimensions(), c.strides());
-    }
+    //template<typename Ty_, size_t Dims_ , typename Impl_>
+    //YATO_CONSTEXPR_FUNC
+    //auto view(const container_nd<Ty_, Dims_, Impl_> & c)
+    //{
+    //    return array_view_nd<Ty_, Dims_>(c.data(), c.dimensions(), c.strides());
+    //}
 
     template <typename Ty_, size_t Dims_>
+    YATO_CONSTEXPR_FUNC
     array_view_nd<Ty_, Dims_> & view(array_view_nd<Ty_, Dims_> & v)
     {
         return v;
@@ -764,18 +772,21 @@ namespace yato
 
 
     template<typename Ty_, size_t Size_>
+    YATO_CONSTEXPR_FUNC
     auto cview(Ty_ (& arr)[Size_]) YATO_NOEXCEPT_KEYWORD
     {
         return array_view<std::add_const_t<Ty_>>(arr, yato::dims(Size_));
     }
 
     template<typename Ty_, size_t Size_>
+    YATO_CONSTEXPR_FUNC
     auto cview(const std::array<Ty_, Size_> & arr) YATO_NOEXCEPT_KEYWORD
     {
         return array_view<std::add_const_t<Ty_>>(arr.data(), yato::dims(Size_));
     }
 
     template<typename Ty_>
+    YATO_CONSTEXPR_FUNC
     auto cview(const std::vector<Ty_> & vec) YATO_NOEXCEPT_KEYWORD 
         -> std::enable_if_t<!std::is_same<Ty_, bool>::value, array_view<std::add_const_t<Ty_>>>
     {
@@ -783,24 +794,28 @@ namespace yato
     }
 
     template<typename Ty_, size_t Size1_, size_t Size2_>
+    YATO_CONSTEXPR_FUNC
     auto cview(Ty_(&arr)[Size1_][Size2_])
     {
         return array_view_nd<std::add_const_t<Ty_>, 2>(&arr[0][0], yato::dims(Size1_, Size2_));
     }
 
     template<typename Ty_, size_t Size1_, size_t Size2_, size_t Size3_>
+    YATO_CONSTEXPR_FUNC
     auto cview(Ty_(&arr)[Size1_][Size2_][Size3_])
     {
         return array_view_nd<std::add_const_t<Ty_>, 3>(&arr[0][0][0], yato::dims(Size1_, Size2_, Size3_));
     }
 
-    template<typename Ty_, size_t Dims_ , typename Impl_>
-    auto cview(const const_container_nd<Ty_, Dims_, Impl_> & c)
-    {
-        return array_view_nd<std::add_const_t<Ty_>, Dims_>(c.cdata(), c.dimensions(), c.strides());
-    }
+    //template<typename Ty_, size_t Dims_ , typename Impl_>
+    //YATO_CONSTEXPR_FUNC
+    //auto cview(const const_container_nd<Ty_, Dims_, Impl_> & c)
+    //{
+    //    return array_view_nd<std::add_const_t<Ty_>, Dims_>(c.cdata(), c.dimensions(), c.strides());
+    //}
 
     template <typename Ty_, size_t Dims_>
+    YATO_CONSTEXPR_FUNC
     auto cview(const array_view_nd<Ty_, Dims_> & v)
         -> std::enable_if_t<!std::is_const<Ty_>::value, array_view_nd<std::add_const_t<Ty_>, Dims_>>
     {
@@ -808,6 +823,7 @@ namespace yato
     }
 
     template <typename Ty_, size_t Dims_>
+    YATO_CONSTEXPR_FUNC
     auto cview(array_view_nd<Ty_, Dims_> & v)
         -> std::enable_if_t<std::is_const<Ty_>::value, array_view_nd<Ty_, Dims_> & >
     {
@@ -815,50 +831,81 @@ namespace yato
     }
 
     template <typename Ty_, size_t Dims_>
+    YATO_CONSTEXPR_FUNC
     auto cview(const array_view_nd<Ty_, Dims_> & v)
         -> std::enable_if_t<std::is_const<Ty_>::value, const array_view_nd<Ty_, Dims_> & >
     {
         return v;
     }
 
-
-
-    template<typename T, size_t Size>
-    YATO_DEPRECATED("Use yato::view/yato::cview")
-    array_view<T> make_view(T (& arr)[Size]) YATO_NOEXCEPT_KEYWORD
+    namespace details
     {
-        return array_view<T>(arr, yato::dims(Size));
+        template <typename Cy_>
+        using view_type_for_container_t = array_view_nd<typename container_traits<yato::remove_cvref_t<Cy_>>::value_type, container_traits<yato::remove_cvref_t<Cy_>>::dimensions_number>;
+
+        template <typename Cy_>
+        using const_view_type_for_container_t = array_view_nd<std::add_const_t<typename container_traits<yato::remove_cvref_t<Cy_>>::value_type>, container_traits<yato::remove_cvref_t<Cy_>>::dimensions_number>;
+
+
+        template <typename Cy_>
+        YATO_CONSTEXPR_FUNC_CXX14
+        auto view_from_container_(Cy_& c)
+            -> std::enable_if_t<container_ops<yato::remove_cvref_t<Cy_>>::has_method_strides, view_type_for_container_t<Cy_>>
+        {
+            static_assert(container_traits<yato::remove_cvref_t<Cy_>>::has_method_data, "The Container must have the method `data()`");
+            using container_ops = container_ops<yato::remove_cvref_t<Cy_>>;
+            return view_type_for_container_t<Cy_>(container_ops::data(c), container_ops::dimensions(c), container_ops::strides(c));
+        }
+
+        template <typename Cy_>
+        YATO_CONSTEXPR_FUNC_CXX14
+        auto view_from_container_(Cy_& c)
+            -> std::enable_if_t<!container_ops<yato::remove_cvref_t<Cy_>>::has_method_strides, view_type_for_container_t<Cy_>>
+        {
+            static_assert(container_traits<yato::remove_cvref_t<Cy_>>::has_method_data, "The Container must have the method `data()`");
+            using container_ops = container_ops<yato::remove_cvref_t<Cy_>>;
+            return view_type_for_container_t<Cy_>(container_ops::data(c), container_ops::dimensions(c));
+        }
+
+        template <typename Cy_>
+        YATO_CONSTEXPR_FUNC_CXX14
+        auto cview_from_container_(const Cy_& c)
+            -> std::enable_if_t<container_ops<yato::remove_cvref_t<Cy_>>::has_method_strides, const_view_type_for_container_t<Cy_>>
+        {
+            static_assert(container_traits<yato::remove_cvref_t<Cy_>>::has_method_data || container_traits<yato::remove_cvref_t<Cy_>>::has_method_cdata, "The Container must have the method `data()` or `cdata()`");
+            using container_ops = container_ops<Cy_>;
+            return const_view_type_for_container_t<Cy_>(container_ops::cdata(c), container_ops::dimensions(c), container_ops::strides(c));
+        }
+
+        template <typename Cy_>
+        YATO_CONSTEXPR_FUNC_CXX14
+        auto cview_from_container_(const Cy_& c)
+            -> std::enable_if_t<!container_ops<yato::remove_cvref_t<Cy_>>::has_method_strides, const_view_type_for_container_t<Cy_>>
+        {
+            static_assert(container_traits<yato::remove_cvref_t<Cy_>>::has_method_data || container_traits<yato::remove_cvref_t<Cy_>>::has_method_cdata, "The Container must have the method `data()` or `cdata()`");
+            using container_ops = container_ops<Cy_>;
+            return const_view_type_for_container_t<Cy_>(container_ops::cdata(c), container_ops::dimensions(c));
+        }
     }
 
-    template<typename T, size_t Size>
-    YATO_DEPRECATED("Use yato::view/yato::cview")
-    array_view<T> make_view(std::array<T, Size> & arr) YATO_NOEXCEPT_KEYWORD
+    template <typename Cy_, typename = 
+        std::enable_if_t<is_container<std::remove_reference_t<Cy_>>::value>
+    >
+    YATO_CONSTEXPR_FUNC
+    details::view_type_for_container_t<Cy_> view(Cy_& c)
     {
-        return array_view<T>(arr.data(), yato::dims(Size));
+        return details::view_from_container_(c);
     }
 
-    template<typename T, size_t Size>
-    YATO_DEPRECATED("Use yato::view/yato::cview")
-    array_view<const T> make_view(const std::array<T, Size> & arr) YATO_NOEXCEPT_KEYWORD
+    template <typename Cy_, typename =
+        std::enable_if_t<is_container<Cy_>::value>
+    >
+    YATO_CONSTEXPR_FUNC
+    details::const_view_type_for_container_t<Cy_> cview(const Cy_& c)
     {
-        return array_view<const T>(arr.data(), yato::dims(Size));
+        return details::cview_from_container_(c);
     }
 
-    template<typename T>
-    YATO_DEPRECATED("Use yato::view/yato::cview")
-    auto make_view(std::vector<T> & vec) YATO_NOEXCEPT_KEYWORD 
-        -> typename std::enable_if<!std::is_same<T, bool>::value, array_view<T> >::type
-    {
-        return array_view<T>(vec.data(), yato::dims(vec.size()));
-    }
-
-    template<typename T>
-    YATO_DEPRECATED("Use yato::view/yato::cview")
-    auto make_view(const std::vector<T> & vec) YATO_NOEXCEPT_KEYWORD
-        -> typename std::enable_if<!std::is_same<T, bool>::value, array_view<const T> >::type
-    {
-        return array_view<const T>(vec.data(), yato::dims(vec.size()));
-    }
 
     template<typename T, typename Size1, typename... Sizes>
     array_view_nd<T, sizeof...(Sizes) + 1> make_view(T* ptr, Size1 && size1, Sizes && ...sizes)
@@ -866,34 +913,7 @@ namespace yato
         return array_view_nd<T, sizeof...(Sizes) + 1>(ptr, yato::dims(std::forward<Size1>(size1), std::forward<Sizes>(sizes)...));
     }
 
-    template<typename T, size_t Size1, size_t Size2>
-    YATO_DEPRECATED("Use yato::view/yato::cview")
-    array_view_nd<T, 2> make_view(T(&arr)[Size1][Size2])
-    {
-        return array_view_nd<T, 2>(&arr[0][0], yato::dims(Size1, Size2));
-    }
-
-    template<typename T, size_t Size1, size_t Size2, size_t Size3>
-    YATO_DEPRECATED("Use yato::view/yato::cview")
-    array_view_nd<T, 3> make_view(T(&arr)[Size1][Size2][Size3])
-    {
-        return array_view_nd<T, 3>(&arr[0][0][0], yato::dims(Size1, Size2, Size3));
-    }
-
-
-    template<typename Ty_, size_t Dims_ , typename Impl_>
-    YATO_DEPRECATED("Use yato::view/yato::cview")
-    array_view_nd<std::add_const_t<Ty_>, Dims_> make_view(const const_container_nd<Ty_, Dims_, Impl_> & c) YATO_NOEXCEPT_KEYWORD
-    {
-        return array_view_nd<std::add_const_t<Ty_>, Dims_>(c.cdata(), c.dimensions(), c.strides());
-    }
-
-    template<typename Ty_, size_t Dims_ , typename Impl_>
-    YATO_DEPRECATED("Use yato::view/yato::cview")
-    array_view_nd<Ty_, Dims_> make_view(const container_nd<Ty_, Dims_, Impl_> & c) YATO_NOEXCEPT_KEYWORD
-    {
-        return array_view_nd<Ty_, Dims_>(c.data(), c.dimensions(), c.strides());
-    }
+ 
 
 }
 

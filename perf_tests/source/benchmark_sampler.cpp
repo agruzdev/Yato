@@ -12,7 +12,6 @@
 #include <benchmark/benchmark.h>
 
 #include <yato/vector_nd.h>
-#include <yato/sampler.h>
 
 
 void Fetch1D_STL_At(benchmark::State & state)

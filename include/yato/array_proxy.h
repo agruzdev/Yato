@@ -44,7 +44,6 @@ namespace yato
      */
     template <typename ValueType_, typename DimensionDescriptor_, size_t DimsNum_, proxy_access_policy AccessPolicy_>
     class proxy_nd
-        : public details::choose_container_interface_t<ValueType_, DimsNum_, proxy_nd<ValueType_, DimensionDescriptor_, DimsNum_, AccessPolicy_>>
     {
         static_assert(!std::is_reference<ValueType_>::value, "ValueType can't be reference");
         static_assert(DimsNum_ >= 1, "dimensions_number cant be 0");
@@ -61,14 +60,15 @@ namespace yato
         using sub_view       = proxy_nd<value_type, dim_descriptor, dimensions_number - 1, access_policy>;
         using const_sub_view = proxy_nd<typename proxy_access_traits<value_type, access_policy>::const_value_type, dim_descriptor, dimensions_number - 1, access_policy>;
 
-        using pointer_type   = std::add_pointer_t<value_type>;
-        using reference_type = typename proxy_access_traits<value_type, access_policy>::reference;
+        using iterator              = iterator_nd<sub_view>;
+        using const_iterator        = iterator_nd<const_sub_view>;
+        using plain_iterator        = typename proxy_access_traits<value_type, access_policy>::plain_iterator;
+        using const_plain_iterator  = typename proxy_access_traits<value_type, access_policy>::const_plain_iterator;
 
-        using iterator       = iterator_nd<sub_view>;
-        using const_iterator = iterator_nd<const_sub_view>;
-
-        using plain_iterator       = typename proxy_access_traits<value_type, access_policy>::plain_iterator;
-        using const_plain_iterator = typename proxy_access_traits<value_type, access_policy>::const_plain_iterator;
+        using reference             = sub_view;
+        using const_reference       = const_sub_view;
+        using value_reference       = typename proxy_access_traits<value_type, access_policy>::reference;
+        using const_value_reference = typename proxy_access_traits<value_type, access_policy>::const_reference;
 
         using dimensions_type = dimensionality<dimensions_number, size_type>;
         //-------------------------------------------------------
@@ -152,14 +152,14 @@ namespace yato
         ~proxy_nd() = default;
 
         YATO_CONSTEXPR_FUNC_CXX14
-        sub_view operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
+        reference operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
         {
             YATO_REQUIRES(idx < size(0));
             return create_sub_view_(idx);
         }
 
         template<typename... IdxTail_>
-        reference_type at(size_t idx, IdxTail_... tail) const
+        value_reference at(size_t idx, IdxTail_... tail) const
         {
             if (idx >= size(0)) {
                 throw yato::out_of_range_error("yato::array_sub_view_nd: out of range!");
@@ -231,6 +231,15 @@ namespace yato
         {
             YATO_REQUIRES(idx < dimensions_number);
             return std::get<dim_descriptor::idx_size>(*yato::next(m_desc_iter, idx));
+        }
+
+        /**
+         *  Get size along one dimension
+         */
+        YATO_CONSTEXPR_FUNC
+        size_type size() const YATO_NOEXCEPT_KEYWORD
+        {
+            return std::get<dim_descriptor::idx_size>(*m_desc_iter);
         }
 
         /**
@@ -401,7 +410,6 @@ namespace yato
 
     template <typename ValueType_, typename DimensionDescriptor_, proxy_access_policy AccessPolicy_>
     class proxy_nd<ValueType_, DimensionDescriptor_, 1, AccessPolicy_>
-        : public details::choose_container_interface_t<ValueType_, 1, proxy_nd<ValueType_, DimensionDescriptor_, 1, AccessPolicy_>>
     {
         static_assert(!std::is_reference<ValueType_>::value, "ValueType can't be reference");
     public:
@@ -414,16 +422,15 @@ namespace yato
         static YATO_CONSTEXPR_VAR size_t dimensions_number = 1;
         static YATO_CONSTEXPR_VAR proxy_access_policy access_policy = AccessPolicy_;
 
-        using pointer_type   = std::add_pointer_t<value_type>;
-        using reference_type = typename proxy_access_traits<value_type, access_policy>::reference;
+        using plain_iterator        = typename proxy_access_traits<value_type, access_policy>::plain_iterator;
+        using const_plain_iterator  = typename proxy_access_traits<value_type, access_policy>::const_plain_iterator;
+        using iterator              = plain_iterator;
+        using const_iterator        = const_plain_iterator;
 
-        using sub_view       = reference_type;
-
-        using plain_iterator       = typename proxy_access_traits<value_type, access_policy>::plain_iterator;
-        using const_plain_iterator = typename proxy_access_traits<value_type, access_policy>::const_plain_iterator;
-
-        using iterator       = plain_iterator;
-        using const_iterator = const_plain_iterator;
+        using reference             = typename proxy_access_traits<value_type, access_policy>::reference;
+        using const_reference       = typename proxy_access_traits<value_type, access_policy>::const_reference;
+        using value_reference       = reference;
+        using const_value_reference = const_reference;
 
         using dimensions_type = dimensionality<dimensions_number, size_type>;
         //-------------------------------------------------------
@@ -502,16 +509,16 @@ namespace yato
         ~proxy_nd() = default;
 
         YATO_CONSTEXPR_FUNC_CXX14
-        reference_type operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
+        reference operator[](size_t idx) const YATO_NOEXCEPT_KEYWORD
         {
             YATO_REQUIRES(idx < size(0));
             return *yato::next(m_data_iter, idx);
         }
 
-        reference_type at(size_t idx) const
+        value_reference at(size_t idx) const
         {
             if (idx >= size(0)) {
-                throw yato::out_of_range_error("yato::array_sub_view_nd: out of range!");
+                throw yato::out_of_range_error("yato::proxy_nd: out of range!");
             }
             return (*this)[idx];
         }

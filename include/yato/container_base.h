@@ -9,6 +9,7 @@
 #define _YATO_CONTAINER_BASE_H_
 
 #include <array>
+#include <iterator>
 #include <tuple>
 #include "type_traits.h"
 #include "range.h"
@@ -190,9 +191,9 @@ YATO_PRAGMA_WARNING_POP
         }
 
         YATO_CONSTEXPR_FUNC
-        size_type total_size() const
+        size_type total_size(size_t start_dim = 0) const
         {
-            return total_size_impl_(0);
+            return total_size_impl_(start_dim);
         }
 
         YATO_CONSTEXPR_FUNC
@@ -269,6 +270,9 @@ YATO_PRAGMA_WARNING_POP
     public:
         using size_type = SizeType;
         static YATO_CONSTEXPR_VAR size_t dimensions_number = 0;
+        using iterator = std::add_pointer_t<SizeType>;
+        using const_iterator = std::add_pointer_t<std::add_const_t<SizeType>>;
+        using sub_dimensionality = dimensionality<0, SizeType>;
 
         YATO_CONSTEXPR_FUNC
         dimensionality() = default;
@@ -285,14 +289,98 @@ YATO_PRAGMA_WARNING_POP
 
         dimensionality(dimensionality &&) noexcept = default;
 
-        dimensionality & operator = (const dimensionality &) = default;
+        dimensionality& operator=(const dimensionality&) = default;
 
-        dimensionality & operator = (dimensionality &&) noexcept = default;
+        dimensionality& operator=(dimensionality&&) noexcept = default;
+
+        YATO_CONSTEXPR_FUNC
+        const size_type& operator[](size_t /*idx*/) const
+        {
+            throw std::runtime_error("dimensionality<0> can't be dereferenced.");
+        }
+
+        YATO_CONSTEXPR_FUNC
+        size_type& operator[](size_t /*idx*/)
+        {
+            throw std::runtime_error("dimensionality<0> can't be dereferenced.");
+        }
+
+        const size_type & at(size_t /*idx*/) const
+        {
+            throw std::runtime_error("dimensionality<0> can't be dereferenced.");
+        }
+
+        size_type & at(size_t /*idx*/)
+        {
+            throw std::runtime_error("dimensionality<0> can't be dereferenced.");
+        }
 
         YATO_CONSTEXPR_FUNC
         size_t dimensions_num() const
         {
             return dimensions_number;
+        }
+
+        YATO_CONSTEXPR_FUNC
+        size_t size() const
+        {
+            return 0;
+        }
+
+        YATO_CONSTEXPR_FUNC
+        size_type total_size(size_t /*start_dim*/ = 0) const
+        {
+            return 0;
+        }
+
+        YATO_CONSTEXPR_FUNC
+        size_type front() const
+        {
+            throw std::runtime_error("dimensionality<0> can't be dereferenced.");
+        }
+
+        YATO_CONSTEXPR_FUNC
+        size_type front()
+        {
+            throw std::runtime_error("dimensionality<0> can't be dereferenced.");
+        }
+
+        YATO_CONSTEXPR_FUNC
+        size_type back() const
+        {
+            throw std::runtime_error("dimensionality<0> can't be dereferenced.");
+        }
+
+        YATO_CONSTEXPR_FUNC
+        size_type back()
+        {
+            throw std::runtime_error("dimensionality<0> can't be dereferenced.");
+        }
+
+        iterator begin()
+        {
+            return nullptr;
+        }
+
+        const_iterator cbegin() const
+        {
+            return nullptr;
+        }
+
+        iterator end()
+        {
+            return nullptr;
+        }
+
+        const_iterator cend() const
+        {
+            return nullptr;
+        }
+
+        YATO_CONSTEXPR_FUNC_CXX14
+        sub_dimensionality sub_dims() const
+        {
+            return sub_dimensionality{};
         }
     };
 
@@ -372,6 +460,7 @@ YATO_PRAGMA_WARNING_POP
             return m_values[idx];
         }
 
+        YATO_CONSTEXPR_FUNC
         size_type & operator[](size_t idx)
         {
             return m_values[idx];
@@ -405,10 +494,45 @@ YATO_PRAGMA_WARNING_POP
         static YATO_CONSTEXPR_VAR size_t dimensions_number = 0;
         using size_type = SizeType_;
 
+        using iterator       = std::add_pointer_t<size_type>;
+        using const_iterator = std::add_pointer_t<std::add_const_t<size_type>>;
+
         template <typename SizeIter>
         YATO_CONSTEXPR_FUNC_CXX14 explicit
         strides_array(const range<SizeIter> &)
         { }
+
+        YATO_CONSTEXPR_FUNC
+        const size_type & operator[](size_t idx) const
+        {
+            throw std::runtime_error("strides_array<0> can't be dereferenced.");
+        }
+
+        YATO_CONSTEXPR_FUNC
+        size_type & operator[](size_t idx)
+        {
+            throw std::runtime_error("strides_array<0> can't be dereferenced.");
+        }
+
+        iterator begin()
+        {
+            return nullptr;
+        }
+
+        const_iterator cbegin() const
+        {
+            return nullptr;
+        }
+
+        iterator end()
+        {
+            return nullptr;
+        }
+
+        const_iterator cend() const
+        {
+            return nullptr;
+        }
     };
 
 
@@ -580,6 +704,7 @@ YATO_PRAGMA_WARNING_POP
     struct proxy_access_traits<ValueType_, proxy_access_policy::lvalue_ref>
     {
         using reference             = std::add_lvalue_reference_t<ValueType_>;
+        using const_reference       = std::add_lvalue_reference_t<std::add_const_t<ValueType_>>;
         using plain_iterator        = std::add_pointer_t<ValueType_>;
         using const_plain_iterator  = std::add_pointer_t<std::add_const_t<ValueType_>>;
         using const_value_type      = std::add_const_t<ValueType_>;
@@ -589,6 +714,7 @@ YATO_PRAGMA_WARNING_POP
     struct proxy_access_traits<ValueType_, proxy_access_policy::rvalue_ref>
     {
         using reference             = std::add_rvalue_reference_t<ValueType_>;
+        using const_reference       = std::add_rvalue_reference_t<ValueType_>;
         using plain_iterator        = std::move_iterator<std::add_pointer_t<ValueType_>>;
         using const_plain_iterator  = std::move_iterator<std::add_pointer_t<ValueType_>>;
         using const_value_type      = ValueType_;
