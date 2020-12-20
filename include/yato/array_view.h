@@ -381,8 +381,7 @@ namespace yato
      */
     template<typename ValueType_, size_t DimsNum>
     class array_view_nd
-        : public details::choose_container_interface_t<ValueType_, DimsNum, array_view_nd<ValueType_, DimsNum>>
-        , private details::array_view_base<ValueType_, DimsNum>
+        : private details::array_view_base<ValueType_, DimsNum>
     {
     public:
         using this_type = array_view_nd<ValueType_, DimsNum>;
@@ -762,12 +761,12 @@ namespace yato
         return array_view_nd<Ty_, 3>(&arr[0][0][0], yato::dims(Size1_, Size2_, Size3_));
     }
 
-    template<typename Ty_, size_t Dims_ , typename Impl_>
-    YATO_CONSTEXPR_FUNC
-    auto view(const container_nd<Ty_, Dims_, Impl_> & c)
-    {
-        return array_view_nd<Ty_, Dims_>(c.data(), c.dimensions(), c.strides());
-    }
+    //template<typename Ty_, size_t Dims_ , typename Impl_>
+    //YATO_CONSTEXPR_FUNC
+    //auto view(const container_nd<Ty_, Dims_, Impl_> & c)
+    //{
+    //    return array_view_nd<Ty_, Dims_>(c.data(), c.dimensions(), c.strides());
+    //}
 
     template <typename Ty_, size_t Dims_>
     YATO_CONSTEXPR_FUNC
@@ -813,12 +812,12 @@ namespace yato
         return array_view_nd<std::add_const_t<Ty_>, 3>(&arr[0][0][0], yato::dims(Size1_, Size2_, Size3_));
     }
 
-    template<typename Ty_, size_t Dims_ , typename Impl_>
-    YATO_CONSTEXPR_FUNC
-    auto cview(const const_container_nd<Ty_, Dims_, Impl_> & c)
-    {
-        return array_view_nd<std::add_const_t<Ty_>, Dims_>(c.cdata(), c.dimensions(), c.strides());
-    }
+    //template<typename Ty_, size_t Dims_ , typename Impl_>
+    //YATO_CONSTEXPR_FUNC
+    //auto cview(const const_container_nd<Ty_, Dims_, Impl_> & c)
+    //{
+    //    return array_view_nd<std::add_const_t<Ty_>, Dims_>(c.cdata(), c.dimensions(), c.strides());
+    //}
 
     template <typename Ty_, size_t Dims_>
     YATO_CONSTEXPR_FUNC

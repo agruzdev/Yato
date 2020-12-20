@@ -521,7 +521,6 @@ YATO_PRAGMA_WARNING_POP
 
         template<typename ValueType_, typename Shape_>
         class array_nd_impl
-            //: public const_container_nd<ValueType_, Shape_::dimensions_number, array_nd_impl<ValueType_, Shape_>>
         {
         public:
             using value_type   = ValueType_;

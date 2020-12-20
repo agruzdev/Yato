@@ -44,7 +44,6 @@ namespace yato
      */
     template <typename ValueType_, typename DimensionDescriptor_, size_t DimsNum_, proxy_access_policy AccessPolicy_>
     class proxy_nd
-        : public details::choose_container_interface_t<ValueType_, DimsNum_, proxy_nd<ValueType_, DimensionDescriptor_, DimsNum_, AccessPolicy_>>
     {
         static_assert(!std::is_reference<ValueType_>::value, "ValueType can't be reference");
         static_assert(DimsNum_ >= 1, "dimensions_number cant be 0");
@@ -413,7 +412,6 @@ namespace yato
 
     template <typename ValueType_, typename DimensionDescriptor_, proxy_access_policy AccessPolicy_>
     class proxy_nd<ValueType_, DimensionDescriptor_, 1, AccessPolicy_>
-        : public details::choose_container_interface_t<ValueType_, 1, proxy_nd<ValueType_, DimensionDescriptor_, 1, AccessPolicy_>>
     {
         static_assert(!std::is_reference<ValueType_>::value, "ValueType can't be reference");
     public:

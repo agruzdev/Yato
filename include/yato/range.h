@@ -222,9 +222,9 @@ namespace yato
      */
     template <typename Ty_>
     YATO_CONSTEXPR_FUNC
-    auto make_range(Ty_ && object)
+    auto make_range(Ty_& object)
     {
-        return make_range(std::begin(std::forward<Ty_>(object)), std::end(std::forward<Ty_>(object)));
+        return make_range(std::begin(object), std::end(object));
     }
 
     /**
@@ -232,9 +232,9 @@ namespace yato
      */
     template <typename Ty_>
     YATO_CONSTEXPR_FUNC
-    auto make_crange(Ty_ && object)
+    auto make_crange(const Ty_& object)
     {
-        return make_range(std::cbegin(std::forward<Ty_>(object)), std::cend(std::forward<Ty_>(object)));
+        return make_range(std::cbegin(object), std::cend(object));
     }
 
 
@@ -243,10 +243,10 @@ namespace yato
      */
     template <typename Ty_>
     YATO_CONSTEXPR_FUNC
-    auto numeric_range(Ty_ && last)
+    auto numeric_range(Ty_&& last)
     {
         using iter_type = numeric_iterator<yato::remove_cvref_t<Ty_>>;
-        return make_range(iter_type{static_cast<Ty_>(0)}, iter_type{std::forward<Ty_>(last)});
+        return make_range(iter_type(static_cast<yato::remove_cvref_t<Ty_>>(0)), iter_type(std::forward<Ty_>(last)));
     }
 
     /**
@@ -254,11 +254,11 @@ namespace yato
      */
     template <typename Ty1_, typename Ty2_>
     YATO_CONSTEXPR_FUNC
-    auto numeric_range(Ty1_ && first, Ty2_ && last)
+    auto numeric_range(Ty1_&& first, Ty2_&& last)
     {
         using iter1_type = numeric_iterator<yato::remove_cvref_t<Ty1_>>;
         using iter2_type = numeric_iterator<yato::remove_cvref_t<Ty2_>>;
-        return make_range(iter1_type{std::forward<Ty1_>(first)}, iter2_type{std::forward<Ty2_>(last)});
+        return make_range(iter1_type(std::forward<Ty1_>(first)), iter2_type(std::forward<Ty2_>(last)));
     }
 }
 

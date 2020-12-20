@@ -558,8 +558,6 @@ namespace yato
 
         template <typename _DataType, size_t _DimensionsNum, typename _Allocator, typename CapacityPolicy_ = details::default_capacity_policy>
         class vector_nd_impl
-            // Since vector type has no information about const/mutable access, only const_container_nd can be safely implemented
-            : public const_container_nd<_DataType, _DimensionsNum, vector_nd_impl<_DataType, _DimensionsNum, _Allocator, CapacityPolicy_>>
         {
         public:
             /*
@@ -1683,21 +1681,23 @@ namespace yato
              *  Add sub-vector element to the back.
              *  In the case of exception the vector remains unchanged.
              */
-            template <typename OtherValue_, typename Impl_>
-            void push_back(const const_container_nd<OtherValue_, dimensions_number - 1, Impl_> & sub_element)
+            template <typename Container_>
+            auto push_back(const Container_& sub_element)
+                -> std::enable_if_t<(yato::container_traits<Container_>::dimensions_number == dimensions_number - 1)>
             {
-                const auto sub_dims = sub_element.dimensions_range();
+                using container_ops = container_ops<Container_>;
+                const auto sub_dims = container_ops::dimensions_range(sub_element);
                 if(!match_sub_dimensions_(sub_dims)) {
                     throw yato::argument_error("yato::vector_nd[push_back]: Subvector dimensions mismatch!");
                 }
                 init_dimensions_if_empty_(sub_dims);
 
                 const size_t old_size = total_size();
-                const size_t new_size = old_size + sub_element.total_size();
+                const size_t new_size = old_size + container_ops::total_size(sub_element);
                 const auto insert_range = m_raw_vector.prepare_push_back(old_size, new_size);
                 value_type* dst = insert_range.begin();
                 try {
-                    memory::copy_to_uninitialized_multidim(m_raw_vector.allocator(), sub_element.cbegin(), sub_element.cend(), dst);
+                    memory::copy_to_uninitialized_multidim(m_raw_vector.allocator(), container_ops::cbegin(sub_element), container_ops::cend(sub_element), dst);
                 }
                 catch(...) {
                     // delete all, since sub-vector was not inserted wholly.
@@ -1756,8 +1756,9 @@ namespace yato
              *  In the case of error only part of vector [0, position) will be kept.
              *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
              */
-            template <typename OtherValue_, typename Impl_>
-            iterator insert(const const_iterator & position, const const_container_nd<OtherValue_, dimensions_number - 1, Impl_> & sub_element)
+            template <typename Container_>
+            auto insert(const const_iterator& position, const Container_& sub_element)
+                -> std::enable_if_t<(yato::container_traits<Container_>::dimensions_number == dimensions_number - 1), iterator>
             {
                 return insert(position, 1, sub_element);
             }
@@ -1806,18 +1807,20 @@ namespace yato
              *  Insert count copies of sub-vector element
              *  @param position iterator(proxy) to the position to insert element before; If iterator doens't belong to this vector, the behavior is undefined
              */
-            template <typename OtherValue_, typename Impl_>
-            iterator insert(const const_iterator & position, size_t count, const const_container_nd<OtherValue_, dimensions_number - 1, Impl_> & sub_element)
+            template <typename Container_>
+            auto insert(const const_iterator& position, size_t count, const Container_& sub_element)
+                -> std::enable_if_t<(yato::container_traits<Container_>::dimensions_number == dimensions_number - 1), iterator>
             {
-                if(count > 0) {
-                    const auto sub_dims = sub_element.dimensions_range();
+                using container_ops = yato::container_ops<Container_>;
+                if (count > 0) {
+                    const auto sub_dims = container_ops::dimensions_range(sub_element);
                     if(!match_sub_dimensions_(sub_dims)) {
                         throw yato::argument_error("yato::vector_nd[insert]: Subvector dimensions number mismatch!");
                     }
                     init_dimensions_if_empty_(sub_dims);
 
                     const size_t insert_offset = raw_offset_checked_(position);
-                    const size_t element_size  = sub_element.total_size();
+                    const size_t element_size  = container_ops::total_size(sub_element);
                     if(element_size == 0) {
                         throw yato::argument_error("yato::vector_nd[insert]: Insert value is empty!");
                     }
@@ -1830,7 +1833,7 @@ namespace yato
                     allocator_type& alloc = m_raw_vector.allocator();
                     try {
                         while(inserted_count != count) {
-                            memory::copy_to_uninitialized_multidim(m_raw_vector.allocator(), sub_element.cbegin(), sub_element.cend(), copy_last);
+                            memory::copy_to_uninitialized_multidim(m_raw_vector.allocator(), container_ops::cbegin(sub_element), container_ops::cend(sub_element), copy_last);
                             copy_first = copy_last;
                             ++inserted_count;
                         }
@@ -1973,8 +1976,6 @@ namespace yato
 
         template <typename _DataType, typename _Allocator, typename CapacityPolicy_>
         class vector_nd_impl<_DataType, 1, _Allocator, CapacityPolicy_>
-            // Since vector type has no information about const/mutable access, only const_container_nd can be safely implemented
-            : public const_container_nd<_DataType, 1, vector_nd_impl<_DataType, 1, _Allocator, CapacityPolicy_>>
         {
         public:
             /*

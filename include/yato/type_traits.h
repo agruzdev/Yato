@@ -661,6 +661,10 @@ namespace yato
     template <typename Ty_, ValueType_ Default_, typename = void> struct TraitName_ { static YATO_CONSTEXPR_VAR ValueType_ value = Default_; }; \
     template <typename Ty_, ValueType_ Default_> struct TraitName_<Ty_, Default_, yato::void_t<decltype(Ty_::TargetMember_)>> { static YATO_CONSTEXPR_VAR ValueType_ value = Ty_::TargetMember_; };
 
+#define YATO_DEFINE_METHOD_CHECK_0AGR(TraitName_, MethodName_) \
+    template <typename Ty_, typename = void> struct TraitName_ : std::false_type { }; \
+    template <typename Ty_> struct TraitName_<Ty_, yato::void_t<decltype(std::declval<Ty_>(). MethodName_ ())>>: std::true_type { };
+
 #define YATO_DEFINE_METHOD_CHECK_RET_0AGR(TraitName_, MethodName_) \
     template <typename Ty_, typename RetType_, typename = void> struct TraitName_ : std::false_type { }; \
     template <typename Ty_, typename RetType_> struct TraitName_<Ty_, RetType_, std::enable_if_t<std::is_convertible<decltype(std::declval<Ty_>(). MethodName_ ()), RetType_>::value>>: std::true_type { };
