@@ -71,8 +71,6 @@ namespace yato
         using const_value_reference = typename proxy_access_traits<value_type, access_policy>::const_reference;
 
         using dimensions_type = dimensionality<dimensions_number, size_type>;
-
-        static YATO_CONSTEXPR_VAR container_tag container_category = container_tag::general;
         //-------------------------------------------------------
 
         template <proxy_access_policy Py_>
@@ -435,8 +433,6 @@ namespace yato
         using const_value_reference = const_reference;
 
         using dimensions_type = dimensionality<dimensions_number, size_type>;
-
-        static YATO_CONSTEXPR_VAR container_tag container_category = container_tag::continuous;
         //-------------------------------------------------------
 
         template <proxy_access_policy Py_>

@@ -577,8 +577,6 @@ namespace yato
 
             static YATO_CONSTEXPR_VAR size_t dimensions_number = _DimensionsNum;
             static_assert(dimensions_number > 1, "Implementation for dimensions number larger than 1");
-
-            static YATO_CONSTEXPR_VAR container_tag container_category = container_tag::continuous;
             //-------------------------------------------------------
 
         private:

@@ -117,8 +117,6 @@ YATO_PRAGMA_WARNING_POP
             using plain_iterator       = typename proxy_access_traits<value_type, access_policy>::plain_iterator;
             using const_plain_iterator = typename proxy_access_traits<value_type, access_policy>::const_plain_iterator;
 
-            static YATO_CONSTEXPR_VAR container_tag container_category = container_tag::continuous;
-
         private:
             value_type* m_iter;
 
@@ -192,6 +190,12 @@ YATO_PRAGMA_WARNING_POP
             size_t total_stored() const
             {
                 return shape::total_size * sizeof(value_type); 
+            }
+
+            YATO_CONSTEXPR_FUNC
+            bool continuous() const
+            {
+                return true;
             }
 
             YATO_CONSTEXPR_FUNC
@@ -331,8 +335,6 @@ YATO_PRAGMA_WARNING_POP
             using iterator          = plain_iterator;
             using const_iterator    = const_plain_iterator;
 
-            static YATO_CONSTEXPR_VAR container_tag container_category = container_tag::continuous;
-
         private:
             value_type* m_iter;
 
@@ -391,7 +393,7 @@ YATO_PRAGMA_WARNING_POP
             YATO_CONSTEXPR_FUNC
             size_t total_size() const
             {
-                return shape::total_size; 
+                return shape::total_size;
             }
 
             /**
@@ -400,7 +402,13 @@ YATO_PRAGMA_WARNING_POP
             YATO_CONSTEXPR_FUNC
             size_t total_stored() const
             {
-                return shape::total_size * sizeof(value_type); 
+                return shape::total_size * sizeof(value_type);
+            }
+
+            YATO_CONSTEXPR_FUNC
+            bool continuous() const
+            {
+                return true;
             }
 
             YATO_CONSTEXPR_FUNC
@@ -548,8 +556,6 @@ YATO_PRAGMA_WARNING_POP
              */
             using plain_iterator       = std::add_pointer_t<value_type>;
             using const_plain_iterator = std::add_pointer_t<std::add_const_t<value_type>>;
-
-            static YATO_CONSTEXPR_VAR container_tag container_category = container_tag::continuous;
             //-------------------------------------------------------
 
         private:
@@ -768,6 +774,15 @@ YATO_PRAGMA_WARNING_POP
             }
 
             /**
+             * array_nd is always continuous
+             */
+            YATO_CONSTEXPR_FUNC
+            bool continuous() const
+            {
+                return true;
+            }
+
+            /**
              * Get byte offset till next sub-view
              * Returns size in bytes for 1D view
              */
@@ -874,8 +889,6 @@ YATO_PRAGMA_WARNING_POP
 
             using iterator          = plain_iterator;
             using const_iterator    = const_plain_iterator;
-
-            static YATO_CONSTEXPR_VAR container_tag container_category = container_tag::continuous;
             //-------------------------------------------------------
 
         private:
@@ -1084,6 +1097,15 @@ YATO_PRAGMA_WARNING_POP
             size_t total_stored() const
             {
                 return shape::total_size * sizeof(value_type); 
+            }
+
+            /**
+             * array_nd is always continuous
+             */
+            YATO_CONSTEXPR_FUNC
+            bool continuous() const
+            {
+                return true;
             }
 
             /**

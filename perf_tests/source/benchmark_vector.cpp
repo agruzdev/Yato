@@ -9,9 +9,9 @@
 #include <cmath>
 #include <numeric>
 
-#include <yato/vector_nd.h>
-
 #include <benchmark/benchmark.h>
+
+#include <yato/vector_nd.h>
 
 
 void Vector1D_Write_STL(benchmark::State& state)

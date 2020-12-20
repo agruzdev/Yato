@@ -7,7 +7,6 @@
 
 #include "gtest/gtest.h"
 
-#include "yato/sampler.h"
 #include "yato/array_nd.h"
 #include "yato/vector_nd.h"
 

@@ -23,22 +23,10 @@ namespace yato
 {
     struct sampler_default;
 
-    /**
-     * Indicates container category
-     */
-    enum class container_tag
-    {
-        general,            ///< No assumptions about the container properties. The most general interface will be used. Fits for any STL container, even std::list and std::map.
-        continuous          ///< The stored objects are always stored as an continous array. Fits for containers like std::array and std::vector.
-    };
-
-
     namespace details
     {
-        YATO_DEFINE_VALUE_GETTER(get_container_category, container_category, container_tag)
         YATO_DEFINE_TYPE_GETTER(get_size_type, size_type)
         YATO_DEFINE_TYPE_GETTER(get_allocator_type, allocator_type)
-        YATO_DEFINE_VALUE_GETTER(get_dimensions_number, dimensions_number, std::size_t)
         YATO_DEFINE_TYPE_GETTER(get_dimensions_type, dimensions_type)
         YATO_DEFINE_TYPE_GETTER(get_strides_type, strides_type)
         YATO_DEFINE_TYPE_GETTER(get_plain_iterator, plain_iterator)
@@ -120,29 +108,6 @@ namespace yato
     } // namespace details;
 
 
-    /**
-     * Retruns container category.
-     * The category defines change the container_ops behaviour.
-     * Sometimes only overriding container_category is enough instead of overriding the whole container_traits and/or container_ops classes.
-     */
-    template <typename Container_>
-    struct container_category_trait
-    {
-        static YATO_CONSTEXPR_VAR container_tag value = details::get_container_category<Container_, container_tag::general>::value;
-    };
-
-    template <typename Ty_, size_t Size_>
-    struct container_category_trait<std::array<Ty_, Size_>>
-    {
-        static YATO_CONSTEXPR_VAR container_tag value = container_tag::continuous;
-    };
-
-    template <typename Ty_, typename Alloc_>
-    struct container_category_trait<std::vector<Ty_, Alloc_>>
-    {
-        static YATO_CONSTEXPR_VAR container_tag value = container_tag::continuous;
-    };
-
 
     /**
      * Provides the standardized access to container properties
@@ -151,11 +116,6 @@ namespace yato
     struct container_traits
     {
         //static_assert(std::is_same<yato::remove_cvref_t<Container_>, Container_>::value, "Container_ must be a type without modifiers");
-
-        /**
-         * Alias to yato::container_category<Container>
-         */
-        static YATO_CONSTEXPR_VAR container_tag container_category = yato::container_category_trait<Container_>::value;
 
         /**
          * Alias to Container::value_type. Required member.
@@ -180,9 +140,9 @@ namespace yato
         using allocator_type = typename details::get_allocator_type<Container_, void>::type;
 
         /**
-         * Equals to Container::dimensions_number if present, otherwise 1.
+         * Number of container dimensions. Required member.
          */
-        static YATO_CONSTEXPR_VAR std::size_t dimensions_number = details::get_dimensions_number<Container_, 1>::value;
+        static YATO_CONSTEXPR_VAR std::size_t dimensions_number = Container_::dimensions_number;
         static_assert(dimensions_number > 0, "dimensions_number must be positive");
 
         /**
@@ -338,14 +298,150 @@ namespace yato
     template <typename Ty_>
     struct is_container<Ty_,
         typename yato::test_type<
+            decltype(Ty_::dimensions_number),
             typename Ty_::value_type,
             typename Ty_::iterator,
             typename Ty_::const_iterator
         >::type
     >
-        : std::integral_constant<bool,
-            ((yato::container_traits<Ty_>::dimensions_number == 1) && yato::container_traits<Ty_>::has_method_size0) || yato::container_traits<Ty_>::has_method_size1
-        >
+        : std::true_type
+    { };
+
+
+
+    template <typename Ty_, std::size_t N_>
+    struct container_traits<Ty_[N_]>
+    {
+        using value_type = Ty_;
+        using size_type  = std::size_t;
+        using index_type = std::ptrdiff_t;
+
+        using allocator_type = void;
+
+        static YATO_CONSTEXPR_VAR std::size_t dimensions_number = 1;
+
+        using dimensions_type = yato::dimensionality<dimensions_number, size_type>;
+        using strides_type = yato::strides_array<0, size_type>;
+
+        using iterator = std::add_pointer_t<Ty_>;
+        using const_iterator = std::add_pointer_t<std::add_const_t<Ty_>>;
+        using plain_iterator = iterator;
+        using const_plain_iterator = const_iterator;
+
+        using reference = std::add_lvalue_reference_t<Ty_>;
+        using const_reference = std::add_lvalue_reference_t<std::add_const_t<Ty_>>;
+        using value_reference = reference;
+        using const_value_reference = const_reference;
+
+        static YATO_CONSTEXPR_VAR bool has_method_size0 = false;
+        static YATO_CONSTEXPR_VAR bool has_method_size1 = false;
+        static YATO_CONSTEXPR_VAR bool has_method_stride = false;
+        static YATO_CONSTEXPR_VAR bool has_method_continuous = false;
+        static YATO_CONSTEXPR_VAR bool has_operator_subscript = false;
+        static YATO_CONSTEXPR_VAR bool has_operator_csubscript = false;
+        static YATO_CONSTEXPR_VAR bool has_method_dimensions = false;
+        static YATO_CONSTEXPR_VAR bool has_method_dimensions_range = false;
+        static YATO_CONSTEXPR_VAR bool has_method_strides = false;
+        static YATO_CONSTEXPR_VAR bool has_method_total_size = false;
+        static YATO_CONSTEXPR_VAR bool has_method_data = false;
+        static YATO_CONSTEXPR_VAR bool has_method_cdata = false;
+    };
+
+    template <typename Ty_, std::size_t N_>
+    struct is_container<Ty_[N_]>
+        : std::true_type
+    { };
+
+
+    template <typename Ty_, std::size_t N_>
+    struct container_traits<std::array<Ty_, N_>>
+    {
+        using std_array_type_ = std::array<Ty_, N_>;
+
+        using value_type = typename std_array_type_::value_type;
+        using size_type  = typename std_array_type_::size_type;
+        using index_type = typename std_array_type_::size_type;
+
+        using allocator_type = void;
+
+        static YATO_CONSTEXPR_VAR std::size_t dimensions_number = 1;
+
+        using dimensions_type = yato::dimensionality<dimensions_number, size_type>;
+        using strides_type = yato::strides_array<0, size_type>;
+
+        using iterator = typename std_array_type_::iterator;
+        using const_iterator = typename std_array_type_::const_iterator;
+        using plain_iterator = iterator;
+        using const_plain_iterator = const_iterator;
+
+        using reference = typename std_array_type_::reference;
+        using const_reference = typename std_array_type_::const_reference;
+        using value_reference = reference;
+        using const_value_reference = const_reference;
+
+        static YATO_CONSTEXPR_VAR bool has_method_size0 = true;
+        static YATO_CONSTEXPR_VAR bool has_method_size1 = false;
+        static YATO_CONSTEXPR_VAR bool has_method_stride = false;
+        static YATO_CONSTEXPR_VAR bool has_method_continuous = false;
+        static YATO_CONSTEXPR_VAR bool has_operator_subscript = true;
+        static YATO_CONSTEXPR_VAR bool has_operator_csubscript = true;
+        static YATO_CONSTEXPR_VAR bool has_method_dimensions = false;
+        static YATO_CONSTEXPR_VAR bool has_method_dimensions_range = false;
+        static YATO_CONSTEXPR_VAR bool has_method_strides = false;
+        static YATO_CONSTEXPR_VAR bool has_method_total_size = false;
+        static YATO_CONSTEXPR_VAR bool has_method_data = true;
+        static YATO_CONSTEXPR_VAR bool has_method_cdata = false;
+    };
+
+    template <typename Ty_, std::size_t N_>
+    struct is_container<std::array<Ty_, N_>>
+        : std::true_type
+    { };
+
+
+    template <typename Ty_, typename Alloc_>
+    struct container_traits<std::vector<Ty_, Alloc_>>
+    {
+        using std_vector_type_ = std::vector<Ty_, Alloc_>;
+
+        using value_type = typename std_vector_type_::value_type;
+        using size_type  = typename std_vector_type_::size_type;
+        using index_type = typename std_vector_type_::size_type;
+
+        using allocator_type = Alloc_;
+
+        static YATO_CONSTEXPR_VAR std::size_t dimensions_number = 1;
+
+        using dimensions_type = yato::dimensionality<dimensions_number, size_type>;
+        using strides_type = yato::strides_array<0, size_type>;
+
+        using iterator = typename std_vector_type_::iterator;
+        using const_iterator = typename std_vector_type_::const_iterator;
+        using plain_iterator = iterator;
+        using const_plain_iterator = const_iterator;
+
+        using reference = typename std_vector_type_::reference;
+        using const_reference = typename std_vector_type_::const_reference;
+        using value_reference = reference;
+        using const_value_reference = const_reference;
+
+        static YATO_CONSTEXPR_VAR bool has_method_size0 = true;
+        static YATO_CONSTEXPR_VAR bool has_method_size1 = false;
+        static YATO_CONSTEXPR_VAR bool has_method_stride = false;
+        static YATO_CONSTEXPR_VAR bool has_method_continuous = false;
+        static YATO_CONSTEXPR_VAR bool has_operator_subscript = true;
+        static YATO_CONSTEXPR_VAR bool has_operator_csubscript = true;
+        static YATO_CONSTEXPR_VAR bool has_method_dimensions = false;
+        static YATO_CONSTEXPR_VAR bool has_method_dimensions_range = false;
+        static YATO_CONSTEXPR_VAR bool has_method_strides = false;
+        static YATO_CONSTEXPR_VAR bool has_method_total_size = false;
+        static YATO_CONSTEXPR_VAR bool has_method_data = true;
+        static YATO_CONSTEXPR_VAR bool has_method_cdata = false;
+    };
+
+    template <typename Ty_, typename Alloc_>
+    struct is_container<std::vector<Ty_, Alloc_>>
+        : std::true_type
     { };
 
 
@@ -360,7 +456,6 @@ namespace yato
         static_assert(is_container<Container_>::value, "The Container_ type does not satisfy the yato::is_container<T> requirements.");
 
         using traits_type = container_traits<Container_>;
-        using traits_type::container_category;
         using traits_type::dimensions_number;
         using typename traits_type::value_type;
         using typename traits_type::size_type;
@@ -462,7 +557,7 @@ namespace yato
         static YATO_CONSTEXPR_FUNC
         bool continuous(yato::disable1_if_t<has_method_continuous, const Container_&> /*c*/)
         {
-            return (container_category == container_tag::continuous);
+            return (dimensions_number == 1);
         }
 
         static YATO_CONSTEXPR_FUNC

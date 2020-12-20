@@ -51,8 +51,6 @@ namespace yato
             using const_reference       = sub_view;
             using value_reference       = std::add_lvalue_reference_t<value_type>;
             using const_value_reference = std::add_lvalue_reference_t<std::add_const_t<value_type>>;
-
-            static YATO_CONSTEXPR_VAR container_tag container_category = container_tag::general;
             //--------------------------------------------------------------------
 
             plain_iterator m_base_ptr;
@@ -242,8 +240,6 @@ namespace yato
 
             using value_reference       = reference;
             using const_value_reference = const_reference;
-
-            static YATO_CONSTEXPR_VAR container_tag container_category = container_tag::continuous;
             //--------------------------------------------------------------------
 
             plain_iterator  m_base_ptr;
@@ -392,7 +388,6 @@ namespace yato
         using const_pointer_type = std::add_pointer_t<std::add_const_t<ValueType_>>;
         static YATO_CONSTEXPR_VAR size_t dimensions_number = DimsNum;
 
-        using base_type::container_category;
         using typename base_type::dimensions_type;
         using typename base_type::dim_descriptor;
         using typename base_type::element_strides_type;
