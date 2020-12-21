@@ -71,7 +71,7 @@ namespace
             return *this;
         }
 
-        operator int() const
+        operator const int&() const
         {
             return m_val;
         }

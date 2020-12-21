@@ -503,13 +503,13 @@ YATO_PRAGMA_WARNING_POP
         { }
 
         YATO_CONSTEXPR_FUNC
-        const size_type & operator[](size_t idx) const
+        const size_type & operator[](size_t /*idx*/) const
         {
             throw std::runtime_error("strides_array<0> can't be dereferenced.");
         }
 
         YATO_CONSTEXPR_FUNC
-        size_type & operator[](size_t idx)
+        size_type & operator[](size_t /*idx*/)
         {
             throw std::runtime_error("strides_array<0> can't be dereferenced.");
         }

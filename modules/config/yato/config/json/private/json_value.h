@@ -9,7 +9,12 @@
 #define _YATO_CONFIG_JSON_PRIVATE_JSON_VALUE_H_
 
 
+#include "yato/prerequisites.h"
+
+YATO_PRAGMA_WARNING_PUSH
+YATO_CLANG_WARNING_IGNORE("-Wtautological-overlap-compare")
 #include <nlohmann/json.hpp>
+YATO_PRAGMA_WARNING_POP
 
 #include "../../config_backend.h"
 

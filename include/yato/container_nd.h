@@ -806,13 +806,13 @@ namespace yato
 
     private:
         template <typename ValueType_, size_t Dim_, typename SamplerRef_, typename Container_, typename... Indexes_>
-        static YATO_CONSTEXPR_FUNC
+        static YATO_CONSTEXPR_FUNC_CXX14
         return_type<ValueType_> load_impl_(SamplerRef_&& s, const Container_& c, index_type i0, index_type i1, Indexes_&&... indexes_tail)
         {
             using has_transform_index_ = details::has_transform_index_method<Sampler_, index_type, Dim_>;
             using has_boundary_value_  = details::has_boundary_value_method<Sampler_, ValueType_>;
             using container_ops = container_ops<Container_>;
-            size_t effective_idx;
+            size_t effective_idx{};
             if (invoke_transform_index_<Dim_>(has_transform_index_{}, std::forward<SamplerRef_>(s), i0, container_ops::size(c, 0), effective_idx)) {
                 return load_impl_<ValueType_, Dim_ + 1>(std::forward<SamplerRef_>(s), container_ops::csubscript(c, effective_idx), i1, std::forward<Indexes_>(indexes_tail)...);
             }
@@ -822,14 +822,14 @@ namespace yato
         }
 
         template <typename ValueType_, size_t Dim_, typename SamplerRef_, typename Container_>
-        static YATO_CONSTEXPR_FUNC
+        static YATO_CONSTEXPR_FUNC_CXX14
         return_type<ValueType_> load_impl_(SamplerRef_&& s, const Container_& c, index_type i)
         {
             using has_transform_index_ = details::has_transform_index_method<Sampler_, index_type, Dim_>;
             using has_transform_value_ = details::has_transform_value_method<Sampler_, ValueType_>;
             using has_boundary_value_  = details::has_boundary_value_method<Sampler_, ValueType_>;
             using container_ops = container_ops<Container_>;
-            size_t effective_idx;
+            size_t effective_idx{};
             if (invoke_transform_index_<Dim_>(has_transform_index_{}, std::forward<SamplerRef_>(s), i, container_ops::size(c, 0), effective_idx)) {
                 return invoke_transform_value_<ValueType_>(has_transform_value_{}, std::forward<SamplerRef_>(s), container_ops::csubscript(c, effective_idx));
             }
@@ -846,7 +846,7 @@ namespace yato
         }
 
         template <size_t Dim_, typename SamplerRef_>
-        static YATO_CONSTEXPR_FUNC
+        static YATO_CONSTEXPR_FUNC_CXX14
         bool invoke_transform_index_(std::false_type, SamplerRef_&& /*s*/, index_type in_idx, std::size_t size, std::size_t& out_idx)
         {
             if (in_idx < size) {

@@ -1,8 +1,11 @@
 ## Yato
 
-A small repository where I'm gatherting useful snippets and abstractions for C++ development
+A small repository where I'm gatherting useful snippets and abstractions for C++ development.
 
-If you find any bug, please feel free to submit an issue! It will be very helpful for me
+Yato includes 3 main modules: multidimensional containers and utils, actors system, and type-safe config.
+
+
+If you find any bug, please feel free to submit an issue! It will be very helpful for me.
 
 ## Licence
 
@@ -29,9 +32,9 @@ Currently the library can be successfully built by the following compilers:
 
 * MSVC 2019
 * MSVC 2017
-* MinGW 8.1
-* Clang 9.0.0 (x86_64-pc-windows-msvc)
-* Clang 9.0.0 (x86_64-mingw32) without tests
+* MinGW 9.3
+* Clang 11.0.0 (x86_64-pc-windows-msvc)
+* Clang 11.0.0 (x86_64-mingw32)
 * GCC 8.2
 * Android (llvm, NDK 21)
 

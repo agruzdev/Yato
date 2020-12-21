@@ -265,7 +265,7 @@ namespace conf {
 
     config config_builder::create()
     {
-        YATO_ASSERT(checked_handle_()->conf.unique(), "Builder must be unique owner of the config");
+        YATO_ASSERT(checked_handle_()->conf.use_count() == 1, "Builder must be unique owner of the config");
         config res = config(std::move(checked_handle_()->conf));
         m_impl.reset();
         return res;

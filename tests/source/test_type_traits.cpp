@@ -233,7 +233,7 @@ TEST(Yato_TypeTraits, make_function)
     auto f2 = yato::make_function(std::function<int(float, double)>());
     auto f3 = yato::make_function(l);
 
-    float x;
+    float x{};
     EXPECT_EQ(42.0, f3(0, x));
 }
 
