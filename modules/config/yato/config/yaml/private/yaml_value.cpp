@@ -44,6 +44,12 @@ namespace conf {
                         res.emplace<config_t>(std::make_shared<yaml_config>(m_node));
                     }
                     break;
+                case YAML::NodeType::Null: {
+                        using config_t = stored_type_trait<stored_type::config>::return_type;
+                        YAML::Node emptyNode = YAML::Load("{}");
+                        res.emplace<config_t>(std::make_shared<yaml_config>(emptyNode));
+                    }
+                    break;
                 default:
                     break;
             }
