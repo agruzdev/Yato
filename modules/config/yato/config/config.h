@@ -442,9 +442,14 @@ namespace conf {
 
         config_iterator(backend_ptr_t backend, const conf::path& p, size_t size)
             : m_backend(std::move(backend))
-            , m_idx(yato::narrow_cast<index_type>(config_entry(m_backend, p).index()))
+            , m_idx(yato::narrow_cast<index_type>(size))
             , m_size(yato::narrow_cast<index_type>(size))
-        { }
+        {
+            config_entry entry(m_backend, p);
+            if (entry) {
+                m_idx = yato::narrow_cast<index_type>(entry.index());
+            }
+        }
 
         YATO_ATTR_NODISCARD
         bool is_dereferencable_() const

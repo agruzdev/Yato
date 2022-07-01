@@ -50,6 +50,9 @@ void TestConfig_PlainObject(const yato::conf::config & conf)
     EXPECT_FALSE(ie->is_null());
     EXPECT_EQ(42, ie->value<int32_t>().get_or(0));
 
+    const auto ie2 = conf.find("notkey");
+    EXPECT_TRUE(ie2 == conf.cend());
+
     const auto str = conf.value<std::string>("message");
     EXPECT_EQ("somestr", str.get_or(""));
 
