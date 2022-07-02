@@ -18,10 +18,10 @@ include(${YATO_SOURCE_DIR}/cmake/dependency.common.functions.cmake)
 dependency_find_or_download(
     NAME INI
     VERBOSE_NAME "Inih"
-    URL "https://github.com/benhoyt/inih/archive/r47.zip"
-    HASH_MD5 "7c0a25a59da68891d4501c80997df13f"
-    FILE_NAME "inih-r47.zip"
-    PREFIX "inih-r47"
+    URL "https://github.com/benhoyt/inih/archive/refs/tags/r55.zip"
+    HASH_MD5 "9dac903c128edbd0cb0c29e8818e08d0"
+    FILE_NAME "inih-r55.zip"
+    PREFIX "inih-r55"
 )
 
 if(NOT TARGET Inih)
