@@ -18,9 +18,9 @@ include(${YATO_SOURCE_DIR}/cmake/dependency.common.functions.cmake)
 dependency_find_or_download(
     NAME XML
     VERBOSE_NAME "tinyxml2"
-    URL "https://github.com/leethomason/tinyxml2/archive/6.2.0.zip"
-    HASH_MD5 "dbf022eca0f698ea3a0fdea4c6bd5c5c"
-    PREFIX "tinyxml2-6.2.0"
+    URL "https://github.com/leethomason/tinyxml2/archive/refs/tags/9.0.0.zip"
+    HASH_MD5 "2a3b1b8acdc1a0bd15e4010d91c505f8"
+    PREFIX "tinyxml2-9.0.0"
 )
 
 if(NOT TARGET tinyxml2)
