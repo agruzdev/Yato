@@ -18,7 +18,7 @@ namespace json {
     config read_impl_(Args_&&... args)
     {
         backend_ptr_t backend = nullptr;
-        auto json = std::make_shared<nlohmann::json>(nlohmann::json::parse({ std::forward<Args_>(args)... }, nullptr, false));
+        auto json = std::make_shared<nlohmann::json>(nlohmann::json::parse(std::forward<Args_>(args)..., nullptr, false));
         if (!json->is_discarded()) {
             backend = std::make_shared<json_config>(std::move(json));
         }
@@ -27,7 +27,7 @@ namespace json {
 
     config read(const char* str, size_t len)
     {
-        return (len != yato::nolength) ? read_impl_(str, len) : read_impl_(str);
+        return (len != yato::nolength) ? read_impl_(str, str + len) : read_impl_(str);
     }
 
     config read(const std::string& str)
