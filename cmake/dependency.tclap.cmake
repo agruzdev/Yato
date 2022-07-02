@@ -18,10 +18,10 @@ include(${YATO_SOURCE_DIR}/cmake/dependency.common.functions.cmake)
 dependency_find_or_download(
     NAME TCLAP
     VERBOSE_NAME "TCLAP"
-    URL "https://sourceforge.net/projects/tclap/files/tclap-1.2.2.tar.gz"
-    HASH_MD5 "6f35665814dca292eceda007d7e13bcb"
-    FILE_NAME "tclap-1.2.2.tar.gz"
-    PREFIX "tclap-1.2.2"
+    URL "https://sourceforge.net/projects/tclap/files/tclap-1.2.5.tar.gz"
+    HASH_MD5 "346a92acf9b364dfbff0a6df03c8a59e"
+    FILE_NAME "tclap-1.2.5.tar.gz"
+    PREFIX "tclap-1.2.5"
 )
 
 set(TCLAP_INCLUDE_DIR ${TCLAP_FOUND_ROOT}/include CACHE INTERNAL "")
