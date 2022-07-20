@@ -140,3 +140,26 @@ TEST(Yato_Config, cmd_pruning)
     ASSERT_EQ(1,  conf.value<int32_t>("ff").get());
 }
 
+
+TEST(Yato_Config, cmd_dispatcher)
+{
+    int passed_value = 0;
+
+    auto dispatcher = yato::conf::cmd_dispatcher("Test")
+        .add_alternative("option1", 
+            [&](yato::config c) { passed_value = c.value<int32_t>("foo").get(); return 1; }, 
+            yato::conf::cmd_builder("Test1")
+                .integer(yato::conf::argument_type::required, "f", "foo", "foo arg", 42))
+        .add_alternative("option2",
+            [&](yato::config c) { passed_value = c.value<int32_t>("bar").get(); return 2; }, 
+            yato::conf::cmd_builder("Test2")
+                .integer(yato::conf::argument_type::required, "b", "bar", "foo arg", 42));
+
+    std::vector<std::string> cmd1 = {"exe", "option1", "-f", "10"};
+    ASSERT_EQ(1, dispatcher.parse(cmd1));
+    ASSERT_EQ(10, passed_value);
+
+    std::vector<std::string> cmd2 = {"exe", "option2", "-b", "20"};
+    ASSERT_EQ(2, dispatcher.parse(cmd2));
+    ASSERT_EQ(20, passed_value);
+}
