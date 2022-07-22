@@ -25,18 +25,21 @@
 
 
 #ifdef _MSC_VER
-# if (_MSC_VER >= 1920)
-#  define YATO_MSVC_2019
+# if (_MSC_VER >= 1930)
+#  define YATO_MSVC_2022 17
+#  define YATO_MSVC 17
+# elif (_MSC_VER >= 1920)
+#  define YATO_MSVC_2019 16
 #  define YATO_MSVC 16
 # elif (_MSC_VER >= 1910)
-#  define YATO_MSVC_2017
+#  define YATO_MSVC_2017 15
 #  define YATO_MSVC 15
 # elif (_MSC_VER >= 1900)
-#  define YATO_MSVC_2015
+#  define YATO_MSVC_2015 14
 #  define YATO_MSVC 14
 # elif (_MSC_VER >= 1800)
 #  define YATO_MSVC 12
-#  define YATO_MSVC_2013
+#  define YATO_MSVC_2013 12
 # else
 #  define YATO_MSVC 1
 # endif

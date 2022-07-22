@@ -111,7 +111,7 @@ TEST(Yato_TokenIterator, nonconst)
 }
 
 
-#if defined(YATO_MSVC_2017) || defined(YATO_CXX17)
+#if (YATO_MSVC >= YATO_MSVC_2017) || defined(YATO_CXX17)
 
 TEST(Yato_TokenIterator, common_range)
 {

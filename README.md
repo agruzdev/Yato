@@ -9,7 +9,7 @@ If you find any bug, please feel free to submit an issue! It will be very helpfu
 
 ## Licence
 
-    Copyright 2016-2020 Alexey Gruzdev
+    Copyright 2016-2022 Alexey Gruzdev
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -28,13 +28,12 @@ If you find any bug, please feel free to submit an issue! It will be very helpfu
 
 The library consists of only headers, so it doesn't require build. The repository provides sources for some tests sources that can be configured and built with the help of cmake file. In order to build the tests you will need to add directory of googletest to the cmake ([GoogleTest repository](https://github.com/google/googletest))
 
-Currently the library can be successfully built by the following compilers:
+The library targets only modern compiler versions. Most recently checked compilers:
 
+* MSVC 2022
 * MSVC 2019
-* MSVC 2017
-* MinGW 9.3
-* Clang 11.0.0 (x86_64-pc-windows-msvc)
-* Clang 11.0.0 (x86_64-mingw32)
+* MinGW 12.1
+* Clang 14.0
 * GCC 8.2
 * Android (llvm, NDK 21)
 
