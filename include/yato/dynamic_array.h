@@ -168,7 +168,7 @@ YATO_PRAGMA_WARNING_POP
 
         reference operator[](size_type idx)
         {
-            YATO_REQUIRES(idx >= 0 && idx < m_size);
+            YATO_REQUIRES(idx < m_size);
             YATO_REQUIRES(m_data != nullptr);
             return m_data[idx];
         }
@@ -180,7 +180,7 @@ YATO_PRAGMA_WARNING_POP
 
         reference at(size_type idx)
         {
-            if (!(idx >= 0 && idx < m_size)) {
+            if (idx >= m_size) {
                 throw yato::out_of_range_error("dynamic_array[at]: out of range");
             }
             return (*this)[idx];
@@ -188,7 +188,7 @@ YATO_PRAGMA_WARNING_POP
 
         const_reference at(size_type idx) const
         {
-            if (!(idx >= 0 && idx < m_size)) {
+            if (idx >= m_size) {
                 throw yato::out_of_range_error("dynamic_array[at]: out of range");
             }
             return (*this)[idx];

@@ -25,9 +25,9 @@ endmacro(_gtest_fix_definitions)
 dependency_find_or_download(
     NAME GTEST
     VERBOSE_NAME "GoogleTest"
-    URL "https://github.com/google/googletest/archive/ba96d0b1161f540656efdaed035b3c062b60e006.zip"
-    HASH_MD5 "bf88bc2ea057f6375fa71b68f907bcf7"
-    PREFIX "googletest-ba96d0b1161f540656efdaed035b3c062b60e006"
+    URL "https://github.com/google/googletest/archive/refs/tags/release-1.12.1.zip"
+    HASH_MD5 "2648d4138129812611cf6b6b4b497a3b"
+    PREFIX "googletest-release-1.12.1"
 )
 
 if(NOT TARGET gtest)
@@ -37,10 +37,10 @@ if(NOT TARGET gtest)
     set(gtest_disable_pthreads ON CACHE BOOL "gtest setup" FORCE)
     set(gtest_force_shared_crt ON CACHE BOOL "gtest setup" FORCE)
 
-    add_subdirectory(${GTEST_FOUND_ROOT}/googletest ${CMAKE_BINARY_DIR}/dependency/gtest)
+    add_subdirectory(${GTEST_FOUND_ROOT} ${CMAKE_BINARY_DIR}/dependency/gtest)
 
-    _gtest_fix_definitions(gtest)
-    _gtest_fix_definitions(gtest_main)
+    #_gtest_fix_definitions(gtest)
+    #_gtest_fix_definitions(gtest_main)
 
     if(CLANG_MSVC)
         target_compile_options(gtest      PRIVATE "-w")

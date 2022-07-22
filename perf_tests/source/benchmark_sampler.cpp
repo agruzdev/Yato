@@ -160,7 +160,7 @@ void Fetch3D_STL_At(benchmark::State& state)
     benchmark::DoNotOptimize(i2);
 
     auto at3 = [S0, S1, S2](const std::vector<int32_t>& v, int32_t i0, int32_t i1, int32_t i2) -> const int32_t& {
-#if 0
+#if 1
         if (i0 >= S0 || i1 >= S1 || i2 >= S2) {
             throw std::out_of_range("at() out_of_range");
         }

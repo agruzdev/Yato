@@ -7,6 +7,7 @@
 
 #include "gtest/gtest.h"
 
+#include <algorithm>
 #include <iostream>
 #include <list>
 #include <forward_list>

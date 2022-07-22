@@ -19,9 +19,9 @@ include(${YATO_SOURCE_DIR}/cmake/dependency.gtest.cmake)
 dependency_find_or_download(
     NAME GBENCH
     VERBOSE_NAME "GoogleBenchmark"
-    URL "https://github.com/google/benchmark/archive/v1.4.1.zip"
-    HASH_MD5 "619674faa0d878e239eaf6766259718b"
-    PREFIX "benchmark-1.4.1"
+    URL "https://github.com/google/benchmark/archive/refs/tags/v1.6.2.zip"
+    HASH_MD5 "0517bd99f50d475ab281291e456c01f5"
+    PREFIX "benchmark-1.6.2"
 )
 
 if(NOT TARGET benchmark)
@@ -30,7 +30,8 @@ if(NOT TARGET benchmark)
     set(GMOCK_INCLUDE_DIRS ${GMOCK_INCLUDE_DIR})
 
     set(BENCHMARK_ENABLE_TESTING OFF)
-    set(HAVE_STD_REGEX ON)
+    set(HAVE_LIB_RT OFF)
+    #set(HAVE_STD_REGEX ON)
 
     add_subdirectory(${GBENCH_FOUND_ROOT} ${CMAKE_BINARY_DIR}/dependency/gbench)
 

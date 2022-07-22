@@ -8,6 +8,7 @@
 #include "gtest/gtest.h"
 
 #include <cstring>
+#include <algorithm>
 #include <yato/token_iterator.h>
 
 TEST(Yato_TokenIterator, common)
