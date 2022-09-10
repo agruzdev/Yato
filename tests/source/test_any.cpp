@@ -81,7 +81,7 @@ TEST(Yato_Any, common)
 
     // is_copy_constructible is broken in MSVC2013 
     // https://connect.microsoft.com/VisualStudio/feedback/details/802032 
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
     TestFunction<Bar>(yato::any(Bar{}));
     TestFunction<std::unique_ptr<Foo>>(yato::any(std::make_unique<Foo>()));
 #endif
@@ -112,7 +112,7 @@ TEST(Yato_Any, bad_any_cast)
 
 // is_copy_constructible is broken in MSVC2013 
 // https://connect.microsoft.com/VisualStudio/feedback/details/802032 
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
 TEST(Yato_Any, atomic)
 {
     yato::any a;

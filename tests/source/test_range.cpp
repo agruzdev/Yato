@@ -61,7 +61,7 @@ TEST(Yato_Range, numeric_range_2)
     }
 }
 
-#if defined(YATO_MSVC_2015) || (__cplusplus >= 201400L)
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2015)
 TEST(Yato_Range, numeric_range_3)
 {
     using namespace yato::literals;
@@ -178,7 +178,7 @@ TEST(Yato_Range, map)
     EXPECT_EQ(w, (std::vector<int>{ 2, 3, 4, 5}));
 }
 
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
 TEST(Yato_Range, filter)
 {
     std::vector<int> v = { 1, 2, 3, 4, 5, 6, 7 };
@@ -217,7 +217,7 @@ TEST(Yato_Range, fold)
     EXPECT_EQ(24, s2);
 }
 
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
 TEST(Yato_Range, superposition)
 {
     //Count number of numbers '1' after rounding

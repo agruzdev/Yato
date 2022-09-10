@@ -191,7 +191,7 @@ namespace yato
     {
         explicit in_place_t() = default;
     };
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
     YATO_INLINE_VARIABLE
     constexpr yato::in_place_t in_place{};
 #endif
@@ -204,7 +204,7 @@ namespace yato
     {
         explicit in_place_type_t() = default;
     };
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
     template <typename Ty>
     YATO_INLINE_VARIABLE
     constexpr yato::in_place_type_t<Ty> in_place_type{};
@@ -218,7 +218,7 @@ namespace yato
     {
         explicit in_place_index_t() = default;
     };
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
     template <size_t Idx>
     YATO_INLINE_VARIABLE
     constexpr yato::in_place_index_t<Idx> in_place_index{};
@@ -231,7 +231,7 @@ namespace yato
     {
         explicit zero_arg_then_variadic_t() = default;
     };
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
     YATO_INLINE_VARIABLE 
     constexpr yato::zero_arg_then_variadic_t zero_arg_then_variadic{};
 #endif
@@ -243,7 +243,7 @@ namespace yato
     {
         explicit one_arg_then_variadic_t() = default;
     };
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
     YATO_INLINE_VARIABLE
     constexpr yato::one_arg_then_variadic_t one_arg_then_variadic{};
 #endif

@@ -26,7 +26,7 @@ namespace yato
         {
             using offset_type = make_type_t<unsigned_type_tag, TypeSize_>;
             using type = typename std::conditional<
-#ifndef YATO_MSVC_2013
+#if YATO_MSVC != YATO_MSVC_2013
                 (get_extra_length<Align_, offset_type>::value <= std::numeric_limits<offset_type>::max()),
 #else
                 (get_extra_length<Align_, offset_type>::value <= (((static_cast<uint64_t>(1) << (TypeSize - 1)) - 1) << 1) + 1),

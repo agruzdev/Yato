@@ -93,7 +93,7 @@ namespace yato
 
         compressed_pair& operator= (const compressed_pair&) = default;
 
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
         compressed_pair(compressed_pair&&) = default;
         compressed_pair& operator= (compressed_pair&&) = default;
 #endif
@@ -262,7 +262,7 @@ namespace yato
 
         compressed_pair& operator= (const compressed_pair&) = default;
 
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
         compressed_pair(compressed_pair&&) = default;
         compressed_pair& operator= (compressed_pair&&) = default;
 #endif

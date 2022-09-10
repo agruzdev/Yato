@@ -35,7 +35,7 @@ TEST(Yato_Tuple, tuple_transform)
         auto t2 = yato::tuple_transform(std::make_tuple(1.0), add_one{});
         EXPECT_EQ(2.0, std::get<0>(t2));
     }
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
     {
         constexpr std::tuple<int, float> t3(10, 10.0f);
         constexpr std::tuple<int, float> t4 = yato::tuple_transform(t3, add_one{});
@@ -85,7 +85,7 @@ TEST(Yato_Tuple, tuple_transform_2)
         EXPECT_EQ(30U, std::get<1>(t3));
         EXPECT_EQ(42.0, std::get<2>(t3));
     }
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
     {
         constexpr std::tuple<int, float, float>  t1(-1, 20.0f, 1.0f);
         constexpr std::tuple<long, int, double> t2(1, 10, 41.0);
@@ -192,7 +192,7 @@ TEST(Yato_Tuple, tuple_all_of)
         auto t1 = std::make_tuple(1, 1.0f, 42.0, 8U);
         EXPECT_TRUE(yato::tuple_all_of(t1, positive{}));
     }
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
     {
         constexpr std::tuple<int, float> t1(1, 2.0f);
         static_assert(yato::tuple_all_of(t1, positive{}), "tuple_all_of fail");
@@ -208,7 +208,7 @@ TEST(Yato_Tuple, tuple_any_of)
         auto t1 = std::make_tuple(1, 1.0f, 42.0, 8U);
         EXPECT_TRUE(yato::tuple_any_of(t1, positive{}));
     }
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
     {
         constexpr std::tuple<int, float> t1(1, 2.0f);
         static_assert(true == yato::tuple_any_of(t1, positive{}), "tuple_any_of fail");

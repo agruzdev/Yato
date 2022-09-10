@@ -118,7 +118,7 @@ TEST(Yato_Reflection, data_members)
         yato::reflection::data_member_info<Foo, const Bar*, 5>>
     >::value, "reflection fail!");
 
-#ifdef YATO_MSVC_2015
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2015)
     static_assert(false == yato::reflection::is_public<Foo, 1>::value, "is_public fail");
     static_assert(true  == yato::reflection::is_public<Foo, 3>::value, "is_public fail");
 #endif

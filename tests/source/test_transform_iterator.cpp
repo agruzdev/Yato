@@ -47,7 +47,7 @@ TEST(Yato_TransformIterator, decrement)
     auto increment = [](const int & x) {return x + 1; };
 
     yato::transform_iterator<std::function<int(const int&)>, std::vector<int>::iterator> it(std::prev(a.end()), increment);
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
     for (int i = 5; i > 1; --i, --it) {
 #else
     // In MSVC 2013 templated operator-- leads to crash due to a bug 

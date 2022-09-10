@@ -377,7 +377,7 @@ namespace yato
 
         ignores_attributes & operator = (const this_type &) = default;
 
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
         ignores_attributes(this_type&&) = default;
         ignores_attributes & operator = (this_type&&) = default;
 #else

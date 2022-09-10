@@ -26,7 +26,7 @@ namespace yato
 
             YATO_CONSTEXPR_FUNC
             auto _invoke_case(const _CasesTuple & functions, arg_type arg) const
-#ifdef YATO_MSVC_2013
+#if YATO_MSVC == YATO_MSVC_2013
                 -> typename yato::callable_trait<typename yato::remove_cvref<typename std::tuple_element<_CaseIdx - 1, _CasesTuple>::type>::type>::result_type
 #else 
                 -> decltype(auto)
@@ -61,7 +61,7 @@ namespace yato
         template <typename _MatchedType>
         YATO_CONSTEXPR_FUNC
         auto operator()(_MatchedType && val) const
-#ifdef YATO_MSVC_2013
+#if YATO_MSVC == YATO_MSVC_2013
             -> decltype(std::declval<dispatcher>()._invoke_case(m_cases, std::forward<_MatchedType>(val)))
 #else
             -> decltype(auto)

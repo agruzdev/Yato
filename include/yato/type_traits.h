@@ -280,7 +280,7 @@ namespace yato
      * Return length of arguments pack
      * Equal to sizeof...() but sizeof...() inside of std::enable_if behaves incorrect in MSVC 2013
      */
-#ifdef YATO_MSVC_2013
+#if YATO_MSVC == YATO_MSVC_2013
     template<typename _T, typename... _Tail>
     struct args_length
         : std::integral_constant<size_t, args_length<_Tail...>::value + 1>
@@ -331,7 +331,7 @@ namespace yato
         : std::true_type
     { };
 
-#ifdef YATO_MSVC_2013
+#if YATO_MSVC == YATO_MSVC_2013
     /**
      *  For some reasons MSVC 2013 can't work with expression 'decltype(&_T::operator())' correctly
      *  Here is some workaround with generally incorrect expression, but it works fine for MSVC 2013
@@ -523,7 +523,7 @@ namespace yato
 
 
 
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
     /**
      * Get the narrowest type to store a value
      */

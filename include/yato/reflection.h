@@ -260,7 +260,7 @@ namespace yato
         { };
 
         //ToDo: Accessing private member doesn't cause substitution fail in MSVC 2013 or MinGW 
-#ifdef YATO_MSVC_2015
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
         /**
          *  Check if the class member with specified reflection index is public
          *  <=> is accessible from out of the class

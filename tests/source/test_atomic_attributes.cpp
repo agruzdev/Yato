@@ -15,7 +15,7 @@
 
 // is_copy_constructible is broken in MSVC2013 
 // https://connect.microsoft.com/VisualStudio/feedback/details/802032 
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
 
 namespace
 {

@@ -24,22 +24,23 @@
 #endif
 
 
+#define YATO_MSVC_2022 17
+#define YATO_MSVC_2019 16
+#define YATO_MSVC_2017 15
+#define YATO_MSVC_2015 14
+#define YATO_MSVC_2013 12
+
 #ifdef _MSC_VER
 # if (_MSC_VER >= 1930)
-#  define YATO_MSVC_2022 17
 #  define YATO_MSVC 17
 # elif (_MSC_VER >= 1920)
-#  define YATO_MSVC_2019 16
 #  define YATO_MSVC 16
 # elif (_MSC_VER >= 1910)
-#  define YATO_MSVC_2017 15
 #  define YATO_MSVC 15
 # elif (_MSC_VER >= 1900)
-#  define YATO_MSVC_2015 14
 #  define YATO_MSVC 14
 # elif (_MSC_VER >= 1800)
 #  define YATO_MSVC 12
-#  define YATO_MSVC_2013 12
 # else
 #  define YATO_MSVC 1
 # endif
@@ -63,7 +64,7 @@
 
 
 
-#if (defined(YATO_MSVC) && (YATO_MSVC >= 14)) || (defined(__cplusplus) && __cplusplus > 201300L)
+#if (defined(YATO_MSVC) && (YATO_MSVC >= YATO_MSVC_2015)) || (defined(__cplusplus) && __cplusplus > 201300L)
 #define YATO_CONSTEXPR_VAR constexpr
 #define YATO_CONSTEXPR_FUNC constexpr
 #define YATO_NOEXCEPT_KEYWORD noexcept
@@ -82,7 +83,7 @@
 #endif
 
 // Extended constexpr
-#if (defined(YATO_MSVC) && (YATO_MSVC >= 15)) || (defined(__cplusplus) && (__cplusplus >= 201400L))
+#if (YATO_MSVC >= YATO_MSVC_2017) || (defined(__cplusplus) && (__cplusplus >= 201400L))
 #define YATO_HAS_CONSTEXPR_CXX14
 #define YATO_CONSTEXPR_FUNC_CXX14 constexpr 
 #else
@@ -90,14 +91,14 @@
 #endif
 
 // Conditional explicit
-#if (defined(YATO_MSVC) && (_MSC_VER >= 2000)) || (defined(__cplusplus) && (__cplusplus >= 202000L))
+#if (defined(__cplusplus) && (__cplusplus >= 202000L))
 #define YATO_HAS_CONDITIONAL_EXPLICIT
 #define YATO_CONDITIONAL_EXPLICIT(Condition_) explicit(Condition_)
 #else
 #define YATO_CONDITIONAL_EXPLICIT(Condition_)
 #endif
 
-#if (defined(YATO_MSVC) && (YATO_MSVC >= 14)) || (defined(__cplusplus) && (__cplusplus >= 201400L))
+#if (YATO_MSVC >= YATO_MSVC_2015) || (defined(__cplusplus) && (__cplusplus >= 201400L))
 # define YATO_HAS_LITERALS
 #endif
 

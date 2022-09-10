@@ -61,7 +61,7 @@ namespace io
 
             std::weak_ptr<acceptor> weak_from_this_impl_()
             {
-#if defined(YATO_CXX17) || (defined(_MSC_VER) && (_MSC_VER >= 1910))
+#if defined(YATO_CXX17) || (YATO_MSVC >= YATO_MSVC_2017)
                 return weak_from_this();
 #else
                 return std::weak_ptr<acceptor>(shared_from_this());

@@ -55,7 +55,7 @@ TEST(Yato_FilterIterator, create_and_assign)
     it22 = std::move(it1);
 }
 
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
 TEST(Yato_FilterIterator, increment)
 {
     std::vector<int> v = { -1, 1, -2, -1, 2, -2, -3, -2, 3, -4, 4 };
@@ -96,7 +96,7 @@ TEST(Yato_FilterIterator, compare)
     EXPECT_TRUE(it2 == v.begin() + 8);
 
     EXPECT_TRUE(it1 != it2);
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
     std::advance(it1, 2);
 #else
     ++it1;
@@ -104,7 +104,7 @@ TEST(Yato_FilterIterator, compare)
 #endif
     EXPECT_TRUE(it1 == it2);
     EXPECT_TRUE(it1++ == it2++);
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
     EXPECT_TRUE(it1-- == it2--);
 #else
     it1.operator--();
@@ -112,7 +112,7 @@ TEST(Yato_FilterIterator, compare)
     EXPECT_TRUE(it1 == it2);
 #endif
     EXPECT_TRUE(it1 == it2);
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
     std::advance(it1, 2);
 #else
     ++it1;
@@ -129,7 +129,7 @@ TEST(Yato_FilterIterator, make_filter_iterator)
     static_assert(std::is_same<decltype(it1)::predicate_type, decltype(lambda)>::value, "filter iterator fail");
 }
 
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
 TEST(Yato_FilterIterator, input_iterator)
 {
     std::istringstream str1("0 1 0 2 0 0 3");

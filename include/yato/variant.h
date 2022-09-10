@@ -1014,7 +1014,7 @@ namespace yato
      */
     using details::nullvar_t;
 
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
     YATO_INLINE_VARIABLE constexpr nullvar_t nullvar{};
 #endif
 

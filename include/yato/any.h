@@ -50,8 +50,8 @@ namespace yato
         nullany_t() = default;
     };
 
-#ifndef YATO_MSVC_2013
-    constexpr nullany_t nullany{};
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
+    YATO_INLINE_VARIABLE constexpr nullany_t nullany{};
 #endif
 
 

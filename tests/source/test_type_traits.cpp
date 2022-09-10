@@ -266,7 +266,7 @@ TEST(Yato_TypeTraits, functional_2)
     }
 }
 
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
 TEST(Yato_TypeTraits, narrowest_fit)
 {
     static_assert(std::is_same< yato::narrowest_fit_unsigned<0>::type, uint8_t >::value, "narrowest_fit_unsigned fail");

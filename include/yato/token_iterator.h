@@ -61,7 +61,7 @@ namespace yato
         using iterator_category = std::input_iterator_tag;
     };
 
-#ifndef YATO_MSVC_2013
+#if !YATO_MSVC || (YATO_MSVC >= YATO_MSVC_2013)
     YATO_INLINE_VARIABLE constexpr tokens_end_t tokens_end{};
 #endif
 
