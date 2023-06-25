@@ -186,4 +186,8 @@
 # define YATO_FORCED_INLINE inline
 #endif
 
+#if (defined(YATO_MSVC) && (YATO_MSVC >= 15) && defined(_MSVC_LANG) && (_MSVC_LANG >= 201703L)) || (defined(__cplusplus) && (__cplusplus > 201606L))
+# define YATO_HAS_STD_OPTIONAL 1
+#endif
+
 #endif //_YATO_PREREQUISITES_H_

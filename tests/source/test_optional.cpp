@@ -9,6 +9,10 @@
 
 #include <string>
 
+#include <yato/prerequisites.h>
+#if YATO_HAS_STD_OPTIONAL
+# define YATO_STD_OPTIONAL_COMPATIBLE 1
+#endif
 #include <yato/optional.h>
 
 
@@ -496,3 +500,53 @@ TEST(Yato_Optional, exists)
     EXPECT_EQ(false, opt2.exists([](int x){ return x > 0; }));
     EXPECT_EQ(false, opt2.exists([](int x){ return x < 0; }));
 }
+
+
+TEST(Yato_Optional, get_or_throw)
+{
+    yato::optional<int> empty{};
+    EXPECT_ANY_THROW(empty.get_or_throw("error"));
+    EXPECT_ANY_THROW(yato::optional<float>{}.get_or_throw("error"));
+
+    yato::optional<float> opt{ 1.0f };
+    EXPECT_NO_THROW(opt.get_or_throw("error"));
+}
+
+#if YATO_HAS_STD_OPTIONAL
+
+void foo_yato_opt(yato::optional<int>) {};
+void foo_std_opt(std::optional<int>) {};
+
+TEST(Yato_Optional, std_optional)
+{
+    std::optional<int> stdOpt{ 1 };
+    yato::optional<int> yatoOpt(stdOpt);
+
+    ASSERT_TRUE(!yatoOpt.empty());
+    ASSERT_TRUE(stdOpt.has_value());
+    ASSERT_EQ(yatoOpt.get(), stdOpt.value());
+
+    std::optional<float> stdOpt2{};
+    yato::optional<float> yatoOpt2(stdOpt2);
+    ASSERT_TRUE(yatoOpt2.empty());
+    ASSERT_TRUE(!stdOpt2.has_value());
+
+    yato::optional<int> yatoEmpty(std::nullopt);
+    ASSERT_TRUE(yatoEmpty.empty());
+
+    yato::optional<char> yatoOpt3(std::optional<char>{'c'});
+    ASSERT_TRUE(!yatoOpt3.empty());
+    ASSERT_EQ(yatoOpt3.get(), 'c');
+
+    std::optional<int> stdOpt4(yatoOpt);
+    ASSERT_TRUE(stdOpt4.has_value());
+    ASSERT_EQ(1, stdOpt4.value());
+
+    std::optional<float> stdOpt5(yatoOpt2);
+    ASSERT_TRUE(!stdOpt5.has_value());
+
+    foo_yato_opt(stdOpt);
+    foo_std_opt(yatoOpt);
+}
+
+#endif

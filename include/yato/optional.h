@@ -13,6 +13,13 @@
 #include "types.h"
 #include "memory_utility.h"
 
+#if defined(YATO_STD_OPTIONAL_COMPATIBLE)
+# if !YATO_HAS_STD_OPTIONAL
+#  error "std::optional is not available"
+# endif
+# include <optional>
+#endif
+
 namespace yato
 {
     class nullopt_t {};
@@ -228,6 +235,8 @@ namespace yato
         template <typename... Args_>
         using is_nothrow_assignable = yato::boolean_constant<std::is_nothrow_constructible<value_type, Args_...>::value && std::is_nothrow_assignable<value_type, Args_...>::value>;
 
+        template <typename FromType_>
+        using is_convertible = std::is_convertible<FromType_, value_type>;
 
         /**
          * Creates emtpy optional.
@@ -318,6 +327,43 @@ namespace yato
             move_constructor_(std::move(other));
         }
 
+#if YATO_STD_OPTIONAL_COMPATIBLE
+        /**
+         * Creates emtpy optional.
+         */
+        constexpr
+        basic_optional(std::nullopt_t)
+        { }
+
+        /**
+         * Copy from std::optional holding a type convertible to value_type.
+         */
+        template <typename Uy_, typename =
+            std::enable_if_t<is_constructible<yato::add_lvalue_reference_to_const_t<Uy_>>::value>
+        >
+        YATO_CONSTEXPR_FUNC_CXX14 YATO_CONDITIONAL_EXPLICIT(!(is_convertible<yato::add_lvalue_reference_to_const_t<Uy_>>::value))
+        basic_optional(const std::optional<Uy_>& other) noexcept(is_nothrow_constructible<yato::add_lvalue_reference_to_const_t<Uy_>>::value)
+        {
+            if (other.has_value()) {
+                construct_(other.value());
+            }
+        }
+
+        /**
+         * Copy from std::optional holding a type convertible to value_type.
+         */
+        template <typename Uy_, typename =
+            std::enable_if_t<is_constructible<std::add_rvalue_reference_t<Uy_>>::value>
+        >
+        YATO_CONSTEXPR_FUNC_CXX14 YATO_CONDITIONAL_EXPLICIT(!(is_convertible<std::add_rvalue_reference_t<Uy_>>::value))
+        basic_optional(std::optional<Uy_>&& other) noexcept(is_nothrow_constructible<std::add_rvalue_reference_t<Uy_>>::value)
+        {
+            if (other.has_value()) {
+                construct_(std::move(other.value()));
+            }
+        }
+#endif
+
         /**
          * Destroyes held value.
          */
@@ -372,11 +418,39 @@ namespace yato
         template <typename OtherVal_, typename =
             std::enable_if_t<is_assignable<std::add_rvalue_reference_t<OtherVal_>>::value>
         >
-        basic_optional & operator= (basic_optional<OtherVal_> && other) 
+        basic_optional & operator= (basic_optional<OtherVal_> && other)
             noexcept(is_nothrow_assignable<std::add_rvalue_reference_t<OtherVal_>>::value)
         {
             return move_assign_(std::move(other));
         }
+
+#if YATO_STD_OPTIONAL_COMPATIBLE
+        /**
+         * Copy from std::optional holding a type convertible to value_type.
+         */
+        template <typename Uy_, typename =
+            std::enable_if_t<std::is_constructible<Uy_, yato::add_lvalue_reference_to_const_t<value_type>>::value>
+        >
+        YATO_CONSTEXPR_FUNC_CXX14 YATO_CONDITIONAL_EXPLICIT(!(std::is_convertible<yato::add_lvalue_reference_to_const_t<value_type>, Uy_>::value))
+        operator std::optional<Uy_>() const &
+            noexcept(std::is_nothrow_constructible<Uy_, yato::add_lvalue_reference_to_const_t<value_type>>::value)
+        {
+            return m_storage.is_stored() ? std::optional(m_storage.cref()) : std::nullopt;
+        }
+
+        /**
+         * Copy from std::optional holding a type convertible to value_type.
+         */
+        template <typename Uy_, typename =
+            std::enable_if_t<std::is_constructible<Uy_, std::add_rvalue_reference_t<value_type>>::value>
+        >
+        YATO_CONSTEXPR_FUNC_CXX14 YATO_CONDITIONAL_EXPLICIT(!(std::is_convertible<std::add_rvalue_reference_t<value_type>, Uy_>::value))
+        operator std::optional<Uy_>() &&
+            noexcept(std::is_nothrow_constructible<Uy_, std::add_rvalue_reference_t<value_type>>::value)
+        {
+            return m_storage.is_stored() ? std::optional(std::move(m_storage.ref())) : std::nullopt;
+        }
+#endif
 
         /**
          * Swap two optionals
@@ -508,6 +582,36 @@ namespace yato
         {
             return m_storage.is_stored() ? std::move(m_storage.ref()) : static_cast<value_type>(std::forward<Uy_>(default_value));
         }
+
+
+        /**
+         * If optional contains a value, returns a reference to this value.
+         * Otherwise, throws an exception
+         */
+        template <typename Exc_ = yato::runtime_error, typename... Args_>
+        YATO_CONSTEXPR_FUNC_CXX14
+        const value_type& get_or_throw(Args_&&... exception_args) const&
+        {
+            if (!m_storage.is_stored()) {
+                throw Exc_(std::forward<Args_>(exception_args)...);
+            }
+            return m_storage.cref();
+        }
+
+        /**
+         * If optional contains a value, returns a reference to this value.
+         * Otherwise, throws an exception
+         */
+        template <typename Exc_ = yato::runtime_error, typename... Args_>
+        YATO_CONSTEXPR_FUNC_CXX14
+        value_type&& get_or_throw(Args_&&... exception_args) &&
+        {
+            if (!m_storage.is_stored()) {
+                throw Exc_(std::forward<Args_>(exception_args)...);
+            }
+            return std::move(m_storage.ref());
+        }
+
 
         /**
           * Alias for get()
