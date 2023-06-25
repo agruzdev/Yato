@@ -17,6 +17,12 @@
 #include "functor.h"
 #include "../logger.h"
 
+#if (defined(_MSVC_LANG) && (_MSVC_LANG >= 201703L)) || (defined(__cplusplus) && (__cplusplus > 201700L))
+# define YATO_RESULT_OF_T(Fun_, Args_) std::invoke_result_t<Fun_, Args_>
+#else
+# define YATO_RESULT_OF_T(Fun_, Args_) std::result_of_t<Fun_(Args_)>
+#endif
+
 namespace yato
 {
 namespace actors
@@ -124,9 +130,9 @@ namespace actors
          */
         template <typename Fn_, typename... Args_>
         auto enqueue(const time_point_type & when, Fn_ && function, Args_ && ... args)
-            -> std::future<std::result_of_t<Fn_(Args_...)>>
+            -> std::future<YATO_RESULT_OF_T(Fn_, Args_...)>
         {
-            auto task = std::packaged_task<std::result_of_t<Fn_(Args_...)>()>(std::bind(std::forward<Fn_>(function), std::forward<Args_>(args)...));
+            auto task = std::packaged_task<YATO_RESULT_OF_T(Fn_, Args_...)()>(std::bind(std::forward<Fn_>(function), std::forward<Args_>(args)...));
             auto result = task.get_future();
 
             event evt;
@@ -146,6 +152,8 @@ namespace actors
 }// namespace actors
 
 }// namespace yato
+
+#undef YATO_RESULT_OF_T
 
 #endif
 
