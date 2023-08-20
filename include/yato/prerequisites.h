@@ -190,4 +190,8 @@
 # define YATO_HAS_STD_OPTIONAL 1
 #endif
 
+#if (defined(_MSVC_LANG) && (_MSVC_LANG >= 202002L)) || (defined(__cplusplus) && (__cplusplus > 202002L))
+# define YATO_HAS_CONTIGUOUS_ITERATOR 1
+#endif
+
 #endif //_YATO_PREREQUISITES_H_

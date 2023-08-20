@@ -83,6 +83,14 @@ namespace
 
 TEST(Yato_VectorND, common)
 {
+#if YATO_HAS_CONTIGUOUS_ITERATOR
+    static_assert(std::contiguous_iterator<yato::vector_2d<int>::plain_iterator>);
+    static_assert(std::contiguous_iterator<yato::vector_2d<int>::const_plain_iterator>);
+    static_assert(std::contiguous_iterator<yato::vector_3d<float>::plain_iterator>);
+    static_assert(std::contiguous_iterator<yato::vector_3d<float>::const_plain_iterator>);
+    static_assert(std::contiguous_iterator<yato::vector_4d<FooCounted>::plain_iterator>);
+    static_assert(std::contiguous_iterator<yato::vector_4d<FooCounted>::const_plain_iterator>);
+#endif
     class A {
         int m_val;
     public:
