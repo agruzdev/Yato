@@ -112,8 +112,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${config_sources})
 
-include(${TARGET_CONFIG_LISTS})
-
 if(CLANG)
     add_definitions("-D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING=1")
 endif()

@@ -12,8 +12,6 @@ project(YatoTests)
 
 include(${YATO_SOURCE_DIR}/cmake/dependency.gtest.cmake)
 
-include(${TARGET_CONFIG_LISTS})
-
 #==========================================
 # Sources
 

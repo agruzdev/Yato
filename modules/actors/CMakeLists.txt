@@ -7,8 +7,6 @@
 
 project(YatoActors)
 
-include(${TARGET_CONFIG_LISTS})
-
 #==========================================
 # Dependency
 

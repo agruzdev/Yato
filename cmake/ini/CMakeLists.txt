@@ -5,7 +5,6 @@
 # Copyright 2016-2020 Alexey Gruzdev
 #
 
-include(${TARGET_CONFIG_LISTS})
 if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W0")
 else()

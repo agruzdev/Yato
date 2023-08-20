@@ -363,7 +363,7 @@ namespace yato
         */
         const reference operator*() const
         {
-            return *(const_cast<my_type*>(this));
+            return const_cast<my_type*>(this)->operator*();
         }
 
         /**

@@ -25,10 +25,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BIN_OUTPUT_DIR})
 #==========================================
 # Determine target
 
+set(YATO_CXX_STANDARD "c++20" CACHE STRING "C++ standard version")
+set_property(CACHE YATO_CXX_STANDARD PROPERTY STRINGS "c++20" "c++17" "c++14")
+
 if(MSVC)
-    set(TARGET_CONFIG_LISTS ${YATO_SOURCE_DIR}/cmake/CMakeLists-MSVC.cmake)
+    include(${YATO_SOURCE_DIR}/cmake/CMakeLists-MSVC.cmake)
 else()
-    set(TARGET_CONFIG_LISTS ${YATO_SOURCE_DIR}/cmake/CMakeLists-GCC.cmake)
+    include(${YATO_SOURCE_DIR}/cmake/CMakeLists-GCC.cmake)
 endif()
 
 #==========================================

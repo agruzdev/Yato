@@ -8,8 +8,6 @@
 list(APPEND tinyxml2_sources "${XML_FOUND_ROOT}/tinyxml2.h")
 list(APPEND tinyxml2_sources "${XML_FOUND_ROOT}/tinyxml2.cpp")
 
-# Use the common set of flags
-include(${TARGET_CONFIG_LISTS})
 if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W0")
 else()
