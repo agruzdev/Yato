@@ -5,8 +5,51 @@
 
     <Type Name="yato::basic_optional&lt;*&gt;">
       <DisplayString Condition="m_storage.m_stored==0">empty</DisplayString>
-      <DisplayString>{ *((value_type*)(&amp;m_storage.m_value)) }</DisplayString>
+      <DisplayString Condition="m_storage.m_stored!=0" Optional="true">{ *($T1*)(&amp;m_storage.m_value) }</DisplayString>
+      <Expand>
+        <Item Name="[value]" Condition="m_storage.m_stored!=0" Optional="true">*($T1*)(&amp;m_storage.m_value)</Item>
+      </Expand>
     </Type>
+
+  <!--yato::variant-->
+
+  <Type Name="yato::details::basic_variant&lt;yato::meta::list&lt;*&gt;&gt;">
+    <DisplayString Condition="m_type_idx==index_of_void">empty</DisplayString>
+    <DisplayString Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==0)" Optional="true">{ "$T1" }</DisplayString>
+    <DisplayString Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==1)" Optional="true">{ "$T2" }</DisplayString>
+    <DisplayString Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==2)" Optional="true">{ "$T3" }</DisplayString>
+    <DisplayString Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==3)" Optional="true">{ "$T4" }</DisplayString>
+    <DisplayString Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==4)" Optional="true">{ "$T5" }</DisplayString>
+    <DisplayString Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==5)" Optional="true">{ "$T6" }</DisplayString>
+    <DisplayString Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==6)" Optional="true">{ "$T7" }</DisplayString>
+    <DisplayString Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==7)" Optional="true">{ "$T8" }</DisplayString>
+    <DisplayString Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==8)" Optional="true">{ "$T9" }</DisplayString>
+    <DisplayString Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==9)" Optional="true">{ "$T10" }</DisplayString>
+    <DisplayString Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==10)" Optional="true">{ "$T11" }</DisplayString>
+    <DisplayString Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==11)" Optional="true">{ "$T12" }</DisplayString>
+    <DisplayString Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==12)" Optional="true">{ "$T13" }</DisplayString>
+    <DisplayString Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==13)" Optional="true">{ "$T14" }</DisplayString>
+    <DisplayString Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==14)" Optional="true">{ "$T15" }</DisplayString>
+    <DisplayString Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==15)" Optional="true">{ "$T16" }</DisplayString>
+    <Expand>
+      <Item Name="[value]" Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==0)" Optional="true">*($T1*)(&amp;m_storage)</Item>
+      <Item Name="[value]" Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==1)" Optional="true">*($T2*)(&amp;m_storage)</Item>
+      <Item Name="[value]" Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==2)" Optional="true">*($T3*)(&amp;m_storage)</Item>
+      <Item Name="[value]" Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==3)" Optional="true">*($T4*)(&amp;m_storage)</Item>
+      <Item Name="[value]" Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==4)" Optional="true">*($T5*)(&amp;m_storage)</Item>
+      <Item Name="[value]" Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==5)" Optional="true">*($T6*)(&amp;m_storage)</Item>
+      <Item Name="[value]" Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==6)" Optional="true">*($T7*)(&amp;m_storage)</Item>
+      <Item Name="[value]" Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==7)" Optional="true">*($T8*)(&amp;m_storage)</Item>
+      <Item Name="[value]" Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==8)" Optional="true">*($T9*)(&amp;m_storage)</Item>
+      <Item Name="[value]" Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==9)" Optional="true">*($T10*)(&amp;m_storage)</Item>
+      <Item Name="[value]" Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==10)" Optional="true">*($T11*)(&amp;m_storage)</Item>
+      <Item Name="[value]" Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==11)" Optional="true">*($T12*)(&amp;m_storage)</Item>
+      <Item Name="[value]" Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==12)" Optional="true">*($T13*)(&amp;m_storage)</Item>
+      <Item Name="[value]" Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==13)" Optional="true">*($T14*)(&amp;m_storage)</Item>
+      <Item Name="[value]" Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==14)" Optional="true">*($T15*)(&amp;m_storage)</Item>
+      <Item Name="[value]" Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==15)" Optional="true">*($T16*)(&amp;m_storage)</Item>
+    </Expand>
+  </Type>
 
   <!--yato::vector_nd-->
 
