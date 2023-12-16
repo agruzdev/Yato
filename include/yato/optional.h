@@ -256,7 +256,7 @@ namespace yato
          */
         template <typename... Args_>
         YATO_CONSTEXPR_FUNC_CXX14 explicit
-        basic_optional(yato::in_place_t, Args_ && ... args)
+        basic_optional(yato::in_place_t, Args_ && ... args) YATO_NOEXCEPT_OPERATOR(is_nothrow_constructible<Args_...>::value)
         {
             construct_(std::forward<Args_>(args)...);
         }
@@ -300,7 +300,7 @@ namespace yato
          * Is noexcept if and only if value_type is nothrow move constructible.
          */
         YATO_CONSTEXPR_FUNC_CXX14
-        basic_optional(yato::disable_if_not_t<this_type::is_move_constructible_v, this_type>&& other) noexcept(this_type::is_nothrow_move_constructible_v)
+        basic_optional(yato::disable_if_not_t<this_type::is_move_constructible_v, this_type>&& other) YATO_NOEXCEPT_OPERATOR(this_type::is_nothrow_move_constructible_v)
         {
             move_constructor_(std::move(other));
         }
@@ -342,7 +342,7 @@ namespace yato
             std::enable_if_t<is_constructible<yato::add_lvalue_reference_to_const_t<Uy_>>::value>
         >
         YATO_CONSTEXPR_FUNC_CXX14 YATO_CONDITIONAL_EXPLICIT(!(is_convertible<yato::add_lvalue_reference_to_const_t<Uy_>>::value))
-        basic_optional(const std::optional<Uy_>& other) noexcept(is_nothrow_constructible<yato::add_lvalue_reference_to_const_t<Uy_>>::value)
+        basic_optional(const std::optional<Uy_>& other) YATO_NOEXCEPT_OPERATOR(is_nothrow_constructible<yato::add_lvalue_reference_to_const_t<Uy_>>::value)
         {
             if (other.has_value()) {
                 construct_(other.value());
@@ -356,7 +356,7 @@ namespace yato
             std::enable_if_t<is_constructible<std::add_rvalue_reference_t<Uy_>>::value>
         >
         YATO_CONSTEXPR_FUNC_CXX14 YATO_CONDITIONAL_EXPLICIT(!(is_convertible<std::add_rvalue_reference_t<Uy_>>::value))
-        basic_optional(std::optional<Uy_>&& other) noexcept(is_nothrow_constructible<std::add_rvalue_reference_t<Uy_>>::value)
+        basic_optional(std::optional<Uy_>&& other) YATO_NOEXCEPT_OPERATOR(is_nothrow_constructible<std::add_rvalue_reference_t<Uy_>>::value)
         {
             if (other.has_value()) {
                 construct_(std::move(other.value()));
@@ -376,10 +376,12 @@ namespace yato
          * Constructs the contained value in-place.
          */
         template <typename... Args_>
-        void emplace(Args_ && ... args)
+        YATO_CONSTEXPR_FUNC_CXX14
+        value_type& emplace(Args_ && ... args) YATO_NOEXCEPT_OPERATOR(is_nothrow_constructible<Args_...>::value)
         {
             destroy_();
             construct_(std::forward<Args_>(args)...);
+            return get_unsafe();
         }
 
         /**
@@ -395,7 +397,7 @@ namespace yato
          * Move assignment operator will be defined if and only if value_type is move assignable.
          * Is noexcept if and only if value_type is nothrow move assignable.
          */
-        basic_optional& operator=(yato::disable_if_not_t<this_type::is_move_assignable_v, this_type>&& other) noexcept(this_type::is_nothrow_move_assignable_v)
+        basic_optional& operator=(yato::disable_if_not_t<this_type::is_move_assignable_v, this_type>&& other) YATO_NOEXCEPT_OPERATOR(this_type::is_nothrow_move_assignable_v)
         {
             YATO_REQUIRES(this != &other);
             return move_assign_(std::move(other));

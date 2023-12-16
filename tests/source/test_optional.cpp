@@ -265,7 +265,8 @@ TEST(Yato_Optional, common_3)
 
         EXPECT_EQ(1, opt.get().x());
 
-        opt.emplace(7);
+        auto& ref = opt.emplace(7);
+        EXPECT_EQ(7, ref.x());
         EXPECT_EQ(7, opt.get().x());
     }
 
