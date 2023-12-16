@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?> 
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
-    
-    <!--yato::vector_nd-->
+
+  <!--yato::optional-->
+
+    <Type Name="yato::basic_optional&lt;*&gt;">
+      <DisplayString Condition="m_storage.m_stored==0">empty</DisplayString>
+      <DisplayString>{ *((value_type*)(&amp;m_storage.m_value)) }</DisplayString>
+    </Type>
+
+  <!--yato::vector_nd-->
 
     <Type Name="yato::details::vector_nd_impl&lt;*,1,*,*&gt;">
       <DisplayString Condition="m_raw_vector.m_storage.m_second==0">empty</DisplayString>
