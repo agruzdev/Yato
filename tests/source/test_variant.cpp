@@ -56,10 +56,13 @@ TEST(Yato_Variant, common)
     EXPECT_TRUE(static_cast<bool>(v3));
     EXPECT_TRUE(static_cast<bool>(v4));
 
-    v1.emplace<int>(10);
+    auto& r = v1.emplace<int>(10);
     EXPECT_EQ(typeid(int), v1.type());
     EXPECT_FALSE(v1.empty());
     EXPECT_TRUE(static_cast<bool>(v1));
+    EXPECT_EQ(r, 10);
+    r = 11;
+    EXPECT_EQ(v1.get<int>(), 11);
 }
 
 TEST(Yato_Variant, copy)
@@ -214,6 +217,9 @@ TEST(Yato_Variant, get)
     EXPECT_EQ(3.0f, v3.get_or<1>(3.0f));
     EXPECT_EQ(1, v3.get_or<0>(1));
     EXPECT_EQ(1.0f, v4.get_or<1>(2.0f));
+
+    v3 = v4;
+    EXPECT_EQ(1.0f, v3.get_or<float>(0.0f));
 }
 
 TEST(Yato_Variant, get2)

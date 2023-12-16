@@ -371,6 +371,11 @@ namespace yato
             static_assert(alternativies_number <= details::variant_max_index, "yato::variant: too many alternatives.");
             static_assert(std::is_same<typename meta::list_unique<alternativies_list>::type, alternativies_list>::value, "yato::variant: alternatives must have unique types");
 
+            template <size_t Idx_>
+            using value_type = meta::list_at_t<alternativies_list, Idx_>;
+
+            static YATO_CONSTEXPR_VAR size_t index_of_void = meta::list_find<alternativies_list, void>::value;
+
             /**
              * Variant can be null if the 'void' type is presented in the alternatives list
              */
@@ -437,7 +442,6 @@ namespace yato
                 }
                 else {
                     variant_dispatch<alternativies_list, variant_destroy>::apply[m_type_idx](storage_address_());
-                    m_type_idx = details::variant_no_index;
                     variant_dispatch<alternativies_list, variant_copy_construct>::apply[other.m_type_idx](other.storage_caddress_(), storage_address_());
                     m_type_idx = other.m_type_idx;
                 }
@@ -468,7 +472,6 @@ namespace yato
                 }
                 else {
                     variant_dispatch<alternativies_list, variant_destroy>::apply[m_type_idx](storage_address_());
-                    m_type_idx = details::variant_no_index;
                     variant_dispatch<alternativies_list, variant_move_construct>::apply[other.m_type_idx](other.storage_address_(), storage_address_());
                     m_type_idx = other.m_type_idx;
                 }
@@ -482,7 +485,7 @@ namespace yato
             YATO_CONSTEXPR_FUNC
             bool is_empty_(yato::boolean_constant<true> /*is_nullable*/) const YATO_NOEXCEPT_KEYWORD
             {
-                return m_type_idx == meta::list_find<alternativies_list, void>::value;
+                return (m_type_idx == index_of_void);
             }
 
             YATO_CONSTEXPR_FUNC
@@ -567,9 +570,7 @@ namespace yato
 
             ~basic_variant()
             {
-                if (m_type_idx != details::variant_no_index) {
-                    variant_dispatch<alternativies_list, variant_destroy>::apply[m_type_idx](storage_address_());
-                }
+                variant_dispatch<alternativies_list, variant_destroy>::apply[m_type_idx](storage_address_());
             }
 
             /**
@@ -612,13 +613,13 @@ namespace yato
                 typename... Args_
             >
             YATO_CONSTEXPR_FUNC_CXX14
-            void emplace(Args_&& ... args)
+            Ty_& emplace(Args_&& ... args)
             {
                 YATO_REQUIRES(m_type_idx != details::variant_no_index);
                 variant_dispatch<alternativies_list, variant_destroy>::apply[m_type_idx](storage_address_());
-                m_type_idx = details::variant_no_index;
                 details::variant_create<Ty_>::apply(storage_address_(), std::forward<Args_>(args)...);
                 m_type_idx = yato::meta::list_find<alternativies_list, Ty_>::value;
+                return get_unsafe<Ty_>();
             }
 
             /**
