@@ -157,5 +157,11 @@ There are few generic implementations
 * **yato.natvis** provides user-friendly visualization of yato::vector_nd and yato::array_view_nd classes (1d,2d and 3d) in Visual Studio debugger.
 
 
+## Acknowledgments
+
+Yato is [used](https://github.com/huawei-noah/bolt/blob/cf4ca8f8646a8e30ddf91c29a18743d75ac1c172/docs/THIRD%20PARTY%20OPEN%20SOURCE%20SOFTWARE%20NOTICE.md) by [HUAWEI Noah's Ark Lab](https://github.com/huawei-noah)
+
+![logo](https://github.com/huawei-noah/bolt/blob/cf4ca8f8646a8e30ddf91c29a18743d75ac1c172/docs/images/LOGO.PNG)
+
 
 
