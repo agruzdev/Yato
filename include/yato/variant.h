@@ -442,6 +442,7 @@ namespace yato
                 }
                 else {
                     variant_dispatch<alternativies_list, variant_destroy>::apply[m_type_idx](storage_address_());
+                    m_type_idx = details::variant_no_index;
                     variant_dispatch<alternativies_list, variant_copy_construct>::apply[other.m_type_idx](other.storage_caddress_(), storage_address_());
                     m_type_idx = other.m_type_idx;
                 }
@@ -456,6 +457,7 @@ namespace yato
             {
                 variant_dispatch<alternativies_list, variant_move_construct>::apply[other.m_type_idx](other.storage_address_(), storage_address_());
                 m_type_idx = other.m_type_idx;
+                other.m_type_idx = details::variant_no_index;
             }
 
             void move_construct_(yato::disabled_t) YATO_NOEXCEPT_KEYWORD
@@ -472,9 +474,11 @@ namespace yato
                 }
                 else {
                     variant_dispatch<alternativies_list, variant_destroy>::apply[m_type_idx](storage_address_());
+                    m_type_idx = details::variant_no_index;
                     variant_dispatch<alternativies_list, variant_move_construct>::apply[other.m_type_idx](other.storage_address_(), storage_address_());
                     m_type_idx = other.m_type_idx;
                 }
+                other.m_type_idx = details::variant_no_index;
             }
 
             void move_assign_(yato::disabled_t) YATO_NOEXCEPT_KEYWORD
@@ -570,7 +574,9 @@ namespace yato
 
             ~basic_variant()
             {
-                variant_dispatch<alternativies_list, variant_destroy>::apply[m_type_idx](storage_address_());
+                if (m_type_idx != details::variant_no_index) {
+                    variant_dispatch<alternativies_list, variant_destroy>::apply[m_type_idx](storage_address_());
+                }
             }
 
             /**
@@ -617,6 +623,7 @@ namespace yato
             {
                 YATO_REQUIRES(m_type_idx != details::variant_no_index);
                 variant_dispatch<alternativies_list, variant_destroy>::apply[m_type_idx](storage_address_());
+                m_type_idx = details::variant_no_index;
                 details::variant_create<Ty_>::apply(storage_address_(), std::forward<Args_>(args)...);
                 m_type_idx = yato::meta::list_find<alternativies_list, Ty_>::value;
                 return get_unsafe<Ty_>();
@@ -628,6 +635,7 @@ namespace yato
              */
             const std::type_info & type() const YATO_NOEXCEPT_KEYWORD
             {
+                YATO_REQUIRES(m_type_idx != details::variant_no_index);
                 return variant_dispatch<alternativies_list, variant_get_type>::apply[m_type_idx]();
             }
 

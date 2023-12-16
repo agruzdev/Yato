@@ -15,6 +15,7 @@
 
   <Type Name="yato::details::basic_variant&lt;yato::meta::list&lt;*&gt;&gt;">
     <DisplayString Condition="m_type_idx==index_of_void">empty</DisplayString>
+    <DisplayString Condition="m_type_idx==yato::details::variant_no_index">expired</DisplayString>
     <DisplayString Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==0)" Optional="true">{ "$T1" }</DisplayString>
     <DisplayString Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==1)" Optional="true">{ "$T2" }</DisplayString>
     <DisplayString Condition="(m_type_idx!=index_of_void)&amp;&amp;(m_type_idx==2)" Optional="true">{ "$T3" }</DisplayString>

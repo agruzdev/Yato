@@ -86,7 +86,8 @@ TEST(Yato_Variant, copy)
 
     yato::variant<void, int> v8;
     v8 = std::move(v1);
-    EXPECT_NE(typeid(void), v1.type());
+    // object cannot be used after it was moved
+    //EXPECT_NE(typeid(void), v1.type());
 }
 
 namespace
