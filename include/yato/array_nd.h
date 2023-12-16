@@ -9,6 +9,7 @@
 #define _YATO_ARRAY_ND_H_
 
 #include <array>
+#include <algorithm>
 #include <type_traits>
 #include <vector>
 #include "assertion.h"
