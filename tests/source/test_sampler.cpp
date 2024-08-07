@@ -147,10 +147,16 @@ namespace
 
         template <size_t Dim_>
         YATO_CONSTEXPR_FUNC
-        bool transform_index(std::size_t in_idx, std::size_t /*size*/, std::size_t& out_idx) const
+        bool check_index(std::size_t /*in_idx*/, std::size_t /*size*/) const
         {
-            out_idx = in_idx & masks[Dim_];
             return true;
+        }
+
+        template <size_t Dim_>
+        YATO_CONSTEXPR_FUNC
+        std::size_t transform_index(std::size_t in_idx, std::size_t /*size*/) const
+        {
+            return in_idx & masks[Dim_];
         }
     };
 
