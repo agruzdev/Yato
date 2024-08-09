@@ -26,7 +26,7 @@ else()
 endif()
 
 set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   ${target}" CACHE STRING "C flags")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${target} -std=c++14 " CACHE STRING "C++ flags")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${target}" CACHE STRING "C++ flags")
 set(CMAKE_C_STANDARD_LIBRARIES   "${CMAKE_C_STANDARD_LIBRARIES}  -lgcc "    CACHE STRING "Standard C Libraries")
 set(CMAKE_CXX_STANDARD_LIBRARIES "${MAKE_CXX_STANDARD_LIBRARIES} -lstdc++ " CACHE STRING "Standard C++ Libraries")
 
