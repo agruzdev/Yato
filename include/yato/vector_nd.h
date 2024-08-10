@@ -1238,7 +1238,7 @@ namespace yato
                 if (idx >= size(0)) {
                     throw yato::out_of_range_error("yato::vector_nd: out of range!");
                 }
-                return create_const_proxy_(idx)[idx].at(std::forward<_Tail>(tail)...);
+                return create_const_proxy_(idx).at(std::forward<_Tail>(tail)...);
             }
 
             /**

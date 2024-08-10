@@ -145,11 +145,13 @@ TEST(Yato_VectorND, common)
         yato::vector_nd<int, 1> vec2c = yato::vector_nd<int, 1>(vec2.view());
         for(size_t i = 0; i < vec2.size(); ++i) {
             EXPECT_EQ(vec2[i], vec2c[i]);
+            EXPECT_EQ(vec2[i], vec2c.at(i));
         }
         yato::vector_nd<int, 2> vec4c = yato::vector_nd<int, 2>(vec4.view());
         for(size_t j = 0; j < vec4.size(0); ++j) {
             for(size_t i = 0; i < vec4.size(1); ++i) {
                 EXPECT_EQ(vec4[j][i], vec4c[j][i]);
+                EXPECT_EQ(vec4[j][i], vec4c.at(j, i));
             }
         }
         yato::vector_nd<int, 3> vec5c = yato::vector_nd<int, 3>(vec5.cview());
@@ -157,6 +159,7 @@ TEST(Yato_VectorND, common)
             for(size_t j = 0; j < vec5.size(1); ++j) {
                 for(size_t i = 0; i < vec5.size(2); ++i) {
                     EXPECT_EQ(vec5[k][j][i], vec5c[k][j][i]);
+                    EXPECT_EQ(vec5[k][j][i], vec5c.at(k, j, i));
                 }
             }
         }
@@ -452,10 +455,11 @@ TEST(Yato_VectorND, operator_at)
 TEST(Yato_VectorND, operator_at_1)
 {
     std::array<uint8_t, 3> dims;
-    std::generate(dims.begin(), dims.end(), []() { return static_cast<uint8_t>(std::rand() % 51); });
+    std::generate(dims.begin(), dims.end(), []() { return static_cast<uint8_t>(std::rand() % 25); });
 
     float val = (std::rand() % 1000) / 10.0f;
     yato::vector_nd<float, 3> vec_nd(yato::make_range(dims.begin(), dims.end()), val);
+    const auto& vec_nd_cref = vec_nd;
 
     for (size_t i = 0; i < dims[0]; ++i) {
         for (size_t j = 0; j < dims[1]; ++j) {
@@ -463,6 +467,10 @@ TEST(Yato_VectorND, operator_at_1)
                 float x;
                 EXPECT_NO_THROW(x = vec_nd.at(i, j, k));
                 EXPECT_THROW(vec_nd.at(dims[0] + i, dims[1] + j, dims[2] + k), yato::out_of_range_error);
+                EXPECT_EQ(val, x);
+
+                EXPECT_NO_THROW(x = vec_nd_cref.at(i, j, k));
+                EXPECT_THROW(vec_nd_cref.at(dims[0] + i, dims[1] + j, dims[2] + k), yato::out_of_range_error);
                 EXPECT_EQ(val, x);
             }
         }
