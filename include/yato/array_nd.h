@@ -296,6 +296,11 @@ YATO_PRAGMA_WARNING_POP
                 return m_iter;
             }
 
+            std::add_const_t<value_type>* data() const
+            {
+                return m_iter;
+            }
+
             std::add_const_t<value_type>* cdata() const
             {
                 return m_iter;
@@ -508,6 +513,11 @@ YATO_PRAGMA_WARNING_PUSH
 YATO_PRAGMA_WARNING_POP
 
             value_type* data()
+            {
+                return m_iter;
+            }
+
+            std::add_const_t<value_type>* data() const
             {
                 return m_iter;
             }
@@ -855,6 +865,17 @@ YATO_PRAGMA_WARNING_POP
              *  Points to valid continuous storage with all elements
              *  The order of elements is same like for native array T[][]..[]
              */
+            YATO_CONSTEXPR_FUNC
+            std::add_const_t<value_type>* data() const YATO_NOEXCEPT_KEYWORD
+            {
+                return cptr_();
+            }
+
+            /**
+             *  Get raw pointer to data
+             *  Points to valid continuous storage with all elements
+             *  The order of elements is same like for native array T[][]..[]
+             */
             YATO_CONSTEXPR_FUNC 
             std::add_const_t<value_type>* cdata() const YATO_NOEXCEPT_KEYWORD
             {
@@ -1177,6 +1198,17 @@ YATO_PRAGMA_WARNING_POP
             value_type* data() YATO_NOEXCEPT_KEYWORD 
             {
                 return ptr_();
+            }
+
+            /**
+             *  Get raw pointer to data
+             *  Points to valid continuous storage with all elements
+             *  The order of elements is same like for native array T[][]..[]
+             */
+            YATO_CONSTEXPR_FUNC
+            const value_type* data() const YATO_NOEXCEPT_KEYWORD
+            {
+                return cptr_();
             }
 
             /**

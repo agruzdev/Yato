@@ -70,6 +70,9 @@ namespace yato
         using value_reference       = typename proxy_access_traits<value_type, access_policy>::reference;
         using const_value_reference = typename proxy_access_traits<value_type, access_policy>::const_reference;
 
+        using value_pointer = std::add_pointer_t<ValueType_>;
+        using const_value_pointer = std::add_const_t<std::add_pointer_t<ValueType_>>;
+
         using dimensions_type = dimensionality<dimensions_number, size_type>;
         //-------------------------------------------------------
 
@@ -83,12 +86,12 @@ namespace yato
         //-------------------------------------------------------
 
     protected:
-        std::add_pointer_t<ValueType_> & raw_ptr_()
+        value_pointer& raw_ptr_()
         {
             return m_data_iter;
         }
 
-        std::add_const_t<std::add_pointer_t<ValueType_>> & raw_ptr_() const
+        const_value_pointer& raw_ptr_() const
         {
             return m_data_iter;
         }
@@ -385,7 +388,7 @@ namespace yato
         /**
          *  Get raw pointer to underlying data
          */
-        std::add_pointer_t<value_type> data() const YATO_NOEXCEPT_KEYWORD
+        value_pointer data() const YATO_NOEXCEPT_KEYWORD
         {
             return m_data_iter;
         }
@@ -393,7 +396,17 @@ namespace yato
         /**
          *  Get raw pointer to underlying data
          */
-        std::add_pointer_t<std::add_const_t<value_type>> cdata() const YATO_NOEXCEPT_KEYWORD
+        template <typename ThisType_ = this_type>
+        auto data() const YATO_NOEXCEPT_KEYWORD
+            -> std::enable_if_t<std::is_same<typename ThisType_::value_pointer, typename ThisType_::const_value_pointer>::value, const_value_pointer>
+        {
+            return m_data_iter;
+        }
+
+        /**
+         *  Get raw pointer to underlying data
+         */
+        const_value_pointer cdata() const YATO_NOEXCEPT_KEYWORD
         {
             return m_data_iter;
         }
@@ -432,6 +445,10 @@ namespace yato
         using value_reference       = reference;
         using const_value_reference = const_reference;
 
+        using value_pointer         = std::add_pointer_t<ValueType_>;
+        using const_value_pointer   = std::add_const_t<std::add_pointer_t<ValueType_>>;
+
+
         using dimensions_type = dimensionality<dimensions_number, size_type>;
         //-------------------------------------------------------
 
@@ -446,12 +463,12 @@ namespace yato
         //-------------------------------------------------------
 
     protected:
-        std::add_pointer_t<ValueType_> & raw_ptr_()
+        value_pointer& raw_ptr_()
         {
             return m_data_iter;
         }
 
-        std::add_const_t<std::add_pointer_t<ValueType_>> & raw_ptr_() const
+        const_value_pointer& raw_ptr_() const
         {
             return m_data_iter;
         }
@@ -720,7 +737,7 @@ namespace yato
         /**
          *  Get raw pointer to underlying data
          */
-        std::add_pointer_t<value_type> data() const YATO_NOEXCEPT_KEYWORD
+        value_pointer data() const YATO_NOEXCEPT_KEYWORD
         {
             return m_data_iter;
         }
@@ -728,7 +745,17 @@ namespace yato
         /**
          *  Get raw pointer to underlying data
          */
-        std::add_pointer_t<std::add_const_t<value_type>> cdata() const YATO_NOEXCEPT_KEYWORD
+        template <typename ThisType_ = this_type>
+        auto data() const YATO_NOEXCEPT_KEYWORD
+            -> std::enable_if_t<std::is_same<typename ThisType_::value_pointer, typename ThisType_::const_value_pointer>::value, const_value_pointer>
+        {
+            return m_data_iter;
+        }
+
+        /**
+         *  Get raw pointer to underlying data
+         */
+        const_value_pointer cdata() const YATO_NOEXCEPT_KEYWORD
         {
             return m_data_iter;
         }

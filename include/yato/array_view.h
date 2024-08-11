@@ -384,8 +384,8 @@ namespace yato
         using base_type = details::array_view_base<ValueType_, DimsNum>;
 
         using value_type = ValueType_;
-        using pointer_type = std::add_pointer_t<ValueType_>;
-        using const_pointer_type = std::add_pointer_t<std::add_const_t<ValueType_>>;
+        using value_pointer = std::add_pointer_t<ValueType_>;
+        using const_value_pointer = std::add_const_t<std::add_pointer_t<ValueType_>>;
         static YATO_CONSTEXPR_VAR size_t dimensions_number = DimsNum;
 
         using typename base_type::dimensions_type;
@@ -408,15 +408,15 @@ namespace yato
             : base_type(nullptr, dimensions_type{}, element_strides_type{})
         { }
 
-        array_view_nd(pointer_type ptr, const dimensions_type & extents)
+        array_view_nd(value_pointer ptr, const dimensions_type & extents)
             : base_type(ptr, extents, extents.sub_dims())
         { }
 
-        array_view_nd(pointer_type ptr, const dimensions_type & extents, const element_strides_type & element_strides)
+        array_view_nd(value_pointer ptr, const dimensions_type & extents, const element_strides_type & element_strides)
             : base_type(ptr, extents, element_strides)
         { }
 
-        array_view_nd(pointer_type ptr, const dimensions_type & extents, const byte_strides_type & byte_strides)
+        array_view_nd(value_pointer ptr, const dimensions_type & extents, const byte_strides_type & byte_strides)
             : base_type(ptr, extents, byte_strides)
         { }
 
@@ -675,7 +675,7 @@ namespace yato
         /**
          * Changes base pointer and returnes the old one not changing view extents
          */
-        pointer_type rebind(pointer_type new_ptr)
+        value_pointer rebind(value_pointer new_ptr)
         {
             auto tmp = base_type::get_pointer_();
             base_type::set_pointer_(new_ptr);
@@ -685,7 +685,7 @@ namespace yato
         /**
          * Get raw pointer to underlying data
          */
-        pointer_type data() const
+        value_pointer data() const
         {
             return base_type::get_pointer_();
         }
@@ -693,7 +693,17 @@ namespace yato
         /**
          * Get raw pointer to underlying data
          */
-        const_pointer_type cdata() const
+        template <typename ThisType_ = this_type>
+        auto data() const
+            -> std::enable_if_t<std::is_same<typename ThisType_::value_pointer, typename ThisType_::const_value_pointer>::value, const_value_pointer>
+        {
+            return base_type::get_pointer_();
+        }
+
+        /**
+         * Get raw pointer to underlying data
+         */
+        const_value_pointer cdata() const
         {
             return base_type::get_pointer_();
         }

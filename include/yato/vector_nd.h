@@ -1377,6 +1377,14 @@ namespace yato
             /**
              * Get a raw pointer to stored data beginning
              */
+            std::add_pointer_t<std::add_const_t<value_type>> data() const YATO_NOEXCEPT_KEYWORD
+            {
+                return m_raw_vector.ptr();
+            }
+
+            /**
+             * Get a raw pointer to stored data beginning
+             */
             std::add_pointer_t<std::add_const_t<value_type>> cdata() const YATO_NOEXCEPT_KEYWORD
             {
                 return m_raw_vector.ptr();
@@ -2611,6 +2619,14 @@ namespace yato
              * Get a raw pointer to stored data beginning
              */
             std::add_pointer_t<value_type> data()
+            {
+                return m_raw_vector.ptr();
+            }
+
+            /**
+             * Get a raw pointer to stored data beginning
+             */
+            std::add_pointer_t<std::add_const_t<value_type>> data() const
             {
                 return m_raw_vector.ptr();
             }
