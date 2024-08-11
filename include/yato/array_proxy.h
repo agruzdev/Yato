@@ -161,13 +161,11 @@ namespace yato
             return create_sub_view_(idx);
         }
 
-        template<typename... IdxTail_>
-        value_reference at(size_t idx, IdxTail_... tail) const
+        template<typename... Indexes_>
+        auto at(Indexes_... indexes) const
+            -> std::enable_if_t<(sizeof...(Indexes_) == dimensions_number), value_reference>
         {
-            if (idx >= size(0)) {
-                throw yato::out_of_range_error("yato::array_sub_view_nd: out of range!");
-            }
-            return create_sub_view_(idx).at(tail...);
+            yato::at(*this, std::forward<Indexes_>(indexes)...);
         }
 
 
@@ -534,10 +532,7 @@ namespace yato
 
         value_reference at(size_t idx) const
         {
-            if (idx >= size(0)) {
-                throw yato::out_of_range_error("yato::proxy_nd: out of range!");
-            }
-            return (*this)[idx];
+            return yato::at(*this, idx);
         }
 
         /**

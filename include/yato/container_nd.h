@@ -875,28 +875,79 @@ namespace yato
         template <typename ValueType_>
         using return_type = typename details::get_return_type_with_arg<Sampler_, ValueType_>::type;
 
+        /**
+         * Loads element according to sampler
+         */
         template <typename Container_, typename... Indexes_>
         static YATO_CONSTEXPR_FUNC
         auto load(const Sampler_& s, const Container_& c, const Indexes_&... indexes)
             -> return_type<typename container_traits<Container_>::value_type>
         {
-            return load_impl_<typename container_traits<Container_>::value_type, 0>(s, c, indexes...);
+            return load_impl_<typename container_traits<Container_>::value_type>(s, c, indexes...);
         }
 
+        /**
+         * Loads element according to sampler
+         */
         template <typename Container_, typename... Indexes_>
         static YATO_CONSTEXPR_FUNC
         auto load(Sampler_& s, const Container_& c, const Indexes_&... indexes)
             -> return_type<typename container_traits<Container_>::value_type>
         {
-            return load_impl_<typename container_traits<Container_>::value_type, 0>(s, c, indexes...);
+            return load_impl_<typename container_traits<Container_>::value_type>(s, c, indexes...);
         }
+
+        /**
+         * Returns reference to a container element.
+         * Only the methods Sampler::check_index and Sampler::transform_index are used.
+         */
+        template <typename Container_, typename... Indexes_>
+        static YATO_CONSTEXPR_FUNC
+        decltype(auto) at(const Sampler_& s, Container_& c, const Indexes_&... indexes)
+        {
+            return at_impl_<typename container_traits<yato::remove_cvref_t<Container_>>::value_type>(s, c, indexes...);
+        }
+
+        /**
+         * Returns reference to a container element.
+         * Only the methods Sampler::check_index and Sampler::transform_index are used.
+         */
+        template <typename Container_, typename... Indexes_>
+        static YATO_CONSTEXPR_FUNC
+        decltype(auto) at(Sampler_& s, Container_& c, const Indexes_&... indexes)
+        {
+            return at_impl_<typename container_traits<yato::remove_cvref_t<Container_>>::value_type>(s, c, indexes...);
+        }
+
+        /**
+         * Returns reference to a container element.
+         * Only the methods Sampler::check_index and Sampler::transform_index are used.
+         */
+        template <typename Container_, typename... Indexes_>
+        static YATO_CONSTEXPR_FUNC
+        decltype(auto) at(const Sampler_& s, const Container_& c, const Indexes_&... indexes)
+        {
+            return at_impl_<typename container_traits<yato::remove_cvref_t<Container_>>::value_type>(s, c, indexes...);
+        }
+
+        /**
+         * Returns reference to a container element.
+         * Only the methods Sampler::check_index and Sampler::transform_index are used.
+         */
+        template <typename Container_, typename... Indexes_>
+        static YATO_CONSTEXPR_FUNC
+        decltype(auto) at(Sampler_& s, const Container_& c, const Indexes_&... indexes)
+        {
+            return at_impl_<typename container_traits<yato::remove_cvref_t<Container_>>::value_type>(s, c, indexes...);
+        }
+
 
     private:
         using has_check_index_ = details::has_check_index_method<Sampler_, index_type>;
         using has_transform_index_ = details::has_transform_index_method<Sampler_, index_type>;
 
 
-        template <typename ValueType_, size_t Dim_, typename SamplerRef_, typename Container_, typename... Indexes_>
+        template <typename ValueType_, typename SamplerRef_, typename Container_, typename... Indexes_>
         static YATO_CONSTEXPR_FUNC_CXX14
         return_type<ValueType_> load_impl_(SamplerRef_&& s, const Container_& c, const Indexes_&... indexes)
         {
@@ -909,6 +960,18 @@ namespace yato
             }
             return invoke_transform_value_<ValueType_>(has_transform_value_{}, s,
                 fetch_value_impl_<ValueType_, 0>(container_ops::get_category(c), s, c, indexes...));
+        }
+
+        template <typename ValueType_, typename SamplerRef_, typename ContainerRef_, typename... Indexes_>
+        static YATO_CONSTEXPR_FUNC_CXX14
+        decltype(auto) at_impl_(SamplerRef_&& s, ContainerRef_&& c, const Indexes_&... indexes)
+        {
+            using container_ops = container_ops<yato::remove_cvref_t<ContainerRef_>>;
+
+            if (!check_bounds_impl_<0>(s, c, indexes...)) {
+                invoke_boundary_value_<ValueType_>(std::false_type{}, s);  // always exception
+            }
+            return fetch_value_impl_<ValueType_, 0>(container_ops::get_category(c), s, c, indexes...);
         }
 
         template <size_t Dim_, typename SamplerRef_, typename Container_, typename... Indexes_>
@@ -1129,6 +1192,20 @@ namespace yato
     decltype(auto) loads(Sampler_&& s, const Container_& c, Indexes_&&... indexes)
     {
         return sampler_traits<yato::remove_cvref_t<Sampler_>>::load(std::forward<Sampler_>(s), c, std::forward<Indexes_>(indexes)...);
+    }
+
+    template <typename Sampler_ = sampler_default, typename Container_, typename... Indexes_>
+    inline
+    decltype(auto) at(Container_&& c, Indexes_&&... indexes)
+    {
+        return sampler_traits<Sampler_>::at(Sampler_{}, std::forward<Container_>(c), std::forward<Indexes_>(indexes)...);
+    }
+
+    template <typename Sampler_, typename Container_, typename... Indexes_>
+    inline
+    decltype(auto) ats(Sampler_&& s, Container_&& c, Indexes_&&... indexes)
+    {
+        return sampler_traits<yato::remove_cvref_t<Sampler_>>::at(std::forward<Sampler_>(s), std::forward<Container_>(c), std::forward<Indexes_>(indexes)...);
     }
 
 }

@@ -196,16 +196,6 @@ namespace yato
                 return static_cast<const_iterator>(get_sub_view_(idx));
             }
 
-            template<typename... IdxTail>
-            value_reference at_impl_(size_t idx, IdxTail && ... tail) const
-            {
-                static_assert(sizeof...(IdxTail) + 1 == dimensions_number, "Wrong indexes number");
-                if (idx >= get_size_(0)) {
-                    throw yato::out_of_range_error("yato::array_view_nd[at]: out of range!");
-                }
-                return get_sub_view_(idx).at(std::forward<IdxTail>(tail)...);
-            }
-
             bool is_continuous_() const
             {
                 return get_total_size_() * sizeof(value_type) == get_total_stored_();
@@ -352,14 +342,6 @@ namespace yato
                 return yato::next(m_base_ptr, idx);
             }
 
-            value_reference at_impl_(size_t idx) const
-            {
-                if (idx >= m_size[0]) {
-                    throw yato::out_of_range_error("yato::array_view_nd[at]: out of range!");
-                }
-                return get_sub_view_(idx);
-            }
-
             bool is_continuous_() const
             {
                 return true;
@@ -502,7 +484,7 @@ namespace yato
         auto at(Indexes &&... indexes) const
             -> typename std::enable_if<(sizeof...(Indexes) == dimensions_number), value_reference>::type
         {
-            return base_type::at_impl_(std::forward<Indexes>(indexes)...);
+            return yato::at(*this, std::forward<Indexes>(indexes)...);
         }
 
         size_type total_size() const
@@ -686,16 +668,6 @@ namespace yato
          * Get raw pointer to underlying data
          */
         value_pointer data() const
-        {
-            return base_type::get_pointer_();
-        }
-
-        /**
-         * Get raw pointer to underlying data
-         */
-        template <typename ThisType_ = this_type>
-        auto data() const
-            -> std::enable_if_t<std::is_same<typename ThisType_::value_pointer, typename ThisType_::const_value_pointer>::value, const_value_pointer>
         {
             return base_type::get_pointer_();
         }

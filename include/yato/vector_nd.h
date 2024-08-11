@@ -1231,27 +1231,21 @@ namespace yato
             /**
              *  Element access with bounds check
              */
-            template<typename... _Tail>
-            auto at(size_t idx, _Tail &&... tail) const
-                -> typename std::enable_if<(yato::args_length<_Tail...>::value == dimensions_number - 1), const_value_reference>::type
+            template<typename... Indexes_>
+            auto at(Indexes_&&... indexes) const
+                -> typename std::enable_if<(yato::args_length<Indexes_...>::value == dimensions_number), const_value_reference>::type
             {
-                if (idx >= size(0)) {
-                    throw yato::out_of_range_error("yato::vector_nd: out of range!");
-                }
-                return create_const_proxy_(idx).at(std::forward<_Tail>(tail)...);
+                return yato::at(*this, std::forward<Indexes_>(indexes)...);
             }
 
             /**
              *  Element access with bounds check
              */
-            template<typename... _Tail>
-            auto at(size_t idx, _Tail &&... tail)
-                -> typename std::enable_if<(yato::args_length<_Tail...>::value == dimensions_number - 1), value_reference>::type
+            template<typename... Indexes_>
+            auto at(Indexes_&&... indexes)
+                -> typename std::enable_if<(yato::args_length<Indexes_...>::value == dimensions_number), value_reference>::type
             {
-                if (idx >= size(0)) {
-                    throw yato::out_of_range_error("yato::vector_nd: out of range!");
-                }
-                return create_proxy_(idx).at(std::forward<_Tail>(tail)...);
+                return yato::at(*this, std::forward<Indexes_>(indexes)...);
             }
 
             /**
@@ -2486,10 +2480,7 @@ namespace yato
              */
             const_value_reference at(size_t idx) const
             {
-                if(idx >= m_size) {
-                    throw yato::out_of_range_error("yato::vector_1d: Index " + yato::stl::to_string(idx) + " is out of range!");
-                }
-                return *(m_raw_vector.ptr() + idx);
+                return yato::at(*this, idx);
             }
 
             /**
@@ -2497,10 +2488,7 @@ namespace yato
              */
             value_reference at(size_t idx)
             {
-                if(idx >= m_size) {
-                    throw yato::out_of_range_error("yato::vector_1d: Index " + yato::stl::to_string(idx) + " is out of range!");
-                }
-                return *(m_raw_vector.ptr() + idx);
+                return yato::at(*this, idx);
             }
 
             /**

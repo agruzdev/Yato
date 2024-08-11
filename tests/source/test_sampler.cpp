@@ -26,6 +26,21 @@ TEST(Yato_Sampler, sampler_default)
     EXPECT_THROW(yato::load<yato::sampler_default>(v1, 2, 1), yato::out_of_range_error);
     EXPECT_THROW(yato::load<yato::sampler_default>(v1, 10, 1), yato::out_of_range_error);
     EXPECT_THROW(yato::load<yato::sampler_default>(v1, 10, 11), yato::out_of_range_error);
+
+    EXPECT_EQ(1, yato::at(v1, 0, 0));
+    EXPECT_EQ(2, yato::at(v1, 0, 1));
+    EXPECT_EQ(3, yato::at(v1, 1, 0));
+    EXPECT_EQ(4, yato::at(v1, 1, 1));
+
+    EXPECT_EQ(&v1[0][0], &yato::at(v1, 0, 0));
+    EXPECT_EQ(&v1[0][1], &yato::at(v1, 0, 1));
+    EXPECT_EQ(&v1[1][0], &yato::at(v1, 1, 0));
+    EXPECT_EQ(&v1[1][1], &yato::at(v1, 1, 1));
+
+    EXPECT_THROW(yato::at<yato::sampler_default>(v1, 1, 3), yato::out_of_range_error);
+    EXPECT_THROW(yato::at<yato::sampler_default>(v1, 2, 1), yato::out_of_range_error);
+    EXPECT_THROW(yato::at<yato::sampler_default>(v1, 10, 1), yato::out_of_range_error);
+    EXPECT_THROW(yato::at<yato::sampler_default>(v1, 10, 11), yato::out_of_range_error);
 }
 
 TEST(Yato_Sampler, sampler_no_check)
@@ -39,6 +54,11 @@ TEST(Yato_Sampler, sampler_no_check)
     EXPECT_EQ(2, yato::load<yato::sampler_no_check>(v1, 0, 1));
     EXPECT_EQ(3, yato::load<yato::sampler_no_check>(v1, 1, 0));
     EXPECT_EQ(4, yato::load<yato::sampler_no_check>(v1, 1, 1));
+
+    EXPECT_EQ(1, yato::at<yato::sampler_no_check>(v1, 0, 0));
+    EXPECT_EQ(2, yato::at<yato::sampler_no_check>(v1, 0, 1));
+    EXPECT_EQ(3, yato::at<yato::sampler_no_check>(v1, 1, 0));
+    EXPECT_EQ(4, yato::at<yato::sampler_no_check>(v1, 1, 1));
 }
 
 TEST(Yato_Sampler, sampler_zero)
@@ -57,6 +77,9 @@ TEST(Yato_Sampler, sampler_zero)
     EXPECT_EQ(0, yato::load<yato::sampler_zero>(v1, 0, -1));
     EXPECT_EQ(0, yato::load<yato::sampler_zero>(v1, 1, 2));
     EXPECT_EQ(0, yato::load<yato::sampler_zero>(v1, 2, 1));
+
+    EXPECT_THROW(yato::at<yato::sampler_zero>(v1, -1, 0), yato::out_of_range_error);
+    EXPECT_THROW(yato::at<yato::sampler_zero>(v1, 1, 2), yato::out_of_range_error);
 }
 
 TEST(Yato_Sampler, sampler_clamp)
@@ -121,6 +144,14 @@ TEST(Yato_Sampler, sampler_c_array)
     EXPECT_EQ(2, yato::load<yato::sampler_zero>(arr, 1));
     EXPECT_EQ(3, yato::load<yato::sampler_zero>(arr, 2));
     EXPECT_EQ(0, yato::load<yato::sampler_zero>(arr, 10));
+
+    yato::at(arr, 0) = 10;
+    yato::at(arr, 1) = 20;
+    yato::at(arr, 2) = 30;
+
+    EXPECT_EQ(10, yato::at(arr, 0));
+    EXPECT_EQ(20, yato::at(arr, 1));
+    EXPECT_EQ(30, yato::at(arr, 2));
 }
 
 
