@@ -977,7 +977,7 @@ namespace yato
             using container_ops = container_ops<yato::remove_cvref_t<ContainerRef_>>;
 
             const size_t effective_idx = invoke_transform_index_<Dim_>(has_transform_index_{}, s, index_curr, container_ops::size(c, Dim_));
-            effective_offset = (effective_offset + effective_idx) * container_ops::size(c, Dim_);
+            effective_offset = (effective_offset + effective_idx) * container_ops::size(c, Dim_ + 1);
 
             return fetch_value_continious_impl_<ValueType_, Dim_ + 1>(effective_offset, s, c, index_next, indexes_tail...);
         }

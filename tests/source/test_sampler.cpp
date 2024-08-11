@@ -13,8 +13,8 @@
 TEST(Yato_Sampler, sampler_default)
 {
     yato::vector_nd<int, 2> v1 = {
-        { 1, 2 },
-        { 3, 4 }
+        { 1, 2, 5 },
+        { 3, 4, 6 }
     };
 
     EXPECT_EQ(1, yato::load<yato::sampler_default>(v1, 0, 0));
@@ -22,7 +22,7 @@ TEST(Yato_Sampler, sampler_default)
     EXPECT_EQ(3, yato::load<yato::sampler_default>(v1, 1, 0));
     EXPECT_EQ(4, yato::load<yato::sampler_default>(v1, 1, 1));
 
-    EXPECT_THROW(yato::load<yato::sampler_default>(v1, 1, 2), yato::out_of_range_error);
+    EXPECT_THROW(yato::load<yato::sampler_default>(v1, 1, 3), yato::out_of_range_error);
     EXPECT_THROW(yato::load<yato::sampler_default>(v1, 2, 1), yato::out_of_range_error);
     EXPECT_THROW(yato::load<yato::sampler_default>(v1, 10, 1), yato::out_of_range_error);
     EXPECT_THROW(yato::load<yato::sampler_default>(v1, 10, 11), yato::out_of_range_error);
