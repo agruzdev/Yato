@@ -21,6 +21,7 @@
 
 namespace yato
 {
+
     struct sampler_default;
 
     namespace details
@@ -35,6 +36,8 @@ namespace yato
         YATO_DEFINE_TYPE_GETTER(get_const_reference, const_reference)
         YATO_DEFINE_TYPE_GETTER(get_value_reference, value_reference)
         YATO_DEFINE_TYPE_GETTER(get_const_value_reference, const_value_reference)
+        YATO_DEFINE_TYPE_GETTER(get_container_category, container_category)
+        YATO_DEFINE_TYPE_GETTER(get_dim_descriptor, dim_descriptor)
         YATO_DEFINE_VALUE_GETTER(get_has_method_size0, has_method_size0, bool)
         YATO_DEFINE_METHOD_CHECK_RET_0AGR(has_method_size0, size)
         YATO_DEFINE_VALUE_GETTER(get_has_method_size1, has_method_size1, bool)
@@ -58,6 +61,7 @@ namespace yato
         YATO_DEFINE_METHOD_CHECK_RET_0AGR(has_method_data, data)
         YATO_DEFINE_VALUE_GETTER(get_has_method_cdata, has_method_cdata, bool)
         YATO_DEFINE_METHOD_CHECK_RET_0AGR(has_method_cdata, cdata)
+
 
         template <typename C_, typename DimsType_, size_t DimsNum_, size_t... Indexes_>
         struct make_dims_from_size_
@@ -109,13 +113,15 @@ namespace yato
 
 
 
+
     /**
      * Provides the standardized access to container properties
      */
     template <typename Container_>
     struct container_traits
     {
-        //static_assert(std::is_same<yato::remove_cvref_t<Container_>, Container_>::value, "Container_ must be a type without modifiers");
+        static_assert(std::is_same<yato::remove_cvref_t<Container_>, Container_>::value, "Container_ must be a type without modifiers");
+
 
         /**
          * Alias to Container::value_type. Required member.
@@ -202,6 +208,14 @@ namespace yato
         using const_value_reference = typename details::get_value_reference<Container_, const_reference>::type;
 
 
+        /**
+         * Container category hint
+         * Try to deduce from the public interface if not available as Container::container_category
+         */
+        using container_category = typename details::get_container_category<Container_,
+            typename details::deduce_container_category_from_dim_descriptor<dimensions_number, typename details::get_dim_descriptor<Container_, void>::type>::type
+        >::type;
+
 
         /**
          * Checks if the method Container::size() is present.
@@ -282,7 +296,7 @@ namespace yato
 
         /**
          * Checks if the method Container::cdata() is present.
-         * Alias to Container::has_operator_csubscript is present, otherwise tries to deduce.
+         * Alias to Container::has_operator_cdata is present, otherwise tries to deduce.
          */
         static YATO_CONSTEXPR_VAR bool has_method_cdata = details::get_has_method_cdata<Container_,
                 details::has_method_cdata<const Container_, std::add_pointer_t<std::add_const_t<value_type>>>::value>::value;
@@ -333,12 +347,14 @@ namespace yato
         using value_reference = reference;
         using const_value_reference = const_reference;
 
+        using container_category = yato::container_continuous_tag;
+
         static YATO_CONSTEXPR_VAR bool has_method_size0 = false;
         static YATO_CONSTEXPR_VAR bool has_method_size1 = false;
         static YATO_CONSTEXPR_VAR bool has_method_stride = false;
         static YATO_CONSTEXPR_VAR bool has_method_continuous = false;
-        static YATO_CONSTEXPR_VAR bool has_operator_subscript = false;
-        static YATO_CONSTEXPR_VAR bool has_operator_csubscript = false;
+        static YATO_CONSTEXPR_VAR bool has_operator_subscript = true;
+        static YATO_CONSTEXPR_VAR bool has_operator_csubscript = true;
         static YATO_CONSTEXPR_VAR bool has_method_dimensions = false;
         static YATO_CONSTEXPR_VAR bool has_method_dimensions_range = false;
         static YATO_CONSTEXPR_VAR bool has_method_strides = false;
@@ -378,6 +394,8 @@ namespace yato
         using const_reference = typename std_array_type_::const_reference;
         using value_reference = reference;
         using const_value_reference = const_reference;
+
+        using container_category = yato::container_continuous_tag;
 
         static YATO_CONSTEXPR_VAR bool has_method_size0 = true;
         static YATO_CONSTEXPR_VAR bool has_method_size1 = false;
@@ -425,6 +443,8 @@ namespace yato
         using value_reference = reference;
         using const_value_reference = const_reference;
 
+        using container_category = yato::container_continuous_tag;
+
         static YATO_CONSTEXPR_VAR bool has_method_size0 = true;
         static YATO_CONSTEXPR_VAR bool has_method_size1 = false;
         static YATO_CONSTEXPR_VAR bool has_method_stride = false;
@@ -471,6 +491,7 @@ namespace yato
         using typename traits_type::const_reference;
         using typename traits_type::value_reference;
         using typename traits_type::const_value_reference;
+        using typename traits_type::container_category;
         using traits_type::has_method_stride;
         using traits_type::has_method_continuous;
         using traits_type::has_operator_subscript;
@@ -501,15 +522,21 @@ namespace yato
         }
 
         static YATO_CONSTEXPR_FUNC
+        size_type size(yato::disable3_if_not_t<!traits_type::has_method_size0 && !traits_type::has_method_size1, const Container_&> c)
+        {
+            return std::size(c);
+        }
+
+        static YATO_CONSTEXPR_FUNC
         size_type size(yato::disable1_if_not_t<traits_type::has_method_size1, const Container_&> c, std::size_t dim)
         {
             return c.size(dim);
         }
 
         static YATO_CONSTEXPR_FUNC
-        size_type size(yato::disable2_if_not_t<!traits_type::has_method_size1 && traits_type::has_method_size0, const Container_&> c, std::size_t /*dim*/)
+        size_type size(yato::disable2_if_not_t<!traits_type::has_method_size1 && (dimensions_number == 1), const Container_&> c, std::size_t /*dim*/)
         {
-            return c.size();
+            return size(c);
         }
 
         static YATO_CONSTEXPR_FUNC
@@ -645,6 +672,15 @@ namespace yato
          * Optional interface
          */
         static YATO_CONSTEXPR_FUNC
+        std::add_pointer_t<value_type> data(yato::disable2_if_not_t<!has_method_data, Container_&> c)
+        {
+            return std::data(c);
+        }
+
+        /**
+         * Optional interface
+         */
+        static YATO_CONSTEXPR_FUNC
         decltype(auto) data(yato::disable2_if_not_t<has_method_data, const Container_&> c)
         {
             return c.data();
@@ -666,6 +702,15 @@ namespace yato
         std::add_pointer_t<std::add_const_t<value_type>> cdata(yato::disable2_if_t<has_method_cdata || !has_method_data, const Container_&> c)
         {
             return c.data();
+        }
+
+        /**
+         * Optional interface
+         */
+        static YATO_CONSTEXPR_FUNC
+        std::add_pointer_t<std::add_const_t<value_type>> cdata(yato::disable3_if_t<has_method_cdata || has_method_data, const Container_&> c)
+        {
+            return std::data(c);
         }
 
         /**
@@ -696,18 +741,13 @@ namespace yato
         }
 
         /**
-         * Optional interface
+         * Returns container category tag instance
          */
-        template <typename Sampler_ = sampler_default, typename... Indexes_>
-        static YATO_CONSTEXPR_FUNC
-        decltype(auto) load(const Container_& c, Indexes_&&... indexes);
-
-        /**
-         * Optional interface
-         */
-        template <typename Sampler_, typename... Indexes_>
-        static YATO_CONSTEXPR_FUNC
-        decltype(auto) loads(Sampler_&& s, const Container_& c, Indexes_&&... indexes);
+        static YATO_CONSTEXPR_FUNC YATO_FORCED_INLINE
+        container_category get_category(const Container_&)
+        {
+            return container_category{};
+        }
     };
 
 
@@ -728,26 +768,26 @@ namespace yato
             using type = typename Ty_::template return_type<Vy_>;
         };
 
-        template <typename Ty_, typename IdxTy_, size_t Dim_, typename = void>
+        template <typename Ty_, typename IdxTy_, typename = void>
         struct has_check_index_method
             : std::false_type
         { };
 
-        template <typename Ty_, typename IdxTy_, size_t Dim_>
-        struct has_check_index_method<Ty_, IdxTy_, Dim_,
-            std::enable_if_t<std::is_same<bool, decltype(std::declval<Ty_>().template check_index<Dim_>(std::declval<IdxTy_>(), std::declval<std::size_t>()))>::value>
+        template <typename Ty_, typename IdxTy_>
+        struct has_check_index_method<Ty_, IdxTy_,
+            std::enable_if_t<std::is_same<bool, decltype(std::declval<Ty_>().template check_index<static_cast<size_t>(0)>(std::declval<IdxTy_>(), std::declval<std::size_t>()))>::value>
         >
             : std::true_type
         { };
 
-        template <typename Ty_, typename IdxTy_, size_t Dim_, typename = void>
+        template <typename Ty_, typename IdxTy_, typename = void>
         struct has_transform_index_method
             : std::false_type
         { };
 
-        template <typename Ty_, typename IdxTy_, size_t Dim_>
-        struct has_transform_index_method<Ty_, IdxTy_, Dim_,
-            std::enable_if_t<std::is_same<std::size_t, decltype(std::declval<Ty_>().template transform_index<Dim_>(std::declval<IdxTy_>(), std::declval<std::size_t>()))>::value>
+        template <typename Ty_, typename IdxTy_>
+        struct has_transform_index_method<Ty_, IdxTy_,
+            std::enable_if_t<std::is_same<std::size_t, decltype(std::declval<Ty_>().template transform_index<static_cast<size_t>(0)>(std::declval<IdxTy_>(), std::declval<std::size_t>()))>::value>
         >
             : std::true_type
         { };
@@ -787,6 +827,7 @@ namespace yato
      * Member methods:
      * return_value<Container::value_type> load(Sampler&, const Container&, indexes...) - performs read operation from the container via transform_index() and transform_value() methods.
      * Sampler requirements:
+     * template <typename ValueType_> using return_type; - defines return type for the load operation, by default it is const ValueType_&.
      * bool check_index<dim>(index_type idx, size_t size) - checks index boundary. Calls Sampler::check_index if present, otherwise performs 'idx < size' check.
      * size_t transform_index<dim>(index_type idx, size_t size) - transforms input index to effective index. Calls Sampler::transform_index if present, otherwise performs narrow_cast.
      * return_type<ValueType> transform_value(const ValueType&) - transforms read value to return value. Calls Sampler::transform_value if present, otherwise returns the value as is.
@@ -803,7 +844,7 @@ namespace yato
 
         template <typename Container_, typename... Indexes_>
         static YATO_CONSTEXPR_FUNC
-            auto load(const Sampler_& s, const Container_& c, const Indexes_&... indexes)
+        auto load(const Sampler_& s, const Container_& c, const Indexes_&... indexes)
             -> return_type<typename container_traits<Container_>::value_type>
         {
             return load_impl_<typename container_traits<Container_>::value_type, 0>(s, c, indexes...);
@@ -811,74 +852,108 @@ namespace yato
 
         template <typename Container_, typename... Indexes_>
         static YATO_CONSTEXPR_FUNC
-            auto load(Sampler_& s, const Container_& c, const Indexes_&... indexes)
+        auto load(Sampler_& s, const Container_& c, const Indexes_&... indexes)
             -> return_type<typename container_traits<Container_>::value_type>
         {
             return load_impl_<typename container_traits<Container_>::value_type, 0>(s, c, indexes...);
         }
 
     private:
+        using has_check_index_ = details::has_check_index_method<Sampler_, index_type>;
+        using has_transform_index_ = details::has_transform_index_method<Sampler_, index_type>;
+
+
         template <typename ValueType_, size_t Dim_, typename SamplerRef_, typename Container_, typename... Indexes_>
         static YATO_CONSTEXPR_FUNC_CXX14
         return_type<ValueType_> load_impl_(SamplerRef_&& s, const Container_& c, const Indexes_&... indexes)
         {
             using has_boundary_value_ = details::has_boundary_value_method<Sampler_, ValueType_>;
-            if (!check_bounds_impl_<0>(std::forward<SamplerRef_>(s), c, indexes...)) {
-                return invoke_boundary_value_<ValueType_>(has_boundary_value_{}, std::forward<SamplerRef_>(s));
-            }
-            return fetch_value_impl_<typename container_traits<Container_>::value_type, 0>(s, c, indexes...);
-        }
+            using container_ops = container_ops<Container_>;
 
+            if (!check_bounds_impl_<0>(s, c, indexes...)) {
+                return invoke_boundary_value_<ValueType_>(has_boundary_value_{}, s);
+            }
+            return fetch_value_impl_<ValueType_, 0>(container_ops::get_category(c), s, c, indexes...);
+        }
 
         template <size_t Dim_, typename SamplerRef_, typename Container_, typename... Indexes_>
         static YATO_CONSTEXPR_FUNC_CXX14
         bool check_bounds_impl_(SamplerRef_&& s, const Container_& c, index_type i0, index_type i1, const Indexes_&... indexes_tail)
         {
-            using has_check_index_ = details::has_check_index_method<Sampler_, index_type, Dim_>;
             using container_ops = container_ops<Container_>;
 
-            const bool b0 = invoke_check_index_<Dim_>(has_check_index_{}, std::forward<SamplerRef_>(s), i0, container_ops::size(c, Dim_));
-            return b0 && check_bounds_impl_<Dim_ + 1>(std::forward<SamplerRef_>(s), c, i1, indexes_tail...);
+            const bool b0 = invoke_check_index_<Dim_>(has_check_index_{}, s, i0, container_ops::size(c, Dim_));
+            return b0 && check_bounds_impl_<Dim_ + 1>(s, c, i1, indexes_tail...);
         }
 
         template <size_t Dim_, typename SamplerRef_, typename Container_>
         static YATO_CONSTEXPR_FUNC_CXX14
         bool check_bounds_impl_(SamplerRef_&& s, const Container_& c, index_type i)
         {
-            using has_check_index_ = details::has_check_index_method<Sampler_, index_type, Dim_>;
             using container_ops = container_ops<Container_>;
 
-            return invoke_check_index_<Dim_>(has_check_index_{}, std::forward<SamplerRef_>(s), i, container_ops::size(c, Dim_));
+            return invoke_check_index_<Dim_>(has_check_index_{}, s, i, container_ops::size(c, Dim_));
         }
-
 
         template <typename ValueType_, size_t Dim_, typename SamplerRef_, typename Container_, typename... Indexes_>
         static YATO_CONSTEXPR_FUNC_CXX14
-        return_type<ValueType_> fetch_value_impl_(SamplerRef_&& s, const Container_& c, index_type i0, index_type i1, const Indexes_&... indexes_tail)
+        return_type<ValueType_> fetch_value_impl_(yato::container_generic_tag, SamplerRef_&& s, const Container_& c, index_type i0, index_type i1, const Indexes_&... indexes_tail)
         {
-            using has_transform_index_ = details::has_transform_index_method<Sampler_, index_type, Dim_>;
             using container_ops = container_ops<Container_>;
 
-            const size_t effective_idx = invoke_transform_index_<Dim_>(has_transform_index_{}, std::forward<SamplerRef_>(s), i0, container_ops::size(c, 0));
-            return fetch_value_impl_<ValueType_, Dim_ + 1>(std::forward<SamplerRef_>(s), container_ops::csubscript(c, effective_idx), i1, indexes_tail...);
+            const size_t effective_idx = invoke_transform_index_<Dim_>(has_transform_index_{}, s, i0, container_ops::size(c, 0));
+            return fetch_value_impl_<ValueType_, Dim_ + 1>(container_ops::get_category(c), s, container_ops::csubscript(c, effective_idx), i1, indexes_tail...);
         }
 
         template <typename ValueType_, size_t Dim_, typename SamplerRef_, typename Container_>
         static YATO_CONSTEXPR_FUNC_CXX14
-        return_type<ValueType_> fetch_value_impl_(SamplerRef_&& s, const Container_& c, index_type i)
+        return_type<ValueType_> fetch_value_impl_(yato::container_generic_tag, SamplerRef_&& s, const Container_& c, index_type i)
         {
-            using has_transform_index_ = details::has_transform_index_method<Sampler_, index_type, Dim_>;
             using has_transform_value_ = details::has_transform_value_method<Sampler_, ValueType_>;
             using container_ops = container_ops<Container_>;
-            const size_t effective_idx = invoke_transform_index_<Dim_>(has_transform_index_{}, std::forward<SamplerRef_>(s), i, container_ops::size(c, 0));
-            return invoke_transform_value_<ValueType_>(has_transform_value_{}, std::forward<SamplerRef_>(s), container_ops::csubscript(c, effective_idx));
+
+            const size_t effective_idx = invoke_transform_index_<Dim_>(has_transform_index_{}, s, i, container_ops::size(c, 0));
+            return invoke_transform_value_<ValueType_>(has_transform_value_{}, s, container_ops::csubscript(c, effective_idx));
+        }
+
+        template <typename ValueType_, size_t Dim_, typename SamplerRef_, typename Container_, typename... Indexes_>
+        static YATO_CONSTEXPR_FUNC_CXX14
+        return_type<ValueType_> fetch_value_impl_(yato::container_continuous_tag, SamplerRef_&& s, const Container_& c, const Indexes_&... indexes)
+        {
+            size_t effective_offset{ 0 };
+            return fetch_value_continious_impl_<ValueType_, 0>(effective_offset, s, c, indexes...);
+        }
+
+        template <typename ValueType_, size_t Dim_, typename SamplerRef_, typename Container_, typename... Indexes_>
+        static YATO_CONSTEXPR_FUNC_CXX14
+        return_type<ValueType_> fetch_value_continious_impl_(size_t& effective_offset, SamplerRef_&& s, const Container_& c, index_type index_curr)
+        {
+            using has_transform_value_ = details::has_transform_value_method<Sampler_, ValueType_>;
+            using container_ops = container_ops<Container_>;
+
+            const size_t effective_idx = invoke_transform_index_<Dim_>(has_transform_index_{}, s, index_curr, container_ops::size(c, Dim_));
+            effective_offset = effective_offset + effective_idx;
+
+            return invoke_transform_value_<ValueType_>(has_transform_value_{}, s, container_ops::cdata(c)[effective_offset]);
+        }
+
+        template <typename ValueType_, size_t Dim_, typename SamplerRef_, typename Container_, typename... Indexes_>
+        static YATO_CONSTEXPR_FUNC_CXX14
+        return_type<ValueType_> fetch_value_continious_impl_(size_t& effective_offset, SamplerRef_&& s, const Container_& c, index_type index_curr, index_type index_next, const Indexes_&... indexes_tail)
+        {
+            using container_ops = container_ops<Container_>;
+
+            const size_t effective_idx = invoke_transform_index_<Dim_>(has_transform_index_{}, s, index_curr, container_ops::size(c, Dim_));
+            effective_offset = (effective_offset + effective_idx) * container_ops::size(c, Dim_);
+
+            return fetch_value_continious_impl_<ValueType_, Dim_ + 1>(effective_offset, s, c, index_next, indexes_tail...);
         }
 
         template <size_t Dim_, typename SamplerRef_>
         static YATO_CONSTEXPR_FUNC
         bool invoke_check_index_(std::true_type, SamplerRef_&& s, index_type in_idx, std::size_t size)
         {
-            return std::forward<SamplerRef_>(s).template check_index<Dim_>(in_idx, size);
+            return s.template check_index<Dim_>(in_idx, size);
         }
 
         template <size_t Dim_, typename SamplerRef_>
@@ -893,7 +968,7 @@ namespace yato
         static YATO_CONSTEXPR_FUNC
         std::size_t invoke_transform_index_(std::true_type, SamplerRef_&& s, index_type in_idx, std::size_t size)
         {
-            return std::forward<SamplerRef_>(s).template transform_index<Dim_>(in_idx, size);
+            return s.template transform_index<Dim_>(in_idx, size);
         }
 
         template <size_t Dim_, typename SamplerRef_>
@@ -907,7 +982,7 @@ namespace yato
         static YATO_CONSTEXPR_FUNC
         return_type<ValueType_> invoke_transform_value_(std::true_type, SamplerRef_&& s, const ValueType_& in_val)
         {
-            return std::forward<SamplerRef_>(s).transform_value(in_val);
+            return s.transform_value(in_val);
         }
 
         template <typename ValueType_, typename SamplerRef_>
@@ -921,7 +996,7 @@ namespace yato
         static YATO_CONSTEXPR_FUNC
         return_type<ValueType_> invoke_boundary_value_(std::true_type, SamplerRef_&& s)
         {
-            return std::forward<SamplerRef_>(s).template boundary_value<ValueType_>();
+            return s.template boundary_value<ValueType_>();
         }
 
         template <typename ValueType_, typename SamplerRef_>
@@ -1007,23 +1082,6 @@ namespace yato
         }
     };
 
-
-
-    template <typename Container_>
-    template <typename Sampler_, typename... Indexes_>
-    YATO_CONSTEXPR_FUNC
-    decltype(auto) container_ops<Container_>::load(const Container_& c, Indexes_&&... indexes)
-    {
-        return sampler_traits<Sampler_>::load(Sampler_{}, c, std::forward<Indexes_>(indexes)...);
-    }
-
-    template <typename Container_>
-    template <typename Sampler_, typename... Indexes_>
-    YATO_CONSTEXPR_FUNC
-    decltype(auto) container_ops<Container_>::loads(Sampler_&& s, const Container_& c, Indexes_&&... indexes)
-    {
-        return sampler_traits<yato::remove_cvref_t<Sampler_>>::load(std::forward<Sampler_>(s), c, std::forward<Indexes_>(indexes)...);
-    }
 
 
     template <typename Sampler_ = sampler_default, typename Container_, typename... Indexes_>

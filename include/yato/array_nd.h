@@ -103,6 +103,8 @@ YATO_PRAGMA_WARNING_POP
             static YATO_CONSTEXPR_VAR size_t dimensions_number = Shape_::dimensions_number;
             static YATO_CONSTEXPR_VAR proxy_access_policy access_policy = AccessPolicy_;
 
+            using container_category = yato::container_continuous_tag;
+
             using value_reference       = typename proxy_access_traits<value_type, access_policy>::reference;
             using const_value_reference = typename proxy_access_traits<value_type, access_policy>::const_reference;
 
@@ -324,6 +326,8 @@ YATO_PRAGMA_WARNING_POP
             static YATO_CONSTEXPR_VAR size_t dimensions_number = shape::dimensions_number;
             static YATO_CONSTEXPR_VAR proxy_access_policy access_policy = AccessPolicy_;
 
+            using container_category = yato::container_continuous_tag;
+
             using value_reference       = typename proxy_access_traits<value_type, access_policy>::reference;
             using const_value_reference = typename proxy_access_traits<value_type, access_policy>::const_reference;
 
@@ -537,6 +541,8 @@ YATO_PRAGMA_WARNING_POP
             using pointer_type = std::add_pointer<value_type>;
             using shape        = Shape_;
             using sub_shape    = typename Shape_::sub_shape;
+
+            using container_category = yato::container_continuous_tag;
 
             static YATO_CONSTEXPR_VAR size_t dimensions_number = shape::dimensions_number;
 
@@ -876,6 +882,8 @@ YATO_PRAGMA_WARNING_POP
             using size_type    = size_t;
             using pointer_type = std::add_pointer<value_type>;
             using shape        = plain_array_shape<Length_>;
+
+            using container_category = yato::container_continuous_tag;
 
             static YATO_CONSTEXPR_VAR size_t dimensions_number = shape::dimensions_number;
 

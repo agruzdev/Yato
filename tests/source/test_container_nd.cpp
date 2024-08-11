@@ -48,7 +48,6 @@ namespace
 
         EXPECT_EQ(42, yato::cview(src)[0][0]);
         EXPECT_EQ(42, yato::load(src, 0, 0));
-        EXPECT_EQ(42, ops::load(src, 0, 0));
         for(auto it = std::next(ops::cbegin(src)); it != ops::cend(src); ++it) {
             EXPECT_EQ(10, (*it)[0]);
         }
@@ -88,7 +87,6 @@ namespace
         using ops = yato::container_ops<yato::remove_cvref_t<Cy_>>;
 
         EXPECT_EQ(42, ops::csubscript(src, 0));
-        EXPECT_EQ(42, ops::load(src, 0));
         EXPECT_EQ(42, yato::load(src, 0));
         for(auto it = std::next(ops::cbegin(src), 2); it != ops::cend(src); ++it) {
             EXPECT_EQ(10, (*it));

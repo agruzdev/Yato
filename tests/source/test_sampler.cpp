@@ -92,6 +92,87 @@ TEST(Yato_Sampler, sampler_clamp)
     EXPECT_EQ(1, yato::load<yato::sampler_clamp>(view2, 3, 2, 0));
     EXPECT_EQ(2, yato::load<yato::sampler_clamp>(view2, 1, 1, 1));
     EXPECT_EQ(3, yato::load<yato::sampler_clamp>(view2, 4, 4, 2));
+
+    static_assert(std::is_same<typename yato::container_traits<decltype(v2)>::container_category, yato::container_continuous_tag>::value);
+    static_assert(std::is_same<typename yato::container_traits<decltype(view2)>::container_category, yato::container_strided_tag>::value);
+}
+
+
+TEST(Yato_Sampler, sampler_c_array)
+{
+    int arr[3] = {1, 2, 3};
+
+    EXPECT_EQ(1, yato::load<yato::sampler_default>(arr, 0));
+    EXPECT_EQ(2, yato::load<yato::sampler_default>(arr, 1));
+    EXPECT_EQ(3, yato::load<yato::sampler_default>(arr, 2));
+
+    EXPECT_EQ(1, yato::load<yato::sampler_no_check>(arr, 0));
+    EXPECT_EQ(2, yato::load<yato::sampler_no_check>(arr, 1));
+    EXPECT_EQ(3, yato::load<yato::sampler_no_check>(arr, 2));
+
+    EXPECT_EQ(1, yato::load<yato::sampler_clamp>(arr, -1));
+    EXPECT_EQ(1, yato::load<yato::sampler_clamp>(arr, 0));
+    EXPECT_EQ(2, yato::load<yato::sampler_clamp>(arr, 1));
+    EXPECT_EQ(3, yato::load<yato::sampler_clamp>(arr, 2));
+    EXPECT_EQ(3, yato::load<yato::sampler_clamp>(arr, 10));
+
+    EXPECT_EQ(0, yato::load<yato::sampler_zero>(arr, -1));
+    EXPECT_EQ(1, yato::load<yato::sampler_zero>(arr, 0));
+    EXPECT_EQ(2, yato::load<yato::sampler_zero>(arr, 1));
+    EXPECT_EQ(3, yato::load<yato::sampler_zero>(arr, 2));
+    EXPECT_EQ(0, yato::load<yato::sampler_zero>(arr, 10));
+}
+
+
+TEST(Yato_Sampler, sampler_std_array)
+{
+    std::array<int, 3> arr = { 1, 2, 3 };
+
+    EXPECT_EQ(1, yato::load<yato::sampler_default>(arr, 0));
+    EXPECT_EQ(2, yato::load<yato::sampler_default>(arr, 1));
+    EXPECT_EQ(3, yato::load<yato::sampler_default>(arr, 2));
+
+    EXPECT_EQ(1, yato::load<yato::sampler_no_check>(arr, 0));
+    EXPECT_EQ(2, yato::load<yato::sampler_no_check>(arr, 1));
+    EXPECT_EQ(3, yato::load<yato::sampler_no_check>(arr, 2));
+
+    EXPECT_EQ(1, yato::load<yato::sampler_clamp>(arr, -1));
+    EXPECT_EQ(1, yato::load<yato::sampler_clamp>(arr, 0));
+    EXPECT_EQ(2, yato::load<yato::sampler_clamp>(arr, 1));
+    EXPECT_EQ(3, yato::load<yato::sampler_clamp>(arr, 2));
+    EXPECT_EQ(3, yato::load<yato::sampler_clamp>(arr, 10));
+
+    EXPECT_EQ(0, yato::load<yato::sampler_zero>(arr, -1));
+    EXPECT_EQ(1, yato::load<yato::sampler_zero>(arr, 0));
+    EXPECT_EQ(2, yato::load<yato::sampler_zero>(arr, 1));
+    EXPECT_EQ(3, yato::load<yato::sampler_zero>(arr, 2));
+    EXPECT_EQ(0, yato::load<yato::sampler_zero>(arr, 10));
+}
+
+
+TEST(Yato_Sampler, sampler_std_vector)
+{
+    std::vector<int> arr = { 1, 2, 3 };
+
+    EXPECT_EQ(1, yato::load<yato::sampler_default>(arr, 0));
+    EXPECT_EQ(2, yato::load<yato::sampler_default>(arr, 1));
+    EXPECT_EQ(3, yato::load<yato::sampler_default>(arr, 2));
+
+    EXPECT_EQ(1, yato::load<yato::sampler_no_check>(arr, 0));
+    EXPECT_EQ(2, yato::load<yato::sampler_no_check>(arr, 1));
+    EXPECT_EQ(3, yato::load<yato::sampler_no_check>(arr, 2));
+
+    EXPECT_EQ(1, yato::load<yato::sampler_clamp>(arr, -1));
+    EXPECT_EQ(1, yato::load<yato::sampler_clamp>(arr, 0));
+    EXPECT_EQ(2, yato::load<yato::sampler_clamp>(arr, 1));
+    EXPECT_EQ(3, yato::load<yato::sampler_clamp>(arr, 2));
+    EXPECT_EQ(3, yato::load<yato::sampler_clamp>(arr, 10));
+
+    EXPECT_EQ(0, yato::load<yato::sampler_zero>(arr, -1));
+    EXPECT_EQ(1, yato::load<yato::sampler_zero>(arr, 0));
+    EXPECT_EQ(2, yato::load<yato::sampler_zero>(arr, 1));
+    EXPECT_EQ(3, yato::load<yato::sampler_zero>(arr, 2));
+    EXPECT_EQ(0, yato::load<yato::sampler_zero>(arr, 10));
 }
 
 
@@ -189,5 +270,8 @@ TEST(Yato_Sampler, custom_sampler2)
             }
         }
     }
+
+    static_assert(std::is_same<typename yato::container_traits<decltype(v1)>::container_category, yato::container_continuous_tag>::value);
+    static_assert(std::is_same<typename yato::container_traits<decltype(v1[0])>::container_category, yato::container_continuous_tag>::value);
 }
 

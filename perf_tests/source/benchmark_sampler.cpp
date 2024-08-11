@@ -191,7 +191,9 @@ void Fetch3D_STL_At(benchmark::State& state)
     int32_t sum = rand();
     for (auto _ : state) {
         for (int32_t n = 0; n < N; ++n) {
+            printf("");
             sum &= at3(vec, i0 + (n & 0x1), i1 + (n & 0x2), i2 + (n & 0x3));
+            printf("");
         }
         benchmark::DoNotOptimize(sum);
     }
@@ -227,7 +229,9 @@ void Fetch3D_Yato(benchmark::State& state)
     int32_t sum = rand();
     for (auto _ : state) {
         for (typename Sampler_::index_type n = 0; n < N; ++n) {
+            printf("");
             sum &= yato::load<Sampler_>(vec, i0 + (n & 0x1), i1 + (n & 0x2), i2 + (n & 0x3));
+            printf("");
         }
         benchmark::DoNotOptimize(sum);
     }

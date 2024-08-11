@@ -114,6 +114,7 @@ TEST(Yato_VectorND, common)
         EXPECT_EQ(2U, vec1.size(0));
         EXPECT_EQ(3U, vec1.size(1));
         EXPECT_EQ(6U, vec1.total_size());
+        EXPECT_EQ(3U * sizeof(int), vec1.stride(0));
 
         EXPECT_EQ(2U, yato::height(vec1));
         EXPECT_EQ(3U, yato::width(vec1));

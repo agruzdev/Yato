@@ -1520,7 +1520,7 @@ namespace yato
             size_type stride(size_t idx) const YATO_NOEXCEPT_KEYWORD
             {
                 YATO_REQUIRES(idx < dimensions_number - 1);
-                return std::get<dim_descriptor::idx_total>(m_descriptors[idx + 1]) * sizeof(value_type);
+                return dim_descriptor::offset_to_bytes<value_type>(std::get<dim_descriptor::idx_offset>(m_descriptors[idx + 1]));
             }
             /**
              *  Get the total size of the vector (number of all elements)

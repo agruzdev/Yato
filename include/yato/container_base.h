@@ -17,6 +17,25 @@
 namespace yato
 {
     /**
+     * Container category hints for effecient implementation of container algorithms.
+     * container_generic_tag - no hints. Only nasic interface as size() and operator[] are available usually.
+     */
+    struct container_generic_tag {};
+
+    /**
+     * Container with strided layout. Provides the stride() method.
+     */
+    struct container_strided_tag : public container_generic_tag {};
+
+    /**
+     * Container with dense elements layout, the strides match sizes.
+     */
+    struct container_continuous_tag : public container_strided_tag {};
+
+
+
+
+    /**
      * Trait class for dimension descriptors used in containers
      * Stores size and offset
      *
@@ -77,6 +96,32 @@ namespace yato
         {
             ptr = yato::pointer_cast<Ty_*>(yato::pointer_cast<typename yato::take_cv_from<Ty_, uint8_t>::type*>(ptr) + diff);
         }
+
+
+        template <size_t DimNumber_, typename DimDescriptor_, typename = void>
+        struct deduce_container_category_from_dim_descriptor
+        {
+            using type = yato::container_generic_tag;
+        };
+
+        template <typename DimDescriptor_>
+        struct deduce_container_category_from_dim_descriptor<1, DimDescriptor_>
+        {
+            using type = yato::container_continuous_tag;
+        };
+
+        template <size_t DimNumber_, typename SizeType_>
+        struct deduce_container_category_from_dim_descriptor<DimNumber_, dimension_descriptor<SizeType_>, std::enable_if_t<(DimNumber_ > 1)>>
+        {
+            using type = yato::container_continuous_tag;
+        };
+
+        template <size_t DimNumber_, typename SizeType_>
+        struct deduce_container_category_from_dim_descriptor<DimNumber_, dimension_descriptor_strided<SizeType_>, std::enable_if_t<(DimNumber_ > 1)>>
+        {
+            using type = yato::container_strided_tag;
+        };
+
 
     } // namesace details
 
