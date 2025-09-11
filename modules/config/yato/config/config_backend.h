@@ -121,7 +121,7 @@ namespace conf {
         };
     }
 
-    template <typename Ty_>
+    template <typename Ty_, typename = void>
     struct config_value_trait
     { };
 

@@ -83,6 +83,17 @@ TEST(Yato_Config, manual_conversion)
     TestConfig_Conversion(conf);
 }
 
+
+TEST(Yato_Config, manual_conversion_root)
+{
+    const auto conf = yato::config_builder::object()
+        .put("x", 99.0)
+        .put("y", 88.0)
+        .create();
+    TestConfig_ConversionRoot(conf);
+}
+
+
 TEST(Yato_Config, manual_copy)
 {
     auto builder1 = yato::config_builder::object()

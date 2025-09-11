@@ -167,6 +167,9 @@ void TestConfig_Object(const yato::conf::config & conf)
     const auto v = c2.value<float>("val").get_or(-1.0f);
     EXPECT_FLOAT_EQ(7.0f, v);
 
+    const auto v0 = c2.value<float>(".val").get_or(-1.0f);
+    EXPECT_FLOAT_EQ(7.0f, v0);
+
     const auto v2 = conf.value<float>("subobj.val").get_or(-1.0f);
     EXPECT_FLOAT_EQ(7.0f, v2);
 
@@ -517,5 +520,61 @@ void TestConfig_Conversion(const yato::conf::config & conf)
         EXPECT_EQ(-1, v4.get().w);
     }
 }
+
+
+struct TestPoint2
+{
+    double x{};
+    double y{};
+};
+
+struct TestPoint2Converter
+{
+    TestPoint2 operator()(const yato::config& obj) const
+    {
+        TestPoint2 p{};
+        p.x = obj.value<double>(0).get_or(0.0);
+        p.y = obj.value<double>(1).get_or(0.0);
+        return p;
+    }
+};
+
+namespace yato
+{
+    namespace conf
+    {
+        template<>
+        struct config_value_trait<TestPoint2>
+        {
+            using converter_type = TestPoint2Converter;
+            static constexpr stored_type fetch_type = stored_type::config;
+        };
+    }
+}
+
+
+/**
+ * JSON
+ * {
+ *     "x" : 99
+ *     "y" : 88
+ * }
+ */
+inline
+void TestConfig_ConversionRoot(const yato::conf::config& conf)
+{
+    EXPECT_FALSE(conf.is_null());
+
+    auto p1 = conf.cvt<TestPoint2>();
+    EXPECT_TRUE(static_cast<bool>(p1));
+    EXPECT_DOUBLE_EQ(p1.get().x, 99.0);
+    EXPECT_DOUBLE_EQ(p1.get().y, 88.0);
+
+    auto p2 = conf.cvt(TestPoint2Converter{});
+    EXPECT_TRUE(static_cast<bool>(p2));
+    EXPECT_DOUBLE_EQ(p2.get().x, 99.0);
+    EXPECT_DOUBLE_EQ(p2.get().y, 88.0);
+}
+
 
 #endif // _YATO_CONFIG_TEST_CONFIG_COMMON_H_

@@ -91,6 +91,11 @@ namespace conf {
         {
             return m_separator;
         }
+
+        bool is_root() const
+        {
+            return std::all_of(std::cbegin(m_path), std::cend(m_path), [this](char_type c) { return c == m_separator; });
+        }
     };
 
     using path = basic_path<char>;
