@@ -8,6 +8,7 @@
 #ifndef _YATO_ACTORS_SCHEDULER_H_
 #define _YATO_ACTORS_SCHEDULER_H_
 
+#include <algorithm>
 #include <chrono>
 #include <functional>
 #include <future>

@@ -104,69 +104,69 @@ namespace yato
 #ifdef YATO_HAS_LITERALS
 
         YATO_CONSTEXPR_FUNC 
-        int8_t operator"" _s8(unsigned long long number) YATO_NOEXCEPT_TESTED
+        int8_t operator""_s8(unsigned long long number) YATO_NOEXCEPT_TESTED
         {
             return narrow_cast<int8_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC 
-        uint8_t operator"" _u8(unsigned long long number) YATO_NOEXCEPT_TESTED
+        uint8_t operator""_u8(unsigned long long number) YATO_NOEXCEPT_TESTED
         {
             return narrow_cast<uint8_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC 
-        int16_t operator"" _s16(unsigned long long number) YATO_NOEXCEPT_TESTED
+        int16_t operator""_s16(unsigned long long number) YATO_NOEXCEPT_TESTED
         {
             return narrow_cast<int16_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC 
-        uint16_t operator"" _u16(unsigned long long number) YATO_NOEXCEPT_TESTED
+        uint16_t operator""_u16(unsigned long long number) YATO_NOEXCEPT_TESTED
         {
             return narrow_cast<uint16_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC 
-        int32_t operator"" _s32(unsigned long long number) YATO_NOEXCEPT_TESTED
+        int32_t operator""_s32(unsigned long long number) YATO_NOEXCEPT_TESTED
         {
             return narrow_cast<int32_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC 
-        uint32_t operator"" _u32(unsigned long long number) YATO_NOEXCEPT_TESTED
+        uint32_t operator""_u32(unsigned long long number) YATO_NOEXCEPT_TESTED
         {
             return narrow_cast<uint32_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC 
-        int64_t operator"" _s64(unsigned long long number) YATO_NOEXCEPT_TESTED
+        int64_t operator""_s64(unsigned long long number) YATO_NOEXCEPT_TESTED
         {
             return narrow_cast<int64_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC 
-        uint64_t operator"" _u64(unsigned long long number) YATO_NOEXCEPT_TESTED
+        uint64_t operator""_u64(unsigned long long number) YATO_NOEXCEPT_TESTED
         {
             return narrow_cast<uint64_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC_CXX14
-        float32_t operator"" _f32(long double number) YATO_NOEXCEPT_TESTED
+        float32_t operator""_f32(long double number) YATO_NOEXCEPT_TESTED
         {
             YATO_REQUIRES(static_cast<long double>(std::numeric_limits<float32_t>::lowest()) <= number && number <= static_cast<long double>(std::numeric_limits<float32_t>::max()));
             return static_cast<float32_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC_CXX14
-        float64_t operator"" _f64(long double number) YATO_NOEXCEPT_TESTED
+        float64_t operator""_f64(long double number) YATO_NOEXCEPT_TESTED
         {
             YATO_REQUIRES(static_cast<long double>(std::numeric_limits<float64_t>::lowest()) <= number && number <= static_cast<long double>(std::numeric_limits<float64_t>::max()));
             return static_cast<float64_t>(number);
         }
 
         YATO_CONSTEXPR_FUNC_CXX14
-        float80_t operator"" _f80(long double number) YATO_NOEXCEPT_TESTED
+        float80_t operator""_f80(long double number) YATO_NOEXCEPT_TESTED
         {
             YATO_REQUIRES(static_cast<long double>(std::numeric_limits<float80_t>::lowest()) <= number && number <= static_cast<long double>(std::numeric_limits<float80_t>::max()));
             return static_cast<float80_t>(number);
