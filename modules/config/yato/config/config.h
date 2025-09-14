@@ -107,37 +107,11 @@ namespace conf {
     } // details
 
 
-
-    template <typename Ty_, typename = void>
-    struct conversion_traits
-    {
-        /**
-         *  default implementation does fallback to old traits for backward compatibility
-         */
-        static constexpr stored_type fetch_type = config_value_trait<Ty_>::fetch_type;
-
-        //using stored_type = stored_type_trait<fetch_type>::return_type;
-
-        /**
-         * converter_type typically supports two methods:
-         * Ty_ load(const stored_type&)
-         * stored_type store(const Ty_&)
-         */
-        using converter_type = typename config_value_trait<Ty_>::converter_type;
-
-
-        template <typename Converter_>
-        static
-        auto invoke_load(const Converter_& cvt, const Ty_& val) {
-            return details::invoke_conveter<Converter_, Ty_>::apply_load(cvt, val);
-        }
-
-        /*template <typename STy_>
-        static
-        auto invoke_store(const converter_type& cvt, STy_&& val) {
-
-        }*/
-    };
+    template <typename Converter_, typename Ty_>
+    inline
+    auto invoke_load(const Converter_& cvt, const Ty_& val) {
+        return details::invoke_conveter<Converter_, Ty_>::apply_load(cvt, val);
+    }
 
 
     namespace details {
@@ -151,23 +125,26 @@ namespace conf {
 
         template <typename Ty_, typename Converter_>
         static
-        auto map_result_impl_(const Ty_& val, const Converter_& cvt)
-        {
-            return conversion_traits<Ty_>::invoke_load(cvt, val);
-        }
-
-        template <typename Ty_, typename Converter_>
-        static
         auto map_result(const yato::optional<Ty_>& opt, const Converter_& cvt)
+            -> yato::optional<decltype(invoke_load(std::declval<Converter_>(), wrap_result_(std::declval<Ty_>())))>
+        try
         {
-            return opt.map([&cvt](const Ty_& val) { return map_result_impl_(wrap_result_(val), cvt); });
+            return opt.map([&cvt](const Ty_& val) { return invoke_load(cvt, wrap_result_(val)); });
+        }
+        catch (config_error&) {
+            return yato::nullopt;
         }
 
         template <typename Ty_, typename Converter_>
         static
         auto map_result(yato::optional<Ty_>&& opt, const Converter_& cvt)
+            -> yato::optional<decltype(invoke_load(std::declval<Converter_>(), wrap_result_(std::declval<Ty_>())))>
+        try
         {
-            return opt.map([&cvt](Ty_& val) { return map_result_impl_(wrap_result_(std::move(val)), cvt); });
+            return opt.map([&cvt](Ty_& val) { return invoke_load(cvt, wrap_result_(std::move(val))); });
+        }
+        catch (config_error&) {
+            return yato::nullopt_t{};
         }
 
 
@@ -188,12 +165,42 @@ namespace conf {
             template <typename Conf_>
             static
             yato::optional<converted_stored_type<stored_type::config, Converter_>> apply(const Converter_& converter, const Conf_& conf)
+            try
             {
                 return details::invoke_conveter<Converter_, config>::apply_load(converter, conf);
             }
+            catch (config_error&) {
+                return yato::nullopt_t{};
+            }
         };
 
-    }
+    } // details
+
+
+    template <typename Ty_, typename = void>
+    struct conversion_traits
+    {
+        /**
+         *  default implementation does fallback to old traits for backward compatibility
+         */
+        static constexpr stored_type fetch_type = config_value_trait<Ty_>::fetch_type;
+
+        /**
+         * converter input type
+         */
+        using value_type = decltype(details::wrap_result_(std::declval<typename stored_type_trait<fetch_type>::return_type>()));
+
+        /**
+        * converter_type typically supports two methods:
+        * Ty_ load(const stored_type&)
+        * stored_type store(const Ty_&)
+        *
+        * throw config_error on error
+        */
+        using converter_type = typename config_value_trait<Ty_>::converter_type;
+    };
+
+
 
     /**
      * Config entry descriptor.
