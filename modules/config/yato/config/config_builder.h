@@ -10,6 +10,7 @@
 
 #include <string>
 #include <memory>
+#include <optional>
 #include "yato/types.h"
 #include "yato/config/config.h"
 
@@ -41,6 +42,16 @@ namespace conf {
         config_builder array()
         {
             return config_builder(details::array_tag_t{});
+        }
+
+        /**
+         * Convert from a complex type
+         */
+        template <typename Ty_, typename Converter_ = typename config_value_trait<Ty_>::converter_type>
+        static
+        config cvt(const Ty_& val, const Converter_& converter = Converter_{})
+        {
+            return invoke_store(converter, val);
         }
 
         /**
@@ -160,6 +171,95 @@ namespace conf {
         config_builder& put(const std::string& name, config val);
 
         /**
+         * Add named value.
+         * Is valid only for associative configs.
+         */
+        template <typename Ty_, typename Converter_ = typename config_value_trait<Ty_>::converter_type>
+        config_builder& put(const std::string& name, const Ty_& val, const Converter_& converter = Converter_{})
+        {
+            return put(name, invoke_store(converter, val));
+        }
+
+        /**
+         * Add named value.
+         * Is valid only for associative configs.
+         */
+        template <typename Ty_>
+        config_builder& put(const std::string& name, const yato::optional<Ty_>& val)
+        {
+            if (val) {
+                put(name, val.get_unsafe());
+            }
+            return *this;
+        }
+
+        /**
+         * Add named value.
+         * Is valid only for associative configs.
+         */
+        template <typename Ty_>
+        config_builder& put(const std::string& name, const std::optional<Ty_>& val)
+        {
+            if (val) {
+                put(name, val.value());
+            }
+            return *this;
+        }
+
+        /**
+         * Add named value.
+         * Is valid only for associative configs.
+         */
+        config_builder& put(const std::string& /*name*/, yato::nullopt_t)
+        {
+            return *this;
+        }
+
+        /**
+         * Add named value.
+         * Is valid only for associative configs.
+         */
+        config_builder& put(const std::string& /*name*/, std::nullopt_t)
+        {
+            return *this;
+        }
+
+        /**
+         * Add named value.
+         * Is valid only for associative configs.
+         */
+        template <typename Ty_>
+        config_builder& put(const std::string& name, const std::unique_ptr<Ty_>& p)
+        {
+            if (p) {
+                put(name, *p);
+            }
+            return *this;
+        }
+
+        /**
+         * Add named value.
+         * Is valid only for associative configs.
+         */
+        template <typename Ty_>
+        config_builder& put(const std::string& name, const std::shared_ptr<Ty_>& p)
+        {
+            if (p) {
+                put(name, *p);
+            }
+            return *this;
+        }
+
+        /**
+         * Add named value.
+         * Is valid only for associative configs.
+         */
+        config_builder& put(const std::string& /*name*/, std::nullptr_t)
+        {
+            return *this;
+        }
+
+        /**
          * Removes values by name.
          * Is valid only for associative configs.
          */
@@ -247,6 +347,95 @@ namespace conf {
          * Is valid only for array.
          */
         config_builder& add(config val);
+
+        /**
+         * Append value to array.
+         * Is valid only for array.
+         */
+        template <typename Ty_, typename Converter_ = typename config_value_trait<Ty_>::converter_type>
+        config_builder& add(const Ty_& val, const Converter_& converter = Converter_{})
+        {
+            return add(invoke_store(converter, val));
+        }
+
+        /**
+         * Add named value.
+         * Is valid only for associative configs.
+         */
+        template <typename Ty_>
+        config_builder& add(const yato::optional<Ty_>& val)
+        {
+            if (val) {
+                add(val.get_unsafe());
+            }
+            return *this;
+        }
+
+        /**
+         * Add named value.
+         * Is valid only for associative configs.
+         */
+        template <typename Ty_>
+        config_builder& add(const std::optional<Ty_>& val)
+        {
+            if (val) {
+                add(val.value());
+            }
+            return *this;
+        }
+
+        /**
+         * Add named value.
+         * Is valid only for associative configs.
+         */
+        template <typename Ty_>
+        config_builder& add(const std::unique_ptr<Ty_>& p)
+        {
+            if (p) {
+                add(*p);
+            }
+            return *this;
+        }
+
+        /**
+         * Add named value.
+         * Is valid only for associative configs.
+         */
+        template <typename Ty_>
+        config_builder& add(const std::shared_ptr<Ty_>& p)
+        {
+            if (p) {
+                add(*p);
+            }
+            return *this;
+        }
+
+        /**
+         * Add named value.
+         * Is valid only for associative configs.
+         */
+        config_builder& add(yato::nullopt_t)
+        {
+            return *this;
+        }
+
+        /**
+         * Add named value.
+         * Is valid only for associative configs.
+         */
+        config_builder& add(std::nullopt_t)
+        {
+            return *this;
+        }
+
+        /**
+         * Add named value.
+         * Is valid only for associative configs.
+         */
+        config_builder& add(std::nullptr_t)
+        {
+            return *this;
+        }
 
         /**
          * Remove the last array element.

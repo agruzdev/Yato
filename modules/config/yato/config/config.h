@@ -113,6 +113,12 @@ namespace conf {
         return details::invoke_conveter<Converter_, Ty_>::apply_load(cvt, val);
     }
 
+    template <typename Converter_, typename Ty_>
+    inline
+    auto invoke_store(const Converter_& cvt, const Ty_& val) {
+        return cvt.store(val);
+    }
+
 
     namespace details {
 

@@ -12,6 +12,9 @@
 #include <optional>
 #include <map>
 
+#include "config.h"
+#include "config_builder.h"
+
 
 namespace yato {
 
@@ -31,6 +34,15 @@ namespace conf {
                 }
                 return res;
             }
+
+            yato::config store(const std::vector<Ty_, Alloc_>& vec) const
+            {
+                auto b = config_builder::array();
+                for (const auto& v : vec) {
+                    b.add(v);
+                }
+                return b.create();
+            }
         };
 
         template <typename Kty_, typename Ty_, typename Pr_, typename Alloc_>
@@ -46,6 +58,15 @@ namespace conf {
                     res.emplace(entry.key(), entry.value<Ty_>().get_or_throw<config_error>("std_map_converter[load]: Failed to decode array element at " + entry.key()));
                 }
                 return res;
+            }
+
+            yato::config store(const std::map<Kty_, Ty_, Pr_, Alloc_>& m) const
+            {
+                auto b = config_builder::object();
+                for (const auto& [k, v] : m) {
+                    b.put(k, v);
+                }
+                return b.create();
             }
         };
 

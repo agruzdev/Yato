@@ -8,6 +8,7 @@
 #include "gtest/gtest.h"
 #include <yato/config/config_builder.h>
 #include <yato/config/stl.h>
+#include <yato/config/json/json.h>
 
 
 TEST(Yato_Config, stl_vector)
@@ -32,6 +33,12 @@ TEST(Yato_Config, stl_vector)
     auto v4 = c.cvt<std::vector<yato::config>>();
     ASSERT_TRUE(v4.empty());
 
+    std::vector<int> tst = { 5, 6, 7, 8 };
+    auto c2 = yato::config_builder::object().put("vec", tst).create();
+    ASSERT_TRUE(c2.size() == 1);
+
+    auto js = yato::conf::json::write(c2);
+    ASSERT_FALSE(js.empty());
 }
 
 
@@ -53,6 +60,26 @@ TEST(Yato_Config, stl_optional)
     auto v3 = c.value<std::optional<std::vector<std::string>>>("key3");
     ASSERT_FALSE(v3.empty());
     ASSERT_EQ(v3.get()->size(), 2);
+
+    auto c2 = yato::config_builder::object()
+        .put("key1", v1)
+        .put("key4", v2)
+        .put("key2", std::nullopt)
+        .put("key3", v3)
+        .create();
+
+    auto js = yato::conf::json::write(c2);
+    ASSERT_FALSE(js.empty());
+
+    auto c3 = yato::config_builder::array()
+        .add(v1)
+        .add(v2)
+        .add(std::nullopt)
+        .add(v3)
+        .create();
+
+    auto js3 = yato::conf::json::write(c3);
+    ASSERT_FALSE(js3.empty());
 }
 
 
@@ -69,6 +96,11 @@ TEST(Yato_Config, stl_map)
     ASSERT_EQ(m.get()["key1"], 10);
     ASSERT_EQ(m.get()["key2"], 7);
     ASSERT_EQ(m.get()["key3"], 90);
+
+    auto c2 = yato::config_builder::cvt(m.get());
+
+    auto js = yato::conf::json::write(c2);
+    ASSERT_FALSE(js.empty());
 }
 
 TEST(Yato_Config, stl_smart_ptr)
@@ -88,5 +120,23 @@ TEST(Yato_Config, stl_smart_ptr)
     ASSERT_FALSE(p2.empty());
     ASSERT_TRUE(p2.get() != nullptr);
     ASSERT_TRUE(p2.get()->size() == 2);
+
+    auto c2 = yato::config_builder::object()
+        .put("key1", p1)
+        .put("key2", p2)
+        .put("key3", nullptr)
+        .create();
+
+    auto js = yato::conf::json::write(c2);
+    ASSERT_FALSE(js.empty());
+
+    auto c3 = yato::config_builder::array()
+        .add(p1)
+        .add(p2)
+        .add(nullptr)
+        .create();
+
+    auto js3 = yato::conf::json::write(c3);
+    ASSERT_FALSE(js3.empty());
 }
 
