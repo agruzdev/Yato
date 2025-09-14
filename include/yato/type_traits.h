@@ -35,6 +35,10 @@ namespace yato
         using type = void;
     };
 
+    template <typename... Args>
+    using test_type_t = typename test_type<Args...>::type;
+
+
     template <typename Ty_>
     using void_t = void;
 

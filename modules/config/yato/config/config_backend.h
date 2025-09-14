@@ -92,8 +92,13 @@ namespace conf {
         struct identity_converter
         {
             constexpr
-            ToType_ operator()(FromType_ && val) const {
-                return static_cast<ToType_>(std::forward<FromType_>(val));
+            const ToType_& operator()(const FromType_& val) const {
+                return val;
+            }
+
+            constexpr
+            ToType_ operator()(FromType_&& val) const {
+                return static_cast<ToType_>(std::move(val));
             }
         };
 
@@ -101,8 +106,8 @@ namespace conf {
         struct narrow_converter
         {
             constexpr
-            ToType_ operator()(FromType_ && val) const {
-                return yato::narrow_cast<ToType_>(std::forward<FromType_>(val));
+            ToType_ operator()(const FromType_& val) const {
+                return yato::narrow_cast<ToType_>(val);
             }
         };
 
@@ -113,7 +118,7 @@ namespace conf {
         struct checked_limits_converter
         {
             YATO_CONSTEXPR_FUNC_CXX14
-            ToType_ operator()(FromType_ && val) const {
+            ToType_ operator()(const FromType_& val) const {
                 YATO_REQUIRES(val <= static_cast<FromType_>(std::numeric_limits<ToType_>::max()));
                 YATO_REQUIRES(val >= static_cast<FromType_>(std::numeric_limits<ToType_>::lowest()));
                 return static_cast<ToType_>(val);
@@ -215,6 +220,7 @@ namespace conf {
         using converter_type = details::identity_converter<std::string, std::string>;
         static constexpr stored_type fetch_type = stored_type::string;
     };
+
 
 
     /**

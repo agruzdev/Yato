@@ -54,7 +54,7 @@ namespace conf {
         }
 
         inline
-        std::string wrap_result_(const std::string& val) {
+        const std::string& wrap_result_(const std::string& val) {
             return val;
         }
 
@@ -71,17 +71,79 @@ namespace conf {
 
 
 
-        // Applies converter to x-value returned from backend call
-        template <typename Ty_, typename Converter_>
-        static
-        auto apply_converter(Ty_&& val, const Converter_& cvt)
+        template <typename Converter_, typename Arg_, typename = void>
+        struct invoke_conveter
+        { };
+
+        template <typename Converter_, typename Arg_>
+        struct invoke_conveter<Converter_, Arg_,
+                yato::test_type_t<decltype(std::declval<Converter_>()(std::declval<Arg_>()))>
+            >
         {
-            return cvt(wrap_result_(std::forward<Ty_>(val)));
+            // fallback to old operator()
+            using load_result_type = decltype(std::declval<Converter_>()(std::declval<Arg_>()));
+
+            static
+            load_result_type apply_load(const Converter_& cvt, const Arg_& val)
+            {
+                return cvt(val);
+            }
+        };
+
+        template <typename Converter_, typename Arg_>
+        struct invoke_conveter<Converter_, Arg_,
+                yato::test_type_t<decltype(std::declval<Converter_>().load(std::declval<Arg_>()))>
+            >
+        {
+            using load_result_type = decltype(std::declval<Converter_>().load(std::declval<Arg_>()));
+
+            static
+            load_result_type apply_load(const Converter_& cvt, const Arg_& val)
+            {
+                return cvt.load(val);
+            }
+        };
+
+    } // details
+
+
+
+    template <typename Ty_, typename = void>
+    struct conversion_traits
+    {
+        /**
+         *  default implementation does fallback to old traits for backward compatibility
+         */
+        static constexpr stored_type fetch_type = config_value_trait<Ty_>::fetch_type;
+
+        //using stored_type = stored_type_trait<fetch_type>::return_type;
+
+        /**
+         * converter_type typically supports two methods:
+         * Ty_ load(const stored_type&)
+         * stored_type store(const Ty_&)
+         */
+        using converter_type = typename config_value_trait<Ty_>::converter_type;
+
+
+        template <typename Converter_>
+        static
+        auto invoke_load(const Converter_& cvt, const Ty_& val) {
+            return details::invoke_conveter<Converter_, Ty_>::apply_load(cvt, val);
         }
 
+        /*template <typename STy_>
+        static
+        auto invoke_store(const converter_type& cvt, STy_&& val) {
+
+        }*/
+    };
+
+
+    namespace details {
 
         template <typename Ty_, typename Converter_>
-        using converted_type = decltype(std::declval<Converter_>()(wrap_result_(std::declval<Ty_>())));
+        using converted_type = typename details::invoke_conveter<Converter_, decltype(wrap_result_(std::declval<Ty_>()))>::load_result_type;
 
         template <conf::stored_type FetchType_, typename Converter_>
         using converted_stored_type = converted_type<typename stored_type_trait<FetchType_>::return_type, Converter_>;
@@ -89,18 +151,23 @@ namespace conf {
 
         template <typename Ty_, typename Converter_>
         static
-        auto map_result(const yato::optional<Ty_>& opt, const Converter_& cvt)
-            -> yato::optional<converted_type<Ty_, Converter_>>
+        auto map_result_impl_(const Ty_& val, const Converter_& cvt)
         {
-            return opt.map([&cvt](const Ty_ & val) { return apply_converter(val, cvt); });
+            return conversion_traits<Ty_>::invoke_load(cvt, val);
+        }
+
+        template <typename Ty_, typename Converter_>
+        static
+        auto map_result(const yato::optional<Ty_>& opt, const Converter_& cvt)
+        {
+            return opt.map([&cvt](const Ty_& val) { return map_result_impl_(wrap_result_(val), cvt); });
         }
 
         template <typename Ty_, typename Converter_>
         static
         auto map_result(yato::optional<Ty_>&& opt, const Converter_& cvt)
-            -> yato::optional<converted_type<Ty_, Converter_>>
         {
-            return std::move(opt).map([&cvt](Ty_ && val) { return apply_converter(std::move(val), cvt); });
+            return opt.map([&cvt](Ty_& val) { return map_result_impl_(wrap_result_(std::move(val)), cvt); });
         }
 
 
@@ -122,7 +189,7 @@ namespace conf {
             static
             yato::optional<converted_stored_type<stored_type::config, Converter_>> apply(const Converter_& converter, const Conf_& conf)
             {
-                return converter(wrap_result_(conf));
+                return details::invoke_conveter<Converter_, config>::apply_load(converter, conf);
             }
         };
 
@@ -193,7 +260,7 @@ namespace conf {
         YATO_ATTR_NODISCARD
         yato::optional<Ty_> value() const
         {
-            using default_converter = typename config_value_trait<Ty_>::converter_type;
+            using default_converter = typename conversion_traits<Ty_>::converter_type;
             return value<Ty_>(default_converter{});
         }
 
@@ -201,7 +268,7 @@ namespace conf {
         YATO_ATTR_NODISCARD
         yato::optional<Ty_> value(const Converter_& converter) const
         {
-            constexpr conf::stored_type fetch_type = conf::config_value_trait<Ty_>::fetch_type;
+            constexpr conf::stored_type fetch_type = conf::conversion_traits<Ty_>::fetch_type;
             static_assert(std::is_same<Ty_, details::converted_stored_type<fetch_type, Converter_>>::value, 
                 "Provided converter must return exactly type Ty_");
             return value<fetch_type>(converter);
@@ -216,7 +283,7 @@ namespace conf {
                 return yato::nullopt_t{};
             }
             using return_type = typename stored_type_trait<FetchType_>::return_type;
-            return details::map_result<return_type>(m_find_result->get<return_type>(FetchType_), converter);
+            return details::map_result(m_find_result->get<return_type>(FetchType_), converter);
         }
 
         /**
@@ -682,7 +749,7 @@ namespace conf {
         YATO_ATTR_NODISCARD
         yato::optional<Ty_> cvt() const
         {
-            using default_converter = typename config_value_trait<Ty_>::converter_type;
+            using default_converter = typename conversion_traits<Ty_>::converter_type;
             return cvt(default_converter{});
         }
 
@@ -697,7 +764,7 @@ namespace conf {
         auto cvt(const Converter_& converter) const
         {
             return m_backend
-                ? details::convert_config<conf::stored_type::config, Converter_>::apply(converter, m_backend)
+                ? details::convert_config<conf::stored_type::config, Converter_>::apply(converter, *this)
                 : yato::nullopt_t{};
         }
 
