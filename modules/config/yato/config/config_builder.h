@@ -191,32 +191,6 @@ namespace conf {
          * Add named value.
          * Is valid only for associative configs.
          */
-        template <typename Ty_>
-        config_builder& put(const std::string& name, const yato::optional<Ty_>& val)
-        {
-            if (val) {
-                put(name, val.get_unsafe());
-            }
-            return *this;
-        }
-
-        /**
-         * Add named value.
-         * Is valid only for associative configs.
-         */
-        template <typename Ty_>
-        config_builder& put(const std::string& name, const std::optional<Ty_>& val)
-        {
-            if (val) {
-                put(name, val.value());
-            }
-            return *this;
-        }
-
-        /**
-         * Add named value.
-         * Is valid only for associative configs.
-         */
         config_builder& put(const std::string& /*name*/, yato::nullopt_t)
         {
             return *this;
@@ -338,32 +312,6 @@ namespace conf {
         {
             if (!invoke_skip(converter, val)) {
                 add(invoke_store(converter, val));
-            }
-            return *this;
-        }
-
-        /**
-         * Add named value.
-         * Is valid only for associative configs.
-         */
-        template <typename Ty_>
-        config_builder& add(const yato::optional<Ty_>& val)
-        {
-            if (val) {
-                add(val.get_unsafe());
-            }
-            return *this;
-        }
-
-        /**
-         * Add named value.
-         * Is valid only for associative configs.
-         */
-        template <typename Ty_>
-        config_builder& add(const std::optional<Ty_>& val)
-        {
-            if (val) {
-                add(val.value());
             }
             return *this;
         }

@@ -78,6 +78,38 @@ namespace conf {
                 using payload_converter_type = conversion_traits<Ty_>::converter_type;
                 return invoke_load(payload_converter_type{}, s);
             }
+
+            bool skip(const std::optional<Ty_>& opt) const
+            {
+                return !opt.has_value();
+            }
+
+            typename conversion_traits<Ty_>::value_type store(const std::optional<Ty_>& opt) const
+            {
+                using payload_converter_type = conversion_traits<Ty_>::converter_type;
+                return yato::conf::invoke_store(payload_converter_type{}, opt.value());
+            }
+        };
+
+        template <typename Ty_>
+        struct yato_optional_converter
+        {
+            yato::optional<Ty_> load(const typename conversion_traits<Ty_>::value_type& s) const
+            {
+                using payload_converter_type = conversion_traits<Ty_>::converter_type;
+                return invoke_load(payload_converter_type{}, s);
+            }
+
+            bool skip(const yato::optional<Ty_>& opt) const
+            {
+                return opt.empty();
+            }
+
+            typename conversion_traits<Ty_>::value_type store(const yato::optional<Ty_>& opt) const
+            {
+                using payload_converter_type = conversion_traits<Ty_>::converter_type;
+                return yato::conf::invoke_store(payload_converter_type{}, opt.get());
+            }
         };
 
 
@@ -102,6 +134,13 @@ namespace conf {
     {
         static constexpr stored_type fetch_type = conversion_traits<Ty_>::fetch_type;
         using converter_type = details::std_optional_converter<Ty_>;
+    };
+
+    template <typename Ty_>
+    struct config_value_trait<yato::optional<Ty_>>
+    {
+        static constexpr stored_type fetch_type = conversion_traits<Ty_>::fetch_type;
+        using converter_type = details::yato_optional_converter<Ty_>;
     };
 
 

@@ -92,13 +92,23 @@ namespace conf {
         struct identity_converter
         {
             constexpr
-            const ToType_& operator()(const FromType_& val) const {
+            const ToType_& load(const FromType_& val) const {
                 return val;
             }
 
             constexpr
-            ToType_ operator()(FromType_&& val) const {
+            ToType_ load(FromType_&& val) const {
                 return static_cast<ToType_>(std::move(val));
+            }
+
+            const FromType_& store(const ToType_& val) const
+            {
+                return val;
+            }
+
+            FromType_ store(ToType_&& val) const
+            {
+                return std::move(val);
             }
         };
 
@@ -106,8 +116,13 @@ namespace conf {
         struct narrow_converter
         {
             constexpr
-            ToType_ operator()(const FromType_& val) const {
+            ToType_ load(const FromType_& val) const {
                 return yato::narrow_cast<ToType_>(val);
+            }
+
+            constexpr
+            FromType_ store(const ToType_& val) const {
+                return yato::narrow_cast<FromType_>(val);
             }
         };
 
