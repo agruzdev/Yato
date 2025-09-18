@@ -150,7 +150,9 @@ namespace conf {
 
     config_builder& config_builder::put(const std::string& name, const char* val)
     {
-        checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::string>>(std::string(val)));
+        if (val) {
+            checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::string>>(std::string(val)));
+        }
         return *this;
     }
 
@@ -162,7 +164,9 @@ namespace conf {
 
     config_builder& config_builder::put(const std::string& name, config val)
     {
-        checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::config>>(val.backend_handle_()));
+        if (!val.is_null()) {
+            checked_handle_()->conf->put(name, std::make_unique<manual_value<stored_type::config>>(val.backend_handle_()));
+        }
         return *this;
     }
 
@@ -241,7 +245,9 @@ namespace conf {
 
     config_builder& config_builder::add(const char* val)
     {
-        checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::string>>(std::string(val)));
+        if (val) {
+            checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::string>>(std::string(val)));
+        }
         return *this;
     }
 
@@ -253,7 +259,9 @@ namespace conf {
 
     config_builder& config_builder::add(config val)
     {
-        checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::config>>(val.backend_handle_()));
+        if (!val.is_null()) {
+            checked_handle_()->conf->add(std::make_unique<manual_value<stored_type::config>>(val.backend_handle_()));
+        }
         return *this;
     }
 

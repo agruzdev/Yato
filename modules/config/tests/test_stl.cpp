@@ -7,7 +7,8 @@
 
 #include "gtest/gtest.h"
 #include <yato/config/config_builder.h>
-#include <yato/config/stl.h>
+#include <yato/config/containers.h>
+#include <yato/config/smart_pointers.h>
 #include <yato/config/json/json.h>
 
 

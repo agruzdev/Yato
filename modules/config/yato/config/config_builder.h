@@ -51,7 +51,11 @@ namespace conf {
         static
         config cvt(const Ty_& val, const Converter_& converter = Converter_{})
         {
-            return invoke_store(converter, val);
+            config res{};
+            if (!invoke_skip(converter, val)) {
+                res = invoke_store(converter, val);
+            }
+            return res;
         }
 
         /**
@@ -177,7 +181,10 @@ namespace conf {
         template <typename Ty_, typename Converter_ = typename config_value_trait<Ty_>::converter_type>
         config_builder& put(const std::string& name, const Ty_& val, const Converter_& converter = Converter_{})
         {
-            return put(name, invoke_store(converter, val));
+            if (!invoke_skip(converter, val)) {
+                put(name, invoke_store(converter, val));
+            }
+            return *this;
         }
 
         /**
@@ -221,32 +228,6 @@ namespace conf {
          */
         config_builder& put(const std::string& /*name*/, std::nullopt_t)
         {
-            return *this;
-        }
-
-        /**
-         * Add named value.
-         * Is valid only for associative configs.
-         */
-        template <typename Ty_>
-        config_builder& put(const std::string& name, const std::unique_ptr<Ty_>& p)
-        {
-            if (p) {
-                put(name, *p);
-            }
-            return *this;
-        }
-
-        /**
-         * Add named value.
-         * Is valid only for associative configs.
-         */
-        template <typename Ty_>
-        config_builder& put(const std::string& name, const std::shared_ptr<Ty_>& p)
-        {
-            if (p) {
-                put(name, *p);
-            }
             return *this;
         }
 
@@ -355,7 +336,10 @@ namespace conf {
         template <typename Ty_, typename Converter_ = typename config_value_trait<Ty_>::converter_type>
         config_builder& add(const Ty_& val, const Converter_& converter = Converter_{})
         {
-            return add(invoke_store(converter, val));
+            if (!invoke_skip(converter, val)) {
+                add(invoke_store(converter, val));
+            }
+            return *this;
         }
 
         /**
@@ -380,32 +364,6 @@ namespace conf {
         {
             if (val) {
                 add(val.value());
-            }
-            return *this;
-        }
-
-        /**
-         * Add named value.
-         * Is valid only for associative configs.
-         */
-        template <typename Ty_>
-        config_builder& add(const std::unique_ptr<Ty_>& p)
-        {
-            if (p) {
-                add(*p);
-            }
-            return *this;
-        }
-
-        /**
-         * Add named value.
-         * Is valid only for associative configs.
-         */
-        template <typename Ty_>
-        config_builder& add(const std::shared_ptr<Ty_>& p)
-        {
-            if (p) {
-                add(*p);
             }
             return *this;
         }

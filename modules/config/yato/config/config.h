@@ -72,11 +72,11 @@ namespace conf {
 
 
         template <typename Converter_, typename Arg_, typename = void>
-        struct invoke_conveter
+        struct invoke_load_impl
         { };
 
         template <typename Converter_, typename Arg_>
-        struct invoke_conveter<Converter_, Arg_,
+        struct invoke_load_impl<Converter_, Arg_,
                 yato::test_type_t<decltype(std::declval<Converter_>()(std::declval<Arg_>()))>
             >
         {
@@ -84,50 +84,115 @@ namespace conf {
             using load_result_type = decltype(std::declval<Converter_>()(std::declval<Arg_>()));
 
             static
-            load_result_type apply_load(const Converter_& cvt, const Arg_& val)
+            load_result_type apply(const Converter_& cvt, const Arg_& val)
             {
                 return cvt(val);
             }
         };
 
         template <typename Converter_, typename Arg_>
-        struct invoke_conveter<Converter_, Arg_,
+        struct invoke_load_impl<Converter_, Arg_,
                 yato::test_type_t<decltype(std::declval<Converter_>().load(std::declval<Arg_>()))>
             >
         {
             using load_result_type = decltype(std::declval<Converter_>().load(std::declval<Arg_>()));
 
             static
-            load_result_type apply_load(const Converter_& cvt, const Arg_& val)
+            load_result_type apply(const Converter_& cvt, const Arg_& val)
             {
                 return cvt.load(val);
             }
         };
 
-    } // details
-
-
-    template <typename Converter_, typename Ty_>
-    inline
-    auto invoke_load(const Converter_& cvt, const Ty_& val) {
-        return details::invoke_conveter<Converter_, Ty_>::apply_load(cvt, val);
-    }
-
-    template <typename Converter_, typename Ty_>
-    inline
-    auto invoke_store(const Converter_& cvt, const Ty_& val) {
-        return cvt.store(val);
-    }
-
-
-    namespace details {
-
         template <typename Ty_, typename Converter_>
-        using converted_type = typename details::invoke_conveter<Converter_, decltype(wrap_result_(std::declval<Ty_>()))>::load_result_type;
+        using converted_type = typename details::invoke_load_impl<Converter_, decltype(wrap_result_(std::declval<Ty_>()))>::load_result_type;
 
         template <conf::stored_type FetchType_, typename Converter_>
         using converted_stored_type = converted_type<typename stored_type_trait<FetchType_>::return_type, Converter_>;
 
+
+
+        template <typename Converter_, typename Arg_, typename = void>
+        struct invoke_skip_impl
+        {
+            static
+            bool apply(const Converter_& /*cvt*/, const Arg_& /*val*/)
+            {
+                return false;
+            }
+        };
+
+
+        template <typename Converter_, typename Arg_>
+        struct invoke_skip_impl<Converter_, Arg_,
+                yato::test_type_t<decltype(std::declval<Converter_>().skip(std::declval<Arg_>()))>
+            >
+        {
+            static
+            bool apply(const Converter_& cvt, const Arg_& val)
+            {
+                return cvt.skip(val);
+            }
+        };
+
+
+    } // details
+
+
+
+
+    template <typename Ty_, typename = void>
+    struct conversion_traits
+    {
+        /**
+         *  default implementation does fallback to old traits for backward compatibility
+         */
+        static constexpr stored_type fetch_type = config_value_trait<Ty_>::fetch_type;
+
+        /**
+         * converter input type
+         */
+        using value_type = decltype(details::wrap_result_(std::declval<typename stored_type_trait<fetch_type>::return_type>()));
+
+        /**
+        * converter_type typically supports two methods:
+        * Ty_ load(const stored_type&)
+        * stored_type store(const Ty_&)
+        *
+        * extra optional method for skipping stored elements
+        * bool skip(const Ty_&)
+        *
+        * throw config_error on error
+        */
+        using converter_type = typename config_value_trait<Ty_>::converter_type;
+    };
+
+
+    template <typename Converter_, typename Ty_>
+    inline
+    auto invoke_load(const Converter_& cvt, const Ty_& val)
+    {
+        return details::invoke_load_impl<Converter_, Ty_>::apply(cvt, val);
+    }
+
+    template <typename Converter_, typename Ty_>
+    inline
+    bool invoke_skip(const Converter_& cvt, const Ty_& val)
+    {
+        return details::invoke_skip_impl<Converter_, Ty_>::apply(cvt, val);
+    }
+
+    template <typename Converter_, typename Ty_>
+    inline
+    auto invoke_store(const Converter_& cvt, const Ty_& val)
+    {
+        return cvt.store(val);
+    }
+
+
+
+
+    namespace details {
 
         template <typename Ty_, typename Converter_>
         static
@@ -173,7 +238,7 @@ namespace conf {
             yato::optional<converted_stored_type<stored_type::config, Converter_>> apply(const Converter_& converter, const Conf_& conf)
             try
             {
-                return details::invoke_conveter<Converter_, config>::apply_load(converter, conf);
+                return details::invoke_load_impl<Converter_, config>::apply(converter, conf);
             }
             catch (config_error&) {
                 return yato::nullopt_t{};
@@ -181,30 +246,6 @@ namespace conf {
         };
 
     } // details
-
-
-    template <typename Ty_, typename = void>
-    struct conversion_traits
-    {
-        /**
-         *  default implementation does fallback to old traits for backward compatibility
-         */
-        static constexpr stored_type fetch_type = config_value_trait<Ty_>::fetch_type;
-
-        /**
-         * converter input type
-         */
-        using value_type = decltype(details::wrap_result_(std::declval<typename stored_type_trait<fetch_type>::return_type>()));
-
-        /**
-        * converter_type typically supports two methods:
-        * Ty_ load(const stored_type&)
-        * stored_type store(const Ty_&)
-        *
-        * throw config_error on error
-        */
-        using converter_type = typename config_value_trait<Ty_>::converter_type;
-    };
 
 
 
