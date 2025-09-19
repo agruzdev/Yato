@@ -52,19 +52,19 @@ namespace json {
         stored_variant res;
         switch(m_iter->type()) {
             case njson::value_t::number_integer:
-                res.emplace<integer_t>(yato::narrow_cast<integer_t>(m_iter->get<typename njson::number_integer_t>()));
+                res.emplace<integer_t>(yato::narrow_cast<integer_t>(m_iter->template get<typename njson::number_integer_t>()));
                 break;
             case njson::value_t::number_unsigned:
-                res.emplace<integer_t>(yato::narrow_cast<integer_t>(m_iter->get<typename njson::number_unsigned_t>()));
+                res.emplace<integer_t>(yato::narrow_cast<integer_t>(m_iter->template get<typename njson::number_unsigned_t>()));
                 break;
             case njson::value_t::number_float:
-                res.emplace<real_t>(static_cast<real_t>(m_iter->get<typename njson::number_float_t>()));
+                res.emplace<real_t>(static_cast<real_t>(m_iter->template get<typename njson::number_float_t>()));
                 break;
             case njson::value_t::string:
-                res.emplace<string_t>(static_cast<string_t>(m_iter->get<typename njson::string_t>()));
+                res.emplace<string_t>(static_cast<string_t>(m_iter->template get<typename njson::string_t>()));
                 break;
             case njson::value_t::boolean:
-                res.emplace<boolean_t>(static_cast<boolean_t>(m_iter->get<typename njson::boolean_t>()));
+                res.emplace<boolean_t>(static_cast<boolean_t>(m_iter->template get<typename njson::boolean_t>()));
                 break;
             case njson::value_t::array:
             case njson::value_t::object:

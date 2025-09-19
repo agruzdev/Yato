@@ -27,7 +27,7 @@ namespace conf {
         {
             std::unique_ptr<Ty_> load(const typename conversion_traits<Ty_>::value_type& s) const
             {
-                using payload_converter_type = conversion_traits<Ty_>::converter_type;
+                using payload_converter_type = typename conversion_traits<Ty_>::converter_type;
                 return std::make_unique<Ty_>(invoke_load(payload_converter_type{}, s));
             }
 
@@ -38,7 +38,7 @@ namespace conf {
 
             typename conversion_traits<Ty_>::value_type store(const std::unique_ptr<Ty_>& p) const
             {
-                using payload_converter_type = conversion_traits<Ty_>::converter_type;
+                using payload_converter_type = typename conversion_traits<Ty_>::converter_type;
                 return yato::conf::invoke_store(payload_converter_type{}, *p);
             }
         };
@@ -48,7 +48,7 @@ namespace conf {
         {
             std::shared_ptr<Ty_> load(const typename conversion_traits<Ty_>::value_type& s) const
             {
-                using payload_converter_type = conversion_traits<Ty_>::converter_type;
+                using payload_converter_type = typename conversion_traits<Ty_>::converter_type;
                 return std::make_shared<Ty_>(invoke_load(payload_converter_type{}, s));
             }
 
@@ -59,7 +59,7 @@ namespace conf {
 
             typename conversion_traits<Ty_>::value_type store(const std::shared_ptr<Ty_>& p) const
             {
-                using payload_converter_type = conversion_traits<Ty_>::converter_type;
+                using payload_converter_type = typename conversion_traits<Ty_>::converter_type;
                 return yato::conf::invoke_store(payload_converter_type{}, *p);
             }
         };

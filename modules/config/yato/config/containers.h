@@ -30,7 +30,7 @@ namespace conf {
                 std::vector<Ty_, Alloc_> res{};
                 res.reserve(c.size());
                 for (const auto& entry : c) {
-                    res.emplace_back(entry.value<Ty_>().get_or_throw<config_error>("std_vector_converter[load]: Failed to decode array element at " + std::to_string(entry.index())));
+                    res.emplace_back(entry.value<Ty_>().template get_or_throw<config_error>("std_vector_converter[load]: Failed to decode array element at " + std::to_string(entry.index())));
                 }
                 return res;
             }
@@ -55,7 +55,7 @@ namespace conf {
                 }
                 std::map<Kty_, Ty_, Pr_, Alloc_> res{};
                 for (const auto& entry : c) {
-                    res.emplace(entry.key(), entry.value<Ty_>().get_or_throw<config_error>("std_map_converter[load]: Failed to decode array element at " + entry.key()));
+                    res.emplace(entry.key(), entry.value<Ty_>().template get_or_throw<config_error>("std_map_converter[load]: Failed to decode array element at " + entry.key()));
                 }
                 return res;
             }
@@ -75,7 +75,7 @@ namespace conf {
         {
             std::optional<Ty_> load(const typename conversion_traits<Ty_>::value_type& s) const
             {
-                using payload_converter_type = conversion_traits<Ty_>::converter_type;
+                using payload_converter_type = typename conversion_traits<Ty_>::converter_type;
                 return invoke_load(payload_converter_type{}, s);
             }
 
@@ -86,7 +86,7 @@ namespace conf {
 
             typename conversion_traits<Ty_>::value_type store(const std::optional<Ty_>& opt) const
             {
-                using payload_converter_type = conversion_traits<Ty_>::converter_type;
+                using payload_converter_type = typename conversion_traits<Ty_>::converter_type;
                 return yato::conf::invoke_store(payload_converter_type{}, opt.value());
             }
         };
@@ -96,7 +96,7 @@ namespace conf {
         {
             yato::optional<Ty_> load(const typename conversion_traits<Ty_>::value_type& s) const
             {
-                using payload_converter_type = conversion_traits<Ty_>::converter_type;
+                using payload_converter_type = typename conversion_traits<Ty_>::converter_type;
                 return invoke_load(payload_converter_type{}, s);
             }
 
@@ -107,7 +107,7 @@ namespace conf {
 
             typename conversion_traits<Ty_>::value_type store(const yato::optional<Ty_>& opt) const
             {
-                using payload_converter_type = conversion_traits<Ty_>::converter_type;
+                using payload_converter_type = typename conversion_traits<Ty_>::converter_type;
                 return yato::conf::invoke_store(payload_converter_type{}, opt.get());
             }
         };
