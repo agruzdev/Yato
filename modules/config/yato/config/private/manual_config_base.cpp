@@ -7,6 +7,7 @@
 
 #include "manual_config_base.h"
 #include "manual_map.h"
+#include "manual_ordered_map.h"
 #include "manual_multimap.h"
 #include "manual_array.h"
 
@@ -56,7 +57,12 @@ namespace conf {
                 return std::make_shared<manual_multimap>();
             }
             if (c.is_associative()) {
-                return std::make_shared<manual_map>();
+                if (c.is_ordered()) {
+                    return std::make_shared<manual_ordered_map>();
+                }
+                else {
+                    return std::make_shared<manual_map>();
+                }
             }
             return std::make_shared<manual_array>();
         }

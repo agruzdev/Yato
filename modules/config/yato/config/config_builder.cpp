@@ -9,6 +9,7 @@
 #include "yato/config/private/manual_array.h"
 #include "yato/config/private/manual_map.h"
 #include "yato/config/private/manual_multimap.h"
+#include "yato/config/private/manual_ordered_map.h"
 #include "yato/assertion.h"
 
 namespace yato {
@@ -20,12 +21,23 @@ namespace conf {
         std::shared_ptr<manual_config_base> conf;
     };
 
-    config_builder::config_builder(details::object_tag_t, bool multi_associative)
+    config_builder::config_builder(details::object_tag_t, bool multi_associative, bool ordered)
         : m_impl(std::make_unique<builder_state>())
     {
-        m_impl->conf = multi_associative
-            ? std::static_pointer_cast<manual_config_base>(std::make_shared<manual_multimap>())
-            : std::static_pointer_cast<manual_config_base>(std::make_shared<manual_map>());
+        if (multi_associative) {
+            if (ordered) {
+                throw std::runtime_error("config_builder[ctor]: ordered multimap is not supported");
+            }
+            m_impl->conf = std::make_shared<manual_multimap>();
+        }
+        else {
+            if (ordered) {
+                m_impl->conf = std::make_shared<manual_ordered_map>();
+            }
+            else {
+                m_impl->conf = std::make_shared<manual_map>();
+            }
+        }
     }
 
     config_builder::config_builder(details::array_tag_t)

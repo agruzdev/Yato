@@ -677,6 +677,15 @@ namespace conf {
         }
 
         /**
+         * Return true if config supports associative access by name
+         */
+        YATO_ATTR_NODISCARD
+        bool is_ordered() const
+        {
+            return has_property(config_property::keeps_order);
+        }
+
+        /**
          * Return true if config supports associative access by name and allows multiple values for one key
          */
         YATO_ATTR_NODISCARD

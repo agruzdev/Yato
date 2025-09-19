@@ -30,9 +30,18 @@ namespace conf {
          * Make root object
          */
         static
-        config_builder object(bool multi_associative = false)
+        config_builder object(bool multi_associative = false, bool ordered = false)
         {
-            return config_builder(details::object_tag_t{}, multi_associative);
+            return config_builder(details::object_tag_t{}, multi_associative, ordered);
+        }
+
+        /**
+         * Make root object
+         */
+        static
+        config_builder ordered_object()
+        {
+            return config_builder(details::object_tag_t{}, /*multi_associative=*/false, /*ordered=*/true);
         }
 
         /**
@@ -358,7 +367,7 @@ namespace conf {
     private:
         struct builder_state;
 
-        config_builder(details::object_tag_t, bool multi_associative);
+        config_builder(details::object_tag_t, bool multi_associative, bool ordered);
         config_builder(details::array_tag_t);
 
         builder_state* checked_handle_() const;

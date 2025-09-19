@@ -15,30 +15,34 @@ namespace conf {
 
 namespace json {
 
-    json_value::json_value(std::shared_ptr<nlohmann::json> root, nlohmann::json::const_iterator iter)
+    template <typename NJson_>
+    json_value<NJson_>::json_value(std::shared_ptr<njson> root, njson_citerator iter)
         : m_root(std::move(root)), m_iter(std::move(iter))
     { }
 
-    json_value::~json_value() = default;
+    template <typename NJson_>
+    json_value<NJson_>::~json_value() = default;
 
-    stored_type json_value::type() const noexcept
+    template <typename NJson_>
+    stored_type json_value<NJson_>::type() const noexcept
     {
         switch(m_iter->type()) {
-            case nlohmann::json::value_t::number_integer:
-            case nlohmann::json::value_t::number_unsigned:
+            case njson::value_t::number_integer:
+            case njson::value_t::number_unsigned:
                 return stored_type::integer;
-            case nlohmann::json::value_t::number_float:
+            case njson::value_t::number_float:
                 return stored_type::real;
-            case nlohmann::json::value_t::string:
+            case njson::value_t::string:
                 return stored_type::string;
-            case nlohmann::json::value_t::boolean:
+            case njson::value_t::boolean:
                 return stored_type::boolean;
             default:
                 return stored_type::config;
         }
     }
 
-    stored_variant json_value::get() const noexcept
+    template <typename NJson_>
+    stored_variant json_value<NJson_>::get() const noexcept
     {
         using integer_t = stored_type_trait<stored_type::integer>::return_type;
         using real_t    = stored_type_trait<stored_type::real>::return_type;
@@ -47,24 +51,24 @@ namespace json {
 
         stored_variant res;
         switch(m_iter->type()) {
-            case nlohmann::json::value_t::number_integer:
-                res.emplace<integer_t>(yato::narrow_cast<integer_t>(m_iter->get<nlohmann::json::number_integer_t>()));
+            case njson::value_t::number_integer:
+                res.emplace<integer_t>(yato::narrow_cast<integer_t>(m_iter->get<typename njson::number_integer_t>()));
                 break;
-            case nlohmann::json::value_t::number_unsigned:
-                res.emplace<integer_t>(yato::narrow_cast<integer_t>(m_iter->get<nlohmann::json::number_unsigned_t>()));
+            case njson::value_t::number_unsigned:
+                res.emplace<integer_t>(yato::narrow_cast<integer_t>(m_iter->get<typename njson::number_unsigned_t>()));
                 break;
-            case nlohmann::json::value_t::number_float:
-                res.emplace<real_t>(static_cast<real_t>(m_iter->get<nlohmann::json::number_float_t>()));
+            case njson::value_t::number_float:
+                res.emplace<real_t>(static_cast<real_t>(m_iter->get<typename njson::number_float_t>()));
                 break;
-            case nlohmann::json::value_t::string:
-                res.emplace<string_t>(static_cast<string_t>(m_iter->get<nlohmann::json::string_t>()));
+            case njson::value_t::string:
+                res.emplace<string_t>(static_cast<string_t>(m_iter->get<typename njson::string_t>()));
                 break;
-            case nlohmann::json::value_t::boolean:
-                res.emplace<boolean_t>(static_cast<boolean_t>(m_iter->get<nlohmann::json::boolean_t>()));
+            case njson::value_t::boolean:
+                res.emplace<boolean_t>(static_cast<boolean_t>(m_iter->get<typename njson::boolean_t>()));
                 break;
-            case nlohmann::json::value_t::array:
-            case nlohmann::json::value_t::object:
-                res.emplace<backend_ptr_t>(std::make_shared<json_config>(m_root, m_iter));
+            case njson::value_t::array:
+            case njson::value_t::object:
+                res.emplace<backend_ptr_t>(std::make_shared<json_config<NJson_>>(m_root, m_iter));
                 break;
             default:
                 // ToDo (a.gruzdev): Report warning
@@ -72,6 +76,11 @@ namespace json {
         }
         return res;
     }
+
+
+    template class json_value<nlohmann::json>;
+    template class json_value<nlohmann::ordered_json>;
+
 
 } //namespace json
 

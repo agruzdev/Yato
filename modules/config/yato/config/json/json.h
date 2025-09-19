@@ -21,27 +21,29 @@ namespace conf {
         /**
          * Parse Json from string
          */
-        config read(const char* str, size_t len = yato::nolength);
+        config read(const char* str, size_t len = yato::nolength, bool ordered = false);
 
         /**
          * Parse Json from string
          */
-        config read(const std::string& str);
+        config read(const std::string& str, bool ordered = false);
 
         /**
          * Parse Json from stream
          */
-        config read(std::istream& is);
+        config read(std::istream& is, bool ordered = false);
 
         /**
          * Writes config as Json to a string
+         * if 'ordered' is not passed, then deduced from confid properties
          */
-        std::string write(const yato::config& c, uint32_t indent = 0);
+        std::string write(const yato::config& c, uint32_t indent = 0, yato::optional<bool> ordered = {});
 
         /**
          * Writes config as Json to a stream
+         * if 'ordered' is not passed, then deduced from confid properties
          */
-        void write(const yato::config& c, std::ostream& os, uint32_t indent = 0);
+        void write(const yato::config& c, std::ostream& os, uint32_t indent = 0, yato::optional<bool> ordered = {});
 
     } // namespace json
 

@@ -9,7 +9,7 @@
 #include "../include/test_config.h"
 #include <yato/config/json/json.h>
 
-TEST(Yato_Config, json_object)
+TEST(Yato_Config, json_ordered_object)
 {
     const auto conf = yato::conf::json::read(R"JSON(
         {
@@ -19,11 +19,11 @@ TEST(Yato_Config, json_object)
             "flag1" : false,
             "flag2" : true
         }
-    )JSON");
+    )JSON", yato::nolength, /*ordered=*/true);
     TestConfig_PlainObject(conf);
 }
 
-TEST(Yato_Config, json_object2)
+TEST(Yato_Config, json_ordered_object2)
 {
     const auto conf = yato::conf::json::read(R"JSON(
         {
@@ -33,21 +33,21 @@ TEST(Yato_Config, json_object2)
                 "val": 7.0
             }
         }
-    )JSON");
+    )JSON", yato::nolength, /*ordered=*/true);
     TestConfig_Object(conf);
 }
 
-TEST(Yato_Config, json_array)
+TEST(Yato_Config, json_ordered_array)
 {
     const auto conf = yato::conf::json::read(R"JSON(
         [10, 20, 30, true, 4, {
             "arr": []
         }]
-    )JSON");
+    )JSON", yato::nolength, /*ordered=*/true);
     TestConfig_Array(conf);
 }
 
-TEST(Yato_Config, json_example)
+TEST(Yato_Config, json_ordered_example)
 {
     const char* json = R"JSON(
         {
@@ -67,12 +67,12 @@ TEST(Yato_Config, json_example)
             }
         }
     )JSON";
-    const auto conf = yato::conf::json::read(json);
+    const auto conf = yato::conf::json::read(json, yato::nolength, /*ordered=*/true);
     TestConfig_Example(conf.clone());
     TestConfig_Example(conf);
 }
 
-TEST(Yato_Config, json_conversion)
+TEST(Yato_Config, json_ordered_conversion)
 {
     const char* json = R"JSON(
         {
@@ -81,22 +81,22 @@ TEST(Yato_Config, json_conversion)
             "vec" : [20, 98, -7]
         }
     )JSON";
-    const auto conf = yato::conf::json::read(json);
+    const auto conf = yato::conf::json::read(json, yato::nolength, /*ordered=*/true);
     TestConfig_Conversion(conf);
 }
 
 
-TEST(Yato_Config, json_write)
+TEST(Yato_Config, json_ordered_write)
 {
     const auto conf = GetExampleConfig();
-    const std::string str = yato::conf::json::write(conf, 2);
-    TestConfig_Example(yato::conf::json::read(str));
+    const std::string str = yato::conf::json::write(conf, 2, /*ordered=*/true);
+    TestConfig_Example(yato::conf::json::read(str, /*ordered=*/true));
 }
 
-TEST(Yato_Config, json_write_stream)
+TEST(Yato_Config, json_ordered_write_stream)
 {
     const auto conf = GetExampleConfig();
     std::stringstream strstr;
-    yato::conf::json::write(conf, strstr);
-    TestConfig_Example(yato::conf::json::read(strstr));
+    yato::conf::json::write(conf, strstr, /*ordered=*/true);
+    TestConfig_Example(yato::conf::json::read(strstr, /*ordered=*/true));
 }

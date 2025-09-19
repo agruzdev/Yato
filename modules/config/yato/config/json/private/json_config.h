@@ -23,13 +23,20 @@ namespace conf {
 
 namespace json {
 
+
+    template <typename NJson_ = nlohmann::json>
     class json_config final
         : public config_backend
     {
     public:
-        json_config(std::shared_ptr<nlohmann::json> json);
+        using njson = NJson_;
+        using njson_citerator  = typename NJson_::const_iterator;
+        using njson_creference = typename NJson_::const_reference;
 
-        json_config(std::shared_ptr<nlohmann::json> root, nlohmann::json::const_iterator iter);
+
+        json_config(std::shared_ptr<NJson_> json);
+
+        json_config(std::shared_ptr<NJson_> root, njson_citerator iter);
 
         json_config(const json_config&) = delete;
 
@@ -52,10 +59,10 @@ namespace json {
         find_key_result_t do_find(const std::string& name) const override;
 
     private:
-        nlohmann::json::const_reference get_() const;
+        njson_creference get_() const;
 
-        std::shared_ptr<nlohmann::json> m_root;
-        yato::optional<nlohmann::json::const_iterator> m_iter;
+        std::shared_ptr<njson> m_root;
+        yato::optional<njson_citerator> m_iter;
     };
 
 

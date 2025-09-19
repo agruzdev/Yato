@@ -24,13 +24,18 @@ namespace conf {
 
 namespace json {
 
-    class json_converter;
 
+    template <typename NJson_ = nlohmann::json>
     class json_value final
         : public config_value
     {
     public:
-        json_value(std::shared_ptr<nlohmann::json> root, nlohmann::json::const_iterator iter);
+        using njson = NJson_;
+        using njson_citerator  = typename NJson_::const_iterator;
+        using njson_creference = typename NJson_::const_reference;
+
+
+        json_value(std::shared_ptr<njson> root, njson_citerator iter);
 
         json_value(const json_value&) = delete;
         json_value(json_value&&) = delete;
@@ -45,8 +50,8 @@ namespace json {
         stored_variant get() const noexcept override;
 
     private:
-        std::shared_ptr<nlohmann::json> m_root;
-        nlohmann::json::const_iterator m_iter;
+        std::shared_ptr<njson> m_root;
+        njson_citerator m_iter;
     };
 
 } //namespace json
