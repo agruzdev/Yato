@@ -132,6 +132,7 @@ install(EXPORT YatoTargets
 
 option(YATO_BUILD_TESTS "Build unit tests" ON)
 if(YATO_BUILD_TESTS)
+    enable_testing()
     add_subdirectory(./tests)
 endif()
 
