@@ -15,7 +15,6 @@ include(${YATO_SOURCE_DIR}/cmake/dependency.gtest.cmake)
 #==========================================
 # Sources
 
-include_directories(${GTEST_INCLUDE_DIR})
 include_directories(${YATO_INCLUDE_DIRS})
 
 file(GLOB all_tests "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/source/*.h")
@@ -33,9 +32,9 @@ source_group(TREE "${YATO_SOURCE_DIR}" FILES ${all_sources})
 # Targets
 
 add_definitions(-DYATO_ENABLE_TESTED_ASSERTIONS)
-link_directories(${GTEST_LIBRARY_DIR})
 
 add_executable(YatoTests ${all_sources})
+target_link_libraries(YatoTests PRIVATE gtest_main)
 
 set_property(TARGET YatoTests PROPERTY FOLDER "Tests")
 
@@ -43,8 +42,7 @@ set_property(TARGET YatoTests PROPERTY FOLDER "Tests")
 _gtest_fix_definitions(YatoTests)
 
 foreach(lib ${Yato_TEST_LIBS})
-    target_link_libraries(YatoTests ${lib})
+    target_link_libraries(YatoTests PRIVATE ${lib})
 endforeach()
-foreach(lib ${GTEST_LIBRARIES})
-    target_link_libraries(YatoTests ${lib})
-endforeach()
+
+add_test(NAME "unit-tests" COMMAND "./YatoTests")

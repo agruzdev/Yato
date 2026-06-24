@@ -7,20 +7,27 @@
 # Google test dependency
 # https://github.com/google/googletest
 #
-# Output variables:
-# GTEST_INCLUDE_DIR - includes
-# GTEST_LIBRARY_DIR - link directories
-# GTEST_LIBRARIES   - link targets
-# GMOCK_INCLUDE_DIR - includes
+# Targets:
+# gtest and gtest_main
 
-
-include(${YATO_SOURCE_DIR}/cmake/dependency.common.functions.cmake)
+if (TARGET gtest)
+    return()
+endif()
 
 macro(_gtest_fix_definitions _TARGET_NAME_)
     if(TARGET ${_TARGET_NAME_})
         target_compile_definitions(${_TARGET_NAME_} PRIVATE GTEST_LANG_CXX11=1 GTEST_HAS_TR1_TUPLE=0)
     endif()
 endmacro(_gtest_fix_definitions)
+
+find_package(GTest CONFIG)
+if (TARGET GTest::gtest)
+    add_library(gtest ALIAS GTest::gtest)
+    add_library(gtest_main ALIAS GTest::gtest_main)
+    return()
+endif()
+
+include(${YATO_SOURCE_DIR}/cmake/dependency.common.functions.cmake)
 
 dependency_find_or_download(
     NAME GTEST
@@ -51,12 +58,3 @@ if(NOT TARGET gtest)
     set_property(TARGET gtest      PROPERTY FOLDER "Dependencies")
     set_property(TARGET gtest_main PROPERTY FOLDER "Dependencies")
 endif()
-
-set(GTEST_INCLUDE_DIR ${GTEST_FOUND_ROOT}/googletest/include CACHE INTERNAL "")
-set(GMOCK_INCLUDE_DIR ${GTEST_FOUND_ROOT}/googlemock/include CACHE INTERNAL "")
-set(GTEST_LIBRARY_DIR "" CACHE INTERNAL "")
-list(APPEND GTEST_LIBRARIES gtest)
-list(APPEND GTEST_LIBRARIES gtest_main)
-set(GTEST_LIBRARIES ${GTEST_LIBRARIES} CACHE INTERNAL "")
-
-
