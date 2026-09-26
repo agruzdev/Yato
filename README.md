@@ -30,8 +30,8 @@ The library consists of only headers, so it doesn't require build. The repositor
 
 The library targets only modern compiler versions. Most recently checked compilers:
 
+* MSVC 2026
 * MSVC 2022
-* MSVC 2019
 * MinGW 12.1
 * Clang 14.0
 * GCC 11.4
