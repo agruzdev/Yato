@@ -18,9 +18,7 @@ file(GLOB config_sources
 )
 
 list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests")
-
 list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/manual")
-set(CONFIG_NON_EMPTY_TEST ON)
 
 # Json
 option(YATO_CONFIG_JSON "Enable json config backend" OFF)
@@ -35,7 +33,7 @@ if(YATO_CONFIG_JSON)
     )
     list(APPEND config_sources ${json_sources})
     list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/json")
-    set(CONFIG_NON_EMPTY_TEST ON)
+    list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/stl") # uses JSON helpers
 endif()
 
 # Command line
@@ -51,7 +49,6 @@ if(YATO_CONFIG_CMD)
     )
     list(APPEND config_sources ${cmd_sources})
     list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/cmd")
-    set(CONFIG_NON_EMPTY_TEST ON)
 endif()
 
 # XML
@@ -69,7 +66,6 @@ if(YATO_CONFIG_XML)
     )
     list(APPEND config_sources ${xml_sources})
     list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/xml")
-    set(CONFIG_NON_EMPTY_TEST ON)
 endif()
 
 # INI
@@ -86,7 +82,6 @@ if(YATO_CONFIG_INI)
     )
     list(APPEND config_sources ${ini_sources})
     list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/ini")
-    set(CONFIG_NON_EMPTY_TEST ON)
 endif()
 
 # YAML
@@ -104,7 +99,6 @@ if(YATO_CONFIG_YAML)
     )
     list(APPEND config_sources ${yaml_sources})
     list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/yaml")
-    set(CONFIG_NON_EMPTY_TEST ON)
 endif()
 
 include_directories(${YATO_INCLUDE_DIRS})
@@ -131,9 +125,7 @@ endforeach()
 #===========================================
 # Tests
 
-if(CONFIG_NON_EMPTY_TEST)
-    list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/include")
-endif()
+list(APPEND Yato_TEST_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/tests/include")
 set(Yato_TEST_DIRS ${Yato_TEST_DIRS} PARENT_SCOPE)
 
 list(APPEND Yato_TEST_LIBS YatoConfig)
