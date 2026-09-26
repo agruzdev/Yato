@@ -15,7 +15,7 @@
 #endif 
 
 
-#if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__)
+#if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__) || defined(_M_ARM64) || defined(_M_ARM64EC)
 #define YATO_X64
 #elif defined(__i386) || defined(_M_IX86) || defined(__ANDROID__)
 #define YATO_X86
@@ -24,6 +24,7 @@
 #endif
 
 
+#define YATO_MSVC_2026 18
 #define YATO_MSVC_2022 17
 #define YATO_MSVC_2019 16
 #define YATO_MSVC_2017 15
@@ -31,7 +32,9 @@
 #define YATO_MSVC_2013 12
 
 #ifdef _MSC_VER
-# if (_MSC_VER >= 1930)
+# if (_MSC_VER >= 1950)
+#  define YATO_MSVC 18
+# elif (_MSC_VER >= 1930)
 #  define YATO_MSVC 17
 # elif (_MSC_VER >= 1920)
 #  define YATO_MSVC 16
